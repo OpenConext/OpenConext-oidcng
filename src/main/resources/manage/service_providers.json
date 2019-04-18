@@ -1,0 +1,61 @@
+[
+  {
+    "_id": "76171457-6ed5-4505-9071-9e0e47557985",
+    "version": 19,
+    "data": {
+      "entityid": "http://mock-sp",
+      "state": "prodaccepted",
+      "oidc": {
+        "secret": "secret",
+        "redirectUrls": [
+          "http://localhost:8091/redirect",
+          "http://localhost:8091/redirect-allow"
+        ],
+        "scopes": [
+          "openid",
+          "groups"
+        ],
+        "grants": [
+          "authorization_code",
+          "implicit",
+          "refresh_token",
+          "client_credentials"
+        ],
+        "resourceServer": false
+      },
+      "notes": null,
+      "metaDataFields": {
+        "name:en": "OpenConext Mock SP",
+        "name:nl": "OpenConext Mock SP"
+      }
+    }
+  },
+  {
+    "_id": "76171457-6ed5-4505-9071-9e0e47557986",
+    "version": 19,
+    "data": {
+      "entityid": "http://mock-rp",
+      "state": "prodaccepted",
+      "oidc": {
+        "secret": "secret",
+        "redirectUrls": [
+          "http://localhost:8091/redirect",
+          "http://localhost:8091/redirect-allow"
+        ],
+        "scopes": [
+          "openid",
+          "groups"
+        ],
+        "grants": [
+          "authorization_code"
+        ],
+        "resourceServer": true
+      },
+      "notes": null,
+      "metaDataFields": {
+        "name:en": "OpenConext Mock RP",
+        "name:nl": "OpenConext Mock RP"
+      }
+    }
+  }
+]
