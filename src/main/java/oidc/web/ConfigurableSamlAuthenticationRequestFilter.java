@@ -1,5 +1,7 @@
 package oidc.web;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.saml.SamlRequestMatcher;
 import org.springframework.security.saml.provider.provisioning.SamlProviderProvisioning;
 import org.springframework.security.saml.provider.service.SamlAuthenticationRequestFilter;
@@ -13,15 +15,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-import static org.springframework.util.StringUtils.hasText;
-
 public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticationRequestFilter {
 
+    private SamlRequestMatcher samlRequestMatcher;
     private SamlProviderProvisioning<ServiceProviderService> provisioning;
 
-    public ConfigurableSamlAuthenticationRequestFilter(SamlProviderProvisioning<ServiceProviderService> provisioning) {
-        super(provisioning, new SamlRequestMatcher(provisioning, "discovery", false));
+    public ConfigurableSamlAuthenticationRequestFilter(SamlProviderProvisioning<ServiceProviderService> provisioning,
+                                                       SamlRequestMatcher samlRequestMatcher) {
+        super(provisioning, samlRequestMatcher);
+        //TODO Wait for pull request to be accepted to increase portability
         this.provisioning = provisioning;
+        this.samlRequestMatcher = samlRequestMatcher;
     }
 
     @Override
@@ -32,11 +36,10 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        String idpIdentifier = request.getParameter("commence");
-        if (hasText(idpIdentifier)) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (samlRequestMatcher.matches(request) && (authentication == null || !authentication.isAuthenticated())) {
             ServiceProviderService provider = provisioning.getHostedProvider();
             IdentityProviderMetadata idp = provider.getRemoteProviders().get(0);
-//            IdentityProviderMetadata idp = getIdentityProvider(provider, idpIdentifier);
             AuthenticationRequest authenticationRequest = provider.authenticationRequest(idp);
             sendAuthenticationRequest(
                     provider,
@@ -45,8 +48,7 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
                     authenticationRequest,
                     authenticationRequest.getDestination()
             );
-        }
-        else {
+        } else {
             filterChain.doFilter(request, response);
         }
     }

@@ -1,8 +1,8 @@
 logging:
   level:
     root: INFO
-    org.springframework.web: INFO
-    org.springframework.security: INFO
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
     org.springframework.security.saml: DEBUG
 
 # used by the git plugin

@@ -1,5 +1,6 @@
 package oidc.endpoints;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
@@ -8,12 +9,12 @@ import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import oidc.exceptions.RedirectMismatchException;
 import oidc.manage.Manage;
-import oidc.model.AccessToken;
 import oidc.model.OpenIDClient;
 import oidc.repository.AccessTokenRepository;
 import oidc.secure.TokenGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.saml.spi.DefaultSamlAuthentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
@@ -30,14 +31,15 @@ public class AuthorizationEndpoint {
     private AccessTokenRepository accessTokenRepository;
 
     @Autowired
-    public AuthorizationEndpoint(Manage manage,AccessTokenRepository accessTokenRepository) {
+    public AuthorizationEndpoint(Manage manage, AccessTokenRepository accessTokenRepository) {
         this.manage = manage;
         this.accessTokenRepository = accessTokenRepository;
     }
 
     @GetMapping("authorize")
     public View authorize(@RequestParam MultiValueMap<String, String> parameters,
-                          Authentication authentication) throws ParseException {
+                          Authentication authentication) throws ParseException, JsonProcessingException {
+        DefaultSamlAuthentication samlAuthentication = (DefaultSamlAuthentication) authentication;
         AuthenticationRequest authenticationRequest = AuthenticationRequest.parse(parameters);
         Scope scope = authenticationRequest.getScope();
         State state = authenticationRequest.getState();

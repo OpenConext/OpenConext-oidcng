@@ -17,16 +17,21 @@
 
 package oidc.config;
 
+import oidc.web.FakeSamlAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityConfiguration;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.context.SecurityContextPersistenceFilter;
+import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 
 import static org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityDsl.serviceProvider;
 
@@ -41,7 +46,7 @@ public class SecurityConfiguration {
 
         public SamlSecurity(BeanConfig beanConfig, @Qualifier("appConfig") AppConfig appConfig) {
             super("/saml/sp/", beanConfig);
-            appConfiguration = appConfig;
+            this.appConfiguration = appConfig;
         }
 
         @Override
@@ -58,10 +63,6 @@ public class SecurityConfiguration {
         @Autowired
         private Environment environment;
 
-        @Autowired
-        @Qualifier("appConfig")
-        private AppConfig appConfiguration;
-
         @Override
         protected void configure(HttpSecurity http) throws Exception {
             http
@@ -70,8 +71,10 @@ public class SecurityConfiguration {
                     .antMatchers("/**")
                     .authenticated()
                     .and()
-                    .formLogin().loginPage("/saml/sp/discovery?commence=true")
-            ;
+                    .formLogin().loginPage("/saml/sp/authorize");
+            if (environment.acceptsProfiles(Profiles.of("dev"))) {
+                http.addFilterAfter(new FakeSamlAuthenticationFilter(), SecurityContextHolderAwareRequestFilter.class);
+            }
         }
     }
 

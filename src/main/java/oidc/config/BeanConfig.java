@@ -20,7 +20,10 @@ package oidc.config;
 import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.saml.SamlRequestMatcher;
 import org.springframework.security.saml.provider.SamlServerConfiguration;
+import org.springframework.security.saml.provider.provisioning.SamlProviderProvisioning;
+import org.springframework.security.saml.provider.service.ServiceProviderService;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderServerBeanConfiguration;
 import org.springframework.security.saml.spi.SpringSecuritySaml;
 
@@ -56,7 +59,9 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     @Override
     @Bean
     public Filter spAuthenticationRequestFilter() {
-        return new ConfigurableSamlAuthenticationRequestFilter(getSamlProvisioning());
+        SamlProviderProvisioning<ServiceProviderService> provisioning = getSamlProvisioning();
+        SamlRequestMatcher requestMatcher = new SamlRequestMatcher(provisioning, "authorize", false);
+        return new ConfigurableSamlAuthenticationRequestFilter(provisioning, requestMatcher);
     }
 
     @Override

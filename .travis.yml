@@ -1,0 +1,21 @@
+language: java
+jdk:
+- oraclejdk8
+
+env:
+  - MONGODB=3.4.3
+
+before_install:
+- wget http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-${MONGODB}.tgz
+- tar xzf mongodb-linux-x86_64-${MONGODB}.tgz
+- ${PWD}/mongodb-linux-x86_64-${MONGODB}/bin/mongod --version
+- pip install --user codecov
+before_script:
+- mkdir ${PWD}/mongodb-linux-x86_64-${MONGODB}/data
+- ${PWD}/mongodb-linux-x86_64-${MONGODB}/bin/mongod --dbpath ${PWD}/mongodb-linux-x86_64-${MONGODB}/data --logpath ${PWD}/mongodb-linux-x86_64-${MONGODB}/mongodb.log --fork
+script:
+- mvn test
+after_script:
+- pkill mongod
+after_success:
+- codecov
