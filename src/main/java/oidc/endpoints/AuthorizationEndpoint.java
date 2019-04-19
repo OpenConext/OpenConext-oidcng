@@ -38,8 +38,12 @@ public class AuthorizationEndpoint {
 
     @GetMapping("authorize")
     public View authorize(@RequestParam MultiValueMap<String, String> parameters,
-                          Authentication authentication) throws ParseException, JsonProcessingException {
-        DefaultSamlAuthentication samlAuthentication = (DefaultSamlAuthentication) authentication;
+                          Authentication authentication) throws ParseException {
+        return doAuthorize(parameters, (DefaultSamlAuthentication) authentication);
+    }
+
+    private View doAuthorize(@RequestParam MultiValueMap<String, String> parameters, DefaultSamlAuthentication authentication) throws ParseException {
+        DefaultSamlAuthentication samlAuthentication = authentication;
         AuthenticationRequest authenticationRequest = AuthenticationRequest.parse(parameters);
         Scope scope = authenticationRequest.getScope();
         State state = authenticationRequest.getState();
@@ -64,5 +68,4 @@ public class AuthorizationEndpoint {
         }
         return builder.toUriString();
     }
-
 }

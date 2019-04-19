@@ -27,14 +27,13 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
     }
 
     @RequestMapping("/error")
-    public ResponseEntity<Map<String, Object>> error(HttpServletRequest request) {
+    public ResponseEntity error(HttpServletRequest request) {
         ServletWebRequest webRequest = new ServletWebRequest(request);
         Map<String, Object> result = this.errorAttributes.getErrorAttributes(webRequest, false);
 
-        Throwable error = this.errorAttributes.getError(webRequest);
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        result.remove("status");
+        result.remove("error");
 
-        ///TODO sanitize - find out what exception
         return new ResponseEntity<>(result, HttpStatus.BAD_REQUEST);
     }
 
