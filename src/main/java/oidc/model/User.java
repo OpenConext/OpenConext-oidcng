@@ -11,10 +11,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 @NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
 @Document(collection = "users")
 public class User {
+
     @Id
     private String id;
     private String sub;
@@ -34,10 +36,10 @@ public class User {
     private String eduPersonPrincipalName;
     private String eduPersonTargetedId;
 
-    private Set<String> eduPersonAffiliations = new HashSet<>();
-    private Set<String> eduPersonScopedAffiliations = new HashSet<>();
-    private Set<String> isMemberOfs = new HashSet<>();
-    private Set<String> eduPersonEntitlements = new HashSet<>();
-    private Set<String> schacPersonalUniqueCodes = new HashSet<>();
-    private Set<String> uids = new HashSet<>();
+    private Set<String> eduPersonAffiliations;
+    private Set<String> eduPersonScopedAffiliations;
+    private Set<String> isMemberOfs;
+    private Set<String> eduPersonEntitlements;
+    private Set<String> schacPersonalUniqueCodes;
+    private Set<String> uids;
 }

@@ -57,6 +57,7 @@ public class AuthorizationEndpoint {
                     String.format("Client %s with registered redirect URI's %s requested authorization with redirectURI %s",
                             client.getClientId(), client.getRedirectUrls(), redirectionURI));
         }
+        //Store everything we need along side with the authorization code
         String code = TokenGenerator.repositoryId();
         return new RedirectView(authorizationRedirect(redirectionURI, state, code));
     }

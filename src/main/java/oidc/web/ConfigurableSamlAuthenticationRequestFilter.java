@@ -18,13 +18,11 @@ import java.io.IOException;
 public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticationRequestFilter {
 
     private SamlRequestMatcher samlRequestMatcher;
-    private SamlProviderProvisioning<ServiceProviderService> provisioning;
 
     public ConfigurableSamlAuthenticationRequestFilter(SamlProviderProvisioning<ServiceProviderService> provisioning,
                                                        SamlRequestMatcher samlRequestMatcher) {
         super(provisioning, samlRequestMatcher);
-        //TODO Wait for pull request to be accepted to increase portability
-        this.provisioning = provisioning;
+        //TODO Wait for https://github.com/spring-projects/spring-security-saml/pull/425 to be accepted
         this.samlRequestMatcher = samlRequestMatcher;
     }
 
@@ -38,7 +36,7 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             throws ServletException, IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (samlRequestMatcher.matches(request) && (authentication == null || !authentication.isAuthenticated())) {
-            ServiceProviderService provider = provisioning.getHostedProvider();
+            ServiceProviderService provider = getProvisioning().getHostedProvider();
             IdentityProviderMetadata idp = provider.getRemoteProviders().get(0);
             AuthenticationRequest authenticationRequest = provider.authenticationRequest(idp);
             sendAuthenticationRequest(
