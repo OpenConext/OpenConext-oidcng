@@ -28,9 +28,9 @@ public class OpenIDClient {
 
         this.secret = String.class.cast(oidc.get("secret"));
         this.redirectUrls = List.class.cast(oidc.get("redirectUrls"));
-        this.scopes = List.class.cast(oidc.get("scopes"));
-        this.grants = List.class.cast(oidc.get("grants"));
-        this.resourceServer = Boolean.class.cast(oidc.get("resourceServer"));
+        this.scopes = List.class.cast(oidc.getOrDefault("scopes", "oidc"));
+        this.grants = List.class.cast(oidc.getOrDefault("grants", "authorization_code"));
+        this.resourceServer = Boolean.class.cast(oidc.getOrDefault("resourceServer", false));
     }
 
 }

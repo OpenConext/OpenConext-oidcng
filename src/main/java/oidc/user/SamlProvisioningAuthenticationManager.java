@@ -73,7 +73,7 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
 
     private String getAttributeValue(String samlAttributeName, Assertion assertion) {
         Set<String> values = getAttributeValues(samlAttributeName, assertion);
-        return values != null ? values.iterator().next() : null;
+        return !CollectionUtils.isEmpty(values) ? values.iterator().next() : null;
     }
 
     private Set<String> getAttributeValues(String samlAttributeName, Assertion assertion) {

@@ -22,16 +22,12 @@ public class RemoteManage implements Manage {
     private String url;
 
     private RestTemplate restTemplate = new RestTemplate();
-    private HttpHeaders httpHeaders;
+    private HttpHeaders httpHeaders = new HttpHeaders();
 
-    public RemoteManage(
-            String username,
-            String password,
-            String manageBaseUrl) {
+    public RemoteManage(String username, String password, String manageBaseUrl) {
         String basicAuth = "Basic " + new String(Base64.getEncoder().encode((username + ":" + password).getBytes()));
         this.url = manageBaseUrl + "/manage/api/internal/search/saml20_sp";
 
-        this.httpHeaders = new HttpHeaders();
         this.httpHeaders.add(HttpHeaders.CONTENT_TYPE, "application/json");
         this.httpHeaders.add(HttpHeaders.AUTHORIZATION, basicAuth);
 
@@ -52,6 +48,7 @@ public class RemoteManage implements Manage {
         String entityId = translateClientId(clientId);
 
         LOG.debug("Quering SP metadata entries from {} with client {}", url, entityId);
+
         ResponseEntity<List> responseEntity = restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<Map>(body(entityId), this.httpHeaders), List.class);
         List res = responseEntity.getBody();
         if (CollectionUtils.isEmpty(res)) {

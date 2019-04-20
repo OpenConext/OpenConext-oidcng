@@ -27,7 +27,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest {
                 .when()
                 .header("Content-type", "application/json")
                 .queryParams(queryParams)
-                .get("authorize");
+                .get("oidc/authorize");
         String location = response.getHeader("Location");
         Matcher matcher = Pattern.compile(
                 "\\Qhttp://localhost:8091/redirect?code=\\E(.*)\\Q&state=http://localhost:8091/state\\E")
@@ -44,7 +44,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest {
                 .when()
                 .header("Content-type", "application/json")
                 .queryParams(queryParams)
-                .get("authorize")
+                .get("oidc/authorize")
                 .then()
                 .statusCode(400)
                 .body(containsString("Missing \\\"client_id\\\" parameter"));

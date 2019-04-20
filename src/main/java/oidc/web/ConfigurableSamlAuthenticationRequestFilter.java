@@ -8,6 +8,8 @@ import org.springframework.security.saml.provider.service.SamlAuthenticationRequ
 import org.springframework.security.saml.provider.service.ServiceProviderService;
 import org.springframework.security.saml.saml2.authentication.AuthenticationRequest;
 import org.springframework.security.saml.saml2.metadata.IdentityProviderMetadata;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -18,6 +20,7 @@ import java.io.IOException;
 public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticationRequestFilter {
 
     private SamlRequestMatcher samlRequestMatcher;
+    private RequestCache requestCache = new HttpSessionRequestCache();
 
     public ConfigurableSamlAuthenticationRequestFilter(SamlProviderProvisioning<ServiceProviderService> provisioning,
                                                        SamlRequestMatcher samlRequestMatcher) {
@@ -39,6 +42,7 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             ServiceProviderService provider = getProvisioning().getHostedProvider();
             IdentityProviderMetadata idp = provider.getRemoteProviders().get(0);
             AuthenticationRequest authenticationRequest = provider.authenticationRequest(idp);
+            requestCache.saveRequest(request, response);
             sendAuthenticationRequest(
                     provider,
                     request,

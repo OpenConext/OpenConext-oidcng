@@ -19,6 +19,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.view.RedirectView;
@@ -36,7 +37,7 @@ public class AuthorizationEndpoint {
         this.accessTokenRepository = accessTokenRepository;
     }
 
-    @GetMapping("authorize")
+    @GetMapping("/oidc/authorize")
     public View authorize(@RequestParam MultiValueMap<String, String> parameters,
                           Authentication authentication) throws ParseException {
         return doAuthorize(parameters, (DefaultSamlAuthentication) authentication);

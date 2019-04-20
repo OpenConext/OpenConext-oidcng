@@ -17,6 +17,7 @@
 
 package oidc.config;
 
+import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
 import oidc.web.FakeSamlAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -42,11 +43,15 @@ public class SecurityConfiguration {
     @Order(1)
     public static class SamlSecurity extends SamlServiceProviderSecurityConfiguration {
 
+        private Environment environment;
         private AppConfig appConfiguration;
 
-        public SamlSecurity(BeanConfig beanConfig, @Qualifier("appConfig") AppConfig appConfig) {
-            super("/saml/sp/", beanConfig);
+        public SamlSecurity(BeanConfig beanConfig,
+                            @Qualifier("appConfig") AppConfig appConfig,
+                            Environment environment) {
+            super("oidc", beanConfig);
             this.appConfiguration = appConfig;
+            this.environment = environment;
         }
 
         @Override
@@ -54,6 +59,10 @@ public class SecurityConfiguration {
             super.configure(http);
             http.apply(serviceProvider())
                     .configure(appConfiguration);
+
+            if (environment.acceptsProfiles(Profiles.of("dev"))) {
+                http.addFilterBefore(new FakeSamlAuthenticationFilter(), ConfigurableSamlAuthenticationRequestFilter.class);
+            }
         }
     }
 
@@ -66,15 +75,14 @@ public class SecurityConfiguration {
         @Override
         protected void configure(HttpSecurity http) throws Exception {
             http
+                    .authorizeRequests()
+                    .antMatchers("/actuator/health", "/actuator/info")
+                    .permitAll()
+                    .and()
                     .antMatcher("/**")
                     .authorizeRequests()
                     .antMatchers("/**")
-                    .authenticated()
-                    .and()
-                    .formLogin().loginPage("/saml/sp/authorize");
-            if (environment.acceptsProfiles(Profiles.of("dev"))) {
-                http.addFilterAfter(new FakeSamlAuthenticationFilter(), SecurityContextHolderAwareRequestFilter.class);
-            }
+                    .authenticated();
         }
     }
 

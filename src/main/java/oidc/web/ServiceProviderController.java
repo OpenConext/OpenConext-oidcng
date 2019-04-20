@@ -35,6 +35,7 @@ import org.springframework.web.servlet.view.RedirectView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
 import java.util.List;
 
 @Controller
@@ -49,10 +50,10 @@ public class ServiceProviderController {
     }
 
     @RequestMapping(value = {"/", "/index", "/logged-in"})
-    public ModelAndView home(Authentication authentication) {
-        List<Attribute> attributes = ((DefaultSamlAuthentication) authentication).getAssertion().getAttributes();
+    public ModelAndView home(HttpServletRequest request, Authentication authentication) {
+       // List<Attribute> attributes = ((DefaultSamlAuthentication) authentication).getAssertion().getAttributes();
         logger.info("Sample SP Application - You are logged in!");
-        return new ModelAndView("logged-in", "attributes", attributes);
+        return new ModelAndView("logged-in", "attributes", new ArrayList<>());
     }
 
     @PostMapping("/local/logout")
