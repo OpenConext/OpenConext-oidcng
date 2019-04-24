@@ -11,29 +11,14 @@ import java.util.regex.Pattern;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.core.StringContains.containsString;
+import static org.junit.Assert.*;
 
 public class AuthorizationEndpointTest extends AbstractIntegrationTest {
 
     @Test
     public void authorize() {
-        Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("scope", "openid profile");
-        queryParams.put("response_type", "code");
-        queryParams.put("client_id", "http@//mock-rp");
-        queryParams.put("redirect_uri", "http://localhost:8091/redirect");
-        queryParams.put("state", "http://localhost:8091/state");
-
-        Response response = given().redirects().follow(false)
-                .when()
-                .header("Content-type", "application/json")
-                .queryParams(queryParams)
-                .get("oidc/authorize");
-        String location = response.getHeader("Location");
-        Matcher matcher = Pattern.compile(
-                "\\Qhttp://localhost:8091/redirect?code=\\E(.*)\\Q&state=http://localhost:8091/state\\E")
-                .matcher(location);
-        matcher.find();
-        String code = matcher.group(1);
+        String code = doAuthorize();
+        assertEquals(8, code.length());
     }
 
     @Test
