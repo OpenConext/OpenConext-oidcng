@@ -8,11 +8,14 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.saml.saml2.attribute.Attribute;
 import org.springframework.security.saml.saml2.authentication.Assertion;
+import org.springframework.security.saml.saml2.authentication.AuthenticationStatement;
 import org.springframework.security.saml.spi.DefaultSamlAuthentication;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class SamlProvisioningAuthenticationManager implements AuthenticationManager {
@@ -25,20 +28,24 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        if (authentication.isAuthenticated()) {
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            DefaultSamlAuthentication samlAuthentication = (DefaultSamlAuthentication) authentication;
-            User user = buildUser(samlAuthentication);
-            User existingUser = userRepository.findUserByUnspecifiedNameId(user.getUnspecifiedNameId());
-            if (existingUser != null) {
-                //TODO compare hashes
-                user.setId(existingUser.getId());
+        DefaultSamlAuthentication samlAuthentication = (DefaultSamlAuthentication) authentication;
+        User user = buildUser(samlAuthentication);
+        User existingUser = userRepository.findUserByUnspecifiedNameIdAndClientId(user.getUnspecifiedNameId(),
+                samlAuthentication.getRelayState());
+        if (existingUser != null) {
+            user.setId(existingUser.getId());
+            user.setSub(existingUser.getSub());
+            if (!user.equals(existingUser)) {
                 userRepository.save(existingUser);
-            } else {
-                userRepository.insert(user);
             }
+        } else {
+            userRepository.insert(user);
         }
-        return authentication;
+        OidcSamlAuthentication oidcSamlAuthentication = new OidcSamlAuthentication(true, samlAuthentication.getAssertion(),
+                samlAuthentication.getAssertingEntityId(), samlAuthentication.getHoldingEntityId(),
+                samlAuthentication.getRelayState(), user);
+        SecurityContextHolder.getContext().setAuthentication(oidcSamlAuthentication);
+        return oidcSamlAuthentication;
     }
 
     private User buildUser(DefaultSamlAuthentication samlAuthentication) {
@@ -46,8 +53,14 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
         Assertion assertion = samlAuthentication.getAssertion();
         String unspecifiedNameId = assertion.getSubject().getPrincipal().getValue();
         user.setUnspecifiedNameId(unspecifiedNameId);
-        //TODO pick up the authenticating authority from the assertion
-        // user.setAuthenticatingAuthority(authenticatingAuthority);
+       List<AuthenticationStatement> authenticationStatements = assertion.getAuthenticationStatements();
+        if (!CollectionUtils.isEmpty(authenticationStatements)) {
+            authenticationStatements.stream()
+                    .map(as -> as.getAuthenticationContext().getAuthenticatingAuthorities())
+                    .flatMap(List::stream)
+                    .findAny()
+                    .ifPresent(aa -> user.setAuthenticatingAuthority(aa));
+        }
         user.setName(getAttributeValue("urn:mace:dir:attribute-def:cn", assertion));
         user.setPreferredUsername(getAttributeValue("urn:mace:dir:attribute-def:displayName", assertion));
         user.setNickname(getAttributeValue("urn:mace:dir:attribute-def:displayName", assertion));
@@ -68,6 +81,15 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
         user.setUids(getAttributeValues("urn:mace:dir:attribute-def:uid", assertion));
         user.setEduPersonTargetedId(getAttributeValue("urn:mace:dir:attribute-def:eduPersonTargetedID", assertion));
 
+        String clientId = samlAuthentication.getRelayState();
+        user.setClientId(clientId);
+        String sub;
+        if (StringUtils.hasText(user.getEduPersonTargetedId() )) {
+            sub = user.getEduPersonTargetedId();
+        } else {
+            sub = UUID.nameUUIDFromBytes((UUID.randomUUID().toString() + "_" + clientId).getBytes()).toString();
+        }
+        user.setSub(sub);
         return user;
     }
 

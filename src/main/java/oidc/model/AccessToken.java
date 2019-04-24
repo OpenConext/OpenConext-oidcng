@@ -8,6 +8,7 @@ import oidc.secure.TokenGenerator;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.List;
 import java.util.UUID;
 
 @NoArgsConstructor
@@ -23,5 +24,7 @@ public class AccessToken {
     private String value;
 
     private String userId;
+
+    private List<String> scopes;
 
 }

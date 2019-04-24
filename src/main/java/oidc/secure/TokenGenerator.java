@@ -1,5 +1,7 @@
 package oidc.secure;
 
+import oidc.model.OpenIDClient;
+
 import java.security.SecureRandom;
 import java.util.Random;
 import java.util.UUID;
@@ -12,11 +14,11 @@ public class TokenGenerator {
     private static Random random = new SecureRandom();
 
     public static String generateAccessToken() {
-        return UUID.randomUUID().toString();
+        return repositoryId();
     }
 
     public static String generateAuthorizationCode() {
-        byte[] verifierBytes = new byte[6];
+        byte[] verifierBytes = new byte[8];
         random.nextBytes(verifierBytes);
         char[] chars = new char[verifierBytes.length];
         for (int i = 0; i < verifierBytes.length; i++) {
@@ -28,4 +30,5 @@ public class TokenGenerator {
     public static String repositoryId() {
         return UUID.randomUUID().toString();
     }
+
 }

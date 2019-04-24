@@ -17,6 +17,8 @@
 
 package oidc.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import oidc.repository.UserRepository;
 import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
 import oidc.web.FakeSamlAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,13 +47,19 @@ public class SecurityConfiguration {
 
         private Environment environment;
         private AppConfig appConfiguration;
+        private ObjectMapper objectMapper;
+        private UserRepository userRepository;
 
         public SamlSecurity(BeanConfig beanConfig,
                             @Qualifier("appConfig") AppConfig appConfig,
-                            Environment environment) {
+                            Environment environment,
+                            ObjectMapper objectMapper,
+                            UserRepository userRepository) {
             super("oidc", beanConfig);
             this.appConfiguration = appConfig;
             this.environment = environment;
+            this.objectMapper = objectMapper;
+            this.userRepository = userRepository;
         }
 
         @Override
@@ -61,7 +69,8 @@ public class SecurityConfiguration {
                     .configure(appConfiguration);
 
             if (environment.acceptsProfiles(Profiles.of("dev"))) {
-                http.addFilterBefore(new FakeSamlAuthenticationFilter(), ConfigurableSamlAuthenticationRequestFilter.class);
+                http.addFilterBefore(new FakeSamlAuthenticationFilter(userRepository, objectMapper),
+                        ConfigurableSamlAuthenticationRequestFilter.class);
             }
         }
     }

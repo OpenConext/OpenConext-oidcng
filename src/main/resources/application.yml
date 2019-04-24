@@ -1,6 +1,7 @@
 logging:
   level:
     root: INFO
+    org.springframework.session: DEBUG
     org.springframework.web: DEBUG
     org.springframework.security: DEBUG
     org.springframework.security.saml: DEBUG

@@ -27,3 +27,8 @@ profile to dev.
 ### [Wiki](#wiki)
 
 See the oidc-ng [github wiki](https://github.com/oharsta/oidc-ng/wiki) for additional documentation.
+
+### [Testing](#testing)
+
+Go to the [authorization endpoint](http://localhost:8080/oidc/authorize?response_typee=code&client_id=http@//mock-sp)
+

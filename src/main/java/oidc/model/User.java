@@ -1,12 +1,14 @@
 package oidc.model;
 
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -15,7 +17,8 @@ import java.util.Set;
 @Getter
 @Setter
 @Document(collection = "users")
-public class User {
+@EqualsAndHashCode(exclude = {"id", "authenticatingAuthority"})
+public class User implements Serializable {
 
     @Id
     private String id;
@@ -35,6 +38,7 @@ public class User {
     private String schacHomeOrganizationType;
     private String eduPersonPrincipalName;
     private String eduPersonTargetedId;
+    private String clientId;
 
     private Set<String> eduPersonAffiliations;
     private Set<String> eduPersonScopedAffiliations;

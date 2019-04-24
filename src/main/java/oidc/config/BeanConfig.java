@@ -17,9 +17,11 @@
 
 package oidc.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import oidc.repository.UserRepository;
 import oidc.user.SamlProvisioningAuthenticationManager;
 import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.saml.SamlRequestMatcher;
@@ -29,10 +31,15 @@ import org.springframework.security.saml.provider.service.ServiceProviderService
 import org.springframework.security.saml.provider.service.authentication.SamlAuthenticationResponseFilter;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderServerBeanConfiguration;
 import org.springframework.security.saml.spi.SpringSecuritySaml;
+//import org.springframework.session.data.mongo.JacksonMongoSessionConverter;
+//import org.springframework.session.data.mongo.JdkMongoSessionConverter;
+import org.springframework.session.data.mongo.config.annotation.web.http.EnableMongoHttpSession;
 
 import javax.servlet.Filter;
+import java.time.Duration;
 
 @Configuration
+@EnableMongoHttpSession
 public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
 
     private UserRepository userRepository;
@@ -81,4 +88,10 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
         return filter;
 
     }
+
+//    @Bean
+//    @Autowired
+//    JacksonMongoSessionConverter mongoSessionConverter(ObjectMapper objectMapper) {
+//        return new JacksonMongoSessionConverter(objectMapper);
+//    }
 }

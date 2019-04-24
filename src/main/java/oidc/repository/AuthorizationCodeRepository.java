@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AuthorizationCodeRepository extends MongoRepository<AuthorizationCode, String> {
+
+    AuthorizationCode findByCode(String code);
 }
