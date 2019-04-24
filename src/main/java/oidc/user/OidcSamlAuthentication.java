@@ -6,8 +6,10 @@ import oidc.model.User;
 import org.springframework.security.saml.saml2.authentication.Assertion;
 import org.springframework.security.saml.spi.DefaultSamlAuthentication;
 
+import java.io.Serializable;
+
 @Getter
-public class OidcSamlAuthentication extends DefaultSamlAuthentication {
+public class OidcSamlAuthentication extends DefaultSamlAuthentication implements Serializable {
 
     private String principalName;
     private User user;
