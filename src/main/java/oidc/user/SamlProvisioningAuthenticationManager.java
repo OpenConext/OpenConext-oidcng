@@ -41,9 +41,8 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
         } else {
             userRepository.insert(user);
         }
-        OidcSamlAuthentication oidcSamlAuthentication = new OidcSamlAuthentication(true, samlAuthentication.getAssertion(),
-                samlAuthentication.getAssertingEntityId(), samlAuthentication.getHoldingEntityId(),
-                samlAuthentication.getRelayState(), user);
+        OidcSamlAuthentication oidcSamlAuthentication =
+                new OidcSamlAuthentication(samlAuthentication.getAssertion(), user);
         SecurityContextHolder.getContext().setAuthentication(oidcSamlAuthentication);
         return oidcSamlAuthentication;
     }
@@ -53,7 +52,7 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
         Assertion assertion = samlAuthentication.getAssertion();
         String unspecifiedNameId = assertion.getSubject().getPrincipal().getValue();
         user.setUnspecifiedNameId(unspecifiedNameId);
-       List<AuthenticationStatement> authenticationStatements = assertion.getAuthenticationStatements();
+        List<AuthenticationStatement> authenticationStatements = assertion.getAuthenticationStatements();
         if (!CollectionUtils.isEmpty(authenticationStatements)) {
             authenticationStatements.stream()
                     .map(as -> as.getAuthenticationContext().getAuthenticatingAuthorities())
@@ -84,7 +83,7 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
         String clientId = samlAuthentication.getRelayState();
         user.setClientId(clientId);
         String sub;
-        if (StringUtils.hasText(user.getEduPersonTargetedId() )) {
+        if (StringUtils.hasText(user.getEduPersonTargetedId())) {
             sub = user.getEduPersonTargetedId();
         } else {
             sub = UUID.nameUUIDFromBytes((UUID.randomUUID().toString() + "_" + clientId).getBytes()).toString();

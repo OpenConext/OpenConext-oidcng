@@ -16,7 +16,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
                 .header("Content-type", "application/x-www-form-urlencoded")
                 .auth()
                 .preemptive()
-                .basic("http@//mock-rp", "secret")
+                .basic("http@//mock-sp", "secret")
                 .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
                 .formParam("code", code)
                 .post("oidc/token")

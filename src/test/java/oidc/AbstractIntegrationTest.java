@@ -45,8 +45,8 @@ public abstract class AbstractIntegrationTest implements TestUtils {
         queryParams.put("scope", "openid profile");
         queryParams.put("response_type", "code");
         queryParams.put("client_id", clientId);
-        queryParams.put("redirect_uri", "http://localhost:8091/redirect");
-        queryParams.put("state", "http://localhost:8091/state");
+        queryParams.put("redirect_uri", "http://localhost:8080");
+        queryParams.put("state", "example");
 
         Response response = given().redirects().follow(false)
                 .when()
@@ -56,14 +56,14 @@ public abstract class AbstractIntegrationTest implements TestUtils {
 
         String location = response.getHeader("Location");
         Matcher matcher = Pattern.compile(
-                "\\Qhttp://localhost:8091/redirect?code=\\E(.*)\\Q&state=http://localhost:8091/state\\E")
+                "\\Qhttp://localhost:8080?code=\\E(.*)\\Q&state=example\\E")
                 .matcher(location);
         matcher.find();
         return matcher.group(1);
     }
 
     protected String doAuthorize() {
-        return doAuthorize("http@//mock-rp");
+        return doAuthorize("http@//mock-sp");
     }
 
 

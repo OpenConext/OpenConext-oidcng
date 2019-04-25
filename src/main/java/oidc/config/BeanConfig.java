@@ -69,12 +69,17 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
         return new ConfigurableSamlAuthenticationRequestFilter(provisioning, requestMatcher);
     }
 
+    @Bean
+    public SamlProvisioningAuthenticationManager samlProvisioningAuthenticationManager() {
+        return new SamlProvisioningAuthenticationManager(this.userRepository);
+    }
+
     @Override
     @Bean
     public Filter spAuthenticationResponseFilter() {
         SamlAuthenticationResponseFilter filter =
                 SamlAuthenticationResponseFilter.class.cast(super.spAuthenticationResponseFilter());
-        filter.setAuthenticationManager(new SamlProvisioningAuthenticationManager(this.userRepository));
+        filter.setAuthenticationManager(this.samlProvisioningAuthenticationManager());
         return filter;
 
     }

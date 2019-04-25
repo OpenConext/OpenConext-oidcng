@@ -29,15 +29,9 @@
     <h1>Success</h1>
     <div>
         <span>You are authenticated!</span>
-        <table>
-            <tr th:each="element : ${attributes}">
-                <td th:text="${element.name}">keyvalue</td>
-
-                <td th:each="val : ${element.values}">
-                    <div th:text="${val}">Some name</div>
-                </td>
-            </tr>
-        </table>
+        <div>
+            <em th:text="${user.details}">details</em>
+        </div>
     </div>
 </div>
 </body>

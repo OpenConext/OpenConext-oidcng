@@ -48,9 +48,11 @@ public class AuthorizationEndpoint {
     private View doAuthorize(@RequestParam MultiValueMap<String, String> parameters, Authentication authentication) throws ParseException {
         OidcSamlAuthentication samlAuthentication = (OidcSamlAuthentication) authentication;
         AuthenticationRequest authenticationRequest = AuthenticationRequest.parse(parameters);
+
         Scope scope = authenticationRequest.getScope();
         State state = authenticationRequest.getState();
         ResponseType responseType = authenticationRequest.getResponseType();
+
         ClientID clientID = authenticationRequest.getClientID();
         OpenIDClient client = manage.client(clientID.getValue());
 
@@ -72,7 +74,10 @@ public class AuthorizationEndpoint {
 
             return new RedirectView(authorizationRedirect(redirectionURI, state, code));
         } else if (responseType.impliesImplicitFlow()) {
+            String responseMode = authenticationRequest.getResponseMode() != null ? authenticationRequest.getResponseMode().getValue() : "fragment";
+            if (authenticationRequest.getResponseMode() != null) {
 
+            }
 //            AccessToken accessToken = new AccessToken()
         }
         throw new IllegalArgumentException("Not yet implemented response_type: " + responseType.toString());

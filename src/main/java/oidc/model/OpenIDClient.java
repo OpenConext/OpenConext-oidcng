@@ -19,6 +19,7 @@ public class OpenIDClient {
     private List<String> grants;
     private boolean resourceServer;
 
+    @SuppressWarnings("unchecked")
     public OpenIDClient(Map<String, Object> root) {
         Map<String, Object> data = (Map<String, Object>) root.get("data");
 

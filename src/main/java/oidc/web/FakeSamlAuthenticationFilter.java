@@ -43,14 +43,7 @@ public class FakeSamlAuthenticationFilter extends GenericFilterBean {
             userRepository.deleteAll();
             userRepository.insert(user);
 
-            OidcSamlAuthentication samlAuthentication = new OidcSamlAuthentication(
-                    true,
-                    getAssertion(),
-                    "http://mock-idp",
-                    "http://mock-idp",
-                    "http://mock-rp",
-                    user
-            );
+            OidcSamlAuthentication samlAuthentication = new OidcSamlAuthentication(getAssertion(), user);
             SecurityContextHolder.getContext().setAuthentication(samlAuthentication);
         }
         chain.doFilter(request, response);
@@ -82,8 +75,7 @@ public class FakeSamlAuthenticationFilter extends GenericFilterBean {
         return assertion;
     }
 
-    @SuppressWarnings("unchecked")
-    private Attribute attribute(String name, String... values) {
+    private Attribute attribute(String name, Object... values) {
         Attribute attribute = new Attribute();
         attribute.setName(name);
         attribute.setValues(Arrays.asList(values));

@@ -12,6 +12,7 @@ import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import oidc.exceptions.ClientAuthenticationNotSupported;
+import oidc.exceptions.RedirectMismatchException;
 import oidc.manage.Manage;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
@@ -61,11 +62,13 @@ public class TokenEndpoint {
         if (!ClientSecretBasic.class.cast(clientAuthentication).getClientSecret().getValue().equals(client.getSecret())) {
             throw new BadCredentialsException("Secrets do not match");
         }
+
         AuthorizationGrant authorizationGrant = tokenRequest.getAuthorizationGrant();
         if (authorizationGrant instanceof AuthorizationCodeGrant) {
-            return handleAuthorizationCodeGrant(AuthorizationCodeGrant.class.cast(authorizationGrant), tokenRequest.getScope() );
+            return handleAuthorizationCodeGrant(AuthorizationCodeGrant.class.cast(authorizationGrant),
+                    client,tokenRequest.getScope() );
         }
-        throw new IllegalArgumentException("Not supported authorizationGrant "+ authorizationGrant);
+        throw new IllegalArgumentException("Not supported - yet - authorizationGrant "+ authorizationGrant);
         //return a 'OIDCTokens'
     }
 
@@ -77,15 +80,29 @@ DefaultOIDCTokenService
 OAuth2AccessTokenEntity
 TokenEndpoint#195
      */
-    private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, Scope scope) {
+    private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, OpenIDClient client, Scope scope) {
         String code = authorizationCodeGrant.getAuthorizationCode().getValue();
         AuthorizationCode authorizationCode = authorizationCodeRepository.findByCode(code);
+        if (authorizationCode == null) {
+            throw new BadCredentialsException("Authorization code not found");
+        }
+        if (!authorizationCode.getClientId().equals(client.getClientId())) {
+            throw new BadCredentialsException("Client is not authorized for the authorization code");
+        }
+        if (authorizationCodeGrant.getRedirectionURI() != null &&
+                !authorizationCodeGrant.getRedirectionURI().toString().equals(authorizationCode.getRedirectUri())) {
+            throw new RedirectMismatchException("Redirects do not match");
+        }
 
+        return new ResponseEntity<Map<String, String>>(null, getResponseHeaders(), HttpStatus.OK);
+
+    }
+
+    private HttpHeaders getResponseHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Cache-Control", "no-store");
         headers.set("Pragma", "no-cache");
-        return new ResponseEntity<Map<String, String>>(null, headers, HttpStatus.OK);
-
+        return headers;
     }
 
 }

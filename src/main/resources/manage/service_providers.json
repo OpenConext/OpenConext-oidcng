@@ -9,7 +9,7 @@
         "secret": "secret",
         "redirectUrls": [
           "http://localhost:8091/redirect",
-          "http://localhost:8091/redirect-allow"
+          "http://localhost:8080"
         ],
         "scopes": [
           "openid",
@@ -40,7 +40,8 @@
         "secret": "secret",
         "redirectUrls": [
           "http://localhost:8091/redirect",
-          "http://localhost:8091/redirect-allow"
+          "http://localhost:8091/redirect-allow",
+          "http://localhost:8080"
         ],
         "scopes": [
           "openid",

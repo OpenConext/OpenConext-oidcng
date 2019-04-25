@@ -30,5 +30,5 @@ See the oidc-ng [github wiki](https://github.com/oharsta/oidc-ng/wiki) for addit
 
 ### [Testing](#testing)
 
-Go to the [authorization endpoint](http://localhost:8080/oidc/authorize?response_typee=code&client_id=http@//mock-sp)
+Go to the [authorization endpoint](http://localhost:8080/oidc/authorize?response_type=code&client_id=http@//mock-sp&scope=openid&redirect_uri=http://localhost:8080)
 

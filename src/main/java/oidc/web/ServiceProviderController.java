@@ -51,9 +51,8 @@ public class ServiceProviderController {
 
     @RequestMapping(value = {"/", "/index", "/logged-in"})
     public ModelAndView home(HttpServletRequest request, Authentication authentication) {
-       // List<Attribute> attributes = ((DefaultSamlAuthentication) authentication).getAssertion().getAttributes();
-        logger.info("Sample SP Application - You are logged in!");
-        return new ModelAndView("logged-in", "attributes", new ArrayList<>());
+        logger.info("You are logged in!");
+        return new ModelAndView("logged-in", "user", authentication);
     }
 
     @PostMapping("/local/logout")

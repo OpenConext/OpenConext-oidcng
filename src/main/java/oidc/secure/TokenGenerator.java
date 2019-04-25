@@ -14,7 +14,7 @@ public class TokenGenerator {
     private static Random random = new SecureRandom();
 
     public static String generateAccessToken() {
-        return repositoryId();
+        return UUID.randomUUID().toString();
     }
 
     public static String generateAuthorizationCode() {
@@ -27,8 +27,5 @@ public class TokenGenerator {
         return new String(chars);
     }
 
-    public static String repositoryId() {
-        return UUID.randomUUID().toString();
-    }
-
+//    public static
 }

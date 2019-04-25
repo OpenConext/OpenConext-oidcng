@@ -30,10 +30,10 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
     public ResponseEntity error(HttpServletRequest request) {
         ServletWebRequest webRequest = new ServletWebRequest(request);
         Map<String, Object> result = this.errorAttributes.getErrorAttributes(webRequest, false);
-
-        result.remove("status");
-        result.remove("error");
-
+        Throwable error = this.errorAttributes.getError(webRequest);
+        if (error != null) {
+            result.put("details", error.getMessage());
+        }
         return new ResponseEntity<>(result, HttpStatus.BAD_REQUEST);
     }
 
