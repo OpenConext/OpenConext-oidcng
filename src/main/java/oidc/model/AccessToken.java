@@ -23,7 +23,9 @@ public class AccessToken {
 
     private String value;
 
-    private String userId;
+    private String sub;
+
+    private String clientId;
 
     private List<String> scopes;
 

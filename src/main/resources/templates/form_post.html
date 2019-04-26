@@ -1,0 +1,10 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head><title>Submit This Form</title></head>
+<body onload="javascript:document.forms[0].submit()">
+<form method="post" action="${redirect_uri}">
+    <input th:if="${state != null}" type="hidden" name="state" value="${state}"/>
+    <input th:if="${access_token != null}" type="hidden" name="access_token" value="${access_token}"/>
+    <input type="hidden" name="id_token" value="${id_token}"/>
+</form>
+</body>
+</html>

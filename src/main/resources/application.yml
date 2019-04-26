@@ -12,10 +12,12 @@ info:
     artifact: "@project.artifactId@"
     version: "@project.version@"
 
+mongodb_db: oidc
+
 spring:
   data:
     mongodb:
-      uri: mongodb://localhost:27017/oidc
+      uri: mongodb://localhost:27017/${mongodb_db}
   thymeleaf:
     cache: false
   security:

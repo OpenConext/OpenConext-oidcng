@@ -26,7 +26,7 @@ import static io.restassured.RestAssured.given;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"spring.data.mongodb.uri=mongodb://localhost:27017/oidc_test"})
+        properties = {"spring.data.mongodb.uri=mongodb://localhost:27017/oidc_test","mongodb_db=oidc_test"})
 @ActiveProfiles("dev")
 public abstract class AbstractIntegrationTest implements TestUtils {
 

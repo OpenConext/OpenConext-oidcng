@@ -30,8 +30,7 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         DefaultSamlAuthentication samlAuthentication = (DefaultSamlAuthentication) authentication;
         User user = buildUser(samlAuthentication);
-        User existingUser = userRepository.findUserByUnspecifiedNameIdAndClientId(user.getUnspecifiedNameId(),
-                samlAuthentication.getRelayState());
+        User existingUser = userRepository.findUserBySub(user.getSub());
         if (existingUser != null) {
             user.setId(existingUser.getId());
             user.setSub(existingUser.getSub());
@@ -82,12 +81,8 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
 
         String clientId = samlAuthentication.getRelayState();
         user.setClientId(clientId);
-        String sub;
-        if (StringUtils.hasText(user.getEduPersonTargetedId())) {
-            sub = user.getEduPersonTargetedId();
-        } else {
-            sub = UUID.nameUUIDFromBytes((UUID.randomUUID().toString() + "_" + clientId).getBytes()).toString();
-        }
+        String sub = StringUtils.hasText(user.getEduPersonTargetedId()) ? user.getEduPersonTargetedId() :
+                UUID.nameUUIDFromBytes((UUID.randomUUID().toString() + "_" + clientId).getBytes()).toString();
         user.setSub(sub);
         return user;
     }
