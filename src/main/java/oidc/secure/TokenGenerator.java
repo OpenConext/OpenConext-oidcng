@@ -1,39 +1,35 @@
 package oidc.secure;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWEHeader;
+import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
-import com.nimbusds.jose.util.Base64URL;
-import com.nimbusds.jwt.EncryptedJWT;
-import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ResponseType;
-import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
+import com.nimbusds.openid.connect.sdk.Nonce;
 import com.nimbusds.openid.connect.sdk.claims.AccessTokenHash;
-import oidc.model.OpenIDClient;
+import oidc.model.User;
+import org.apache.commons.io.IOUtils;
+import org.springframework.core.io.ClassPathResource;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.security.SecureRandom;
-
 import java.text.ParseException;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 
 public class TokenGenerator {
@@ -41,14 +37,44 @@ public class TokenGenerator {
     private static char[] DEFAULT_CODEC = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
             .toCharArray();
 
-    private static Random random = new SecureRandom();
+    private Random random = new SecureRandom();
 
-    public static String generateAccessToken() {
+    private String issuer;
+
+    private JWKSet jwkSet;
+
+    private RSASSASigner signer;
+
+    private RSASSAVerifier verifier;
+
+    private String kid;
+
+    private Map<String, RSAKey> publicKeys;
+
+    private String jwksKeyStorePath = "oidc.keystore.jwks.json";
+
+    private JWSAlgorithm signingAlg = JWSAlgorithm.RS256;
+
+    public TokenGenerator(String issuer) throws IOException, ParseException, JOSEException {
+        this.issuer = issuer;
+        String s = IOUtils.toString(new ClassPathResource(jwksKeyStorePath).getInputStream(), Charset.defaultCharset());
+        jwkSet = JWKSet.parse(s);
+        RSAKey rsaJWK = (RSAKey) jwkSet.getKeys().get(0);
+        if (!rsaJWK.isPrivate()) {
+            throw new IllegalArgumentException(String.format("%s needs to contain private RSA key", jwksKeyStorePath));
+        }
+        this.publicKeys = Collections.singletonMap(kid, rsaJWK.toPublicJWK());
+        this.kid = rsaJWK.getKeyID();
+        this.signer = new RSASSASigner(rsaJWK);
+        this.verifier = new RSASSAVerifier(rsaJWK);
+    }
+
+    public String generateAccessToken() {
         return UUID.randomUUID().toString();
     }
 
-    public static String generateAuthorizationCode() {
-        byte[] verifierBytes = new byte[8];
+    public String generateAuthorizationCode() {
+        byte[] verifierBytes = new byte[12];
         random.nextBytes(verifierBytes);
         char[] chars = new char[verifierBytes.length];
         for (int i = 0; i < verifierBytes.length; i++) {
@@ -57,60 +83,45 @@ public class TokenGenerator {
         return new String(chars);
     }
 
-    public static String idToken(String issuer, String sub, String clientId, Optional<String> nonce,
-                                 ResponseType responseType, Optional<String> accessToken) throws JOSEException, ParseException {
-        JWSAlgorithm signingAlg = JWSAlgorithm.RS256;
+    public String generateIDTokenForTokenEndpoint(Optional<User> user, String clientId) throws JOSEException {
+        return idToken(clientId, user, Collections.emptyMap());
 
-        JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
-                .issueTime(new Date())
-                .expirationTime(new Date(System.currentTimeMillis() + (60 * 5 * 1000L)))
-                .issuer(issuer)
-                .subject(sub)
-                .audience(Lists.newArrayList(clientId))
-                .jwtID(UUID.randomUUID().toString())
-                .claim("kid", "oidc");
-        nonce.ifPresent(s -> builder.claim("nonce", s));
+    }
 
+    public String generateIDTokenForAuthorizationEndpoint(User user, String clientId, Nonce nonce,
+                                                          ResponseType responseType, String accessToken) throws JOSEException {
+        Map<String, String> additionalClaims = new HashMap<>();
+        if (nonce != null) {
+            additionalClaims.put("nonce", nonce.getValue());
+        }
         if (AccessTokenHash.isRequiredInIDTokenClaims(responseType)) {
-            BearerAccessToken token = accessToken.map(s -> new BearerAccessToken(s))
-                    .orElseThrow(() -> new IllegalArgumentException("Access token missing"));
-            builder.claim("at_hash", AccessTokenHash.compute(token, signingAlg).getValue());
+            additionalClaims.put("at_hash",
+                    AccessTokenHash.compute(new BearerAccessToken(accessToken), signingAlg).getValue());
         }
+        return idToken(clientId, Optional.of(user), additionalClaims);
+    }
+
+    private String idToken(String clientId, Optional<User> user, Map<String, String> additionalClaims) throws JOSEException {
+        JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
+                .audience(Lists.newArrayList(clientId))
+                .expirationTime(new Date(System.currentTimeMillis() + (60 * 5 * 1000L)))
+                .jwtID(UUID.randomUUID().toString())
+                .issuer(issuer)
+                .issueTime(new Date())
+                .subject(user.map(u -> u.getSub()).orElse(clientId))
+                .notBeforeTime(new Date(System.currentTimeMillis()));
+
+        additionalClaims.forEach((name, value) -> builder.claim(name, value));
+
         JWTClaimsSet claimsSet = builder.build();
-//        RSAKey rsaKey = new RSAKeyGenerator(2048).generate();
-//        JWKSet jwkSet = JWKSet.parse("");
-//        JWK keyByKeyId = jwkSet.getKeyByKeyId("");
-//        JWSHeader header = new JWSHeader(signingAlg);
-//        SignedJWT signedJWT = new SignedJWT(
-//                new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaJWK.getKeyID()).build(),
-//                claimsSet);
-//        signedJWT.sign();
-//
-//        JWT idToken = new SignedJWT(header, idClaims.build());
-//
-//        // sign it with the server's key
-//        jwtService.signJwt((SignedJWT) idToken);
+        JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).type(JOSEObjectType.JWT).keyID(kid).build();
+        SignedJWT signedJWT = new SignedJWT(header, claimsSet);
+        signedJWT.sign(this.signer);
+        return signedJWT.serialize();
 
-        return null;//jwtValue.serialize();
     }
 
-    public static Base64URL getAccessTokenHash(JWT jwt) {
-
-        byte[] tokenBytes = jwt.serialize().getBytes();
-        MessageDigest hasher = null;
-        try {
-            hasher = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalArgumentException(e);
-        }
-        hasher.reset();
-        hasher.update(tokenBytes);
-
-        byte[] hashBytes = hasher.digest();
-        byte[] hashBytesLeftHalf = Arrays.copyOf(hashBytes, hashBytes.length / 2);
-        Base64URL encodedHash = Base64URL.encode(hashBytesLeftHalf);
-
-        return encodedHash;
+    public Map<String, ? extends JWK> getAllPublicKeys() {
+        return this.publicKeys;
     }
-
 }

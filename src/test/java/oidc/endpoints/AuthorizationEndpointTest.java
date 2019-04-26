@@ -18,7 +18,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest {
     @Test
     public void authorize() {
         String code = doAuthorize();
-        assertEquals(8, code.length());
+        assertEquals(12, code.length());
     }
 
     @Test

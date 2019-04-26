@@ -17,9 +17,12 @@
 
 package oidc.config;
 
+import com.nimbusds.jose.JOSEException;
 import oidc.repository.UserRepository;
+import oidc.secure.TokenGenerator;
 import oidc.user.SamlProvisioningAuthenticationManager;
 import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.saml.SamlRequestMatcher;
@@ -31,16 +34,25 @@ import org.springframework.security.saml.provider.service.config.SamlServiceProv
 import org.springframework.security.saml.spi.SpringSecuritySaml;
 
 import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import java.io.IOException;
+import java.text.ParseException;
 
 @Configuration
 public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
 
-    private UserRepository userRepository;
     private AppConfig appConfiguration;
+    private UserRepository userRepository;
+    private String issuer;
 
-    public BeanConfig(AppConfig config, UserRepository userRepository) {
+    public BeanConfig(AppConfig config, UserRepository userRepository,
+                      @Value("${spring.security.saml2.service-provider.entity-id}") String issuer) {
         this.appConfiguration = config;
         this.userRepository = userRepository;
+        this.issuer = issuer;
     }
 
     @Override
@@ -57,8 +69,7 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     @Override
     @Bean
     public Filter spSelectIdentityProviderFilter() {
-        //TODO Replace with noopFilter
-        return super.spSelectIdentityProviderFilter();
+        return (request, response, chain) -> chain.doFilter(request, response);
     }
 
     @Override
@@ -72,6 +83,11 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     @Bean
     public SamlProvisioningAuthenticationManager samlProvisioningAuthenticationManager() {
         return new SamlProvisioningAuthenticationManager(this.userRepository);
+    }
+
+    @Bean
+    public TokenGenerator tokenGenerator() throws ParseException, JOSEException, IOException {
+        return new TokenGenerator(issuer);
     }
 
     @Override

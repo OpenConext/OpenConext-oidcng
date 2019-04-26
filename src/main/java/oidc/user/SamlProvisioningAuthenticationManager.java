@@ -81,8 +81,9 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
 
         String clientId = samlAuthentication.getRelayState();
         user.setClientId(clientId);
+        //See https://www.pivotaltracker.com/story/show/165527166
         String sub = StringUtils.hasText(user.getEduPersonTargetedId()) ? user.getEduPersonTargetedId() :
-                UUID.nameUUIDFromBytes((UUID.randomUUID().toString() + "_" + clientId).getBytes()).toString();
+                UUID.nameUUIDFromBytes((user.getUnspecifiedNameId() + "_" + clientId).getBytes()).toString();
         user.setSub(sub);
         return user;
     }

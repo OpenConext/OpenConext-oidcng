@@ -4,7 +4,6 @@ package oidc;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.junit.Before;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.restassured.RestAssured.given;
+import static org.junit.Assert.assertEquals;
 
 
 /**
@@ -26,17 +26,15 @@ import static io.restassured.RestAssured.given;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"spring.data.mongodb.uri=mongodb://localhost:27017/oidc_test","mongodb_db=oidc_test"})
+        properties = {"spring.data.mongodb.uri=mongodb://localhost:27017/oidc_test", "mongodb_db=oidc_test"})
 @ActiveProfiles("dev")
 public abstract class AbstractIntegrationTest implements TestUtils {
-
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractIntegrationTest.class);
 
     @LocalServerPort
     protected int port;
 
     @Before
-    public void before() throws Exception {
+    public void before() {
         RestAssured.port = port;
     }
 
@@ -45,7 +43,7 @@ public abstract class AbstractIntegrationTest implements TestUtils {
         queryParams.put("scope", "openid profile");
         queryParams.put("response_type", "code");
         queryParams.put("client_id", clientId);
-        queryParams.put("redirect_uri", "http://localhost:8080");
+        queryParams.put("redirect_uri", "http%3A%2F%2Flocalhost%3A8080");
         queryParams.put("state", "example");
 
         Response response = given().redirects().follow(false)
@@ -53,6 +51,7 @@ public abstract class AbstractIntegrationTest implements TestUtils {
                 .header("Content-type", "application/json")
                 .queryParams(queryParams)
                 .get("oidc/authorize");
+        assertEquals(302, response.getStatusCode());
 
         String location = response.getHeader("Location");
         Matcher matcher = Pattern.compile(

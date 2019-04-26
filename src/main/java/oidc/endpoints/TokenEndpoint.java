@@ -1,86 +1,124 @@
 package oidc.endpoints;
 
+import com.nimbusds.jose.JOSEException;
 import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant;
 import com.nimbusds.oauth2.sdk.AuthorizationGrant;
-import com.nimbusds.oauth2.sdk.GrantType;
+import com.nimbusds.oauth2.sdk.ClientCredentialsGrant;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
-import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
+import com.nimbusds.oauth2.sdk.auth.ClientSecretPost;
+import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
+import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import oidc.exceptions.ClientAuthenticationNotSupported;
+import oidc.exceptions.CodeVerifierMissingException;
+import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.RedirectMismatchException;
 import oidc.manage.Manage;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
+import oidc.model.User;
+import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
+import oidc.repository.UserRepository;
+import oidc.secure.TokenGenerator;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.stereotype.Controller;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
-import static com.nimbusds.oauth2.sdk.GrantType.AUTHORIZATION_CODE;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 @RestController
-public class TokenEndpoint {
+public class TokenEndpoint implements OidcEndpoint{
 
     private Manage manage;
     private AuthorizationCodeRepository authorizationCodeRepository;
+    private AccessTokenRepository accessTokenRepository;
+    private UserRepository userRepository;
+    private TokenGenerator tokenGenerator;
+    private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public TokenEndpoint(Manage manage, AuthorizationCodeRepository authorizationCodeRepository) {
+    public TokenEndpoint(Manage manage,
+                         AuthorizationCodeRepository authorizationCodeRepository,
+                         AccessTokenRepository accessTokenRepository,
+                         UserRepository userRepository,
+                         TokenGenerator tokenGenerator) {
         this.manage = manage;
         this.authorizationCodeRepository = authorizationCodeRepository;
+        this.accessTokenRepository = accessTokenRepository;
+        this.userRepository = userRepository;
+        this.tokenGenerator = tokenGenerator;
     }
 
     @PostMapping(value = "oidc/token", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
-    public ResponseEntity token(HttpServletRequest request) throws IOException, ParseException {
+    public ResponseEntity token(HttpServletRequest request) throws IOException, ParseException, JOSEException {
         HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
         TokenRequest tokenRequest = TokenRequest.parse(httpRequest);
 
         ClientAuthentication clientAuthentication = tokenRequest.getClientAuthentication();
-
-        if (!(clientAuthentication instanceof ClientSecretBasic)) {
+        if (clientAuthentication != null &&
+                !(clientAuthentication instanceof ClientSecretBasic || clientAuthentication instanceof ClientSecretPost)) {
             throw new ClientAuthenticationNotSupported(
-                    String.format("Unsupported client authentication in token  endpoint", clientAuthentication.getClass()));
+                    String.format("Unsupported '%s' client authentication in token endpoint", clientAuthentication.getClass()));
+        }
+        AuthorizationGrant authorizationGrant = tokenRequest.getAuthorizationGrant();
+        if (clientAuthentication == null && authorizationGrant instanceof AuthorizationCodeGrant
+                && ((AuthorizationCodeGrant) authorizationGrant).getCodeVerifier() == null) {
+            throw new CodeVerifierMissingException("code_verifier required without client authentication");
         }
 
         OpenIDClient client = manage.client(clientAuthentication.getClientID().getValue());
 
-        //Pending on resolution of https://www.pivotaltracker.com/story/show/165565558
-        if (!ClientSecretBasic.class.cast(clientAuthentication).getClientSecret().getValue().equals(client.getSecret())) {
+        if (clientAuthentication != null &&
+                !secretsMatch(PlainClientSecret.class.cast(clientAuthentication), client)) {
             throw new BadCredentialsException("Secrets do not match");
         }
-
-        AuthorizationGrant authorizationGrant = tokenRequest.getAuthorizationGrant();
-        if (authorizationGrant instanceof AuthorizationCodeGrant) {
-            return handleAuthorizationCodeGrant(AuthorizationCodeGrant.class.cast(authorizationGrant),
-                    client,tokenRequest.getScope() );
+        if (!client.getGrants().contains(authorizationGrant.getType().getValue())) {
+            throw new InvalidGrantException("Invalid grant");
         }
-        throw new IllegalArgumentException("Not supported - yet - authorizationGrant "+ authorizationGrant);
-        //return a 'OIDCTokens'
+
+        if (authorizationGrant instanceof AuthorizationCodeGrant) {
+            return handleAuthorizationCodeGrant((AuthorizationCodeGrant) authorizationGrant, client);
+        } else if (authorizationGrant instanceof ClientCredentialsGrant) {
+            return handleClientCredentialsGrant(client);
+        }
+        throw new IllegalArgumentException("Not supported - yet - authorizationGrant " + authorizationGrant);
+
     }
 
-    /*
-    DefaultOAuth2ProviderTokenService
-ConnectTokenEnhancer
-DefaultJWTSigningAndValidationService
-DefaultOIDCTokenService
-OAuth2AccessTokenEntity
-TokenEndpoint#195
-     */
-    private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, OpenIDClient client, Scope scope) {
+    @Override
+    public TokenGenerator getTokenGenerator() {
+        return tokenGenerator;
+    }
+
+    @Override
+    public AccessTokenRepository getAccessTokenRepository() {
+        return accessTokenRepository;
+    }
+
+    //See https://www.pivotaltracker.com/story/show/165565558
+    private boolean secretsMatch(PlainClientSecret clientSecret, OpenIDClient openIDClient) {
+        return passwordEncoder.matches(clientSecret.getClientSecret().getValue(), openIDClient.getSecret());
+    }
+
+    private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, OpenIDClient client) throws JOSEException {
         String code = authorizationCodeGrant.getAuthorizationCode().getValue();
         AuthorizationCode authorizationCode = authorizationCodeRepository.findByCode(code);
         if (authorizationCode == null) {
@@ -93,15 +131,33 @@ TokenEndpoint#195
                 !authorizationCodeGrant.getRedirectionURI().toString().equals(authorizationCode.getRedirectUri())) {
             throw new RedirectMismatchException("Redirects do not match");
         }
+        CodeVerifier codeVerifier = authorizationCodeGrant.getCodeVerifier();
+        if (codeVerifier != null)  {
+            if (authorizationCode.getCodeChallenge() == null) {
+                throw new CodeVerifierMissingException("code_verifier present but not in the authorization_code");
+            }
+            CodeChallenge computed = CodeChallenge.compute(CodeChallengeMethod.parse(authorizationCode.getCodeChallengeMethod()), codeVerifier);
 
-        return new ResponseEntity<Map<String, String>>(null, getResponseHeaders(), HttpStatus.OK);
+            if (!codeVerifier.getValue().equals(computed.getValue())) {
+                throw new CodeVerifierMissingException("code_verifier does not match code_challenge");
+            }
+        }
+        authorizationCodeRepository.delete(authorizationCode);
+        User user = userRepository.findUserBySub(authorizationCode.getSub());
+        Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes(), Optional.empty());
+        return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
+    }
 
+    private ResponseEntity handleClientCredentialsGrant(OpenIDClient client) throws JOSEException {
+        Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes(), Optional.empty());
+        return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 
     private HttpHeaders getResponseHeaders() {
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Cache-Control", "no-store");
-        headers.set("Pragma", "no-cache");
+        headers.set(HttpHeaders.CACHE_CONTROL, "no-store");
+        headers.set(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON.getMimeType());
+        headers.set(HttpHeaders.PRAGMA, "no-cache");
         return headers;
     }
 

@@ -6,7 +6,7 @@
       "entityid": "http://mock-sp",
       "state": "prodaccepted",
       "oidc": {
-        "secret": "secret",
+        "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
         "redirectUrls": [
           "http://localhost:8091/redirect",
           "http://localhost:8080"
@@ -37,7 +37,7 @@
       "entityid": "http://mock-rp",
       "state": "prodaccepted",
       "oidc": {
-        "secret": "secret",
+        "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
         "redirectUrls": [
           "http://localhost:8091/redirect",
           "http://localhost:8091/redirect-allow",
