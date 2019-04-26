@@ -7,6 +7,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,33 +24,19 @@ import java.util.Map;
 
 @Configuration
 @ChangeLog
-public class MongobeeConfiguration extends AbstractMongoConfiguration {
+public class MongobeeConfiguration {
 
     private static final Logger LOG = LoggerFactory.getLogger(MongobeeConfiguration.class);
 
-    @Value("${spring.data.mongodb.uri}")
-    private String uri;
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     @Value("${mongodb_db}")
     private String databaseName;
 
-    @Override
-    public MongoClient mongoClient() {
-        return new MongoClient(new MongoClientURI(uri));
-    }
-
-    @Override
-    protected String getDatabaseName() {
-        return databaseName;
-    }
-
     @Bean
-    public Mongobee mongobee(@Value("${spring.data.mongodb.uri}") String uri) throws Exception {
-        Mongobee runner = new Mongobee(uri);
-        runner.setChangeLogsScanPackage("oidc.mongo");
-        runner.setDbName(getDatabaseName());
-        runner.setMongoTemplate(mongoTemplate());
-        return runner;
+    public Mongobee mongobee() throws Exception {
+        return new Mongobee().setChangeLogsScanPackage("oidc.mongo").setDbName(databaseName).setMongoTemplate(mongoTemplate);
     }
 
     @ChangeSet(order = "001", id = "createIndexes", author = "Okke Harsta")
