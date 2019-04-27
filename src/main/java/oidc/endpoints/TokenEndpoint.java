@@ -144,12 +144,12 @@ public class TokenEndpoint implements OidcEndpoint{
         }
         authorizationCodeRepository.delete(authorizationCode);
         User user = userRepository.findUserBySub(authorizationCode.getSub());
-        Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes(), Optional.empty());
+        Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes());
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 
     private ResponseEntity handleClientCredentialsGrant(OpenIDClient client) throws JOSEException {
-        Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes(), Optional.empty());
+        Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes());
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 

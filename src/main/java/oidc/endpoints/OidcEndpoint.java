@@ -14,12 +14,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 public interface OidcEndpoint {
 
     default Map<String, Object> tokenEndpointResponse(Optional<User> user, OpenIDClient client,
-                                                      List<String> scopes, Optional<ResponseType> responseType) throws JOSEException {
+                                                      List<String> scopes) throws JOSEException {
         Map<String, Object> map = new HashMap<>();
         String value = getTokenGenerator().generateAccessToken();
         String sub = user.map(u -> u.getSub()).orElse(client.getClientId());

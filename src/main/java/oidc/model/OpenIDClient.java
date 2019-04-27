@@ -9,7 +9,6 @@ import java.util.Map;
 import static oidc.manage.ServiceProviderTranslation.translateServiceProviderEntityId;
 
 @Getter
-@Setter
 public class OpenIDClient {
 
     private String clientId;
