@@ -2,7 +2,8 @@
   {
     "saml": "urn:mace:dir:attribute-def:eduPersonTargetedID",
     "oidc": "sub",
-    "multiValue": false
+    "multiValue": false,
+    "customMapping": true
   },
   {
     "saml": "urn:mace:dir:attribute-def:cn",
