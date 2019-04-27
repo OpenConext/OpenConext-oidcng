@@ -24,13 +24,11 @@ import oidc.user.OidcSamlAuthentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -40,7 +38,6 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Controller
@@ -105,6 +102,11 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             ResponseMode responseMode = authenticationRequest.impliedResponseMode();
             if (responseMode.equals(ResponseMode.FORM_POST)) {
                 return new ModelAndView("form_post", body);
+            }
+            if (responseMode.equals(ResponseMode.QUERY)) {
+                UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectionURI);
+                body.forEach((key, value) -> builder.queryParam(key, value));
+                return new ModelAndView(new RedirectView(builder.toUriString()));
             } else {
                 UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectionURI);
                 //builder.fragment()TODO
