@@ -3,7 +3,6 @@
   "authorization_endpoint": "@@base_url@@/oidc/authorize",
   "token_endpoint": "@@base_url@@/oidc/token",
   "userinfo_endpoint": "@@base_url@@/oidc/userinfo",
-  "revocation_endpoint": "@@base_url@@/oidc/revoke",
   "jwks_uri": "@@base_url@@/oidc/certs",
   "response_types_supported": [
     "code",
@@ -23,7 +22,10 @@
   "scopes_supported": [
     "openid",
     "groups",
-    "profile"
+    "profile",
+    "email",
+    "address",
+    "phone"
   ],
   "token_endpoint_auth_methods_supported": [
     "client_secret_post",
@@ -31,17 +33,27 @@
   ],
   "claims_supported": [
     "aud",
-    "email",
-    "email_verified",
-    "exp",
-    "family_name",
-    "given_name",
-    "iat",
+    "nbf",
     "iss",
-    "locale",
+    "exp",
+    "iat",
+    "jti",
+    "sub",
     "name",
-    "picture",
-    "sub"
+    "preferred_username",
+    "nickname",
+    "given_name",
+    "family_name",
+    "email",
+    "schac_home_organization",
+    "schac_home_organization_type",
+    "edu_person_affiliations",
+    "edu_person_scoped_affiliations",
+    "edumember_is_member_of",
+    "edu_person_entitlements",
+    "schac_personal_unique_code",
+    "edu_person_principal_name",
+    "uids"
   ],
   "code_challenge_methods_supported": [
     "plain",

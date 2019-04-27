@@ -1,5 +1,6 @@
 package oidc.endpoints;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.jwk.JWK;
@@ -38,7 +39,8 @@ public class JwkKeysEndpoint {
         this.tokenGenerator = tokenGenerator;
         String json = IOUtils.toString(new ClassPathResource("openid-configuration.json").getInputStream(), Charset.defaultCharset());
         json = json.replaceAll("@@base_url@@", basePath).replaceAll("@@issuer@@", issuer);
-        this.wellKnownConfiguration = objectMapper.readValue(json, Map.class);
+        this.wellKnownConfiguration = objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
+        });
     }
 
     @GetMapping("/oidc/generate-jwks-keystore")

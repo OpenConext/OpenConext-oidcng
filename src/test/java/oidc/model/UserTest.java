@@ -19,11 +19,10 @@ public class UserTest implements TestUtils {
         assertEquals(user1.hashCode(), user2.hashCode());
 
         user1.setId("id");
-        user1.setAuthenticatingAuthority("authenticating_authority");
         assertEquals(user1, user2);
         assertEquals(user1.hashCode(), user2.hashCode());
 
-        user1.setPreferredUsername("changed");
+        user1.getAttributes().put("preferred_username", "changed");
         assertNotEquals(user1, user2);
         assertNotEquals(user1.hashCode(), user2.hashCode());
     }

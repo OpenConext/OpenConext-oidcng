@@ -17,6 +17,7 @@
 
 package oidc.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
@@ -46,12 +47,16 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
 
     private AppConfig appConfiguration;
     private UserRepository userRepository;
+    private ObjectMapper objectMapper;
     private String issuer;
 
-    public BeanConfig(AppConfig config, UserRepository userRepository,
+    public BeanConfig(AppConfig config,
+                      UserRepository userRepository,
+                      ObjectMapper objectMapper,
                       @Value("${spring.security.saml2.service-provider.entity-id}") String issuer) {
         this.appConfiguration = config;
         this.userRepository = userRepository;
+        this.objectMapper = objectMapper;
         this.issuer = issuer;
     }
 
@@ -81,8 +86,8 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     }
 
     @Bean
-    public SamlProvisioningAuthenticationManager samlProvisioningAuthenticationManager() {
-        return new SamlProvisioningAuthenticationManager(this.userRepository);
+    public SamlProvisioningAuthenticationManager samlProvisioningAuthenticationManager() throws IOException {
+        return new SamlProvisioningAuthenticationManager(this.userRepository, this.objectMapper);
     }
 
     @Bean
@@ -95,7 +100,12 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     public Filter spAuthenticationResponseFilter() {
         SamlAuthenticationResponseFilter filter =
                 SamlAuthenticationResponseFilter.class.cast(super.spAuthenticationResponseFilter());
-        filter.setAuthenticationManager(this.samlProvisioningAuthenticationManager());
+        try {
+            filter.setAuthenticationManager(this.samlProvisioningAuthenticationManager());
+        } catch (IOException e) {
+            //super has no throw clause
+            throw new RuntimeException(e);
+        }
         return filter;
 
     }

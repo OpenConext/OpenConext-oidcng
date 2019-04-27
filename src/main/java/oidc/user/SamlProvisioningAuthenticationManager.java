@@ -1,7 +1,10 @@
 package oidc.user;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import oidc.model.User;
 import oidc.repository.UserRepository;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -13,17 +16,25 @@ import org.springframework.security.saml.spi.DefaultSamlAuthentication;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class SamlProvisioningAuthenticationManager implements AuthenticationManager {
 
     private UserRepository userRepository;
+    private List<UserAttribute> userAttributes;
 
-    public SamlProvisioningAuthenticationManager(UserRepository userRepository) {
+    public SamlProvisioningAuthenticationManager(UserRepository userRepository, ObjectMapper objectMapper) throws IOException {
         this.userRepository = userRepository;
+        this.userAttributes = objectMapper.readValue(
+                new ClassPathResource("oidc/saml_mapping.json").getInputStream(),
+                new TypeReference<List<UserAttribute>>() {
+                });
     }
 
     @Override
@@ -33,7 +44,6 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
         User existingUser = userRepository.findUserBySub(user.getSub());
         if (existingUser != null) {
             user.setId(existingUser.getId());
-            user.setSub(existingUser.getSub());
             if (!user.equals(existingUser)) {
                 userRepository.save(existingUser);
             }
@@ -47,44 +57,32 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
     }
 
     private User buildUser(DefaultSamlAuthentication samlAuthentication) {
-        User user = new User();
         Assertion assertion = samlAuthentication.getAssertion();
         String unspecifiedNameId = assertion.getSubject().getPrincipal().getValue();
-        user.setUnspecifiedNameId(unspecifiedNameId);
+
         List<AuthenticationStatement> authenticationStatements = assertion.getAuthenticationStatements();
+        AtomicReference<String> authenticatingAuthority = new AtomicReference<>();
         if (!CollectionUtils.isEmpty(authenticationStatements)) {
             authenticationStatements.stream()
                     .map(as -> as.getAuthenticationContext().getAuthenticatingAuthorities())
                     .flatMap(List::stream)
                     .findAny()
-                    .ifPresent(aa -> user.setAuthenticatingAuthority(aa));
+                    .ifPresent(aa -> authenticatingAuthority.set(aa));
         }
-        user.setName(getAttributeValue("urn:mace:dir:attribute-def:cn", assertion));
-        user.setPreferredUsername(getAttributeValue("urn:mace:dir:attribute-def:displayName", assertion));
-        user.setNickname(getAttributeValue("urn:mace:dir:attribute-def:displayName", assertion));
-        user.setGivenName(getAttributeValue("urn:mace:dir:attribute-def:givenName", assertion));
-        user.setFamilyName(getAttributeValue("urn:mace:dir:attribute-def:sn", assertion));
-        user.setEmail(getAttributeValue("urn:mace:dir:attribute-def:mail", assertion));
-
-        user.setSchacHomeOrganization(getAttributeValue("urn:mace:terena.org:attribute-def:schacHomeOrganization", assertion));
-        user.setSchacHomeOrganizationType(getAttributeValue("urn:mace:terena.org:attribute-def:schacHomeOrganizationType", assertion));
-
-        user.setEduPersonAffiliations(getAttributeValues("urn:mace:dir:attribute-def:eduPersonAffiliation", assertion));
-        user.setEduPersonScopedAffiliations(getAttributeValues("urn:mace:dir:attribute-def:eduPersonScopedAffiliation", assertion));
-
-        user.setIsMemberOfs(getAttributeValues("urn:mace:dir:attribute-def:isMemberOf", assertion));
-        user.setEduPersonEntitlements(getAttributeValues("urn:mace:dir:attribute-def:eduPersonEntitlement", assertion));
-        user.setSchacPersonalUniqueCodes(getAttributeValues("urn:schac:attribute-def:schacPersonalUniqueCode", assertion));
-        user.setEduPersonPrincipalName(getAttributeValue("urn:mace:dir:attribute-def:eduPersonPrincipalName", assertion));
-        user.setUids(getAttributeValues("urn:mace:dir:attribute-def:uid", assertion));
-        user.setEduPersonTargetedId(getAttributeValue("urn:mace:dir:attribute-def:eduPersonTargetedID", assertion));
 
         String clientId = samlAuthentication.getRelayState();
-        user.setClientId(clientId);
         //See https://www.pivotaltracker.com/story/show/165527166
-        String sub = StringUtils.hasText(user.getEduPersonTargetedId()) ? user.getEduPersonTargetedId() :
-                UUID.nameUUIDFromBytes((user.getUnspecifiedNameId() + "_" + clientId).getBytes()).toString();
-        user.setSub(sub);
+        String eduPersonTargetedId = getAttributeValue("urn:mace:dir:attribute-def:eduPersonTargetedID", assertion);
+        String sub = StringUtils.hasText(eduPersonTargetedId) ? eduPersonTargetedId :
+                UUID.nameUUIDFromBytes((unspecifiedNameId + "_" + clientId).getBytes()).toString();
+        //need to prevent NullPointer in HashMap merge
+        Map<String, Object> attributes = userAttributes.stream()
+                .filter(ua -> !ua.customMapping)
+                .map(ua -> new Object[]{ua.oidc, ua.multiValue ? getAttributeValues(ua.saml, assertion) : getAttributeValue(ua.saml, assertion)})
+                .filter(oo -> oo[1] != null)
+                .collect(Collectors.toMap(oo -> String.class.cast(oo[0]), oo -> oo[1]));
+
+        User user = new User(sub, unspecifiedNameId, authenticatingAuthority.get(), clientId, attributes);
         return user;
     }
 

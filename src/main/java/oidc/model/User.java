@@ -10,42 +10,36 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @NoArgsConstructor
-@AllArgsConstructor
 @Getter
-@Setter
 @Document(collection = "users")
-@EqualsAndHashCode(exclude = {"id", "authenticatingAuthority"})
-@ToString(exclude = {"id"})
+@EqualsAndHashCode(exclude = {"id"})
 public class User implements Serializable {
 
     @Id
     private String id;
     private String sub;
-    private String preferredUsername;
-    private String name;
-    private String givenName;
-    private String familyName;
-    private String middleName;
-    private String nickname;
-    private String email;
-    private String phoneNumber;
-
-    private String schacHomeOrganization;
     private String unspecifiedNameId;
     private String authenticatingAuthority;
-    private String schacHomeOrganizationType;
-    private String eduPersonPrincipalName;
-    private String eduPersonTargetedId;
     private String clientId;
+    private long updatedAt = System.currentTimeMillis() / 1000L;
+    private Map<String, Object> attributes;
 
-    private Set<String> eduPersonAffiliations;
-    private Set<String> eduPersonScopedAffiliations;
-    private Set<String> isMemberOfs;
-    private Set<String> eduPersonEntitlements;
-    private Set<String> schacPersonalUniqueCodes;
-    private Set<String> uids;
+    public User(String sub, String unspecifiedNameId, String authenticatingAuthority, String clientId, Map<String, Object> attributes) {
+        this.sub = sub;
+        this.unspecifiedNameId = unspecifiedNameId;
+        this.authenticatingAuthority = authenticatingAuthority;
+        this.clientId = clientId;
+        this.attributes = attributes;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 }

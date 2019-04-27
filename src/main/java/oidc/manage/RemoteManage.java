@@ -44,6 +44,7 @@ public class RemoteManage implements Manage {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public OpenIDClient client(String clientId) {
         String entityId = translateClientId(clientId);
 

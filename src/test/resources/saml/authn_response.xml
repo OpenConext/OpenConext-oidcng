@@ -159,7 +159,7 @@
                             NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
                 <saml:AttributeValue>
                     <saml:NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified">
-                        urn:collab:person:example.com:admin
+                        270E4CB4-1C2A-4A96-9AD3-F28C39AD1110
                     </saml:NameID>
                 </saml:AttributeValue>
             </saml:Attribute>
