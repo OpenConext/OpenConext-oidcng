@@ -1,0 +1,28 @@
+{
+  "sub": "67e5dc7d-3403-38a6-9d22-6dc6a53e617f",
+  "name": "John Doe",
+  "preferred_username": "John Doe",
+  "given_name": "John",
+  "family_name": "Doe",
+  "nickname": "John Doe",
+  "email": "j.doe@example.com",
+  "schac_home_organization": "example.com",
+  "edu_person_principal_name": "j.doe@example.com",
+  "edumember_is_member_of": [
+    "urn:collab:group:test.surfteams.nl:nl:surfnet:diensten:spdashboard_serviceprovider",
+    "urn:collab:group:test.surfteams.nl:nl:surfnet:diensten:managementvo",
+    "urn:collab:group:test.surfteams.nl:nl:surfnet:diensten:test129",
+    "urn:collab:group:test.surfteams.nl:nl:surfnet:diensten:spdashboard_admin",
+    "urn:collab:group:test.surfteams.nl:nl:surfnet:diensten:spdashboard_demo",
+    "urn:collab:group:test.surfteams.nl:nl:surfnet:diensten:demo_team_okke",
+    "urn:collab:group:test.surfteams.nl:nl:surfnet:diensten:team_demo_2",
+    "urn:collab:group:test.surfteams.nl:nl:surfnet:diensten:delme",
+    "urn:collab:group:test.surfteams.nl:nl:surfnet:diensten:spd_testbart5",
+    "urn:collab:group:test.surfteams.nl:nl:surfnet:diensten:test_arte3",
+    "urn:collab:group:test.surfteams.nl:nl:surfnet:diensten:dashboard_admin",
+    "urn:collab:group:test.surfteams.nl:nl:surfnet:diensten:spdashboard_testaansluitteam"
+  ],
+  "uids": [
+    "admin"
+  ]
+}

@@ -51,7 +51,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     private AuthorizationCodeRepository authorizationCodeRepository;
     private UserRepository userRepository;
     private AccessTokenRepository accessTokenRepository;
-    private List<String> forFreeOpenIDScopes = Arrays.asList("profile", "email");
+    private List<String> forFreeOpenIDScopes = Arrays.asList("profile", "email", "address", "phone");
 
     @Autowired
     public AuthorizationEndpoint(Manage manage,

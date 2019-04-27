@@ -1,0 +1,82 @@
+[
+  {
+    "saml": "urn:mace:dir:attribute-def:eduPersonTargetedID",
+    "oidc": "sub",
+    "multiValue": false
+  },
+  {
+    "saml": "urn:mace:dir:attribute-def:cn",
+    "oidc": "name",
+    "multiValue": false
+  },
+  {
+    "saml": "urn:mace:dir:attribute-def:displayName",
+    "oidc": "preferred_username",
+    "multiValue": false
+  },
+  {
+    "saml": "urn:mace:dir:attribute-def:displayName",
+    "oidc": "nickname",
+    "multiValue": false
+  },
+  {
+    "saml": "urn:mace:dir:attribute-def:givenName",
+    "oidc": "given_name",
+    "multiValue": false
+  },
+  {
+    "saml": "urn:mace:dir:attribute-def:sn",
+    "oidc": "family_name",
+    "multiValue": false
+  },
+  {
+    "saml": "urn:mace:dir:attribute-def:mail",
+    "oidc": "email",
+    "multiValue": false
+  },
+  {
+    "saml": "urn:mace:terena.org:attribute-def:schacHomeOrganization",
+    "oidc": "schac_home_organization",
+    "multiValue": false
+  },
+  {
+    "saml": "urn:mace:terena.org:attribute-def:schacHomeOrganizationType",
+    "oidc": "schac_home_organization_type",
+    "multiValue": false
+  },
+  {
+    "saml": "urn:mace:dir:attribute-def:eduPersonAffiliation",
+    "oidc": "edu_person_affiliations",
+    "multiValue": true
+  },
+  {
+    "saml": "urn:mace:dir:attribute-def:eduPersonScopedAffiliation",
+    "oidc": "edu_person_scoped_affiliations",
+    "multiValue": true
+  },
+  {
+    "saml": "urn:mace:dir:attribute-def:isMemberOf",
+    "oidc": "edumember_is_member_of",
+    "multiValue": true
+  },
+  {
+    "saml": "urn:mace:dir:attribute-def:eduPersonEntitlement",
+    "oidc": "edu_person_entitlements",
+    "multiValue": true
+  },
+  {
+    "saml": "urn:schac:attribute-def:schacPersonalUniqueCode",
+    "oidc": "schac_personal_unique_code",
+    "multiValue": true
+  },
+  {
+    "saml": "urn:mace:dir:attribute-def:eduPersonPrincipalName",
+    "oidc": "edu_person_principal_name",
+    "multiValue": false
+  },
+  {
+    "saml": "urn:mace:dir:attribute-def:uid",
+    "oidc": "uids",
+    "multiValue": true
+  }
+]
