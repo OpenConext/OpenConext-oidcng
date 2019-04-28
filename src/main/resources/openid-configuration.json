@@ -18,6 +18,12 @@
     "query",
     "form_post"
   ],
+  "grant_types_supported": [
+    "authorization_code",
+    "implicit",
+    "refresh_token",
+    "client_credentials"
+  ],
   "subject_types_supported": [
     "public",
     "pairwise"

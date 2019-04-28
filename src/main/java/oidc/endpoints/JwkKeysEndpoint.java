@@ -5,17 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.RSAKey;
-import net.minidev.json.JSONStyle;
+import net.minidev.json.JSONObject;
 import oidc.secure.TokenGenerator;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.io.Writer;
 import java.nio.charset.Charset;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -24,8 +23,8 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 public class JwkKeysEndpoint {
@@ -44,7 +43,7 @@ public class JwkKeysEndpoint {
     }
 
     @GetMapping("/oidc/generate-jwks-keystore")
-    public String generate() throws Exception {
+    public Map<String, List<JSONObject>> generate() throws Exception {
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA", "BC");
@@ -59,10 +58,10 @@ public class JwkKeysEndpoint {
                 .keyID("oidc")
                 .build();
 
-        return build.toJSONObject().toJSONString(JSONStyle.NO_COMPRESS);
+        return Collections.singletonMap("keys", Collections.singletonList(build.toJSONObject()));
     }
 
-    @GetMapping("/oidc/certs")
+    @GetMapping(value = {"/oidc/certs"}, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public String publishClientJwk() {
         Map<String, ? extends JWK> allPublicKeys = tokenGenerator.getAllPublicKeys();
         JWKSet jwkSet = new JWKSet(new ArrayList<>(allPublicKeys.values()));

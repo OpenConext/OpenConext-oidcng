@@ -5,19 +5,18 @@ import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseMode;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
-import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import oidc.exceptions.InvalidScopeException;
 import oidc.exceptions.RedirectMismatchException;
-import oidc.manage.Manage;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
+import oidc.repository.OpenIDClientRepository;
 import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
 import oidc.user.OidcSamlAuthentication;
@@ -44,29 +43,28 @@ import java.util.stream.Collectors;
 public class AuthorizationEndpoint implements OidcEndpoint {
 
     private TokenGenerator tokenGenerator;
-    private Manage manage;
     private AuthorizationCodeRepository authorizationCodeRepository;
     private UserRepository userRepository;
     private AccessTokenRepository accessTokenRepository;
+    private OpenIDClientRepository openIDClientRepository;
     private List<String> forFreeOpenIDScopes = Arrays.asList("profile", "email", "address", "phone");
 
     @Autowired
-    public AuthorizationEndpoint(Manage manage,
-                                 AuthorizationCodeRepository authorizationCodeRepository,
+    public AuthorizationEndpoint(AuthorizationCodeRepository authorizationCodeRepository,
                                  AccessTokenRepository accessTokenRepository,
                                  UserRepository userRepository,
+                                 OpenIDClientRepository openIDClientRepository,
                                  TokenGenerator tokenGenerator) {
-        this.manage = manage;
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.accessTokenRepository = accessTokenRepository;
         this.userRepository = userRepository;
+        this.openIDClientRepository = openIDClientRepository;
         this.tokenGenerator = tokenGenerator;
     }
 
     @GetMapping("/oidc/authorize")
     public ModelAndView authorize(@RequestParam MultiValueMap<String, String> parameters,
                                   Authentication authentication) throws ParseException, JOSEException, UnsupportedEncodingException {
-        //TODO error Handling - always do 302 with error message to specified redirectURI
         return doAuthorize(parameters, authentication);
     }
 
@@ -76,8 +74,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         Scope scope = authenticationRequest.getScope();
         State state = authenticationRequest.getState();
 
-        ClientID clientID = authenticationRequest.getClientID();
-        OpenIDClient client = manage.client(clientID.getValue());
+        OpenIDClient client = openIDClientRepository.findByClientId(authenticationRequest.getClientID().getValue());
         String redirectionURI = authenticationRequest.getRedirectionURI().toString();
         redirectionURI = URLDecoder.decode(redirectionURI, Charset.defaultCharset().toString());
         validateRedirectionURI(redirectionURI, client);
@@ -92,7 +89,6 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             String code = tokenGenerator.generateAuthorizationCode();
             AuthorizationCode authorizationCode = constructAuthorizationCode(authenticationRequest, client, user, code);
             authorizationCodeRepository.insert(authorizationCode);
-
             return new ModelAndView(new RedirectView(authorizationRedirect(redirectionURI, state, code)));
         } else if (responseType.impliesImplicitFlow()) {
             Map<String, Object> body = authorizationEndpointResponse(user, client, authenticationRequest.getNonce(), scopes, responseType);
@@ -113,6 +109,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 body.forEach((key, value) -> builder.queryParam(key, value));
                 return new ModelAndView(new RedirectView(builder.toUriString()));
             }
+        } else if (responseType.impliesHybridFlow()) {
+            //TODO
         }
         throw new IllegalArgumentException("Not yet implemented response_type: " + responseType.toString());
     }
@@ -156,7 +154,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         if (!scopes.containsAll(requestedScopes)) {
             List<String> missingScopes = requestedScopes.stream().filter(s -> !scopes.contains(s)).collect(Collectors.toList());
             throw new InvalidScopeException(
-                    String.format("Scope(s) %s are not allowed for client %s", missingScopes, client.getClientId()));
+                    String.format("Scope(s) %s are not allowed for findByClientId %s", missingScopes, client.getClientId()));
         }
 
     }

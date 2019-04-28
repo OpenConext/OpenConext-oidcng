@@ -7,11 +7,11 @@ import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.Date;
 import java.util.List;
 
 @NoArgsConstructor
 @Getter
-@Setter
 @Document(collection = "access_tokens")
 public class AccessToken {
 
@@ -25,6 +25,8 @@ public class AccessToken {
     private String clientId;
 
     private List<String> scopes;
+
+    private Date expiresIn;
 
     public AccessToken(String value, String sub, String clientId, List<String> scopes) {
         this.value = value;

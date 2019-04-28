@@ -5,7 +5,7 @@ package oidc.manage;
  * <p>
  * The authorization server MUST support the HTTP Basic
  * authentication scheme for authenticating clients that were issued a
- * client password
+ * findByClientId password
  * <p>
  * The HTTP Authentication spec https://tools.ietf.org/html/rfc2617 dictates:
  * <p>
@@ -16,7 +16,7 @@ package oidc.manage;
  * a ':'. For example: https://oidc.localhost.surfconext.nl
  * <p>
  * We want to use the entity-id of a SP as the client_id of an OAuth / OpenConnect ID
- * client. However this breaks the Basic Authentication must-have.
+ * findByClientId. However this breaks the Basic Authentication must-have.
  * <p>
  * We therefore must translate the client_id to a SP entity-id and vica-versa.
  */

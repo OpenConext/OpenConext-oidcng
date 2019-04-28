@@ -1,21 +1,30 @@
 package oidc;
 
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
+import oidc.model.OpenIDClient;
 import org.junit.Before;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.mongodb.core.BulkOperations;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.util.CollectionUtils;
 
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
@@ -33,9 +42,32 @@ public abstract class AbstractIntegrationTest implements TestUtils {
     @LocalServerPort
     protected int port;
 
+    @Autowired
+    protected MongoTemplate mongoTemplate;
+
+    private List<OpenIDClient> openIDClients;
+
     @Before
-    public void before() {
+    public void before() throws IOException {
         RestAssured.port = port;
+        mongoTemplate.dropCollection(OpenIDClient.class);
+        mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, OpenIDClient.class)
+                .remove(new Query())
+                .insert(openIDClients())
+                .execute();
+    }
+
+    protected List<OpenIDClient> openIDClients() throws IOException {
+        if (CollectionUtils.isEmpty(this.openIDClients)) {
+            this.openIDClients = serviceProviders().stream().map(OpenIDClient::new).collect(Collectors.toList());
+        }
+        return this.openIDClients;
+    }
+
+    protected List<Map<String, Object>> serviceProviders() throws IOException {
+        return objectMapper.readValue(new ClassPathResource("manage/service_providers.json").getInputStream(),
+                new TypeReference<List<Map<String, Object>>>() {
+                });
     }
 
     protected String doAuthorize(String clientId) {

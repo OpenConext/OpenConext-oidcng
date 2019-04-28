@@ -4,8 +4,9 @@
     "version": 19,
     "data": {
       "entityid": "http://mock-sp",
-      "state": "prodaccepted",
-      "oidc": {
+      "metaDataFields": {
+        "name:en": "OpenConext Mock SP",
+        "name:nl": "OpenConext Mock SP",
         "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
         "redirectUrls": [
           "http://localhost:8091/redirect",
@@ -21,12 +22,7 @@
           "refresh_token",
           "client_credentials"
         ],
-        "resourceServer": false
-      },
-      "notes": null,
-      "metaDataFields": {
-        "name:en": "OpenConext Mock SP",
-        "name:nl": "OpenConext Mock SP"
+        "resourceServer": "0"
       }
     }
   },
@@ -35,8 +31,9 @@
     "version": 19,
     "data": {
       "entityid": "http://mock-rp",
-      "state": "prodaccepted",
-      "oidc": {
+      "metaDataFields": {
+        "name:en": "OpenConext Mock RP",
+        "name:nl": "OpenConext Mock RP",
         "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
         "redirectUrls": [
           "http://localhost:8091/redirect",
@@ -50,12 +47,7 @@
         "grants": [
           "authorization_code"
         ],
-        "resourceServer": true
-      },
-      "notes": null,
-      "metaDataFields": {
-        "name:en": "OpenConext Mock RP",
-        "name:nl": "OpenConext Mock RP"
+        "resourceServer": "1"
       }
     }
   }

@@ -28,9 +28,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityConfiguration;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
@@ -78,12 +80,17 @@ public class SecurityConfiguration {
     @Configuration
     public static class AppSecurity extends WebSecurityConfigurerAdapter {
 
-        @Autowired
-        private Environment environment;
+        @Value("${manage.user}")
+        private String user;
+
+        @Value("${manage.password}")
+        private String password;
 
         @Override
         protected void configure(HttpSecurity http) throws Exception {
             http
+                    .csrf()
+                    .disable()
                     .authorizeRequests()
                     .antMatchers("/actuator/health", "/actuator/info")
                     .permitAll()
@@ -91,7 +98,21 @@ public class SecurityConfiguration {
                     .antMatcher("/**")
                     .authorizeRequests()
                     .antMatchers("/**")
-                    .authenticated();
+                    .authenticated()
+                    .and()
+                    .httpBasic()
+                    .and()
+                    .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+            ;
+        }
+
+        @Override
+        protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+            auth
+                    .inMemoryAuthentication()
+                    .withUser(user)
+                    .password("{noop}" + password)
+                    .roles("manage");
         }
     }
 

@@ -5,11 +5,8 @@ import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant;
 import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.ClientCredentialsGrant;
 import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
-import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
-import com.nimbusds.oauth2.sdk.auth.ClientSecretPost;
 import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
@@ -20,12 +17,12 @@ import oidc.exceptions.ClientAuthenticationNotSupported;
 import oidc.exceptions.CodeVerifierMissingException;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.RedirectMismatchException;
-import oidc.manage.Manage;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
+import oidc.repository.OpenIDClientRepository;
 import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
 import org.springframework.http.HttpHeaders;
@@ -39,7 +36,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -48,19 +44,19 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 @RestController
 public class TokenEndpoint implements OidcEndpoint{
 
-    private Manage manage;
     private AuthorizationCodeRepository authorizationCodeRepository;
     private AccessTokenRepository accessTokenRepository;
     private UserRepository userRepository;
+    private OpenIDClientRepository openIDClientRepository;
     private TokenGenerator tokenGenerator;
     private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public TokenEndpoint(Manage manage,
+    public TokenEndpoint(OpenIDClientRepository openIDClientRepository,
                          AuthorizationCodeRepository authorizationCodeRepository,
                          AccessTokenRepository accessTokenRepository,
                          UserRepository userRepository,
                          TokenGenerator tokenGenerator) {
-        this.manage = manage;
+        this.openIDClientRepository = openIDClientRepository;
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.accessTokenRepository = accessTokenRepository;
         this.userRepository = userRepository;
@@ -74,17 +70,17 @@ public class TokenEndpoint implements OidcEndpoint{
 
         ClientAuthentication clientAuthentication = tokenRequest.getClientAuthentication();
         if (clientAuthentication != null &&
-                !(clientAuthentication instanceof ClientSecretBasic || clientAuthentication instanceof ClientSecretPost)) {
+                !(clientAuthentication instanceof PlainClientSecret)) {
             throw new ClientAuthenticationNotSupported(
-                    String.format("Unsupported '%s' client authentication in token endpoint", clientAuthentication.getClass()));
+                    String.format("Unsupported '%s' findByClientId authentication in token endpoint", clientAuthentication.getClass()));
         }
         AuthorizationGrant authorizationGrant = tokenRequest.getAuthorizationGrant();
         if (clientAuthentication == null && authorizationGrant instanceof AuthorizationCodeGrant
                 && ((AuthorizationCodeGrant) authorizationGrant).getCodeVerifier() == null) {
-            throw new CodeVerifierMissingException("code_verifier required without client authentication");
+            throw new CodeVerifierMissingException("code_verifier required without findByClientId authentication");
         }
 
-        OpenIDClient client = manage.client(clientAuthentication.getClientID().getValue());
+        OpenIDClient client = openIDClientRepository.findByClientId(clientAuthentication.getClientID().getValue());
 
         if (clientAuthentication != null &&
                 !secretsMatch(PlainClientSecret.class.cast(clientAuthentication), client)) {

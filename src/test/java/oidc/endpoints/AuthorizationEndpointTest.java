@@ -22,8 +22,9 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void validation() {
+    public void validationMissingParameter() {
         Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("redirect_uri", "http%3A%2F%2Flocalhost%3A8080");
 
         given().redirects().follow(false)
                 .when()
@@ -31,7 +32,28 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest {
                 .queryParams(queryParams)
                 .get("oidc/authorize")
                 .then()
-                .statusCode(400)
+                .statusCode(302)
+                .header("Location", "http://localhost:8080")
                 .body(containsString("Missing \\\"client_id\\\" parameter"));
     }
+
+    @Test
+    public void validationScope() {
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("scope", "openid nope");
+        queryParams.put("response_type", "code");
+        queryParams.put("client_id", "http@//mock-sp");
+        queryParams.put("redirect_uri", "http%3A%2F%2Flocalhost%3A8080");
+
+        given().redirects().follow(false)
+                .when()
+                .header("Content-type", "application/json")
+                .queryParams(queryParams)
+                .get("oidc/authorize")
+                .then()
+                .statusCode(302)
+                .header("Location", "http://localhost:8080")
+                .body(containsString("not allowed"));
+    }
+
 }

@@ -85,7 +85,5 @@ spring:
             assertion-consumer-service-index: 0
 
 manage:
-  url: https://manage.test2.surfconext.nl
-  user: dashboard
+  user: manage
   password: secret
-  mock: true
