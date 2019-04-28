@@ -3,7 +3,7 @@ jdk:
 - oraclejdk8
 
 env:
-  - MONGODB=3.4.3
+  - MONGODB=4.0.3
 
 before_install:
 - wget http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-${MONGODB}.tgz
