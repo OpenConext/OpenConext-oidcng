@@ -51,10 +51,12 @@ public class MongobeeConfiguration {
     @ChangeSet(order = "001", id = "createIndexes", author = "Okke Harsta")
     public void createCollections(MongoTemplate mongoTemplate) {
         Map<Class<? extends Object>, List<String>> indexInfo = new HashMap<>();
+
         indexInfo.put(AccessToken.class, Arrays.asList("value"));
         indexInfo.put(AuthorizationCode.class, Arrays.asList("code"));
         indexInfo.put(User.class, Arrays.asList("sub"));
         indexInfo.put(OpenIDClient.class, Arrays.asList("clientId"));
+
         indexInfo.forEach((collection, fields) -> {
             if (!mongoTemplate.collectionExists(collection)) {
                 mongoTemplate.createCollection(collection);
