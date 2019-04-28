@@ -5,6 +5,7 @@ logging:
     org.springframework.web: INFO
     org.springframework.security: INFO
     org.springframework.security.saml: INFO
+    org.springframework.data: INFO
 
 # used by the git plugin
 info:

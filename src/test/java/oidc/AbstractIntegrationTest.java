@@ -50,7 +50,6 @@ public abstract class AbstractIntegrationTest implements TestUtils {
     @Before
     public void before() throws IOException {
         RestAssured.port = port;
-        mongoTemplate.dropCollection(OpenIDClient.class);
         mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, OpenIDClient.class)
                 .remove(new Query())
                 .insert(openIDClients())

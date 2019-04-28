@@ -12,7 +12,8 @@ before_install:
 - pip install --user codecov
 before_script:
 - mkdir ${PWD}/mongodb-linux-x86_64-${MONGODB}/data
-- ${PWD}/mongodb-linux-x86_64-${MONGODB}/bin/mongod --dbpath ${PWD}/mongodb-linux-x86_64-${MONGODB}/data --logpath ${PWD}/mongodb-linux-x86_64-${MONGODB}/mongodb.log --fork
+- ${PWD}/mongodb-linux-x86_64-${MONGODB}/bin/mongod --replSet rs0 --dbpath ${PWD}/mongodb-linux-x86_64-${MONGODB}/data --logpath ${PWD}/mongodb-linux-x86_64-${MONGODB}/mongodb.log --fork
+- ${PWD}/mongodb-linux-x86_64-${MONGODB}/bin/mongo --eval "rs.initiate()"
 script:
 - mvn test
 after_script:
