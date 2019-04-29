@@ -1,20 +1,17 @@
 package oidc.manage;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import oidc.AbstractIntegrationTest;
 import oidc.TestUtils;
 import oidc.model.OpenIDClient;
-import oidc.repository.OpenIDClientRepository;
-import org.junit.Before;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static io.restassured.RestAssured.given;
 import static oidc.manage.ServiceProviderTranslation.translateServiceProviderEntityId;
@@ -41,15 +38,32 @@ public class MetadataControllerTest extends AbstractIntegrationTest implements T
 
         assertEquals(2L, mongoTemplate.count(new Query(), OpenIDClient.class));
 
-        OpenIDClient openIDClient = mongoTemplate.find(Query.query(Criteria.where("clientId").is("changed")) ,OpenIDClient.class).get(0);
+        OpenIDClient openIDClient = mongoTemplate.find(Query.query(Criteria.where("clientId").is("changed")), OpenIDClient.class).get(0);
         assertEquals("changed", openIDClient.getClientId());
 
         openIDClient = mongoTemplate.find(Query.query(Criteria.where("clientId")
-                .is(translateServiceProviderEntityId("http://mock-rp"))) ,OpenIDClient.class).get(0);
+                .is(translateServiceProviderEntityId("http://mock-rp"))), OpenIDClient.class).get(0);
         assertEquals("changed", openIDClient.getName());
     }
 
+    @Test
+    public void rollback() throws IOException {
+        List<Map<String, Object>> serviceProviders = serviceProviders();
+        Map<String, Object> mockSp = serviceProviders.get(0);
+        ((Map) mockSp.get("data")).put("entityid", 1L);
+        doPostConnections(serviceProviders, 500);
+
+        assertEquals(2L, mongoTemplate.count(new Query(), OpenIDClient.class));
+        List<String> clientIds = mongoTemplate.find(new Query(), OpenIDClient.class).stream().map(OpenIDClient::getClientId).collect(Collectors.toList());
+        clientIds.sort(String::compareTo);
+        assertEquals(Arrays.asList("http@//mock-rp", "http@//mock-sp"), clientIds);
+    }
+
     private void postConnections(List<Map<String, Object>> serviceProviders) throws IOException {
+        doPostConnections(serviceProviders, 201);
+    }
+
+    private void doPostConnections(List<Map<String, Object>> serviceProviders, int expectedStatusCode) {
         given()
                 .when()
                 .header("Content-type", "application/json")
@@ -59,7 +73,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest implements T
                 .body(serviceProviders)
                 .post("manage/connections")
                 .then()
-                .statusCode(201);
+                .statusCode(expectedStatusCode);
     }
 
 }
