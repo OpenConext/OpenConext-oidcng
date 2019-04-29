@@ -3,6 +3,7 @@
   "authorization_endpoint": "@@base_url@@/oidc/authorize",
   "token_endpoint": "@@base_url@@/oidc/token",
   "userinfo_endpoint": "@@base_url@@/oidc/userinfo",
+  "introspect_endpoint": "@@base_url@@/oidc/introspect",
   "jwks_uri": "@@base_url@@/oidc/certs",
   "response_types_supported": [
     "code",

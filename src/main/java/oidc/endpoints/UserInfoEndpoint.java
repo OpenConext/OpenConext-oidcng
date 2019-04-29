@@ -12,6 +12,7 @@ import oidc.repository.AccessTokenRepository;
 import oidc.repository.UserRepository;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -30,7 +31,7 @@ public class UserInfoEndpoint {
         return userInfo(request);
     }
 
-    @GetMapping(value = {"oidc/userinfo"}, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+    @PostMapping(value = {"oidc/userinfo"}, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
     public Map<String, Object> postUserInfo(HttpServletRequest request) throws ParseException, IOException {
         return userInfo(request);
     }
