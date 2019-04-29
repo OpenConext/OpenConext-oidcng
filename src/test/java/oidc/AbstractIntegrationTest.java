@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 
 
 /**
- * Override the @WebIntegrationTest annotation if you don't want to have mock SAML authentication
+ * Override the @ActiveProfiles annotation if you don't want to have mock SAML authentication
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,

@@ -1,7 +1,6 @@
 package oidc.manage;
 
 import oidc.AbstractIntegrationTest;
-import oidc.TestUtils;
 import oidc.model.OpenIDClient;
 import org.junit.Test;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -19,7 +18,7 @@ import static oidc.manage.ServiceProviderTranslation.translateServiceProviderEnt
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("unchecked")
-public class MetadataControllerTest extends AbstractIntegrationTest implements TestUtils {
+public class MetadataControllerTest extends AbstractIntegrationTest {
 
     @Test
     public void connections() throws IOException {

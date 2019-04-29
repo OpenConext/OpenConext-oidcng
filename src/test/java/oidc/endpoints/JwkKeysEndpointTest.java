@@ -4,9 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
-import io.restassured.mapper.TypeRef;
 import oidc.AbstractIntegrationTest;
-import oidc.TestUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -16,9 +14,9 @@ import java.util.Map;
 
 import static com.nimbusds.jose.JWSAlgorithm.RS256;
 import static io.restassured.RestAssured.given;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
-public class JwkKeysEndpointTest extends AbstractIntegrationTest implements TestUtils {
+public class JwkKeysEndpointTest extends AbstractIntegrationTest {
 
     @Value("${spring.security.saml2.service-provider.entity-id}")
     private String issuer;

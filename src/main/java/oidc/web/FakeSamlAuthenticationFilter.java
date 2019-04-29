@@ -23,6 +23,7 @@ import javax.servlet.ServletResponse;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class FakeSamlAuthenticationFilter extends GenericFilterBean {
@@ -60,26 +61,8 @@ public class FakeSamlAuthenticationFilter extends GenericFilterBean {
         subject.setPrincipal(principal);
 
         assertion.setSubject(subject);
-        List<Attribute> attributes = Arrays.asList(
-                attribute("urn:mace:dir:attribute-def:displayName", "John Doe"),
-                attribute("urn:mace:dir:attribute-def:uid", "admin"),
-                attribute("urn:mace:dir:attribute-def:cn", "John Doe"),
-                attribute("urn:mace:dir:attribute-def:sn", "Doe"),
-                attribute("urn:mace:dir:attribute-def:eduPersonPrincipalName", "j.doe@example.com"),
-                attribute("urn:mace:dir:attribute-def:givenName", "John"),
-                attribute("urn:mace:dir:attribute-def:mail", "j.doe@example.com"),
-                attribute("urn:mace:terena.org:attribute-def:schacHomeOrganization", "example.com"),
-                attribute("urn:mace:dir:attribute-def:isMemberOf", "urn:collab:org:surf.nl")
-        );
-        assertion.setAttributes(attributes);
+        assertion.setAttributes(Collections.emptyList());
         return assertion;
-    }
-
-    private Attribute attribute(String name, Object... values) {
-        Attribute attribute = new Attribute();
-        attribute.setName(name);
-        attribute.setValues(Arrays.asList(values));
-        return attribute;
     }
 
 }

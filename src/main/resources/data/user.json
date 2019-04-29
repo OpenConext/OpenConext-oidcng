@@ -2,35 +2,19 @@
   "id": "b6a6db1f-ddb6-4091-b165-52a36a050a69",
   "sub": "cb6e40b7-1e07-48d0-a32c-4c994df8afd8",
   "attributes": {
-    "preferredUsername": "Johnny D.",
+    "preferred_username": "Johnny D.",
     "name": "John Doe",
-    "givenName": "John",
-    "familyName": "Doe",
-    "middleName": null,
+    "given_name": "John",
+    "family_name": "Doe",
     "nickname": "Johhny",
     "email": "john.doe@example.org",
-    "phoneNumber": "0612345678",
-    "schacHomeOrganization": "schac_home",
-    "unspecifiedNameId": "urn:john.doe",
-    "authenticatingAuthority": null,
-    "schacHomeOrganizationType": "schac_home_type",
-    "eduPersonPrincipalName": "edu_person_principal_name",
-    "eduPersonTargetedId": "edu_person_targeted_id",
-    "eduPersonAffiliations": [
+    "phone_number": "0612345678",
+    "sub": "FF208708-6443-48DB-904F-E0D0BA62B38D",
+    "schac_home_organization": "schac_home",
+    "edu_person_principal_name": "edu_person_principal_name",
+    "edu_person_targeted_id": "edu_person_targeted_id",
+    "edu_person_affiliations": [
       "edu_person_affiliation"
-    ],
-    "eduPersonScopedAffiliations": [
-      "edu_person_scoped_affiliation"
-    ],
-    "isMemberOfs": [
-      "member_of_group"
-    ],
-    "eduPersonEntitlements": [
-      "edu_person_entitlement"
-    ],
-    "schacPersonalUniqueCodes": [
-      "schac_personal_unique_codes"
-    ],
-    "uids": null
+    ]
   }
 }
