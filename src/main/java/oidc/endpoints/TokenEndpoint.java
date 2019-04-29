@@ -42,14 +42,13 @@ import java.util.Optional;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 @RestController
-public class TokenEndpoint implements OidcEndpoint{
+public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint{
 
     private AuthorizationCodeRepository authorizationCodeRepository;
     private AccessTokenRepository accessTokenRepository;
     private UserRepository userRepository;
     private OpenIDClientRepository openIDClientRepository;
     private TokenGenerator tokenGenerator;
-    private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public TokenEndpoint(OpenIDClientRepository openIDClientRepository,
                          AuthorizationCodeRepository authorizationCodeRepository,
@@ -107,11 +106,6 @@ public class TokenEndpoint implements OidcEndpoint{
     @Override
     public AccessTokenRepository getAccessTokenRepository() {
         return accessTokenRepository;
-    }
-
-    //See https://www.pivotaltracker.com/story/show/165565558
-    private boolean secretsMatch(PlainClientSecret clientSecret, OpenIDClient openIDClient) {
-        return passwordEncoder.matches(clientSecret.getClientSecret().getValue(), openIDClient.getSecret());
     }
 
     private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, OpenIDClient client) throws JOSEException {

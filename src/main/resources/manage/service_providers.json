@@ -22,7 +22,8 @@
           "refresh_token",
           "client_credentials"
         ],
-        "resourceServer": "0"
+        "accessTokenValidity": 3600,
+        "resourceServer": "1"
       }
     }
   },
@@ -47,7 +48,8 @@
         "grants": [
           "authorization_code"
         ],
-        "resourceServer": "1"
+        "accessTokenValidity": 3600,
+        "resourceServer": "0"
       }
     }
   }

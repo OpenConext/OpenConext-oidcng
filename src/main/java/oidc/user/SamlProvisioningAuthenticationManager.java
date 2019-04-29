@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,8 +42,9 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         DefaultSamlAuthentication samlAuthentication = (DefaultSamlAuthentication) authentication;
         User user = buildUser(samlAuthentication);
-        User existingUser = userRepository.findUserBySub(user.getSub());
-        if (existingUser != null) {
+        Optional<User> existingUserOptional = userRepository.findOptionalUserBySub(user.getSub());
+        if (existingUserOptional.isPresent()) {
+            User existingUser = existingUserOptional.get();
             user.setId(existingUser.getId());
             if (!user.equals(existingUser)) {
                 userRepository.save(existingUser);

@@ -3,6 +3,7 @@ package oidc.model;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
@@ -24,6 +25,8 @@ public class OpenIDClient {
     private List<String> scopes;
     private List<String> grants;
     private boolean resourceServer;
+    //seconds
+    private int accessTokenValidity;
 
     @SuppressWarnings("unchecked")
     public OpenIDClient(Map<String, Object> root) {
@@ -38,11 +41,23 @@ public class OpenIDClient {
         this.redirectUrls = List.class.cast(metaDataFields.get("redirectUrls"));
         this.scopes = List.class.cast(metaDataFields.getOrDefault("scopes", "oidc"));
         this.grants = List.class.cast(metaDataFields.getOrDefault("grants", "authorization_code"));
-        this.resourceServer = String.class.cast(metaDataFields.getOrDefault("resourceServer", "0")).equals("1");
+        this.resourceServer = parseBoolean(metaDataFields.get("resourceServer"));
+        this.accessTokenValidity = Integer.class.cast(metaDataFields.getOrDefault("accessTokenValidity", 3600));
     }
 
     public OpenIDClient setId(String id) {
         this.id = id;
         return this;
+    }
+
+    @Transient
+    private boolean parseBoolean(Object val) {
+        if (val instanceof Boolean) {
+            return (boolean) val;
+        }
+        if (val instanceof String) {
+            return "1".equals(val);
+        }
+        return false;
     }
 }

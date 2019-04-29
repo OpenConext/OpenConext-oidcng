@@ -4,6 +4,7 @@ package oidc;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.oauth2.sdk.GrantType;
 import io.restassured.RestAssured;
+import io.restassured.mapper.TypeRef;
 import io.restassured.response.Response;
 import oidc.model.OpenIDClient;
 import org.junit.Before;
@@ -45,6 +46,9 @@ public abstract class AbstractIntegrationTest implements TestUtils {
 
     @Autowired
     protected MongoTemplate mongoTemplate;
+
+    protected TypeRef<Map<String, Object>> mapTypeRef = new TypeRef<Map<String, Object>>() {
+    };
 
     private List<OpenIDClient> openIDClients;
 
@@ -97,9 +101,8 @@ public abstract class AbstractIntegrationTest implements TestUtils {
         return matcher.group(1);
     }
 
-    protected String doToken(String code) {
-        Map<String, Object> body = doToken(code, "http@//mock-sp", "secret", GrantType.AUTHORIZATION_CODE);
-        return (String) body.get("id_token");
+    protected Map<String, Object> doToken(String code) {
+        return doToken(code, "http@//mock-sp", "secret", GrantType.AUTHORIZATION_CODE);
     }
 
     protected Map<String, Object> doToken(String code, String clientId, String secret, GrantType grantType) {

@@ -39,7 +39,8 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     @Test
     public void token() throws MalformedURLException, ParseException, JOSEException, BadJOSEException {
         String code = doAuthorize();
-        String idToken = doToken(code);
+        Map<String, Object> body = doToken(code);
+        String idToken =(String) body.get("id_token");
         verifySignedJWT(idToken);
         JWTClaimsSet claimsSet = processToken(idToken);
 

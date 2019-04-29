@@ -28,10 +28,11 @@ public class AccessToken {
 
     private Date expiresIn;
 
-    public AccessToken(String value, String sub, String clientId, List<String> scopes) {
+    public AccessToken(String value, String sub, String clientId, List<String> scopes, Date expiresIn) {
         this.value = value;
         this.sub = sub;
         this.clientId = clientId;
         this.scopes = scopes;
+        this.expiresIn = expiresIn;
     }
 }

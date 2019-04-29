@@ -10,6 +10,9 @@ import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.secure.TokenGenerator;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +25,8 @@ public interface OidcEndpoint {
         Map<String, Object> map = new HashMap<>();
         String value = getTokenGenerator().generateAccessToken();
         String sub = user.map(u -> u.getSub()).orElse(client.getClientId());
-        getAccessTokenRepository().insert(new AccessToken(value, sub, client.getClientId(), scopes));
+        getAccessTokenRepository().insert(new AccessToken(value, sub, client.getClientId(), scopes,
+                accessTokenValidity(client)));
         map.put("access_token", value);
         map.put("id_token", getTokenGenerator().generateIDTokenForTokenEndpoint(user, client.getClientId()));
         addSharedProperties(map);
@@ -34,7 +38,8 @@ public interface OidcEndpoint {
         Map<String, Object> map = new HashMap<>();
         String value = getTokenGenerator().generateAccessToken();
         if (AccessTokenHash.isRequiredInIDTokenClaims(responseType)) {
-            getAccessTokenRepository().insert(new AccessToken(value, user.getSub(), client.getClientId(), scopes));
+            getAccessTokenRepository().insert(new AccessToken(value, user.getSub(), client.getClientId(), scopes,
+                    accessTokenValidity(client)));
             map.put("access_token", value);
         }
         String idToken = getTokenGenerator().generateIDTokenForAuthorizationEndpoint(user, client.getClientId(), nonce, responseType, value);
@@ -46,6 +51,12 @@ public interface OidcEndpoint {
     default void addSharedProperties(Map<String, Object> map) {
         map.put("token_type", "Bearer");
         map.put("expires_in", 5 * 60);
+    }
+
+    default Date accessTokenValidity(OpenIDClient client) {
+        int accessTokenValidity = client.getAccessTokenValidity();
+        LocalDateTime ldt = LocalDateTime.now().plusSeconds(accessTokenValidity);
+        return Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
     }
 
     TokenGenerator getTokenGenerator();

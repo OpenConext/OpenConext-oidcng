@@ -51,8 +51,7 @@ public class JwkKeysEndpointTest extends AbstractIntegrationTest implements Test
     }
 
     private Map<String, Object> getMapFromEndpoint(String path) {
-        return given().when().get(path).as(new TypeRef<Map<String, Object>>() {
-        });
+        return given().when().get(path).as(mapTypeRef);
     }
 
 }
