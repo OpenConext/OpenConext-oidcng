@@ -84,7 +84,7 @@ public class TokenEndpoint implements OidcEndpoint{
 
         if (clientAuthentication != null &&
                 !secretsMatch(PlainClientSecret.class.cast(clientAuthentication), client)) {
-            throw new BadCredentialsException("Secrets do not match");
+            throw new BadCredentialsException("Invalid user / secret");
         }
         if (!client.getGrants().contains(authorizationGrant.getType().getValue())) {
             throw new InvalidGrantException("Invalid grant");

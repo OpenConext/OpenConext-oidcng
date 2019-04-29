@@ -2,6 +2,7 @@ package oidc;
 
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.nimbusds.oauth2.sdk.GrantType;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import oidc.model.OpenIDClient;
@@ -69,6 +70,10 @@ public abstract class AbstractIntegrationTest implements TestUtils {
                 });
     }
 
+    protected String doAuthorize() {
+        return doAuthorize("http@//mock-sp");
+    }
+
     protected String doAuthorize(String clientId) {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", "openid profile");
@@ -92,8 +97,22 @@ public abstract class AbstractIntegrationTest implements TestUtils {
         return matcher.group(1);
     }
 
-    protected String doAuthorize() {
-        return doAuthorize("http@//mock-sp");
+    protected String doToken(String code) {
+        Map<String, Object> body = doToken(code, "http@//mock-sp", "secret", GrantType.AUTHORIZATION_CODE);
+        return (String) body.get("id_token");
+    }
+
+    protected Map<String, Object> doToken(String code, String clientId, String secret, GrantType grantType) {
+        return given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .auth()
+                .preemptive()
+                .basic(clientId, secret)
+                .formParam("grant_type", grantType.getValue())
+                .formParam(grantType.equals(GrantType.CLIENT_CREDENTIALS) ? "bogus" : "code", code)
+                .post("oidc/token")
+                .as(Map.class);
     }
 
 

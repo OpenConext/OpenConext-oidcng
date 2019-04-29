@@ -33,29 +33,41 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("unchecked")
 public class TokenEndpointTest extends AbstractIntegrationTest {
 
     @Test
-    @SuppressWarnings("unchecked")
     public void token() throws MalformedURLException, ParseException, JOSEException, BadJOSEException {
         String code = doAuthorize();
-        Map<String, Object> body = given()
-                .when()
-                .header("Content-type", "application/x-www-form-urlencoded")
-                .auth()
-                .preemptive()
-                .basic("http@//mock-sp", "secret")
-                .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
-                .formParam("code", code)
-                .post("oidc/token")
-                .as(Map.class);
-        assertEquals(new Integer(5 * 60), body.get("expires_in"));
-
-        String idToken = (String) body.get("id_token");
+        String idToken = doToken(code);
         verifySignedJWT(idToken);
         JWTClaimsSet claimsSet = processToken(idToken);
 
         assertEquals(Collections.singletonList("http@//mock-sp"), claimsSet.getAudience());
+    }
+
+    @Test
+    public void clientCredentials() throws ParseException {
+        Map<String, Object> body = doToken(null, "http@//mock-sp", "secret", GrantType.CLIENT_CREDENTIALS);
+        String idToken = (String) body.get("id_token");
+                SignedJWT jwt = SignedJWT.parse(idToken);
+        JWTClaimsSet claimsSet = jwt.getJWTClaimsSet();
+
+        assertEquals(Collections.singletonList("http@//mock-sp"), claimsSet.getAudience());
+    }
+
+    @Test
+    public void clientCredentialsInvalidGrant() throws ParseException {
+        Map<String, Object> body = doToken(null, "http@//mock-rp", "secret", GrantType.CLIENT_CREDENTIALS);
+
+        assertEquals("Invalid grant", body.get("message"));
+    }
+
+    @Test
+    public void invalidSecret() throws ParseException {
+        Map<String, Object> body = doToken(null, "http@//mock-sp", "nope", GrantType.CLIENT_CREDENTIALS);
+
+        assertEquals("Invalid user / secret", body.get("details"));
     }
 
     //Duplicated code - documentation reasons
