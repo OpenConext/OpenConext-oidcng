@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -48,12 +49,9 @@ public class MetadataControllerTest extends AbstractIntegrationTest implements T
 
     @Test
     public void rollback() throws IOException {
-        List<Map<String, Object>> serviceProviders = serviceProviders();
-        Map<String, Object> mockSp = serviceProviders.get(0);
-        ((Map) mockSp.get("data")).put("entityid", 1L);
+        List<Map<String, Object>> serviceProviders = new ArrayList<>();
         doPostConnections(serviceProviders, 500);
 
-        assertEquals(2L, mongoTemplate.count(new Query(), OpenIDClient.class));
         List<String> clientIds = mongoTemplate.find(new Query(), OpenIDClient.class).stream().map(OpenIDClient::getClientId).collect(Collectors.toList());
         clientIds.sort(String::compareTo);
         assertEquals(Arrays.asList("http@//mock-rp", "http@//mock-sp"), clientIds);
@@ -64,6 +62,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest implements T
     }
 
     private void doPostConnections(List<Map<String, Object>> serviceProviders, int expectedStatusCode) {
+        String forceError = expectedStatusCode == 500 ? "?forceError=true" : "";
         given()
                 .when()
                 .header("Content-type", "application/json")
@@ -71,7 +70,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest implements T
                 .preemptive()
                 .basic("manage", "secret")
                 .body(serviceProviders)
-                .post("manage/connections")
+                .post("manage/connections" + forceError)
                 .then()
                 .statusCode(expectedStatusCode);
     }

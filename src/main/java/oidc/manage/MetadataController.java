@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -25,13 +26,18 @@ public class MetadataController {
 
     @PostMapping("manage/connections")
     @Transactional
-    public ResponseEntity<Void> connections(@RequestBody List<Map<String, Object>> connections) {
+    public ResponseEntity<Void> connections(@RequestBody List<Map<String, Object>> connections,
+                                            @RequestParam(name = "forceError", defaultValue = "false") boolean forceError) {
         List<OpenIDClient> newClients = connections.stream().map(OpenIDClient::new).collect(Collectors.toList());
 
         mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, OpenIDClient.class)
                 .remove(new Query())
                 .insert(newClients)
                 .execute();
+
+        if (forceError) {
+            throw new IllegalArgumentException("Forced error");
+        }
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
