@@ -1,6 +1,6 @@
-# OpenConext-oidc-ng
-[![Build Status](https://travis-ci.org/oharsta/oidc-ng.svg)](https://travis-ci.org/oharsta/oidc-ng)
-[![codecov.io](https://codecov.io/github/oharsta/oidc-ng/coverage.svg)](https://codecov.io/github/oharsta/oidc-ng)
+# OpenConext-oidcng
+[![Build Status](https://travis-ci.org/OpenConext/OpenConext-oidcng.svg)](https://travis-ci.org/OpenConext/OpenConext-oidcng)
+[![codecov.io](https://codecov.io/github/OpenConext/OpenConext-oidcng/coverage.svg)](https://codecov.io/github/OpenConext/OpenConext-oidcng)
 
 OpenID Connect - SAML proxy
 
@@ -11,9 +11,11 @@ OpenID Connect - SAML proxy
 - Java 8
 - Maven 3.x
 - MongoDB 3.4.x
-- ansible 2.7.X
+- ansible 2.x.x
 
 ## [Building and running](#building-and-running)
+
+`mvn clean install`
 
 ### [The manage-server](#manage-server)
 
@@ -21,12 +23,12 @@ This project uses Spring Boot and Maven. To run locally, type:
 
 `mvn spring-boot:run -Drun.jvmArguments="-Dspring.profiles.active=dev"`
 
-When developing, it's convenient to just execute the applications main-method. Don't forget to set the active 
-profile to dev.
+When developing, it's convenient to just execute the applications main-method. The dev profile uses a fake authorization
+to bypass the redirect to EB.
 
 ### [Wiki](#wiki)
 
-See the oidc-ng [github wiki](https://github.com/oharsta/oidc-ng/wiki) for additional documentation.
+See the oidcng [github wiki](https://github.com/OpenConext/OpenConext-oidcng/wiki) for additional documentation.
 
 ### [Testing](#testing)
 
