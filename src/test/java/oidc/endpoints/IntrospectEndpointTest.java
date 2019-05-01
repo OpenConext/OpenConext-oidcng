@@ -31,7 +31,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
 
     @Test
     public void introspection() {
-        String code = doAuthorize("http@//mock-sp");
+        String code = doAuthorize();
         Map<String, Object> body = doToken(code);
         Map<String, Object> result = given()
                 .when()

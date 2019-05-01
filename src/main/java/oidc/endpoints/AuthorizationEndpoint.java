@@ -101,14 +101,16 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             }
             if (responseMode.equals(ResponseMode.QUERY)) {
                 UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectionURI);
-                body.forEach((key, value) -> builder.queryParam(key, value));
-                return new ModelAndView(new RedirectView(builder.toUriString()));
-            } else {
-                UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectionURI);
-                //builder.fragment()TODO
-                body.forEach((key, value) -> builder.queryParam(key, value));
+                body.forEach(builder::queryParam);
                 return new ModelAndView(new RedirectView(builder.toUriString()));
             }
+            if (responseMode.equals(ResponseMode.FRAGMENT)) {
+                UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectionURI);
+                String fragment = body.entrySet().stream().map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue())).collect(Collectors.joining("&"));
+                builder.fragment(fragment);
+                return new ModelAndView(new RedirectView(builder.toUriString()));
+            }
+            throw new IllegalArgumentException("Response mode " + responseMode + " not supported");
         } else if (responseType.impliesHybridFlow()) {
             //TODO
         }

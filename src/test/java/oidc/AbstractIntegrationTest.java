@@ -19,6 +19,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -75,16 +76,27 @@ public abstract class AbstractIntegrationTest implements TestUtils {
     }
 
     protected String doAuthorize() {
-        return doAuthorize("http@//mock-sp");
+        String location = doAuthorize("http@//mock-sp", "code", null, null);
+        Matcher matcher = Pattern.compile(
+                "\\Qhttp://localhost:8080?code=\\E(.*)\\Q&state=example\\E")
+                .matcher(location);
+        matcher.find();
+        return matcher.group(1);
     }
 
-    protected String doAuthorize(String clientId) {
+    protected String doAuthorize(String clientId, String responseType, String responseMode, String nonce) {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", "openid profile");
-        queryParams.put("response_type", "code");
+        queryParams.put("response_type", responseType);
         queryParams.put("client_id", clientId);
         queryParams.put("redirect_uri", "http%3A%2F%2Flocalhost%3A8080");
         queryParams.put("state", "example");
+        if (StringUtils.hasText(responseMode)) {
+            queryParams.put("response_mode", responseMode);
+        }
+        if (StringUtils.hasText(nonce)) {
+            queryParams.put("nonce", nonce);
+        }
 
         Response response = given().redirects().follow(false)
                 .when()
@@ -93,12 +105,7 @@ public abstract class AbstractIntegrationTest implements TestUtils {
                 .get("oidc/authorize");
         assertEquals(302, response.getStatusCode());
 
-        String location = response.getHeader("Location");
-        Matcher matcher = Pattern.compile(
-                "\\Qhttp://localhost:8080?code=\\E(.*)\\Q&state=example\\E")
-                .matcher(location);
-        matcher.find();
-        return matcher.group(1);
+        return response.getHeader("Location");
     }
 
     protected Map<String, Object> doToken(String code) {

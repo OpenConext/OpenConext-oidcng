@@ -48,7 +48,7 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
     }
 
     private String getAccessToken() {
-        String code = doAuthorize("http@//mock-sp");
+        String code = doAuthorize();
         Map<String, Object> body = doToken(code);
         return (String) body.get("access_token");
     }
