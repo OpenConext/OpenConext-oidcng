@@ -97,6 +97,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             }
             ResponseMode responseMode = authenticationRequest.impliedResponseMode();
             if (responseMode.equals(ResponseMode.FORM_POST)) {
+                body.put("redirect_uri", redirectionURI);
                 return new ModelAndView("form_post", body);
             }
             if (responseMode.equals(ResponseMode.QUERY)) {

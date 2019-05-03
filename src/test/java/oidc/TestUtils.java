@@ -20,7 +20,7 @@ public interface TestUtils {
     ObjectMapper objectMapper = ObjectMapperWrapper.init();
 
     class ObjectMapperWrapper {
-        private static com.fasterxml.jackson.databind.ObjectMapper init() {
+        private static ObjectMapper init() {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.findAndRegisterModules();
             return objectMapper;

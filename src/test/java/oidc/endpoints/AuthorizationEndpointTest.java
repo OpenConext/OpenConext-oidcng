@@ -3,25 +3,36 @@ package oidc.endpoints;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.oauth2.sdk.ResponseMode;
 import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import oidc.OidcEndpointTest;
 import org.junit.Test;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.util.UriComponentsBuilder;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class AuthorizationEndpointTest extends AbstractIntegrationTest implements OidcEndpointTest {
 
@@ -67,8 +78,9 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void implicitFlow() throws MalformedURLException, BadJOSEException, ParseException, JOSEException {
-        String url = doAuthorize("http@//mock-sp", "id_token token", null, "nonce");
+    public void implicitFlowFragment() throws MalformedURLException, BadJOSEException, ParseException, JOSEException {
+        Response response = doAuthorize("http@//mock-sp", "id_token token", null, "nonce");
+        String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&")).map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
         String idToken = fragmentParameters.get("id_token");
@@ -77,4 +89,23 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         assertNotNull(claimsSet.getClaim("at_hash"));
     }
 
+    @Test
+    public void implicitFlowFormPost() throws IOException, BadJOSEException, ParseException, JOSEException, ParserConfigurationException, SAXException, XPathExpressionException {
+        Response response = doAuthorize("http@//mock-sp", "id_token token", ResponseMode.FORM_POST.getValue(), "nonce");
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.parse(new ByteArrayInputStream(response.asByteArray()));
+        XPath xPath = XPathFactory.newInstance().newXPath();
+
+        Node node = (Node) xPath.compile("//html/body/form").evaluate(doc, XPathConstants.NODE);
+        assertEquals("http://localhost:8080", node.getAttributes().getNamedItem("action").getNodeValue());
+
+        NodeList nodeList = (NodeList) xPath.compile("//html/body/form/input").evaluate(doc, XPathConstants.NODESET);
+        assertEquals("example", nodeList.item(0).getAttributes().getNamedItem("value").getNodeValue());
+
+        String idToken = nodeList.item(2).getAttributes().getNamedItem("value").getNodeValue();
+        JWTClaimsSet claimsSet = processToken(idToken, port);
+        assertEquals("nonce", claimsSet.getClaim("nonce"));
+        assertNotNull(claimsSet.getClaim("at_hash"));
+    }
 }

@@ -76,7 +76,15 @@ public abstract class AbstractIntegrationTest implements TestUtils {
     }
 
     protected String doAuthorize() {
-        String location = doAuthorize("http@//mock-sp", "code", null, null);
+        Response response = doAuthorize("http@//mock-sp", "code", null, null);
+        assertEquals(302, response.getStatusCode());
+
+        return getLocation(response);
+    }
+
+    protected String getLocation(Response response) {
+        String location = response.getHeader("Location");
+
         Matcher matcher = Pattern.compile(
                 "\\Qhttp://localhost:8080?code=\\E(.*)\\Q&state=example\\E")
                 .matcher(location);
@@ -84,7 +92,7 @@ public abstract class AbstractIntegrationTest implements TestUtils {
         return matcher.group(1);
     }
 
-    protected String doAuthorize(String clientId, String responseType, String responseMode, String nonce) {
+    protected Response doAuthorize(String clientId, String responseType, String responseMode, String nonce) {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", "openid profile");
         queryParams.put("response_type", responseType);
@@ -103,9 +111,7 @@ public abstract class AbstractIntegrationTest implements TestUtils {
                 .header("Content-type", "application/json")
                 .queryParams(queryParams)
                 .get("oidc/authorize");
-        assertEquals(302, response.getStatusCode());
-
-        return response.getHeader("Location");
+        return response;
     }
 
     protected Map<String, Object> doToken(String code) {
