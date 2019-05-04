@@ -32,5 +32,7 @@ See the oidcng [github wiki](https://github.com/OpenConext/OpenConext-oidcng/wik
 
 ### [Testing](#testing)
 
-Go to the [authorization endpoint](http://localhost:8080/oidc/authorize?response_type=code&client_id=http@//mock-sp&scope=openid&redirect_uri=http://localhost:8080)
+Ensure there is a valid RP in the OpenConext proxy defined in the key `spring.security.saml2.service-provider.providers[0].metadata`
+of the `application.yml` and then go to
+the [authorization endpoint](http://localhost:8080/oidc/authorize?response_type=code&client_id=http@//mock-sp&scope=openid&redirect_uri=http://localhost:8080)
 

@@ -1,6 +1,5 @@
 package oidc.web;
 
-import com.nimbusds.oauth2.sdk.GrantType;
 import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import org.junit.Test;
@@ -10,10 +9,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
-import java.util.Map;
 
 import static io.restassured.RestAssured.given;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @ActiveProfiles(profiles = {"prod"}, inheritProfiles = false)
 public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractIntegrationTest {
