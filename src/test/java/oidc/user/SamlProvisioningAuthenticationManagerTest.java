@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -47,6 +48,9 @@ public class SamlProvisioningAuthenticationManagerTest {
         DefaultSamlAuthentication samlAuthentication = new DefaultSamlAuthentication(true, assertion, null, null, "oidc_client");
         OidcSamlAuthentication authenticate = (OidcSamlAuthentication) subject.authenticate(samlAuthentication);
 
+        assertEquals(User.class, authenticate.getDetails().getClass());
+        assertNull(authenticate.getCredentials());
+        assertEquals(0, authenticate.getAuthorities().size());
         assertTrue(authenticate.isAuthenticated());
 
         User user = authenticate.getUser();

@@ -11,7 +11,6 @@ import java.util.Collection;
 import java.util.Collections;
 
 @Getter
-@NoArgsConstructor
 public class OidcSamlAuthentication implements Authentication {
 
     private String name;
