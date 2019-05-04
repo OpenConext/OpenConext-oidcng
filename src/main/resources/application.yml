@@ -14,6 +14,7 @@ info:
     version: "@project.version@"
 
 mongodb_db: oidc
+secure_secret: cNZsJwxJQVOpGAu7Lr8NMSlMLczyz0rwruN6s8Kobjw=
 
 spring:
   data:

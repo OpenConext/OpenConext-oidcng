@@ -45,15 +45,18 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     private UserRepository userRepository;
     private ObjectMapper objectMapper;
     private String issuer;
+    private String secureSecret;
 
     public BeanConfig(AppConfig config,
                       UserRepository userRepository,
                       ObjectMapper objectMapper,
-                      @Value("${spring.security.saml2.service-provider.entity-id}") String issuer) {
+                      @Value("${spring.security.saml2.service-provider.entity-id}") String issuer,
+                      @Value("${secure_secret}") String secureSecret) {
         this.appConfiguration = config;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
         this.issuer = issuer;
+        this.secureSecret = secureSecret;
     }
 
     @Override
@@ -88,7 +91,7 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
 
     @Bean
     public TokenGenerator tokenGenerator() throws ParseException, JOSEException, IOException {
-        return new TokenGenerator(issuer);
+        return new TokenGenerator(issuer, secureSecret);
     }
 
     @Override

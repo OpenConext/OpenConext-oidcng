@@ -14,14 +14,18 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +63,16 @@ public class JwkKeysEndpoint {
                 .build();
 
         return Collections.singletonMap("keys", Collections.singletonList(build.toJSONObject()));
+    }
+
+    @GetMapping("oidc/generate-secret-key")
+    public String generateSymmetricSecretKey() throws NoSuchAlgorithmException {
+        KeyGenerator aes = KeyGenerator.getInstance("AES");
+        aes.init(256);
+        SecretKey secretKey = aes.generateKey();
+        String encodedKey = Base64.getEncoder().encodeToString(secretKey.getEncoded());
+        return encodedKey;
+
     }
 
     @GetMapping(value = {"/oidc/certs"}, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)

@@ -5,15 +5,20 @@ import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWEAlgorithm;
+import com.nimbusds.jose.JWEDecrypter;
+import com.nimbusds.jose.JWEEncrypter;
 import com.nimbusds.jose.JWEHeader;
 import com.nimbusds.jose.JWEObject;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.crypto.DirectDecrypter;
+import com.nimbusds.jose.crypto.DirectEncrypter;
 import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.crypto.RSAEncrypter;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
+import com.nimbusds.jose.crypto.impl.RSACryptoProvider;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -27,10 +32,13 @@ import oidc.model.User;
 import org.apache.commons.io.IOUtils;
 import org.springframework.core.io.ClassPathResource;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.security.SecureRandom;
 import java.text.ParseException;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -54,9 +62,9 @@ public class TokenGenerator {
 
     private RSASSAVerifier verifier;
 
-    private RSAEncrypter encrypter;
+    private JWEEncrypter encrypter;
 
-    private RSADecrypter decrypter;
+    private JWEDecrypter decrypter;
 
     private String kid;
 
@@ -66,7 +74,11 @@ public class TokenGenerator {
 
     private JWSAlgorithm signingAlg = JWSAlgorithm.RS256;
 
-    public TokenGenerator(String issuer) throws IOException, ParseException, JOSEException {
+    private JWEEncrypter symmetricEncryper;
+
+    private JWEDecrypter symmetricDecriptor;
+
+    public TokenGenerator(String issuer, String secureSecret) throws IOException, ParseException, JOSEException {
         this.issuer = issuer;
         String s = IOUtils.toString(new ClassPathResource(jwksKeyStorePath).getInputStream(), Charset.defaultCharset());
         jwkSet = JWKSet.parse(s);
@@ -81,6 +93,11 @@ public class TokenGenerator {
         this.verifier = new RSASSAVerifier(rsaJWK);
         this.encrypter = new RSAEncrypter(rsaJWK);
         this.decrypter = new RSADecrypter(rsaJWK);
+
+        SecretKey secretKey = new SecretKeySpec(Base64.getDecoder().decode(secureSecret), "AES");
+        this.symmetricDecriptor = new DirectDecrypter(secretKey);
+        this.symmetricEncryper = new DirectEncrypter(secretKey);
+
     }
 
     public String generateAccessToken() {
@@ -88,29 +105,21 @@ public class TokenGenerator {
     }
 
     public String generateEncryptedAccessToken(Map<String, Object> input) throws JOSEException {
-        JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder();
-        input.forEach((name, value) -> builder.claim(name, value));
-
-        SignedJWT signedJWT = getSignedJWT(builder);
-
-        JWEObject jweObject = new JWEObject(
-                new JWEHeader.Builder(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A256GCM)
-                        .contentType("JWT") // required to indicate nested JWT
-                        .build(),
-                new Payload(signedJWT));
-        jweObject.encrypt(this.encrypter);
-        return jweObject.serialize();
+        return encryptedAccessToken(input, this.encrypter);
     }
 
     public Map<String, Object> decryptAccessToken(String jweString) throws ParseException, JOSEException {
-        JWEObject jweObject = JWEObject.parse(jweString);
-        jweObject.decrypt(decrypter);
-        SignedJWT signedJWT = jweObject.getPayload().toSignedJWT();
-        if (!signedJWT.verify(verifier)) {
-            throw new JOSEException("Tampered JWT");
-        }
-        return signedJWT.getJWTClaimsSet().getClaims();
+        return doDecryptAccessToken(jweString, decrypter);
     }
+
+    public String generateSymmetricEncryptedAccessToken(Map<String, Object> input) throws JOSEException {
+        return encryptedAccessToken(input, this.symmetricEncryper);
+    }
+
+    public Map<String, Object> decryptSymmtricAccessToken(String jweString) throws ParseException, JOSEException {
+        return doDecryptAccessToken(jweString, this.symmetricDecriptor);
+    }
+
 
     public String generateAuthorizationCode() {
         byte[] verifierBytes = new byte[12];
@@ -137,6 +146,30 @@ public class TokenGenerator {
                     AccessTokenHash.compute(new BearerAccessToken(accessToken), signingAlg).getValue());
         }
         return idToken(clientId, Optional.of(user), additionalClaims);
+    }
+
+    private Map<String, Object> doDecryptAccessToken(String jweString, JWEDecrypter decrypter) throws ParseException, JOSEException {
+        JWEObject jweObject = JWEObject.parse(jweString);
+        jweObject.decrypt(decrypter);
+        SignedJWT signedJWT = jweObject.getPayload().toSignedJWT();
+        if (!signedJWT.verify(verifier)) {
+            throw new JOSEException("Tampered JWT");
+        }
+        return signedJWT.getJWTClaimsSet().getClaims();
+    }
+
+    private String encryptedAccessToken(Map<String, Object> input, JWEEncrypter encrypter) throws JOSEException {
+        JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder();
+        input.forEach((name, value) -> builder.claim(name, value));
+
+        SignedJWT signedJWT = getSignedJWT(builder);
+        JWEHeader header = encrypter instanceof RSACryptoProvider ?
+                new JWEHeader(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A256GCM) :
+                new JWEHeader(JWEAlgorithm.DIR, EncryptionMethod.A256GCM);
+
+        JWEObject jweObject = new JWEObject(header, new Payload(signedJWT));
+        jweObject.encrypt(encrypter);
+        return jweObject.serialize();
     }
 
     private String idToken(String clientId, Optional<User> user, Map<String, String> additionalClaims) throws JOSEException {

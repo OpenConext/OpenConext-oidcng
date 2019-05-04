@@ -27,7 +27,8 @@ import static org.junit.Assert.assertEquals;
 public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEndpointTest {
 
     private String issuer = "issuer";
-    private TokenGenerator tokenGenerator = new TokenGenerator(issuer);
+    private TokenGenerator tokenGenerator = new TokenGenerator(issuer,
+            "cNZsJwxJQVOpGAu7Lr8NMSlMLczyz0rwruN6s8Kobjw=");
 
     public TokenEndpointTest() throws ParseException, JOSEException, IOException {
     }
