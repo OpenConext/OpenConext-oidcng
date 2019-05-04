@@ -23,7 +23,8 @@
           "client_credentials"
         ],
         "accessTokenValidity": 3600,
-        "resourceServer": "1"
+        "resourceServer": "1",
+        "publicClient": true
       }
     }
   },

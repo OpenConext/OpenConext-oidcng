@@ -3,9 +3,11 @@ package oidc;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.oauth2.sdk.GrantType;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import io.restassured.RestAssured;
 import io.restassured.mapper.TypeRef;
 import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
 import oidc.model.OpenIDClient;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -76,13 +78,13 @@ public abstract class AbstractIntegrationTest implements TestUtils {
     }
 
     protected String doAuthorize() {
-        Response response = doAuthorize("http@//mock-sp", "code", null, null);
+        Response response = doAuthorize("http@//mock-sp", "code", null, null, null);
         assertEquals(302, response.getStatusCode());
 
-        return getLocation(response);
+        return getCode(response);
     }
 
-    protected String getLocation(Response response) {
+    protected String getCode(Response response) {
         String location = response.getHeader("Location");
 
         Matcher matcher = Pattern.compile(
@@ -92,7 +94,7 @@ public abstract class AbstractIntegrationTest implements TestUtils {
         return matcher.group(1);
     }
 
-    protected Response doAuthorize(String clientId, String responseType, String responseMode, String nonce) {
+    protected Response doAuthorize(String clientId, String responseType, String responseMode, String nonce, String codeChallenge) {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", "openid profile");
         queryParams.put("response_type", responseType);
@@ -104,6 +106,10 @@ public abstract class AbstractIntegrationTest implements TestUtils {
         }
         if (StringUtils.hasText(nonce)) {
             queryParams.put("nonce", nonce);
+        }
+        if (StringUtils.hasText(codeChallenge)) {
+            queryParams.put("code_challenge", codeChallenge);
+            queryParams.put("code_challenge_method", CodeChallengeMethod.PLAIN.getValue());
         }
 
         Response response = given().redirects().follow(false)
@@ -119,12 +125,23 @@ public abstract class AbstractIntegrationTest implements TestUtils {
     }
 
     protected Map<String, Object> doToken(String code, String clientId, String secret, GrantType grantType) {
-        return given()
+        return doToken(code, clientId, secret, grantType, null);
+    }
+
+    protected Map<String, Object> doToken(String code, String clientId, String secret, GrantType grantType, String codeVerifier) {
+        RequestSpecification header = given()
                 .when()
-                .header("Content-type", "application/x-www-form-urlencoded")
-                .auth()
-                .preemptive()
-                .basic(clientId, secret)
+                .header("Content-type", "application/x-www-form-urlencoded");
+        if (StringUtils.hasText(clientId) && StringUtils.hasText(secret)) {
+            header = header.auth().preemptive().basic(clientId, secret);
+        }
+        if (StringUtils.hasText(clientId) && StringUtils.isEmpty(secret)) {
+            header = header.formParam("client_id", clientId);
+        }
+        if (StringUtils.hasText(codeVerifier)) {
+            header = header.formParam("code_verifier", codeVerifier);
+        }
+        return header
                 .formParam("grant_type", grantType.getValue())
                 .formParam(grantType.equals(GrantType.CLIENT_CREDENTIALS) ? "bogus" : "code", code)
                 .post("oidc/token")

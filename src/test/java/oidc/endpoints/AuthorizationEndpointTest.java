@@ -79,7 +79,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void implicitFlowFragment() throws MalformedURLException, BadJOSEException, ParseException, JOSEException {
-        Response response = doAuthorize("http@//mock-sp", "id_token token", null, "nonce");
+        Response response = doAuthorize("http@//mock-sp", "id_token token", null, "nonce", null);
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&")).map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
@@ -91,7 +91,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void implicitFlowFormPost() throws IOException, BadJOSEException, ParseException, JOSEException, ParserConfigurationException, SAXException, XPathExpressionException {
-        Response response = doAuthorize("http@//mock-sp", "id_token token", ResponseMode.FORM_POST.getValue(), "nonce");
+        Response response = doAuthorize("http@//mock-sp", "id_token token", ResponseMode.FORM_POST.getValue(), "nonce", null);
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
         Document doc = dBuilder.parse(new ByteArrayInputStream(response.asByteArray()));

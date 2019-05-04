@@ -78,8 +78,12 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint{
                 && ((AuthorizationCodeGrant) authorizationGrant).getCodeVerifier() == null) {
             throw new CodeVerifierMissingException("code_verifier required without findByClientId authentication");
         }
+        String clientId = clientAuthentication != null ? clientAuthentication.getClientID().getValue() : tokenRequest.getClientID().getValue();
+        OpenIDClient client = openIDClientRepository.findByClientId(clientId);
 
-        OpenIDClient client = openIDClientRepository.findByClientId(clientAuthentication.getClientID().getValue());
+        if (clientAuthentication == null && !client.isPublicClient()) {
+            throw new BadCredentialsException("Non-public client requires authentication");
+        }
 
         if (clientAuthentication != null &&
                 !secretsMatch(PlainClientSecret.class.cast(clientAuthentication), client)) {
@@ -124,9 +128,10 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint{
         CodeVerifier codeVerifier = authorizationCodeGrant.getCodeVerifier();
         if (codeVerifier != null)  {
             if (authorizationCode.getCodeChallenge() == null) {
-                throw new CodeVerifierMissingException("code_verifier present but not in the authorization_code");
+                throw new CodeVerifierMissingException("code_verifier present, but no code_challenge in the authorization_code");
             }
-            CodeChallenge computed = CodeChallenge.compute(CodeChallengeMethod.parse(authorizationCode.getCodeChallengeMethod()), codeVerifier);
+            CodeChallenge computed = CodeChallenge.compute(CodeChallengeMethod.parse(authorizationCode.getCodeChallengeMethod()),
+                    new CodeVerifier(authorizationCode.getCodeChallenge()));
 
             if (!codeVerifier.getValue().equals(computed.getValue())) {
                 throw new CodeVerifierMissingException("code_verifier does not match code_challenge");

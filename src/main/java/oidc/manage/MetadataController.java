@@ -1,7 +1,6 @@
 package oidc.manage;
 
 import oidc.model.OpenIDClient;
-import oidc.repository.OpenIDClientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;

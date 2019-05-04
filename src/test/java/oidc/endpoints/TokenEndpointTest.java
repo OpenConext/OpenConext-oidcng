@@ -5,8 +5,11 @@ import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
+import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import oidc.OidcEndpointTest;
+import oidc.secure.TokenGenerator;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
@@ -48,10 +51,45 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
-    public void invalidSecret() throws ParseException {
+    public void invalidSecret() {
         Map<String, Object> body = doToken(null, "http@//mock-sp", "nope", GrantType.CLIENT_CREDENTIALS);
 
         assertEquals("Invalid user / secret", body.get("details"));
     }
 
+    @Test
+    public void nonPublicClient() {
+        String code = doAuthorize();
+        Map<String, Object> body = doToken(code, "http@//mock-rp", null, GrantType.AUTHORIZATION_CODE,
+                StringUtils.leftPad("token", 45, "*"));
+
+        assertEquals("Non-public client requires authentication", body.get("details"));
+    }
+
+    @Test
+    public void codeChallengeMissing() {
+        String code = doAuthorize();
+        Map<String, Object> body = doToken(code, "http@//mock-sp", null, GrantType.AUTHORIZATION_CODE);
+
+        assertEquals("code_verifier required without findByClientId authentication", body.get("message"));
+    }
+
+    @Test
+    public void codeChallengeInvalid() {
+        Response response = doAuthorize("http@//mock-sp", "code", null, null,
+                StringUtils.leftPad("token", 45, "-"));
+        String code = getCode(response);
+        Map<String, Object> body = doToken(code, "http@//mock-sp", null, GrantType.AUTHORIZATION_CODE,
+                StringUtils.leftPad("token", 45, "*"));
+        assertEquals("code_verifier does not match code_challenge", body.get("message"));
+    }
+
+    @Test
+    public void codeChallengeNotInAuthorisationCode() {
+        Response response = doAuthorize("http@//mock-sp", "code", null, null, null);
+        String code = getCode(response);
+        Map<String, Object> body = doToken(code, "http@//mock-sp", null, GrantType.AUTHORIZATION_CODE,
+                StringUtils.leftPad("token", 45, "*"));
+        assertEquals("code_verifier present, but no code_challenge in the authorization_code", body.get("message"));
+    }
 }

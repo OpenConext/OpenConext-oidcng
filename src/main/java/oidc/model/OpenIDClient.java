@@ -25,6 +25,7 @@ public class OpenIDClient {
     private List<String> scopes;
     private List<String> grants;
     private boolean resourceServer;
+    private boolean publicClient;
     //seconds
     private int accessTokenValidity;
 
@@ -42,6 +43,7 @@ public class OpenIDClient {
         this.scopes = List.class.cast(metaDataFields.getOrDefault("scopes", "oidc"));
         this.grants = List.class.cast(metaDataFields.getOrDefault("grants", "authorization_code"));
         this.resourceServer = parseBoolean(metaDataFields.get("resourceServer"));
+        this.publicClient = parseBoolean(metaDataFields.get("publicClient"));
         this.accessTokenValidity = Integer.class.cast(metaDataFields.getOrDefault("accessTokenValidity", 3600));
     }
 
