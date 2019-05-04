@@ -8,6 +8,7 @@ import io.restassured.RestAssured;
 import io.restassured.mapper.TypeRef;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import oidc.model.AccessToken;
 import oidc.model.OpenIDClient;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -17,13 +18,18 @@ import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -146,6 +152,13 @@ public abstract class AbstractIntegrationTest implements TestUtils {
                 .formParam(grantType.equals(GrantType.CLIENT_CREDENTIALS) ? "bogus" : "code", code)
                 .post("oidc/token")
                 .as(Map.class);
+    }
+
+    protected void expireAccessToken(String token) {
+        AccessToken accessToken = mongoTemplate.find(Query.query(Criteria.where("value").is(token)), AccessToken.class).get(0);
+        Date expiresIn = Date.from(LocalDateTime.now().minusYears(1L).atZone(ZoneId.systemDefault()).toInstant());
+        ReflectionTestUtils.setField(accessToken, "expiresIn", expiresIn);
+        mongoTemplate.save(accessToken);
     }
 
 

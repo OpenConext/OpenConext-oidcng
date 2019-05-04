@@ -34,10 +34,7 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
     @Test
     public void userInfoExpired() {
         String token = getAccessToken();
-        AccessToken accessToken = mongoTemplate.find(Query.query(Criteria.where("value").is(token)), AccessToken.class).get(0);
-        Date expiresIn = Date.from(LocalDateTime.now().minusYears(1L).atZone(ZoneId.systemDefault()).toInstant());
-        ReflectionTestUtils.setField(accessToken, "expiresIn", expiresIn);
-        mongoTemplate.save(accessToken);
+        expireAccessToken(token);
 
         Map<String, Object> body = given()
                 .when()

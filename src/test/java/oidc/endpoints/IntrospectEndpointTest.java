@@ -29,17 +29,57 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
 
     @Test
     public void introspection() {
+        Map<String, Object> result = doIntrospection("http@//mock-sp");
+        assertEquals(true, result.get("active"));
+    }
+
+    @Test
+    public void introspectionWithExpiredAccessToken() {
+        String accessToken = getAccessToken();
+        expireAccessToken(accessToken);
+        Map<String, Object> result = callIntrospection("http@//mock-sp", accessToken);
+        assertEquals(false, result.get("active"));
+    }
+
+    @Test
+    public void introspectionBadCredentials() {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
         Map<String, Object> result = given()
                 .when()
                 .header("Content-type", "application/x-www-form-urlencoded")
-                .auth()
-                .preemptive()
-                .basic("http@//mock-sp", "secret")
                 .formParam("token", body.get("access_token"))
                 .post("oidc/introspect")
                 .as(mapTypeRef);
-        assertEquals(true, result.get("active"));
+        assertEquals("Invalid user / secret", result.get("details"));
+    }
+
+    @Test
+    public void introspectionNoResourceServer() {
+        Map<String, Object> result = doIntrospection("http@//mock-rp");
+        assertEquals("Requires ResourceServer", result.get("details"));
+    }
+
+    private Map<String, Object> doIntrospection(String clientId) {
+        String accessToken = getAccessToken();
+        return callIntrospection(clientId, accessToken);
+    }
+
+    private String getAccessToken() {
+        String code = doAuthorize();
+        Map<String, Object> body = doToken(code);
+        return (String) body.get("access_token");
+    }
+
+    private Map<String, Object> callIntrospection(String clientId, String accessToken) {
+        return given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .auth()
+                .preemptive()
+                .basic(clientId, "secret")
+                .formParam("token", accessToken)
+                .post("oidc/introspect")
+                .as(mapTypeRef);
     }
 }
