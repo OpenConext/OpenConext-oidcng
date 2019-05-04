@@ -156,6 +156,11 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <excludes>
+                        <exclude>**/ServiceProviderController.*</exclude>
+                    </excludes>
+                </configuration>
             </plugin>
 
         </plugins>
