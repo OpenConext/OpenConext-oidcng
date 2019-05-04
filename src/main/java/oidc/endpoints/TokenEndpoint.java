@@ -30,7 +30,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -42,7 +41,7 @@ import java.util.Optional;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 @RestController
-public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint{
+public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
     private AuthorizationCodeRepository authorizationCodeRepository;
     private AccessTokenRepository accessTokenRepository;
@@ -126,7 +125,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint{
             throw new RedirectMismatchException("Redirects do not match");
         }
         CodeVerifier codeVerifier = authorizationCodeGrant.getCodeVerifier();
-        if (codeVerifier != null)  {
+        if (codeVerifier != null) {
             if (authorizationCode.getCodeChallenge() == null) {
                 throw new CodeVerifierMissingException("code_verifier present, but no code_challenge in the authorization_code");
             }

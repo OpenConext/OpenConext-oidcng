@@ -35,10 +35,6 @@ import org.springframework.security.saml.provider.service.config.SamlServiceProv
 import org.springframework.security.saml.spi.SpringSecuritySaml;
 
 import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import java.io.IOException;
 import java.text.ParseException;
 

@@ -1,6 +1,5 @@
 package oidc.config;
 
-import com.fasterxml.jackson.annotation.JacksonAnnotation;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import oidc.model.User;
@@ -46,9 +45,15 @@ public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
 
         return new JacksonMongoSessionConverter(modules);
     }
-    private static class OidcSamlAuthenticationMixin{}
-    private static class HashSetMixin{}
-    private static class UserMixin{}
+
+    private static class OidcSamlAuthenticationMixin {
+    }
+
+    private static class HashSetMixin {
+    }
+
+    private static class UserMixin {
+    }
 
 
 }

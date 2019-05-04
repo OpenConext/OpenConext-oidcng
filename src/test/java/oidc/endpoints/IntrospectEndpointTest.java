@@ -1,11 +1,9 @@
 package oidc.endpoints;
 
-import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.TokenIntrospectionRequest;
 import com.nimbusds.oauth2.sdk.http.CommonContentTypes;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
-import io.restassured.mapper.TypeRef;
 import oidc.AbstractIntegrationTest;
 import org.junit.Test;
 
@@ -15,7 +13,7 @@ import java.util.Map;
 
 import static com.nimbusds.oauth2.sdk.http.HTTPRequest.Method.POST;
 import static io.restassured.RestAssured.given;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class IntrospectEndpointTest extends AbstractIntegrationTest {
 

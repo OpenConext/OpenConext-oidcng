@@ -2,14 +2,11 @@ package oidc.user;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import oidc.model.User;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.saml.saml2.authentication.Assertion;
-import org.springframework.security.saml.spi.DefaultSamlAuthentication;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 

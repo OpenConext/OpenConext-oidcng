@@ -6,8 +6,6 @@ import org.springframework.security.saml.saml2.authentication.NameIdPrincipal;
 import org.springframework.security.saml.saml2.authentication.Subject;
 import org.springframework.security.saml.saml2.metadata.NameId;
 
-import static org.junit.Assert.*;
-
 public class FakeSamlAuthenticationFilterTest {
 
     @Test

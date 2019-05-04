@@ -6,29 +6,37 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
 import io.restassured.response.Response;
-import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
 import oidc.OidcEndpointTest;
 import oidc.secure.TokenGenerator;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
+import static com.nimbusds.oauth2.sdk.auth.JWTAuthentication.CLIENT_ASSERTION_TYPE;
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("unchecked")
 public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEndpointTest {
 
+    private String issuer = "issuer";
+    private TokenGenerator tokenGenerator = new TokenGenerator(issuer);
+
+    public TokenEndpointTest() throws ParseException, JOSEException, IOException {
+    }
+
     @Test
     public void token() throws MalformedURLException, ParseException, JOSEException, BadJOSEException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
-        String idToken =(String) body.get("id_token");
+        String idToken = (String) body.get("id_token");
         verifySignedJWT(idToken, port);
         JWTClaimsSet claimsSet = processToken(idToken, port);
 
@@ -39,7 +47,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     public void clientCredentials() throws ParseException {
         Map<String, Object> body = doToken(null, "http@//mock-sp", "secret", GrantType.CLIENT_CREDENTIALS);
         String idToken = (String) body.get("id_token");
-                SignedJWT jwt = SignedJWT.parse(idToken);
+        SignedJWT jwt = SignedJWT.parse(idToken);
         JWTClaimsSet claimsSet = jwt.getJWTClaimsSet();
 
         assertEquals(Collections.singletonList("http@//mock-sp"), claimsSet.getAudience());
@@ -109,5 +117,22 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
                 .post("oidc/token")
                 .as(mapTypeRef);
         assertEquals("Redirects do not match", body.get("message"));
+    }
+
+    @Test
+    public void unsupportedClientAuthentication() throws JOSEException {
+        String code = doAuthorize();
+        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.empty(), issuer);
+        Map<String, Object> body = given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .formParam("client_assertion_type", CLIENT_ASSERTION_TYPE)
+                .formParam("client_assertion", idToken)
+                .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
+                .formParam("code", code)
+                .post("oidc/token")
+                .as(mapTypeRef);
+        assertEquals("Unsupported 'class com.nimbusds.oauth2.sdk.auth.PrivateKeyJWT' findByClientId authentication in token endpoint",
+                body.get("message"));
     }
 }

@@ -3,8 +3,15 @@ package oidc.endpoints;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
+import oidc.model.AccessToken;
 import org.junit.Test;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
@@ -22,6 +29,23 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
     public void postUserInfo() {
         userInfo("POST");
 
+    }
+
+    @Test
+    public void userInfoExpired() {
+        String token = getAccessToken();
+        AccessToken accessToken = mongoTemplate.find(Query.query(Criteria.where("value").is(token)), AccessToken.class).get(0);
+        Date expiresIn = Date.from(LocalDateTime.now().minusYears(1L).atZone(ZoneId.systemDefault()).toInstant());
+        ReflectionTestUtils.setField(accessToken, "expiresIn", expiresIn);
+        mongoTemplate.save(accessToken);
+
+        Map<String, Object> body = given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .formParam("access_token", token)
+                .post("oidc/userinfo")
+                .as(mapTypeRef);
+        assertEquals("Access token expired", body.get("message"));
     }
 
     private void userInfo(String method) {

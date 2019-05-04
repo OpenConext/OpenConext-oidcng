@@ -10,9 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.List;
 
 @NoArgsConstructor
-@AllArgsConstructor
 @Getter
-@Setter
 @Document(collection = "authorization_codes")
 public class AuthorizationCode {
 
@@ -32,10 +30,6 @@ public class AuthorizationCode {
     private String codeChallenge;
 
     private String codeChallengeMethod;
-
-    public AuthorizationCode(String code, String sub, String clientId, List<String> scopes, String redirectUri) {
-        this(code, sub, clientId, scopes, redirectUri, null, null);
-    }
 
     public AuthorizationCode(String code, String sub, String clientId, List<String> scopes, String redirectUri, String codeChallenge, String codeChallengeMethod) {
         this.code = code;

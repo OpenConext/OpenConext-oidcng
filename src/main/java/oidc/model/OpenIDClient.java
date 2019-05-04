@@ -47,11 +47,6 @@ public class OpenIDClient {
         this.accessTokenValidity = Integer.class.cast(metaDataFields.getOrDefault("accessTokenValidity", 3600));
     }
 
-    public OpenIDClient setId(String id) {
-        this.id = id;
-        return this;
-    }
-
     @Transient
     private boolean parseBoolean(Object val) {
         if (val instanceof Boolean) {
