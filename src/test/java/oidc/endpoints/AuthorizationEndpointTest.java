@@ -78,6 +78,26 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
+    public void validationRedirectURI() {
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("scope", "openid");
+        queryParams.put("response_type", "code");
+        queryParams.put("client_id", "http@//mock-sp");
+        queryParams.put("redirect_uri", "http://nope");
+
+        Map<String, Object> body = given().redirects().follow(false)
+                .when()
+                .header("Content-type", "application/json")
+                .queryParams(queryParams)
+                .get("oidc/authorize")
+                .as(mapTypeRef);
+        assertEquals("Client http@//mock-sp with registered redirect URI's " +
+                        "[http://localhost:8091/redirect, http://localhost:8080] requested " +
+                        "authorization with redirectURI http://nope",
+                body.get("message"));
+    }
+
+    @Test
     public void implicitFlowFragment() throws MalformedURLException, BadJOSEException, ParseException, JOSEException {
         Response response = doAuthorize("http@//mock-sp", "id_token token", null, "nonce", null);
         String url = response.getHeader("Location");

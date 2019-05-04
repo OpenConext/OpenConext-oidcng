@@ -6,6 +6,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
 import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
 import oidc.OidcEndpointTest;
 import oidc.secure.TokenGenerator;
@@ -17,6 +18,7 @@ import java.text.ParseException;
 import java.util.Collections;
 import java.util.Map;
 
+import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("unchecked")
@@ -91,5 +93,21 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
         Map<String, Object> body = doToken(code, "http@//mock-sp", null, GrantType.AUTHORIZATION_CODE,
                 StringUtils.leftPad("token", 45, "*"));
         assertEquals("code_verifier present, but no code_challenge in the authorization_code", body.get("message"));
+    }
+
+    @Test
+    public void redirectMismatch() {
+        String code = doAuthorize();
+        Map<String, Object> body = given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .auth().preemptive()
+                .basic("http@//mock-sp", "secret")
+                .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
+                .formParam("code", code)
+                .formParam("redirect_uri", "http://nope")
+                .post("oidc/token")
+                .as(mapTypeRef);
+        assertEquals("Redirects do not match", body.get("message"));
     }
 }
