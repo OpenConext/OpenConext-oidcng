@@ -29,7 +29,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
 
     @Test
     public void introspection() {
-        Map<String, Object> result = doIntrospection("http@//mock-sp");
+        Map<String, Object> result = doIntrospection("http@//mock-sp", "secret");
         assertEquals(true, result.get("active"));
     }
 
@@ -37,7 +37,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     public void introspectionWithExpiredAccessToken() {
         String accessToken = getAccessToken();
         expireAccessToken(accessToken);
-        Map<String, Object> result = callIntrospection("http@//mock-sp", accessToken);
+        Map<String, Object> result = callIntrospection("http@//mock-sp", accessToken, "secret");
         assertEquals(false, result.get("active"));
     }
 
@@ -56,13 +56,19 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
 
     @Test
     public void introspectionNoResourceServer() {
-        Map<String, Object> result = doIntrospection("http@//mock-rp");
+        Map<String, Object> result = doIntrospection("http@//mock-rp", "secret");
         assertEquals("Requires ResourceServer", result.get("details"));
     }
 
-    private Map<String, Object> doIntrospection(String clientId) {
+    @Test
+    public void introspectionWrongSecret() {
+        Map<String, Object> result = doIntrospection("http@//mock-sp", "nope");
+        assertEquals("Invalid user / secret", result.get("details"));
+    }
+
+    private Map<String, Object> doIntrospection(String clientId, String secret) {
         String accessToken = getAccessToken();
-        return callIntrospection(clientId, accessToken);
+        return callIntrospection(clientId, accessToken, secret);
     }
 
     private String getAccessToken() {
@@ -71,13 +77,13 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
         return (String) body.get("access_token");
     }
 
-    private Map<String, Object> callIntrospection(String clientId, String accessToken) {
+    private Map<String, Object> callIntrospection(String clientId, String accessToken, String secret) {
         return given()
                 .when()
                 .header("Content-type", "application/x-www-form-urlencoded")
                 .auth()
                 .preemptive()
-                .basic(clientId, "secret")
+                .basic(clientId, secret)
                 .formParam("token", accessToken)
                 .post("oidc/introspect")
                 .as(mapTypeRef);

@@ -77,6 +77,14 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
+    public void clientMismatch() {
+        String code = doAuthorize();
+        Map<String, Object> body = doToken(code, "http@//mock-rp", "secret", GrantType.AUTHORIZATION_CODE, null);
+
+        assertEquals("Client is not authorized for the authorization code", body.get("details"));
+    }
+
+    @Test
     public void codeChallengeMissing() {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code, "http@//mock-sp", null, GrantType.AUTHORIZATION_CODE);

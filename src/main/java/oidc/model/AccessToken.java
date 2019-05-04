@@ -1,6 +1,5 @@
 package oidc.model;
 
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -9,7 +8,6 @@ import java.util.Date;
 import java.util.List;
 
 @NoArgsConstructor
-@Getter
 @Document(collection = "access_tokens")
 public class AccessToken {
 
@@ -34,4 +32,15 @@ public class AccessToken {
         this.expiresIn = expiresIn;
     }
 
+    public String getSub() {
+        return sub;
+    }
+
+    public List<String> getScopes() {
+        return scopes;
+    }
+
+    public Date getExpiresIn() {
+        return expiresIn;
+    }
 }

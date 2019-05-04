@@ -114,9 +114,6 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, OpenIDClient client) throws JOSEException {
         String code = authorizationCodeGrant.getAuthorizationCode().getValue();
         AuthorizationCode authorizationCode = authorizationCodeRepository.findByCode(code);
-        if (authorizationCode == null) {
-            throw new BadCredentialsException("Authorization code not found");
-        }
         if (!authorizationCode.getClientId().equals(client.getClientId())) {
             throw new BadCredentialsException("Client is not authorized for the authorization code");
         }
