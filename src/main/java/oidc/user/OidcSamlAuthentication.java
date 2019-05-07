@@ -1,7 +1,6 @@
 package oidc.user;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import oidc.model.User;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;

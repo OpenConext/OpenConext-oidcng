@@ -8,7 +8,6 @@ import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import oidc.OidcEndpointTest;
 import org.junit.Test;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;

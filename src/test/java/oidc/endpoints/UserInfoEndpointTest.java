@@ -3,15 +3,8 @@ package oidc.endpoints;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
-import oidc.model.AccessToken;
 import org.junit.Test;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
