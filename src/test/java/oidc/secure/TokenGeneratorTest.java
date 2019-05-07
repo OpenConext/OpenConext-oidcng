@@ -39,14 +39,11 @@ public class TokenGeneratorTest implements TestUtils {
 
     @Test(expected = InvalidSignatureException.class)
     public void tamperWithEncryptedAccessToken() throws JOSEException, ParseException, NoSuchAlgorithmException {
-        try {
         SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), new JWTClaimsSet.Builder().build());
-        signedJWT.sign(new RSASSASigner(KeyPairGenerator.getInstance("RSA").generateKeyPair().getPrivate()));
-        subject.verifyClaims(signedJWT);}
-        catch (Exception e) {
-            System.err.println(e);
-            throw e;
-        }
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(2048);
+        signedJWT.sign(new RSASSASigner(keyPairGenerator.generateKeyPair().getPrivate()));
+        subject.verifyClaims(signedJWT);
     }
 
     @Test
