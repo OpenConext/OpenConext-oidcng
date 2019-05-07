@@ -20,7 +20,7 @@ public class ServiceProviderTranslationTest {
         String s = ServiceProviderTranslation.translateClientId("https@//test");
         assertEquals("https://test",s);
 
-        s = ServiceProviderTranslation.translateClientId("https@//test@@test");
+        s = new ServiceProviderTranslation().translateClientId("https@//test@@test");
         assertEquals(s, "https://test@test",s);
     }
 }

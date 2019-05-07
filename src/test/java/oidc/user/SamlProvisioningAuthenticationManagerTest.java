@@ -16,8 +16,11 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -66,11 +69,29 @@ public class SamlProvisioningAuthenticationManagerTest {
 
         when(userRepository.findOptionalUserBySub(user.getSub())).thenReturn(Optional.of(user));
         when(userRepository.insert(any(User.class))).thenThrow(IllegalArgumentException.class);
+        when(userRepository.save(any(User.class))).thenThrow(IllegalArgumentException.class);
+
+        authenticate = (OidcSamlAuthentication) subject.authenticate(samlAuthentication);
+        user = authenticate.getUser();
+        assertEquals(sub, user.getSub());
+
+        assertion.getFirstAttribute("urn:mace:dir:attribute-def:mail").setValues(Collections.singletonList("changed@example.org"));
+        when(userRepository.save(any(User.class))).thenReturn(user);
 
         authenticate = (OidcSamlAuthentication) subject.authenticate(samlAuthentication);
         user = authenticate.getUser();
 
-        assertEquals(sub, user.getSub());
+        assertEquals("changed@example.org", user.getAttributes().get("email"));
+
+        assertion.setAttributes(assertion.getAttributes().stream().filter(attr -> !attr.getName().equals("urn:mace:dir:attribute-def:eduPersonTargetedID"))
+                .collect(Collectors.toList()));
+
+        when(userRepository.insert(any(User.class))).thenReturn(user);
+        authenticate = (OidcSamlAuthentication) subject.authenticate(samlAuthentication);
+        user = authenticate.getUser();
+
+        assertNotEquals(sub, user.getSub());
+        assertEquals(true, Pattern.compile("([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}){1}").matcher(user.getSub()).matches());
     }
 
 

@@ -2,16 +2,20 @@ package oidc.secure;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import oidc.TestUtils;
+import oidc.exceptions.InvalidSignatureException;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
 import java.io.IOException;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
-import java.util.Base64;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -31,6 +35,13 @@ public class TokenGeneratorTest implements TestUtils {
 
         Map<String, Object> parsed = subject.decryptAccessToken(jweString);
         assertEquals(data, parsed);
+    }
+
+    @Test(expected = InvalidSignatureException.class)
+    public void tamperWithEncryptedAccessToken() throws IOException, JOSEException, ParseException, NoSuchAlgorithmException {
+        SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), new JWTClaimsSet.Builder().build());
+        signedJWT.sign(new RSASSASigner(KeyPairGenerator.getInstance("RSA").generateKeyPair().getPrivate()));
+        subject.verifyClaims(signedJWT);
     }
 
     @Test

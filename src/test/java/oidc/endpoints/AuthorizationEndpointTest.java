@@ -8,6 +8,8 @@ import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import oidc.OidcEndpointTest;
 import org.junit.Test;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -103,7 +105,21 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&")).map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
-        String idToken = fragmentParameters.get("id_token");
+        assertImplicitFlowResponse(fragmentParameters);
+    }
+
+    @Test
+    public void implicitFlowQuery() throws MalformedURLException, BadJOSEException, ParseException, JOSEException {
+        Response response = doAuthorize("http@//mock-sp", "id_token token", ResponseMode.QUERY.getValue(), "nonce", null);
+        String url = response.getHeader("Location");
+        Map<String, String> queryParameters = UriComponentsBuilder.fromUriString(url).build().getQueryParams().toSingleValueMap();
+        String fragment = url.substring(url.indexOf("#") + 1);
+        Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&")).map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
+        assertImplicitFlowResponse(fragmentParameters);
+    }
+
+    private void assertImplicitFlowResponse(Map<String, String> parameters) throws ParseException, MalformedURLException, BadJOSEException, JOSEException {
+        String idToken = parameters.get("id_token");
         JWTClaimsSet claimsSet = processToken(idToken, port);
         assertEquals("nonce", claimsSet.getClaim("nonce"));
         assertNotNull(claimsSet.getClaim("at_hash"));

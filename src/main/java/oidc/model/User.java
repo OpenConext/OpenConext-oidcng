@@ -12,7 +12,7 @@ import java.util.Map;
 @NoArgsConstructor
 @Getter
 @Document(collection = "users")
-@EqualsAndHashCode(exclude = {"id"})
+@EqualsAndHashCode(exclude = {"id", "updatedAt"})
 public class User implements Serializable {
 
     @Id

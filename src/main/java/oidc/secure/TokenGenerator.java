@@ -28,6 +28,7 @@ import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.Nonce;
 import com.nimbusds.openid.connect.sdk.claims.AccessTokenHash;
+import oidc.exceptions.InvalidSignatureException;
 import oidc.model.User;
 import org.apache.commons.io.IOUtils;
 import org.springframework.core.io.ClassPathResource;
@@ -83,9 +84,6 @@ public class TokenGenerator {
         String s = IOUtils.toString(new ClassPathResource(jwksKeyStorePath).getInputStream(), Charset.defaultCharset());
         jwkSet = JWKSet.parse(s);
         RSAKey rsaJWK = (RSAKey) jwkSet.getKeys().get(0);
-        if (!rsaJWK.isPrivate()) {
-            throw new IllegalArgumentException(String.format("%s needs to contain private RSA key", jwksKeyStorePath));
-        }
         this.publicKeys = Collections.singletonMap(kid, rsaJWK.toPublicJWK());
         this.kid = rsaJWK.getKeyID();
 
@@ -152,14 +150,18 @@ public class TokenGenerator {
         return idToken(clientId, Optional.of(user), additionalClaims);
     }
 
+    public Map<String, Object> verifyClaims(SignedJWT signedJWT) throws ParseException, JOSEException {
+        if (!signedJWT.verify(verifier)) {
+            throw new InvalidSignatureException("Tampered JWT");
+        }
+        return signedJWT.getJWTClaimsSet().getClaims();
+    }
+
     private Map<String, Object> doDecryptAccessToken(String jweString, JWEDecrypter decrypter) throws ParseException, JOSEException {
         JWEObject jweObject = JWEObject.parse(jweString);
         jweObject.decrypt(decrypter);
         SignedJWT signedJWT = jweObject.getPayload().toSignedJWT();
-        if (!signedJWT.verify(verifier)) {
-            throw new JOSEException("Tampered JWT");
-        }
-        return signedJWT.getJWTClaimsSet().getClaims();
+        return verifyClaims(signedJWT);
     }
 
     private String encryptedAccessToken(Map<String, Object> input, JWEEncrypter encrypter) throws JOSEException {

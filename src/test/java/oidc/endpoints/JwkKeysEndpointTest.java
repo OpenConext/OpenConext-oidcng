@@ -9,6 +9,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.text.ParseException;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +38,13 @@ public class JwkKeysEndpointTest extends AbstractIntegrationTest {
     public void wellKnownConfiguration() {
         Map<String, Object> res = getMapFromEndpoint("oidc/.well-known/openid-configuration");
         assertEquals(issuer, res.get("issuer"));
+    }
+
+    @Test
+    public void generateSecretKey() {
+        Map<String, Object> res = getMapFromEndpoint("oidc/generate-secret-key");
+        byte[] keys = Base64.getDecoder().decode(String.class.cast(res.get("key")));
+        assertEquals(512, keys.length * Byte.SIZE);
     }
 
     private void assertRSAKey(Map<String, Object> res, boolean isPrivate) throws ParseException, JsonProcessingException {
