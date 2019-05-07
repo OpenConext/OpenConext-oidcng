@@ -23,6 +23,7 @@ import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.OpenIDClientRepository;
+import oidc.repository.RefreshTokenRepository;
 import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
 import org.springframework.http.HttpHeaders;
@@ -45,18 +46,22 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
     private AuthorizationCodeRepository authorizationCodeRepository;
     private AccessTokenRepository accessTokenRepository;
+    private RefreshTokenRepository refreshTokenRepository;
     private UserRepository userRepository;
     private OpenIDClientRepository openIDClientRepository;
     private TokenGenerator tokenGenerator;
 
+
     public TokenEndpoint(OpenIDClientRepository openIDClientRepository,
                          AuthorizationCodeRepository authorizationCodeRepository,
                          AccessTokenRepository accessTokenRepository,
+                         RefreshTokenRepository refreshTokenRepository,
                          UserRepository userRepository,
                          TokenGenerator tokenGenerator) {
         this.openIDClientRepository = openIDClientRepository;
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.accessTokenRepository = accessTokenRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;
         this.tokenGenerator = tokenGenerator;
     }
@@ -109,6 +114,11 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     @Override
     public AccessTokenRepository getAccessTokenRepository() {
         return accessTokenRepository;
+    }
+
+    @Override
+    public RefreshTokenRepository getRefreshTokenRepository() {
+        return refreshTokenRepository;
     }
 
     private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, OpenIDClient client) throws JOSEException {

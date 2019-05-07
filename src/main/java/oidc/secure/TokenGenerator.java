@@ -104,6 +104,10 @@ public class TokenGenerator {
         return UUID.randomUUID().toString();
     }
 
+    public String generateRefreshToken() {
+        return UUID.randomUUID().toString();
+    }
+
     public String generateEncryptedAccessToken(Map<String, Object> input) throws JOSEException {
         return encryptedAccessToken(input, this.encrypter);
     }
@@ -165,7 +169,7 @@ public class TokenGenerator {
         SignedJWT signedJWT = getSignedJWT(builder);
         JWEHeader header = encrypter instanceof RSACryptoProvider ?
                 new JWEHeader(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A256GCM) :
-                new JWEHeader(JWEAlgorithm.DIR, EncryptionMethod.A256GCM);
+                new JWEHeader(JWEAlgorithm.DIR, EncryptionMethod.A256CBC_HS512);
 
         JWEObject jweObject = new JWEObject(header, new Payload(signedJWT));
         jweObject.encrypt(encrypter);

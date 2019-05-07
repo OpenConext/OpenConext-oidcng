@@ -17,6 +17,7 @@ import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.OpenIDClientRepository;
+import oidc.repository.RefreshTokenRepository;
 import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
 import oidc.user.OidcSamlAuthentication;
@@ -46,6 +47,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     private AuthorizationCodeRepository authorizationCodeRepository;
     private UserRepository userRepository;
     private AccessTokenRepository accessTokenRepository;
+    private RefreshTokenRepository refreshTokenRepository;
     private OpenIDClientRepository openIDClientRepository;
     private List<String> forFreeOpenIDScopes = Arrays.asList("profile", "email", "address", "phone");
 
@@ -53,11 +55,13 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     public AuthorizationEndpoint(AuthorizationCodeRepository authorizationCodeRepository,
                                  AccessTokenRepository accessTokenRepository,
                                  UserRepository userRepository,
+                                 RefreshTokenRepository refreshTokenRepository,
                                  OpenIDClientRepository openIDClientRepository,
                                  TokenGenerator tokenGenerator) {
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.accessTokenRepository = accessTokenRepository;
         this.userRepository = userRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
         this.openIDClientRepository = openIDClientRepository;
         this.tokenGenerator = tokenGenerator;
     }
@@ -170,5 +174,10 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     @Override
     public AccessTokenRepository getAccessTokenRepository() {
         return accessTokenRepository;
+    }
+
+    @Override
+    public RefreshTokenRepository getRefreshTokenRepository() {
+        return refreshTokenRepository;
     }
 }

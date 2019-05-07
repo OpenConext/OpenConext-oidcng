@@ -68,10 +68,9 @@ public class JwkKeysEndpoint {
     @GetMapping("oidc/generate-secret-key")
     public String generateSymmetricSecretKey() throws NoSuchAlgorithmException {
         KeyGenerator aes = KeyGenerator.getInstance("AES");
-        aes.init(256);
+        aes.init(512);
         SecretKey secretKey = aes.generateKey();
-        String encodedKey = Base64.getEncoder().encodeToString(secretKey.getEncoded());
-        return encodedKey;
+        return Base64.getEncoder().encodeToString(secretKey.getEncoded());
 
     }
 

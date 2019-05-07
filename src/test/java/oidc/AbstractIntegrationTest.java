@@ -78,7 +78,7 @@ public abstract class AbstractIntegrationTest implements TestUtils {
     }
 
     protected List<Map<String, Object>> serviceProviders() throws IOException {
-        return objectMapper.readValue(new ClassPathResource("manage/service_providers.json").getInputStream(),
+        return objectMapper.readValue(new ClassPathResource("manage/oidc10_rp.json").getInputStream(),
                 new TypeReference<List<Map<String, Object>>>() {
                 });
     }

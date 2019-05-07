@@ -1,13 +1,16 @@
 package oidc.endpoints;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.openid.connect.sdk.Nonce;
 import com.nimbusds.openid.connect.sdk.claims.AccessTokenHash;
 import oidc.model.AccessToken;
 import oidc.model.OpenIDClient;
+import oidc.model.RefreshToken;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
+import oidc.repository.RefreshTokenRepository;
 import oidc.secure.TokenGenerator;
 
 import java.time.LocalDateTime;
@@ -23,11 +26,17 @@ public interface OidcEndpoint {
     default Map<String, Object> tokenEndpointResponse(Optional<User> user, OpenIDClient client,
                                                       List<String> scopes) throws JOSEException {
         Map<String, Object> map = new HashMap<>();
-        String value = getTokenGenerator().generateAccessToken();
+        String accessTokenValue = getTokenGenerator().generateAccessToken();
         String sub = user.map(u -> u.getSub()).orElse(client.getClientId());
-        getAccessTokenRepository().insert(new AccessToken(value, sub, client.getClientId(), scopes,
+        getAccessTokenRepository().insert(new AccessToken(accessTokenValue, sub, client.getClientId(), scopes,
                 accessTokenValidity(client)));
-        map.put("access_token", value);
+        map.put("access_token", accessTokenValue);
+        if (client.getGrants().contains(GrantType.REFRESH_TOKEN.getValue())) {
+            String refreshTokenValue = getTokenGenerator().generateRefreshToken();
+            getRefreshTokenRepository().insert(new RefreshToken(refreshTokenValue, sub, client.getClientId(), scopes,
+                    refreshTokenValidity(client), accessTokenValue));
+            map.put("refresh_token", refreshTokenValue);
+        }
         map.put("id_token", getTokenGenerator().generateIDTokenForTokenEndpoint(user, client.getClientId()));
         addSharedProperties(map);
         return map;
@@ -54,12 +63,21 @@ public interface OidcEndpoint {
     }
 
     default Date accessTokenValidity(OpenIDClient client) {
-        int accessTokenValidity = client.getAccessTokenValidity();
-        LocalDateTime ldt = LocalDateTime.now().plusSeconds(accessTokenValidity);
+        return tokenValidity(client.getAccessTokenValidity());
+    }
+
+    default Date refreshTokenValidity(OpenIDClient client) {
+        return tokenValidity(client.getRefreshTokenValidity());
+    }
+
+    default Date tokenValidity(int validity) {
+        LocalDateTime ldt = LocalDateTime.now().plusSeconds(validity);
         return Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
     }
 
     TokenGenerator getTokenGenerator();
 
     AccessTokenRepository getAccessTokenRepository();
+
+    RefreshTokenRepository getRefreshTokenRepository();
 }

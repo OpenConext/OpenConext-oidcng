@@ -1,9 +1,20 @@
 [
   {
-    "_id": "76171457-6ed5-4505-9071-9e0e47557985",
-    "version": 19,
+    "id": "9",
+    "version": 0,
+    "type": "oidc10_rp",
+    "revision": {
+      "number": 0,
+      "created": 1529050834.575000000,
+      "parentId": null,
+      "updatedBy": "oidc_user.com",
+      "terminated": null
+    },
     "data": {
       "entityid": "http://mock-sp",
+      "eid": 9,
+      "state": "testaccepted",
+      "allowedall": true,
       "metaDataFields": {
         "name:en": "OpenConext Mock SP",
         "name:nl": "OpenConext Mock SP",
@@ -23,16 +34,28 @@
           "client_credentials"
         ],
         "accessTokenValidity": 3600,
-        "resourceServer": "1",
-        "publicClient": true
+        "refreshTokenValidity": 3600,
+        "isResourceServer": "1",
+        "isPublicClient": true
       }
     }
   },
   {
-    "_id": "76171457-6ed5-4505-9071-9e0e47557986",
-    "version": 19,
+    "id": "10",
+    "version": 0,
+    "type": "oidc10_rp",
+    "revision": {
+      "number": 0,
+      "created": 1529050834.575000000,
+      "parentId": null,
+      "updatedBy": "oidc_user.com",
+      "terminated": null
+    },
     "data": {
       "entityid": "http://mock-rp",
+      "eid": 10,
+      "state": "testaccepted",
+      "allowedall": true,
       "metaDataFields": {
         "name:en": "OpenConext Mock RP",
         "name:nl": "OpenConext Mock RP",
@@ -50,7 +73,8 @@
           "authorization_code"
         ],
         "accessTokenValidity": 3600,
-        "resourceServer": "0"
+        "isResourceServer": "0",
+        "refreshTokenValidity": 3600
       }
     }
   }

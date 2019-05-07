@@ -28,6 +28,7 @@ public class OpenIDClient {
     private boolean publicClient;
     //seconds
     private int accessTokenValidity;
+    private int refreshTokenValidity;
 
     @SuppressWarnings("unchecked")
     public OpenIDClient(Map<String, Object> root) {
@@ -42,9 +43,10 @@ public class OpenIDClient {
         this.redirectUrls = List.class.cast(metaDataFields.get("redirectUrls"));
         this.scopes = List.class.cast(metaDataFields.getOrDefault("scopes", "oidc"));
         this.grants = List.class.cast(metaDataFields.getOrDefault("grants", "authorization_code"));
-        this.resourceServer = parseBoolean(metaDataFields.get("resourceServer"));
-        this.publicClient = parseBoolean(metaDataFields.get("publicClient"));
+        this.resourceServer = parseBoolean(metaDataFields.get("isResourceServer"));
+        this.publicClient = parseBoolean(metaDataFields.get("isPublicClient"));
         this.accessTokenValidity = Integer.class.cast(metaDataFields.getOrDefault("accessTokenValidity", 3600));
+        this.refreshTokenValidity = Integer.class.cast(metaDataFields.getOrDefault("refreshTokenValidity", 3600));
     }
 
     @Transient

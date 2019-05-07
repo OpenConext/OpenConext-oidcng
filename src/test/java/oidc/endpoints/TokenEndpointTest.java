@@ -28,7 +28,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
 
     private String issuer = "issuer";
     private TokenGenerator tokenGenerator = new TokenGenerator(issuer,
-            "cNZsJwxJQVOpGAu7Lr8NMSlMLczyz0rwruN6s8Kobjw=");
+            "Y3nS5p0bKLI8bR/thxo0CFS3uItJXifjfRymRGOGJhRgij48ttTjPR33ZdAhobHrXd5MJNz4X69wYKvsUMlIfg==");
 
     public TokenEndpointTest() throws ParseException, JOSEException, IOException {
     }
