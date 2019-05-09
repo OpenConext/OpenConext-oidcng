@@ -32,6 +32,7 @@ import oidc.exceptions.InvalidSignatureException;
 import oidc.model.User;
 import org.apache.commons.io.IOUtils;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -71,17 +72,15 @@ public class TokenGenerator {
 
     private Map<String, RSAKey> publicKeys;
 
-    private String jwksKeyStorePath = "oidc.keystore.jwks.json";
-
     private JWSAlgorithm signingAlg = JWSAlgorithm.RS256;
 
     private JWEEncrypter symmetricEncryper;
 
     private JWEDecrypter symmetricDecriptor;
 
-    public TokenGenerator(String issuer, String secureSecret) throws IOException, ParseException, JOSEException {
+    public TokenGenerator(Resource jwksKeyStorePath, String issuer, String secureSecret) throws IOException, ParseException, JOSEException {
         this.issuer = issuer;
-        String s = IOUtils.toString(new ClassPathResource(jwksKeyStorePath).getInputStream(), Charset.defaultCharset());
+        String s = IOUtils.toString(jwksKeyStorePath.getInputStream(), Charset.defaultCharset());
         jwkSet = JWKSet.parse(s);
         RSAKey rsaJWK = (RSAKey) jwkSet.getKeys().get(0);
         this.publicKeys = Collections.singletonMap(kid, rsaJWK.toPublicJWK());

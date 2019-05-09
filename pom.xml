@@ -9,9 +9,9 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>org.openconext</groupId>
-    <artifactId>oidc-ng</artifactId>
+    <artifactId>oidcng</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>oidc-ng</name>
+    <name>oidcng</name>
 
     <properties>
         <java.version>1.8</java.version>

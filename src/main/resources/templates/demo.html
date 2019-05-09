@@ -30,7 +30,31 @@
     <div>
         <span>You are authenticated!</span>
         <div>
-            <em th:text="${user.details}">details</em>
+            <table>
+                <tr>
+                    <td>Sub</td>
+                    <td th:text="${user.sub}"></td>
+                </tr>
+                <tr>
+                    <td>Unspecified NameId</td>
+                    <td th:text="${user.unspecifiedNameId}"></td>
+                </tr>
+                <tr>
+                    <td>Authenticating Authority</td>
+                    <td th:text="${user.authenticatingAuthority}"></td>
+                </tr>
+                <tr>
+                    <td>Client ID</td>
+                    <td th:text="${user.clientId}"></td>
+                </tr>
+                <tr>
+                    <td colspan="2">Attributes:</td>
+                </tr>
+                <tr th:each="attribute : ${user.attributes}">
+                    <td th:text="${attribute.key}">key</td>
+                    <td th:text="${attribute.value}">value</td>
+                </tr>
+            </table>
         </div>
     </div>
 </div>

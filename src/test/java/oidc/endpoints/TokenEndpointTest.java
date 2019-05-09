@@ -11,6 +11,7 @@ import oidc.OidcEndpointTest;
 import oidc.secure.TokenGenerator;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -27,7 +28,9 @@ import static org.junit.Assert.assertEquals;
 public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEndpointTest {
 
     private String issuer = "issuer";
-    private TokenGenerator tokenGenerator = new TokenGenerator(issuer,
+    private TokenGenerator tokenGenerator = new TokenGenerator(
+            new ClassPathResource("oidc.keystore.jwks.json"),
+            issuer,
             "Y3nS5p0bKLI8bR/thxo0CFS3uItJXifjfRymRGOGJhRgij48ttTjPR33ZdAhobHrXd5MJNz4X69wYKvsUMlIfg==");
 
     public TokenEndpointTest() throws ParseException, JOSEException, IOException {

@@ -31,7 +31,6 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityConfiguration;
 
 import static org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityDsl.serviceProvider;
@@ -97,8 +96,9 @@ public class SecurityConfiguration {
                     .authenticated()
                     .and()
                     .httpBasic()
-                    .and()
-                    .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+            //TODO enable this when the playground can be used for testing
+//                    .and()
+//                    .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
             ;
         }
 

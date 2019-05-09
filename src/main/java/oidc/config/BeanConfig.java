@@ -26,6 +26,7 @@ import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.Resource;
 import org.springframework.security.saml.SamlRequestMatcher;
 import org.springframework.security.saml.provider.SamlServerConfiguration;
 import org.springframework.security.saml.provider.provisioning.SamlProviderProvisioning;
@@ -33,6 +34,7 @@ import org.springframework.security.saml.provider.service.ServiceProviderService
 import org.springframework.security.saml.provider.service.authentication.SamlAuthenticationResponseFilter;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderServerBeanConfiguration;
 import org.springframework.security.saml.spi.SpringSecuritySaml;
+import org.springframework.security.saml.spi.opensaml.OpenSamlImplementation;
 
 import javax.servlet.Filter;
 import java.io.IOException;
@@ -46,15 +48,18 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     private ObjectMapper objectMapper;
     private String issuer;
     private String secureSecret;
+    private Resource jwksKeyStorePath;
 
     public BeanConfig(AppConfig config,
                       UserRepository userRepository,
                       ObjectMapper objectMapper,
+                      @Value("${jwks_key_store_path}") Resource jwksKeyStorePath,
                       @Value("${spring.security.saml2.service-provider.entity-id}") String issuer,
                       @Value("${secure_secret}") String secureSecret) {
         this.appConfiguration = config;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
+        this.jwksKeyStorePath = jwksKeyStorePath;
         this.issuer = issuer;
         this.secureSecret = secureSecret;
     }
@@ -67,10 +72,10 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     @Override
     @Bean
     public SpringSecuritySaml samlImplementation() {
-        return super.samlImplementation();
+        return new ScopedOpenSamlImplementation(samlTime()).init();
     }
 
-    @Override
+   @Override
     @Bean
     public Filter spSelectIdentityProviderFilter() {
         return (request, response, chain) -> chain.doFilter(request, response);
@@ -91,7 +96,7 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
 
     @Bean
     public TokenGenerator tokenGenerator() throws ParseException, JOSEException, IOException {
-        return new TokenGenerator(issuer, secureSecret);
+        return new TokenGenerator(jwksKeyStorePath, issuer, secureSecret);
     }
 
     @Override

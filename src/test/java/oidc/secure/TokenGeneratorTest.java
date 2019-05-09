@@ -22,7 +22,9 @@ import static org.junit.Assert.assertEquals;
 
 public class TokenGeneratorTest implements TestUtils {
 
-    private TokenGenerator subject = new TokenGenerator("issuer",
+    private TokenGenerator subject = new TokenGenerator(
+            new ClassPathResource("oidc.keystore.jwks.json"),
+            "issuer",
             "Y3nS5p0bKLI8bR/thxo0CFS3uItJXifjfRymRGOGJhRgij48ttTjPR33ZdAhobHrXd5MJNz4X69wYKvsUMlIfg==");
 
     public TokenGeneratorTest() throws ParseException, JOSEException, IOException {

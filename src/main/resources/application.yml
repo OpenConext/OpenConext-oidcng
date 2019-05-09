@@ -13,8 +13,9 @@ info:
     artifact: "@project.artifactId@"
     version: "@project.version@"
 
-mongodb_db: oidc
+mongodb_db: oidc_test
 secure_secret: Y3nS5p0bKLI8bR/thxo0CFS3uItJXifjfRymRGOGJhRgij48ttTjPR33ZdAhobHrXd5MJNz4X69wYKvsUMlIfg==
+jwks_key_store_path: classpath:/oidc.keystore.jwks.json
 
 spring:
   data:
@@ -34,7 +35,7 @@ spring:
         base-path: http://localhost:8080
         sign-metadata: true
         sign-requests: true
-        want-assertions-signed: false
+        want-assertions-signed: true
         single-logout-enabled: false
         name-ids:
           - urn:oasis:names:tc:SAML:2.0:nameid-format:persistent
@@ -81,7 +82,7 @@ spring:
               -----END CERTIFICATE-----
         providers:
           - alias: engine-test2
-            metadata: https://engine.test.surfconext.nl/authentication/idp/metadata
+            metadata: https://engine.test2.surfconext.nl/authentication/idp/metadata
             link-text: EngineBlock test2
             name-id: https://engine.test2.surfconext.nl/authentication/idp/metadata
             assertion-consumer-service-index: 0

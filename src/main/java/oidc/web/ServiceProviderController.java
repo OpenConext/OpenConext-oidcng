@@ -16,6 +16,8 @@
  */
 package oidc.web;
 
+import oidc.model.User;
+import oidc.user.OidcSamlAuthentication;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,10 +46,11 @@ public class ServiceProviderController {
         this.provisioning = provisioning;
     }
 
-    @RequestMapping(value = {"/", "/index", "/logged-in"})
+    @RequestMapping(value = {"/"})
     public ModelAndView home(HttpServletRequest request, Authentication authentication) {
-        logger.info("You are logged in!");
-        return new ModelAndView("logged-in", "user", authentication);
+        OidcSamlAuthentication oidcSamlAuthentication = (OidcSamlAuthentication) authentication;
+        User user = (User) oidcSamlAuthentication.getDetails();
+        return new ModelAndView("demo", "user", user);
     }
 
     @PostMapping("/local/logout")
