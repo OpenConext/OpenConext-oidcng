@@ -23,7 +23,7 @@ jwks_key_store_path: classpath:/oidc.keystore.jwks.json
 spring:
   data:
     mongodb:
-      uri: mongodb://localhost:27017/${mongodb_db}
+      uri: mongodb://127.0.0.1:27017/${mongodb_db}
   thymeleaf:
     cache: false
   security:
@@ -85,9 +85,9 @@ spring:
               -----END CERTIFICATE-----
         providers:
           - alias: engine-test2
-            metadata: https://engine.test2.surfconext.nl/authentication/idp/metadata
+            metadata: https://engine.test.surfconext.nl/authentication/idp/metadata
             link-text: EngineBlock test2
-            name-id: https://engine.test2.surfconext.nl/authentication/idp/metadata
+            name-id: https://engine.test.surfconext.nl/authentication/idp/metadata
             assertion-consumer-service-index: 0
 
 manage:

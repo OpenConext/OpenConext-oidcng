@@ -46,7 +46,7 @@ import static org.junit.Assert.assertEquals;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"spring.data.mongodb.uri=mongodb://localhost:27017/oidc_test", "mongodb_db=oidc_test"})
+        properties = {"spring.data.mongodb.uri=mongodb://127.0.0.1:27017/oidc_test", "mongodb_db=oidc_test"})
 @ActiveProfiles("dev")
 public abstract class AbstractIntegrationTest implements TestUtils {
 

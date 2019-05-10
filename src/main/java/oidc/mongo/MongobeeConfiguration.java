@@ -3,6 +3,9 @@ package oidc.mongo;
 import com.github.mongobee.Mongobee;
 import com.github.mongobee.changeset.ChangeLog;
 import com.github.mongobee.changeset.ChangeSet;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.MongoClientURI;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
@@ -12,8 +15,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.MongoDbFactory;
 import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.SimpleMongoDbFactory;
 import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.index.IndexOperations;
 
@@ -32,14 +37,22 @@ public class MongobeeConfiguration {
     @Value("${mongodb_db}")
     private String databaseName;
 
+
+    @Value("${spring.data.mongodb.uri}")
+    private String mongobdUri;
+
     @Bean
     public MongoTransactionManager transactionManager() {
         return new MongoTransactionManager(mongoTemplate.getMongoDbFactory());
     }
 
     @Bean
-    public Mongobee mongobee() throws Exception {
-        return new Mongobee().setChangeLogsScanPackage("oidc.mongo").setDbName(databaseName).setMongoTemplate(mongoTemplate);
+    public Mongobee mongobee(@Value("${spring.data.mongodb.uri}") String mongobdUri) throws Exception {
+        Mongobee mongobee = mongobdUri.contains("127.0.0.1") ? new Mongobee() : new Mongobee(new MongoClient(mongobdUri));
+        return mongobee
+                .setChangeLogsScanPackage("oidc.mongo")
+                .setDbName(databaseName)
+                .setMongoTemplate(mongoTemplate);
     }
 
     @ChangeSet(order = "001", id = "createIndexes", author = "Okke Harsta")
