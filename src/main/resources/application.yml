@@ -100,7 +100,7 @@ management:
   endpoint:
     health:
       enabled: true
-      show-details: always
+      show-details: when_authorized
     info:
       enabled: true
-      show-details: always
+      show-details: when_authorized
