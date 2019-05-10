@@ -1,6 +1,7 @@
 package oidc;
 
 import org.junit.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static io.restassured.RestAssured.given;
 import static org.apache.http.HttpStatus.SC_OK;

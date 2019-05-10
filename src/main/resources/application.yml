@@ -93,3 +93,14 @@ spring:
 manage:
   user: manage
   password: secret
+
+management:
+  endpoints:
+    enabled-by-default: false
+  endpoint:
+    health:
+      enabled: true
+      show-details: always
+    info:
+      enabled: true
+      show-details: always

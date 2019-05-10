@@ -67,7 +67,7 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
         return appConfiguration;
     }
 
-   @Override
+    @Override
     @Bean
     public Filter spSelectIdentityProviderFilter() {
         return (request, response, chain) -> chain.doFilter(request, response);
@@ -105,5 +105,4 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
         return filter;
 
     }
-
 }
