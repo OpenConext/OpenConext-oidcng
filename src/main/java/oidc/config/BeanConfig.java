@@ -33,8 +33,6 @@ import org.springframework.security.saml.provider.provisioning.SamlProviderProvi
 import org.springframework.security.saml.provider.service.ServiceProviderService;
 import org.springframework.security.saml.provider.service.authentication.SamlAuthenticationResponseFilter;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderServerBeanConfiguration;
-import org.springframework.security.saml.spi.SpringSecuritySaml;
-import org.springframework.security.saml.spi.opensaml.OpenSamlImplementation;
 
 import javax.servlet.Filter;
 import java.io.IOException;
@@ -67,12 +65,6 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     @Override
     protected SamlServerConfiguration getDefaultHostSamlServerConfiguration() {
         return appConfiguration;
-    }
-
-    @Override
-    @Bean
-    public SpringSecuritySaml samlImplementation() {
-        return new ScopedOpenSamlImplementation(samlTime()).init();
     }
 
    @Override

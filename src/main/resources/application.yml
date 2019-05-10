@@ -7,6 +7,9 @@ logging:
     org.springframework.security.saml: INFO
     org.springframework.data: INFO
 
+cron:
+  node-cron-job-responsible: True
+
 # used by the git plugin
 info:
   build:
