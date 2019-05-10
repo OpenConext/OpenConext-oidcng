@@ -4,7 +4,6 @@ import com.github.mongobee.Mongobee;
 import com.github.mongobee.changeset.ChangeLog;
 import com.github.mongobee.changeset.ChangeSet;
 import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoClientURI;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
@@ -15,10 +14,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.MongoDbFactory;
 import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.SimpleMongoDbFactory;
 import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.index.IndexOperations;
 
@@ -48,7 +45,7 @@ public class MongobeeConfiguration {
 
     @Bean
     public Mongobee mongobee(@Value("${spring.data.mongodb.uri}") String mongobdUri) throws Exception {
-        Mongobee mongobee = mongobdUri.contains("127.0.0.1") ? new Mongobee() : new Mongobee(new MongoClient(mongobdUri));
+        Mongobee mongobee = new Mongobee(new MongoClient(new MongoClientURI(mongobdUri)));
         return mongobee
                 .setChangeLogsScanPackage("oidc.mongo")
                 .setDbName(databaseName)
