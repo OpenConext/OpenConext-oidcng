@@ -1,13 +1,14 @@
 package oidc.manage;
 
 import oidc.model.OpenIDClient;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,8 +21,11 @@ import java.util.stream.Collectors;
 @RestController
 public class MetadataController {
 
+    private static final Log logger = LogFactory.getLog(MetadataController.class);
+
     @Autowired
     private MongoTemplate mongoTemplate;
+
 
     @PostMapping("manage/connections")
 //    @Transactional
@@ -37,6 +41,8 @@ public class MetadataController {
         if (forceError) {
             throw new IllegalArgumentException("Forced error");
         }
+
+        logger.info("Provisioned {} OIDC clients from Manage push");
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
