@@ -42,7 +42,7 @@ public class MetadataController {
             throw new IllegalArgumentException("Forced error");
         }
 
-        logger.info("Provisioned {} OIDC clients from Manage push");
+        logger.info("Provisioned " + newClients.size() + " OIDC clients from Manage push");
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
