@@ -2,6 +2,7 @@ package oidc.manage;
 
 import oidc.AbstractIntegrationTest;
 import oidc.model.OpenIDClient;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -47,6 +48,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Ignore
     public void rollback() throws IOException {
         List<Map<String, Object>> serviceProviders = new ArrayList<>();
         doPostConnections(serviceProviders, 500);

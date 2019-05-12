@@ -24,7 +24,7 @@ public class MetadataController {
     private MongoTemplate mongoTemplate;
 
     @PostMapping("manage/connections")
-    @Transactional
+//    @Transactional
     public ResponseEntity<Void> connections(@RequestBody List<Map<String, Object>> connections,
                                             @RequestParam(name = "forceError", defaultValue = "false") boolean forceError) {
         List<OpenIDClient> newClients = connections.stream().map(OpenIDClient::new).collect(Collectors.toList());
