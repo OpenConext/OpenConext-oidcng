@@ -61,7 +61,7 @@ public class IntrospectEndpoint extends SecureEndpoint {
             throw new BadCredentialsException("Requires ResourceServer");
         }
         AccessToken accessToken = accessTokenRepository.findByValue(value);
-        if (accessToken.getExpiresIn().before(new Date())) {
+        if (accessToken.isExpired()) {
             return Collections.singletonMap("active", false);
         }
         User user = userRepository.findUserBySub(accessToken.getSub());

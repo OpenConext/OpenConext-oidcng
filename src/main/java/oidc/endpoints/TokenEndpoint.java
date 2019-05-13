@@ -5,6 +5,7 @@ import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant;
 import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.ClientCredentialsGrant;
 import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.RefreshTokenGrant;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
@@ -17,8 +18,10 @@ import oidc.exceptions.ClientAuthenticationNotSupported;
 import oidc.exceptions.CodeVerifierMissingException;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.RedirectMismatchException;
+import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
+import oidc.model.RefreshToken;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
@@ -101,6 +104,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
             return handleAuthorizationCodeGrant((AuthorizationCodeGrant) authorizationGrant, client);
         } else if (authorizationGrant instanceof ClientCredentialsGrant) {
             return handleClientCredentialsGrant(client);
+        } else if (authorizationGrant instanceof RefreshTokenGrant) {
+            return handleRefreshCodeGrant((RefreshTokenGrant) authorizationGrant, client);
         }
         throw new IllegalArgumentException("Not supported - yet - authorizationGrant " + authorizationGrant);
 
@@ -148,6 +153,24 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes());
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
+
+    private ResponseEntity handleRefreshCodeGrant(RefreshTokenGrant refreshTokenGrant, OpenIDClient client) throws JOSEException {
+        String refreshTokenValue = refreshTokenGrant.getRefreshToken().getValue();
+        RefreshToken refreshToken = refreshTokenRepository.findByValue(refreshTokenValue);
+        if (!refreshToken.getClientId().equals(client.getClientId())) {
+            throw new BadCredentialsException("Client is not authorized for the refresh token");
+        }
+        //New tokens will be issued
+        refreshTokenRepository.delete(refreshToken);
+        //It is possible that the access token is already removed by cron cleanup actions
+        Optional<AccessToken> accessToken = accessTokenRepository.findOptionalAccessTokenByValue(refreshToken.getAccessTokenValue());
+        accessToken.ifPresent(token ->accessTokenRepository.delete(token));
+
+        User user = userRepository.findUserBySub(refreshToken.getSub());
+        Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, refreshToken.getScopes());
+        return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
+    }
+
 
     private ResponseEntity handleClientCredentialsGrant(OpenIDClient client) throws JOSEException {
         Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes());

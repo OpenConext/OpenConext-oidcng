@@ -46,7 +46,7 @@ public class UserInfoEndpoint {
 
         AccessToken accessToken = accessTokenRepository.findByValue(userInfoRequest.getAccessToken().getValue());
 
-        if (accessToken.getExpiresIn().before(new Date())) {
+        if (accessToken.isExpired()) {
             throw new UnauthorizedException("Access token expired");
         }
         User user = userRepository.findUserBySub(accessToken.getSub());

@@ -38,7 +38,7 @@ public interface OidcEndpoint {
             map.put("refresh_token", refreshTokenValue);
         }
         map.put("id_token", getTokenGenerator().generateIDTokenForTokenEndpoint(user, client.getClientId()));
-        addSharedProperties(map);
+        addSharedProperties(map, client);
         return map;
     }
 
@@ -53,13 +53,13 @@ public interface OidcEndpoint {
         }
         String idToken = getTokenGenerator().generateIDTokenForAuthorizationEndpoint(user, client.getClientId(), nonce, responseType, value);
         map.put("id_token", idToken);
-        addSharedProperties(map);
+        addSharedProperties(map, client);
         return map;
     }
 
-    default void addSharedProperties(Map<String, Object> map) {
+    default void addSharedProperties(Map<String, Object> map, OpenIDClient client) {
         map.put("token_type", "Bearer");
-        map.put("expires_in", 5 * 60);
+        map.put("expires_in", client.getAccessTokenValidity());
     }
 
     default Date accessTokenValidity(OpenIDClient client) {

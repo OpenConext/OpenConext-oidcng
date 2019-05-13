@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import oidc.model.User;
 import oidc.repository.UserRepository;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -27,6 +29,8 @@ import java.util.stream.Collectors;
 
 public class SamlProvisioningAuthenticationManager implements AuthenticationManager {
 
+    private static final Log LOG = LogFactory.getLog(SamlProvisioningAuthenticationManager.class);
+
     private UserRepository userRepository;
     private List<UserAttribute> userAttributes;
 
@@ -45,11 +49,16 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
         Optional<User> existingUserOptional = userRepository.findOptionalUserBySub(user.getSub());
         if (existingUserOptional.isPresent()) {
             User existingUser = existingUserOptional.get();
+
+            LOG.info("Authenticate with existing user: " + existingUser);
+
             user.setId(existingUser.getId());
             if (!user.equals(existingUser)) {
+                LOG.info("Saving existing user with changed attributes: " + existingUser);
                 userRepository.save(existingUser);
             }
         } else {
+            LOG.info("Provisioning new user : " + user);
             userRepository.insert(user);
         }
         OidcSamlAuthentication oidcSamlAuthentication =

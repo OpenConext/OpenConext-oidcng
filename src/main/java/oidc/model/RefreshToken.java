@@ -16,4 +16,9 @@ public class RefreshToken extends AccessToken {
         super(value, sub, clientId, scopes, expiresIn);
         this.accessTokenValue = accessTokenValue;
     }
+
+    public String getAccessTokenValue() {
+        return accessTokenValue;
+    }
 }
+

@@ -8,10 +8,14 @@ import com.nimbusds.oauth2.sdk.GrantType;
 import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import oidc.OidcEndpointTest;
+import oidc.model.AccessToken;
+import oidc.model.RefreshToken;
 import oidc.secure.TokenGenerator;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -23,6 +27,7 @@ import java.util.Optional;
 import static com.nimbusds.oauth2.sdk.auth.JWTAuthentication.CLIENT_ASSERTION_TYPE;
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 @SuppressWarnings("unchecked")
 public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEndpointTest {
@@ -40,6 +45,13 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     public void token() throws MalformedURLException, ParseException, JOSEException, BadJOSEException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
+
+        String refreshToken = (String) body.get("refresh_token");
+        assertNotNull(refreshToken);
+
+        String accessToken = (String) body.get("access_token");
+        assertNotNull(accessToken);
+
         String idToken = (String) body.get("id_token");
         verifySignedJWT(idToken, port);
         JWTClaimsSet claimsSet = processToken(idToken, port);
@@ -55,6 +67,27 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
         JWTClaimsSet claimsSet = jwt.getJWTClaimsSet();
 
         assertEquals(Collections.singletonList("http@//mock-sp"), claimsSet.getAudience());
+    }
+
+    @Test
+    public void refreshToken() throws ParseException, JOSEException, MalformedURLException {
+        String code = doAuthorize();
+        Map<String, Object> body = doToken(code);
+
+        String refreshToken = (String) body.get("refresh_token");
+        String accessToken = (String) body.get("access_token");
+        Map<String, Object> result = given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .auth().preemptive().basic("http@//mock-sp", "secret")
+                .formParam("grant_type", GrantType.REFRESH_TOKEN.getValue())
+                .formParam(GrantType.REFRESH_TOKEN.getValue(), refreshToken)
+                .post("oidc/token")
+                .as(Map.class);
+        verifySignedJWT((String) body.get("id_token"), port);
+
+        assertEquals(0, mongoTemplate.find(Query.query(Criteria.where("value").is(accessToken)), AccessToken.class).size());
+        assertEquals(0, mongoTemplate.find(Query.query(Criteria.where("value").is(refreshToken)), RefreshToken.class).size());
     }
 
     @Test
