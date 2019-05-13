@@ -45,6 +45,12 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
+    public void oauth2NonOidcFlow() throws UnsupportedEncodingException {
+        String code = doAuthorizeWithScopes("http@//mock-sp", "code", "code", "groups");
+        assertEquals(12, code.length());
+    }
+
+    @Test
     public void validationMissingParameter() {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("redirect_uri", "http%3A%2F%2Flocalhost%3A8080");

@@ -29,8 +29,6 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
@@ -111,8 +109,16 @@ public abstract class AbstractIntegrationTest implements TestUtils {
 
     protected Response doAuthorizeWithClaims(String clientId, String responseType, String responseMode, String nonce, String codeChallenge,
                                              List<String> claims) throws UnsupportedEncodingException {
+        return doAuthorizeWithClaimsAndScopes(clientId, responseType, responseMode, nonce, codeChallenge, claims, "openid profile");
+    }
+
+    protected String doAuthorizeWithScopes(String clientId, String responseType, String responseMode, String scopes) throws UnsupportedEncodingException {
+        return getCode(doAuthorizeWithClaimsAndScopes(clientId, responseType, responseMode, null, null, null, scopes));
+    }
+
+    protected Response doAuthorizeWithClaimsAndScopes(String clientId, String responseType, String responseMode, String nonce, String codeChallenge, List<String> claims, String scopes) {
         Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("scope", "openid profile");
+        queryParams.put("scope", scopes);
         queryParams.put("response_type", responseType);
         queryParams.put("client_id", clientId);
         queryParams.put("redirect_uri", "http%3A%2F%2Flocalhost%3A8080");

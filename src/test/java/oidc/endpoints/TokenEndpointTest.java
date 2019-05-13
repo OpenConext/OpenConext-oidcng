@@ -31,6 +31,7 @@ import static com.nimbusds.oauth2.sdk.auth.JWTAuthentication.CLIENT_ASSERTION_TY
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 @SuppressWarnings("unchecked")
 public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEndpointTest {
@@ -61,6 +62,19 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
 
         assertEquals(Collections.singletonList("http@//mock-sp"), claimsSet.getAudience());
     }
+
+    @Test
+    public void oauth2NonOidcFlow() throws UnsupportedEncodingException {
+        String code = doAuthorizeWithScopes("http@//mock-sp", "code", "code", "groups");
+        Map<String, Object> body = doToken(code);
+
+        String accessToken = (String) body.get("access_token");
+        assertNotNull(accessToken);
+
+        String idToken = (String) body.get("id_token");
+        assertNull(idToken);
+    }
+
 
     @Test
     public void tokenWithClaims() throws MalformedURLException, ParseException, JOSEException, BadJOSEException, UnsupportedEncodingException {
