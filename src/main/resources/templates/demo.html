@@ -23,12 +23,8 @@
 </head>
 <body>
 <div>
-    <form action="#" th:action="@{/local/logout}" method="post">
-        <input type="submit" value="Logout"/>
-    </form>
-    <h1>Success</h1>
+    <h1>Your authentication</h1>
     <div>
-        <span>You are authenticated!</span>
         <div>
             <table>
                 <tr>
@@ -48,7 +44,7 @@
                     <td th:text="${user.clientId}"></td>
                 </tr>
                 <tr>
-                    <td colspan="2">Attributes:</td>
+                    <td colspan="2" style="font-weight: bold">Attributes:</td>
                 </tr>
                 <tr th:each="attribute : ${user.attributes}">
                     <td th:text="${attribute.key}">key</td>

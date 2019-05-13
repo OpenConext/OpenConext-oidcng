@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,16 +22,20 @@ import java.util.stream.Collectors;
 @RestController
 public class MetadataController {
 
-    private static final Log logger = LogFactory.getLog(MetadataController.class);
+    private static final Log LOG = LogFactory.getLog(MetadataController.class);
 
     @Autowired
     private MongoTemplate mongoTemplate;
 
 
     @PostMapping("manage/connections")
-//    @Transactional
-    public ResponseEntity<Void> connections(@RequestBody List<Map<String, Object>> connections,
+//    @Transactional TODO uncomment after upgrade mongodb 4.x
+    public ResponseEntity<Void> connections(Authentication authentication,
+                                            @RequestBody List<Map<String, Object>> connections,
                                             @RequestParam(name = "forceError", defaultValue = "false") boolean forceError) {
+        String name = authentication.getName();
+        LOG.info("Starting to provision OIDC clients from push: " + name);
+
         List<OpenIDClient> newClients = connections.stream().map(OpenIDClient::new).collect(Collectors.toList());
 
         mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, OpenIDClient.class)
@@ -42,7 +47,7 @@ public class MetadataController {
             throw new IllegalArgumentException("Forced error");
         }
 
-        logger.info("Provisioned " + newClients.size() + " OIDC clients from Manage push");
+        LOG.info("Provisioned " + newClients.size() + " OIDC clients from push: " + name);
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }

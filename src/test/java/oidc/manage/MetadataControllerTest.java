@@ -6,6 +6,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import static oidc.manage.ServiceProviderTranslation.translateServiceProviderEnt
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("unchecked")
+@ActiveProfiles(value = "nope", inheritProfiles = false)
 public class MetadataControllerTest extends AbstractIntegrationTest {
 
     @Test
