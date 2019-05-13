@@ -21,17 +21,24 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import oidc.repository.UserRepository;
 import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
 import oidc.web.FakeSamlAuthenticationFilter;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.core.io.Resource;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.saml.key.SimpleKey;
+import org.springframework.security.saml.provider.config.RotatingKeys;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityConfiguration;
+
+import java.io.IOException;
+import java.nio.charset.Charset;
 
 import static org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityDsl.serviceProvider;
 
@@ -46,31 +53,52 @@ public class SecurityConfiguration {
         private AppConfig appConfiguration;
         private ObjectMapper objectMapper;
         private UserRepository userRepository;
+        private Resource privateKeyPath;
+        private Resource certificatePath;
 
         public SamlSecurity(BeanConfig beanConfig,
                             @Qualifier("appConfig") AppConfig appConfig,
                             Environment environment,
                             ObjectMapper objectMapper,
-                            UserRepository userRepository) {
+                            UserRepository userRepository,
+                            @Value("${private_key_path}") Resource privateKeyPath,
+                            @Value("${certificate_path}") Resource certificatePath) {
             super("oidc", beanConfig);
             this.appConfiguration = appConfig;
             this.environment = environment;
             this.objectMapper = objectMapper;
             this.userRepository = userRepository;
+            this.privateKeyPath = privateKeyPath;
+            this.certificatePath = certificatePath;
         }
 
         @Override
         protected void configure(HttpSecurity http) throws Exception {
             super.configure(http);
             http.apply(serviceProvider())
-                    .configure(appConfiguration);
+                    .configure(appConfiguration)
+                    .rotatingKeys(getKeys());
 
             if (environment.acceptsProfiles(Profiles.of("dev"))) {
                 http.addFilterBefore(new FakeSamlAuthenticationFilter(userRepository, objectMapper),
                         ConfigurableSamlAuthenticationRequestFilter.class);
             }
         }
+
+        private RotatingKeys getKeys() throws IOException {
+            String privateKey = IOUtils.toString(this.privateKeyPath.getInputStream(), Charset.defaultCharset());
+            String certificate = IOUtils.toString(this.certificatePath.getInputStream(), Charset.defaultCharset());
+            return new RotatingKeys()
+                    .setActive(
+                            new SimpleKey()
+                                    .setName("sp-signing-key")
+                                    .setPrivateKey(privateKey)
+                                    .setPassphrase("sppassword")
+                                    .setCertificate(certificate)
+                    );
+        }
     }
+
 
     @Configuration
     public static class AppSecurity extends WebSecurityConfigurerAdapter {
