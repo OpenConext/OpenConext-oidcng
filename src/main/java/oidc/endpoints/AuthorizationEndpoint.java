@@ -77,6 +77,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     }
 
     private ModelAndView doAuthorize(@RequestParam MultiValueMap<String, String> parameters, Authentication authentication) throws ParseException, JOSEException, UnsupportedEncodingException {
+        LOG.info(String.format("doAuthorize %s %s", authentication.getDetails(), parameters));
+
         OidcSamlAuthentication samlAuthentication = (OidcSamlAuthentication) authentication;
         AuthenticationRequest authenticationRequest = AuthenticationRequest.parse(parameters);
         Scope scope = authenticationRequest.getScope();
@@ -170,7 +172,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         if (!scopes.containsAll(requestedScopes)) {
             List<String> missingScopes = requestedScopes.stream().filter(s -> !scopes.contains(s)).collect(Collectors.toList());
             throw new InvalidScopeException(
-                    String.format("Scope(s) %s are not allowed for findByClientId %s", missingScopes, client.getClientId()));
+                    String.format("Scope(s) %s are not allowed for %s. Allowed scopes: %s",
+                            missingScopes, client.getClientId(), client.getScopes()));
         }
 
     }

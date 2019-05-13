@@ -82,10 +82,9 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
                 .filter(ua -> !ua.customMapping)
                 .map(ua -> new Object[]{ua.oidc, ua.multiValue ? getAttributeValues(ua.saml, assertion) : getAttributeValue(ua.saml, assertion)})
                 .filter(oo -> oo[1] != null)
-                .collect(Collectors.toMap(oo -> String.class.cast(oo[0]), oo -> oo[1]));
+                .collect(Collectors.toMap(oo -> (String) oo[0], oo -> oo[1]));
 
-        User user = new User(sub, unspecifiedNameId, authenticatingAuthority.get(), clientId, attributes);
-        return user;
+        return new User(sub, unspecifiedNameId, authenticatingAuthority.get(), clientId, attributes);
     }
 
     private String getAttributeValue(String samlAttributeName, Assertion assertion) {
