@@ -39,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
@@ -150,7 +151,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         }
         authorizationCodeRepository.delete(authorizationCode);
         User user = userRepository.findUserBySub(authorizationCode.getSub());
-        Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes());
+        Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes(), authorizationCode.getIdTokenClaims());
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 
@@ -167,13 +168,13 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         accessToken.ifPresent(token ->accessTokenRepository.delete(token));
 
         User user = userRepository.findUserBySub(refreshToken.getSub());
-        Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, refreshToken.getScopes());
+        Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, refreshToken.getScopes(), Collections.emptyList());
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 
 
     private ResponseEntity handleClientCredentialsGrant(OpenIDClient client) throws JOSEException {
-        Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes());
+        Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes(), Collections.emptyList());
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 

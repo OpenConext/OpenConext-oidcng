@@ -5,6 +5,7 @@ import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
 import org.junit.Test;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
@@ -13,19 +14,19 @@ import static org.junit.Assert.assertEquals;
 public class UserInfoEndpointTest extends AbstractIntegrationTest {
 
     @Test
-    public void getUserInfo() {
+    public void getUserInfo() throws UnsupportedEncodingException {
         userInfo("GET");
         userInfoWithAuthorizationHeader();
     }
 
     @Test
-    public void postUserInfo() {
+    public void postUserInfo() throws UnsupportedEncodingException {
         userInfo("POST");
 
     }
 
     @Test
-    public void userInfoExpired() {
+    public void userInfoExpired() throws UnsupportedEncodingException {
         String token = getAccessToken();
         expireAccessToken(token);
 
@@ -38,7 +39,7 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
         assertEquals("Access token expired", body.get("message"));
     }
 
-    private void userInfo(String method) {
+    private void userInfo(String method) throws UnsupportedEncodingException {
         String accessToken = getAccessToken();
         RequestSpecification header = given()
                 .when()
@@ -51,7 +52,7 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
         assertResponse(response);
     }
 
-    private void userInfoWithAuthorizationHeader() {
+    private void userInfoWithAuthorizationHeader() throws UnsupportedEncodingException {
         String accessToken = getAccessToken();
         Response response = given()
                 .when()
@@ -61,7 +62,7 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
         assertResponse(response);
     }
 
-    private String getAccessToken() {
+    private String getAccessToken() throws UnsupportedEncodingException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
         return (String) body.get("access_token");

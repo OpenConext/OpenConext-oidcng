@@ -1,6 +1,7 @@
 package oidc.endpoints;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseMode;
 import com.nimbusds.oauth2.sdk.ResponseType;
@@ -9,6 +10,7 @@ import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
+import com.nimbusds.openid.connect.sdk.ClaimsRequest;
 import oidc.exceptions.InvalidScopeException;
 import oidc.exceptions.RedirectMismatchException;
 import oidc.model.AuthorizationCode;
@@ -37,7 +39,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -73,15 +77,16 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     @GetMapping("/oidc/authorize")
     public ModelAndView authorize(@RequestParam MultiValueMap<String, String> parameters,
                                   Authentication authentication) throws ParseException, JOSEException, UnsupportedEncodingException {
-        return doAuthorize(parameters, authentication);
-    }
-
-    private ModelAndView doAuthorize(@RequestParam MultiValueMap<String, String> parameters, Authentication authentication) throws ParseException, JOSEException, UnsupportedEncodingException {
         LOG.info(String.format("doAuthorize %s %s", authentication.getDetails(), parameters));
 
         OidcSamlAuthentication samlAuthentication = (OidcSamlAuthentication) authentication;
-        AuthenticationRequest authenticationRequest = AuthenticationRequest.parse(parameters);
+        AuthorizationRequest authenticationRequest = AuthorizationRequest.parse(parameters);
+
         Scope scope = authenticationRequest.getScope();
+        boolean isOpenIdClient = scope != null && isOpenIDRequest(scope.toStringList());
+        if (isOpenIdClient) {
+            authenticationRequest = AuthenticationRequest.parse(parameters);
+        }
         State state = authenticationRequest.getState();
 
         OpenIDClient client = openIDClientRepository.findByClientId(authenticationRequest.getClientID().getValue());
@@ -89,7 +94,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         redirectionURI = URLDecoder.decode(redirectionURI, Charset.defaultCharset().toString());
         validateRedirectionURI(redirectionURI, client);
 
-        List<String> scopes = scope.toStringList();
+        List<String> scopes = scope != null ? scope.toStringList() : Collections.emptyList();
         validateScopes(scopes, client);
 
         User user = samlAuthentication.getUser();
@@ -101,7 +106,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             authorizationCodeRepository.insert(authorizationCode);
             return new ModelAndView(new RedirectView(authorizationRedirect(redirectionURI, state, code)));
         } else if (responseType.impliesImplicitFlow()) {
-            Map<String, Object> body = authorizationEndpointResponse(user, client, authenticationRequest.getNonce(), scopes, responseType);
+            Map<String, Object> body = authorizationEndpointResponse(user, client, authenticationRequest, scopes, responseType);
             if (state != null) {
                 body.put("state", state);
             }
@@ -131,20 +136,21 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         throw new IllegalArgumentException("Not yet implemented response_type: " + responseType.toString());
     }
 
-    private AuthorizationCode constructAuthorizationCode(AuthenticationRequest authenticationRequest, OpenIDClient client, User user, String code) {
-        String redirectionURI = authenticationRequest.getRedirectionURI().toString();
-        List<String> scopes = authenticationRequest.getScope().toStringList();
+    private AuthorizationCode constructAuthorizationCode(AuthorizationRequest authorizationRequest, OpenIDClient client, User user, String code) {
+        String redirectionURI = authorizationRequest.getRedirectionURI().toString();
+        List<String> scopes = authorizationRequest.getScope().toStringList();
         //Optional code challenges for PKCE
-        CodeChallenge codeChallenge = authenticationRequest.getCodeChallenge();
+        CodeChallenge codeChallenge = authorizationRequest.getCodeChallenge();
         String codeChallengeValue = codeChallenge != null ? codeChallenge.getValue() : null;
-        CodeChallengeMethod codeChallengeMethod = authenticationRequest.getCodeChallengeMethod();
+        CodeChallengeMethod codeChallengeMethod = authorizationRequest.getCodeChallengeMethod();
         String codeChallengeMethodValue = codeChallengeMethod != null ? codeChallengeMethod.getValue() :
                 (codeChallengeValue != null ? CodeChallengeMethod.getDefault().getValue() : null);
-
+        List<String> idTokenClaims = getClaims(authorizationRequest);
         return new AuthorizationCode(
                 code, user.getSub(), client.getClientId(), scopes, redirectionURI,
                 codeChallengeValue,
-                codeChallengeMethodValue);
+                codeChallengeMethodValue,
+                idTokenClaims);
     }
 
     private void validateRedirectionURI(String redirectionURI, OpenIDClient client) {

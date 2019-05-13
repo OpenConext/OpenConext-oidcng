@@ -68,6 +68,7 @@
     "edu_person_principal_name",
     "uids"
   ],
+  "claims_parameter_supported": true,
   "code_challenge_methods_supported": [
     "plain",
     "S256"

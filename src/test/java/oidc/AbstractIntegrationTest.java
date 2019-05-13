@@ -4,6 +4,7 @@ package oidc;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
+import com.nimbusds.openid.connect.sdk.ClaimsRequest;
 import io.restassured.RestAssured;
 import io.restassured.mapper.TypeRef;
 import io.restassured.response.Response;
@@ -27,8 +28,12 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -83,7 +88,7 @@ public abstract class AbstractIntegrationTest implements TestUtils {
                 });
     }
 
-    protected String doAuthorize() {
+    protected String doAuthorize() throws UnsupportedEncodingException {
         Response response = doAuthorize("http@//mock-sp", "code", null, null, null);
         assertEquals(302, response.getStatusCode());
 
@@ -100,7 +105,12 @@ public abstract class AbstractIntegrationTest implements TestUtils {
         return matcher.group(1);
     }
 
-    protected Response doAuthorize(String clientId, String responseType, String responseMode, String nonce, String codeChallenge) {
+    protected Response doAuthorize(String clientId, String responseType, String responseMode, String nonce, String codeChallenge) throws UnsupportedEncodingException {
+        return doAuthorizeWithClaims(clientId, responseType, responseMode, nonce, codeChallenge, Collections.emptyList());
+    }
+
+    protected Response doAuthorizeWithClaims(String clientId, String responseType, String responseMode, String nonce, String codeChallenge,
+                                             List<String> claims) throws UnsupportedEncodingException {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", "openid profile");
         queryParams.put("response_type", responseType);
@@ -117,7 +127,12 @@ public abstract class AbstractIntegrationTest implements TestUtils {
             queryParams.put("code_challenge", codeChallenge);
             queryParams.put("code_challenge_method", CodeChallengeMethod.PLAIN.getValue());
         }
-
+        if (!CollectionUtils.isEmpty(claims)) {
+            ClaimsRequest claimsRequest = new ClaimsRequest();
+            claims.forEach(claim -> claimsRequest.addIDTokenClaim(claim));
+            String claimsRequestString = claimsRequest.toString();
+            queryParams.put("claims", claimsRequestString);
+        }
         Response response = given().redirects().follow(false)
                 .when()
                 .header("Content-type", "application/json")

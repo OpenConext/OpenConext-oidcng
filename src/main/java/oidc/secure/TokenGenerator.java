@@ -31,8 +31,8 @@ import com.nimbusds.openid.connect.sdk.claims.AccessTokenHash;
 import oidc.exceptions.InvalidSignatureException;
 import oidc.model.User;
 import org.apache.commons.io.IOUtils;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.util.CollectionUtils;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -44,6 +44,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
@@ -132,13 +133,14 @@ public class TokenGenerator {
         return new String(chars);
     }
 
-    public String generateIDTokenForTokenEndpoint(Optional<User> user, String clientId) throws JOSEException {
-        return idToken(clientId, user, Collections.emptyMap());
+    public String generateIDTokenForTokenEndpoint(Optional<User> user, String clientId, List<String> idTokenClaims) throws JOSEException {
+        return idToken(clientId, user, Collections.emptyMap(), idTokenClaims);
     }
 
     public String generateIDTokenForAuthorizationEndpoint(User user, String clientId, Nonce nonce,
-                                                          ResponseType responseType, String accessToken) throws JOSEException {
-        Map<String, String> additionalClaims = new HashMap<>();
+                                                          ResponseType responseType, String accessToken,
+                                                          List<String> claims) throws JOSEException {
+        Map<String, Object> additionalClaims = new HashMap<>();
         if (nonce != null) {
             additionalClaims.put("nonce", nonce.getValue());
         }
@@ -146,7 +148,18 @@ public class TokenGenerator {
             additionalClaims.put("at_hash",
                     AccessTokenHash.compute(new BearerAccessToken(accessToken), signingAlg).getValue());
         }
-        return idToken(clientId, Optional.of(user), additionalClaims);
+        return idToken(clientId, Optional.of(user), additionalClaims, claims);
+    }
+
+    private void addClaimsRequested(User user, List<String> claims, Map<String, Object> additionalClaims) {
+        Map<String, Object> attributes = user.getAttributes();
+        if (!CollectionUtils.isEmpty(claims)) {
+            claims.forEach(claim -> {
+                if (attributes.containsKey(claim)) {
+                    additionalClaims.put(claim, attributes.get(claim));
+                }
+            });
+        }
     }
 
     public Map<String, Object> verifyClaims(SignedJWT signedJWT) throws ParseException, JOSEException {
@@ -177,7 +190,8 @@ public class TokenGenerator {
         return jweObject.serialize();
     }
 
-    private String idToken(String clientId, Optional<User> user, Map<String, String> additionalClaims) throws JOSEException {
+    private String idToken(String clientId, Optional<User> user, Map<String, Object> additionalClaims,
+                           List<String> idTokenClaims) throws JOSEException {
         JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
                 .audience(Lists.newArrayList(clientId))
                 .expirationTime(new Date(System.currentTimeMillis() + (60 * 5 * 1000L)))
@@ -189,9 +203,17 @@ public class TokenGenerator {
 
         additionalClaims.forEach((name, value) -> builder.claim(name, value));
 
+        if (user.isPresent() && !CollectionUtils.isEmpty(idTokenClaims)) {
+            Map<String, Object> attributes = user.get().getAttributes();
+            idTokenClaims.forEach(claim -> {
+                if (attributes.containsKey(claim)) {
+                    builder.claim(claim, attributes.get(claim));
+                }
+            });
+        }
+
         SignedJWT signedJWT = getSignedJWT(builder);
         return signedJWT.serialize();
-
     }
 
     private SignedJWT getSignedJWT(JWTClaimsSet.Builder builder) throws JOSEException {

@@ -23,6 +23,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.text.ParseException;
 import java.util.Arrays;
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertNotNull;
 public class AuthorizationEndpointTest extends AbstractIntegrationTest implements OidcEndpointTest {
 
     @Test
-    public void authorize() {
+    public void authorize() throws UnsupportedEncodingException {
         String code = doAuthorize();
         assertEquals(12, code.length());
     }
@@ -100,29 +101,32 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void implicitFlowFragment() throws MalformedURLException, BadJOSEException, ParseException, JOSEException {
-        Response response = doAuthorize("http@//mock-sp", "id_token token", null, "nonce", null);
+    public void implicitFlowFragment() throws MalformedURLException, BadJOSEException, ParseException, JOSEException, UnsupportedEncodingException {
+        Response response = doAuthorizeWithClaims("http@//mock-sp", "id_token token",
+                null, "nonce", null, Arrays.asList("email", "nickname"));
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&")).map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
-        assertImplicitFlowResponse(fragmentParameters);
+        JWTClaimsSet claimsSet = assertImplicitFlowResponse(fragmentParameters);
+
+        assertEquals("john.doe@example.org", claimsSet.getClaim("email"));
+        assertEquals("Johhny", claimsSet.getClaim("nickname"));
     }
 
     @Test
-    public void implicitFlowQuery() throws MalformedURLException, BadJOSEException, ParseException, JOSEException {
+    public void implicitFlowQuery() throws MalformedURLException, BadJOSEException, ParseException, JOSEException, UnsupportedEncodingException {
         Response response = doAuthorize("http@//mock-sp", "id_token token", ResponseMode.QUERY.getValue(), "nonce", null);
         String url = response.getHeader("Location");
         Map<String, String> queryParameters = UriComponentsBuilder.fromUriString(url).build().getQueryParams().toSingleValueMap();
-        String fragment = url.substring(url.indexOf("#") + 1);
-        Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&")).map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
-        assertImplicitFlowResponse(fragmentParameters);
+        assertImplicitFlowResponse(queryParameters);
     }
 
-    private void assertImplicitFlowResponse(Map<String, String> parameters) throws ParseException, MalformedURLException, BadJOSEException, JOSEException {
+    private JWTClaimsSet assertImplicitFlowResponse(Map<String, String> parameters) throws ParseException, MalformedURLException, BadJOSEException, JOSEException {
         String idToken = parameters.get("id_token");
         JWTClaimsSet claimsSet = processToken(idToken, port);
         assertEquals("nonce", claimsSet.getClaim("nonce"));
         assertNotNull(claimsSet.getClaim("at_hash"));
+        return claimsSet;
     }
 
     @Test

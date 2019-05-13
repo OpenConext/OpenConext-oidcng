@@ -7,6 +7,7 @@ import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import oidc.AbstractIntegrationTest;
 import org.junit.Test;
 
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
@@ -28,13 +29,13 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void introspection() {
+    public void introspection() throws UnsupportedEncodingException {
         Map<String, Object> result = doIntrospection("http@//mock-sp", "secret");
         assertEquals(true, result.get("active"));
     }
 
     @Test
-    public void introspectionWithExpiredAccessToken() {
+    public void introspectionWithExpiredAccessToken() throws UnsupportedEncodingException {
         String accessToken = getAccessToken();
         expireAccessToken(accessToken);
         Map<String, Object> result = callIntrospection("http@//mock-sp", accessToken, "secret");
@@ -42,7 +43,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void introspectionBadCredentials() {
+    public void introspectionBadCredentials() throws UnsupportedEncodingException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
         Map<String, Object> result = given()
@@ -55,23 +56,23 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void introspectionNoResourceServer() {
+    public void introspectionNoResourceServer() throws UnsupportedEncodingException {
         Map<String, Object> result = doIntrospection("http@//mock-rp", "secret");
         assertEquals("Requires ResourceServer", result.get("details"));
     }
 
     @Test
-    public void introspectionWrongSecret() {
+    public void introspectionWrongSecret() throws UnsupportedEncodingException {
         Map<String, Object> result = doIntrospection("http@//mock-sp", "nope");
         assertEquals("Invalid user / secret", result.get("details"));
     }
 
-    private Map<String, Object> doIntrospection(String clientId, String secret) {
+    private Map<String, Object> doIntrospection(String clientId, String secret) throws UnsupportedEncodingException {
         String accessToken = getAccessToken();
         return callIntrospection(clientId, accessToken, secret);
     }
 
-    private String getAccessToken() {
+    private String getAccessToken() throws UnsupportedEncodingException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
         return (String) body.get("access_token");

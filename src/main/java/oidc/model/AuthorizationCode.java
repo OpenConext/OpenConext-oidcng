@@ -29,7 +29,10 @@ public class AuthorizationCode {
 
     private String codeChallengeMethod;
 
-    public AuthorizationCode(String code, String sub, String clientId, List<String> scopes, String redirectUri, String codeChallenge, String codeChallengeMethod) {
+    private List<String> idTokenClaims;
+
+    public AuthorizationCode(String code, String sub, String clientId, List<String> scopes, String redirectUri,
+                             String codeChallenge, String codeChallengeMethod, List<String> idTokenClaims) {
         this.code = code;
         this.sub = sub;
         this.clientId = clientId;
@@ -37,5 +40,6 @@ public class AuthorizationCode {
         this.redirectUri = redirectUri;
         this.codeChallenge = codeChallenge;
         this.codeChallengeMethod = codeChallengeMethod;
+        this.idTokenClaims = idTokenClaims;
     }
 }

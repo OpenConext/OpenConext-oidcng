@@ -19,6 +19,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.text.ParseException;
 import java.util.Collections;
@@ -43,7 +44,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
-    public void token() throws MalformedURLException, ParseException, JOSEException, BadJOSEException {
+    public void token() throws MalformedURLException, ParseException, JOSEException, BadJOSEException, UnsupportedEncodingException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
 
@@ -71,7 +72,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
-    public void refreshToken() throws ParseException, JOSEException, MalformedURLException {
+    public void refreshToken() throws ParseException, JOSEException, MalformedURLException, UnsupportedEncodingException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
 
@@ -79,7 +80,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
-    public void refreshTokenForPublicClient() throws ParseException, JOSEException, MalformedURLException {
+    public void refreshTokenForPublicClient() throws ParseException, JOSEException, MalformedURLException, UnsupportedEncodingException {
         String codeChallenge = StringUtils.leftPad("token", 45, "*");
         Response response = doAuthorize("http@//mock-sp", "code", null, "nonce",
                 codeChallenge);
@@ -132,7 +133,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
-    public void nonPublicClient() {
+    public void nonPublicClient() throws UnsupportedEncodingException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code, "http@//mock-rp", null, GrantType.AUTHORIZATION_CODE,
                 StringUtils.leftPad("token", 45, "*"));
@@ -141,7 +142,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
-    public void clientMismatch() {
+    public void clientMismatch() throws UnsupportedEncodingException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code, "http@//mock-rp", "secret", GrantType.AUTHORIZATION_CODE, null);
 
@@ -149,7 +150,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
-    public void codeChallengeMissing() {
+    public void codeChallengeMissing() throws UnsupportedEncodingException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code, "http@//mock-sp", null, GrantType.AUTHORIZATION_CODE);
 
@@ -157,7 +158,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
-    public void codeChallengeInvalid() {
+    public void codeChallengeInvalid() throws UnsupportedEncodingException {
         Response response = doAuthorize("http@//mock-sp", "code", null, null,
                 StringUtils.leftPad("token", 45, "-"));
         String code = getCode(response);
@@ -167,7 +168,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
-    public void codeChallengeNotInAuthorisationCode() {
+    public void codeChallengeNotInAuthorisationCode() throws UnsupportedEncodingException {
         Response response = doAuthorize("http@//mock-sp", "code", null, null, null);
         String code = getCode(response);
         Map<String, Object> body = doToken(code, "http@//mock-sp", null, GrantType.AUTHORIZATION_CODE,
@@ -176,7 +177,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
-    public void redirectMismatch() {
+    public void redirectMismatch() throws UnsupportedEncodingException {
         String code = doAuthorize();
         Map<String, Object> body = given()
                 .when()
@@ -192,9 +193,9 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
-    public void unsupportedClientAuthentication() throws JOSEException {
+    public void unsupportedClientAuthentication() throws JOSEException, UnsupportedEncodingException {
         String code = doAuthorize();
-        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.empty(), issuer);
+        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.empty(), issuer, Collections.emptyList());
         Map<String, Object> body = given()
                 .when()
                 .header("Content-type", "application/x-www-form-urlencoded")
