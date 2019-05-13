@@ -55,7 +55,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 .get("oidc/authorize")
                 .then()
                 .statusCode(302)
-                .header("Location", "http://localhost:8080")
+                .header("Location", "http://localhost:8080?error=invalid_request&error_description=Missing%20%22client_id%22%20parameter&state")
                 .body(containsString("Missing \\\"client_id\\\" parameter"));
     }
 
@@ -74,7 +74,8 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 .get("oidc/authorize")
                 .then()
                 .statusCode(302)
-                .header("Location", "http://localhost:8080")
+                .header("Location",
+                        "http://localhost:8080?error=invalid_request&error_description=Scope(s)%20[nope]%20are%20not%20allowed%20for%20http@//mock-sp.%20Allowed%20scopes:%20[openid,%20groups,%20profile,%20email,%20address,%20phone]&state")
                 .body(containsString("not allowed"));
     }
 
