@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -59,6 +60,19 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
         JWTClaimsSet claimsSet = processToken(idToken, port);
 
         assertEquals(Collections.singletonList("http@//mock-sp"), claimsSet.getAudience());
+    }
+
+    @Test
+    public void tokenWithClaims() throws MalformedURLException, ParseException, JOSEException, BadJOSEException, UnsupportedEncodingException {
+        Response response = doAuthorizeWithClaims("http@//mock-sp", "code", null, null, null, Arrays.asList("email", "nickname"));
+        String code = getCode(response);
+        Map<String, Object> body = doToken(code);
+
+        String idToken = (String) body.get("id_token");
+        JWTClaimsSet claimsSet = processToken(idToken, port);
+
+        assertEquals("john.doe@example.org", claimsSet.getClaim("email"));
+        assertEquals("Johhny", claimsSet.getClaim("nickname"));
     }
 
     @Test
