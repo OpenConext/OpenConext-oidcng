@@ -22,6 +22,8 @@ import oidc.repository.UserRepository;
 import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
 import oidc.web.FakeSamlAuthenticationFilter;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -44,6 +46,9 @@ import static org.springframework.security.saml.provider.service.config.SamlServ
 
 @EnableWebSecurity
 public class SecurityConfiguration {
+
+    private static final Log LOG = LogFactory.getLog(SecurityConfiguration.class);
+
 
     @Configuration
     @Order(1)
@@ -86,8 +91,8 @@ public class SecurityConfiguration {
         }
 
         private RotatingKeys getKeys() throws IOException {
-            String privateKey = IOUtils.toString(this.privateKeyPath.getInputStream(), Charset.defaultCharset());
-            String certificate = IOUtils.toString(this.certificatePath.getInputStream(), Charset.defaultCharset());
+            String privateKey = read(this.privateKeyPath);
+            String certificate = read(this.certificatePath);
             return new RotatingKeys()
                     .setActive(
                             new SimpleKey()
@@ -96,6 +101,11 @@ public class SecurityConfiguration {
                                     .setPassphrase("sppassword")
                                     .setCertificate(certificate)
                     );
+        }
+
+        private String read(Resource resource) throws IOException {
+            LOG.info("Reading resource: " + resource.getFilename());
+            return IOUtils.toString(resource.getInputStream(), Charset.defaultCharset());
         }
     }
 
