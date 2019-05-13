@@ -21,6 +21,8 @@ import oidc.repository.RefreshTokenRepository;
 import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
 import oidc.user.OidcSamlAuthentication;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -42,6 +44,8 @@ import java.util.stream.Collectors;
 
 @Controller
 public class AuthorizationEndpoint implements OidcEndpoint {
+
+    private static final Log LOG = LogFactory.getLog(AuthorizationEndpoint.class);
 
     private TokenGenerator tokenGenerator;
     private AuthorizationCodeRepository authorizationCodeRepository;
@@ -102,17 +106,20 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             ResponseMode responseMode = authenticationRequest.impliedResponseMode();
             if (responseMode.equals(ResponseMode.FORM_POST)) {
                 body.put("redirect_uri", redirectionURI);
+                LOG.info(String.format("Returning implicit flow %s %s", ResponseMode.FORM_POST, redirectionURI));
                 return new ModelAndView("form_post", body);
             }
             if (responseMode.equals(ResponseMode.QUERY)) {
                 UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectionURI);
                 body.forEach(builder::queryParam);
+                LOG.info(String.format("Returning implicit flow %s %s", ResponseMode.QUERY, redirectionURI));
                 return new ModelAndView(new RedirectView(builder.toUriString()));
             }
             if (responseMode.equals(ResponseMode.FRAGMENT)) {
                 UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectionURI);
                 String fragment = body.entrySet().stream().map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue())).collect(Collectors.joining("&"));
                 builder.fragment(fragment);
+                LOG.info(String.format("Returning implicit flow %s %s", ResponseMode.FRAGMENT, redirectionURI));
                 return new ModelAndView(new RedirectView(builder.toUriString()));
             }
             throw new IllegalArgumentException("Response mode " + responseMode + " not supported");
@@ -151,7 +158,9 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         if (state != null && StringUtils.hasText(state.getValue())) {
             builder.queryParam("state", state.getValue());
         }
-        return builder.toUriString();
+        String result = builder.toUriString();
+        LOG.info("Returning authorizationRedirect: " + result);
+        return result;
     }
 
 
