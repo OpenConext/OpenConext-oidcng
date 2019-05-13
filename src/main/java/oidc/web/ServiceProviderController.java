@@ -30,6 +30,10 @@ public class ServiceProviderController {
 
     @RequestMapping(value = {"/"})
     public ModelAndView home(HttpServletRequest request, Authentication authentication) {
+        if (!(authentication instanceof OidcSamlAuthentication)) {
+            throw new IllegalArgumentException("Root endpoint requires an OIDC SAML Authentication");
+        }
+
         OidcSamlAuthentication oidcSamlAuthentication = (OidcSamlAuthentication) authentication;
         User user = (User) oidcSamlAuthentication.getDetails();
         return new ModelAndView("demo", "user", user);
