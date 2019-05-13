@@ -83,7 +83,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         AuthorizationGrant authorizationGrant = tokenRequest.getAuthorizationGrant();
         if (clientAuthentication == null && authorizationGrant instanceof AuthorizationCodeGrant
                 && ((AuthorizationCodeGrant) authorizationGrant).getCodeVerifier() == null) {
-            throw new CodeVerifierMissingException("code_verifier required without findByClientId authentication");
+            throw new CodeVerifierMissingException("code_verifier required without client authentication");
         }
         String clientId = clientAuthentication != null ? clientAuthentication.getClientID().getValue() : tokenRequest.getClientID().getValue();
         OpenIDClient client = openIDClientRepository.findByClientId(clientId);

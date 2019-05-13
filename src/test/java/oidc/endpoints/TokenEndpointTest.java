@@ -6,6 +6,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
 import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
 import oidc.OidcEndpointTest;
 import oidc.model.AccessToken;
@@ -74,21 +75,47 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
 
+        doRefreshToken(body, "secret");
+    }
+
+    @Test
+    public void refreshTokenForPublicClient() throws ParseException, JOSEException, MalformedURLException {
+        String codeChallenge = StringUtils.leftPad("token", 45, "*");
+        Response response = doAuthorize("http@//mock-sp", "code", null, "nonce",
+                codeChallenge);
+        String code = getCode(response);
+
+        Map<String, Object> body = doToken(code, "http@//mock-sp", null, GrantType.AUTHORIZATION_CODE,
+                codeChallenge);
+
+        doRefreshToken(body, null);
+    }
+
+    private void doRefreshToken(Map<String, Object> body, String secret) throws MalformedURLException, JOSEException, ParseException {
         String refreshToken = (String) body.get("refresh_token");
         String accessToken = (String) body.get("access_token");
-        Map<String, Object> result = given()
+        RequestSpecification header = given()
                 .when()
-                .header("Content-type", "application/x-www-form-urlencoded")
-                .auth().preemptive().basic("http@//mock-sp", "secret")
+                .header("Content-type", "application/x-www-form-urlencoded");
+        if (!StringUtils.isEmpty(secret)) {
+            header = header.auth().preemptive().basic("http@//mock-sp", secret);
+        } else {
+            header = header.formParam("client_id", "http@//mock-sp");
+        }
+        Map<String, Object> result = header
                 .formParam("grant_type", GrantType.REFRESH_TOKEN.getValue())
                 .formParam(GrantType.REFRESH_TOKEN.getValue(), refreshToken)
                 .post("oidc/token")
                 .as(Map.class);
-        verifySignedJWT((String) body.get("id_token"), port);
+        verifySignedJWT((String) result.get("id_token"), port);
 
         assertEquals(0, mongoTemplate.find(Query.query(Criteria.where("value").is(accessToken)), AccessToken.class).size());
         assertEquals(0, mongoTemplate.find(Query.query(Criteria.where("value").is(refreshToken)), RefreshToken.class).size());
+
+        assertNotNull(body.get("refresh_token"));
+        assertNotNull(body.get("access_token"));
     }
+
 
     @Test
     public void clientCredentialsInvalidGrant() throws ParseException {
@@ -126,7 +153,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
         String code = doAuthorize();
         Map<String, Object> body = doToken(code, "http@//mock-sp", null, GrantType.AUTHORIZATION_CODE);
 
-        assertEquals("code_verifier required without findByClientId authentication", body.get("message"));
+        assertEquals("code_verifier required without client authentication", body.get("message"));
     }
 
     @Test
