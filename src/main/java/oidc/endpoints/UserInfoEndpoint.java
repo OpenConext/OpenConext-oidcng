@@ -26,12 +26,10 @@ import java.util.Map;
 public class UserInfoEndpoint {
 
     private AccessTokenRepository accessTokenRepository;
-    private UserRepository userRepository;
     private TokenGenerator tokenGenerator;
 
-    public UserInfoEndpoint(AccessTokenRepository accessTokenRepository, UserRepository userRepository, TokenGenerator tokenGenerator) {
+    public UserInfoEndpoint(AccessTokenRepository accessTokenRepository, TokenGenerator tokenGenerator) {
         this.accessTokenRepository = accessTokenRepository;
-        this.userRepository = userRepository;
         this.tokenGenerator = tokenGenerator;
     }
 

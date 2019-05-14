@@ -13,9 +13,8 @@ import java.util.UUID;
 public interface AccessTokenRepository extends MongoRepository<AccessToken, String> {
 
     default AccessToken findByValue(String value) {
-        String newValue = UUID.nameUUIDFromBytes(value.getBytes(Charset.defaultCharset())).toString();
-        Optional<AccessToken> one = findAccessTokenByValue(newValue);
-        return one.orElseThrow(() -> new EmptyResultDataAccessException("AccessToken not found", 1));
+        Optional<AccessToken> accessToken = findOptionalAccessTokenByValue(value);
+        return accessToken.orElseThrow(() -> new EmptyResultDataAccessException("AccessToken not found", 1));
     }
 
     default Optional<AccessToken> findOptionalAccessTokenByValue(String value) {
@@ -23,5 +22,6 @@ public interface AccessTokenRepository extends MongoRepository<AccessToken, Stri
         return findAccessTokenByValue(newValue);
     }
 
+    //Do not use
     Optional<AccessToken> findAccessTokenByValue(String value);
 }

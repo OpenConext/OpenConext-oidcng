@@ -53,7 +53,6 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
     private TokenGenerator tokenGenerator;
     private AuthorizationCodeRepository authorizationCodeRepository;
-    private UserRepository userRepository;
     private AccessTokenRepository accessTokenRepository;
     private RefreshTokenRepository refreshTokenRepository;
     private OpenIDClientRepository openIDClientRepository;
@@ -62,13 +61,11 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     @Autowired
     public AuthorizationEndpoint(AuthorizationCodeRepository authorizationCodeRepository,
                                  AccessTokenRepository accessTokenRepository,
-                                 UserRepository userRepository,
                                  RefreshTokenRepository refreshTokenRepository,
                                  OpenIDClientRepository openIDClientRepository,
                                  TokenGenerator tokenGenerator) {
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.accessTokenRepository = accessTokenRepository;
-        this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.openIDClientRepository = openIDClientRepository;
         this.tokenGenerator = tokenGenerator;

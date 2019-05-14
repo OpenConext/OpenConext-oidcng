@@ -30,18 +30,15 @@ import java.util.Map;
 public class IntrospectEndpoint extends SecureEndpoint {
 
     private AccessTokenRepository accessTokenRepository;
-    private UserRepository userRepository;
     private OpenIDClientRepository openIDClientRepository;
     private String issuer;
     private TokenGenerator tokenGenerator;
 
     public IntrospectEndpoint(AccessTokenRepository accessTokenRepository,
-                              UserRepository userRepository,
                               OpenIDClientRepository openIDClientRepository,
                               TokenGenerator tokenGenerator,
                               @Value("${spring.security.saml2.service-provider.entity-id}") String issuer) {
         this.accessTokenRepository = accessTokenRepository;
-        this.userRepository = userRepository;
         this.openIDClientRepository = openIDClientRepository;
         this.tokenGenerator = tokenGenerator;
         this.issuer = issuer;

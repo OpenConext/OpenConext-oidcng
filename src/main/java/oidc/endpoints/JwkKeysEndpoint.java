@@ -80,8 +80,7 @@ public class JwkKeysEndpoint implements MapTypeReference {
     @GetMapping(value = {"/oidc/certs"}, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public String publishClientJwk() {
         Map<String, ? extends JWK> allPublicKeys = tokenGenerator.getAllPublicKeys();
-        JWKSet jwkSet = new JWKSet(new ArrayList<>(allPublicKeys.values()));
-        return jwkSet.toString();
+        return new JWKSet(new ArrayList<>(allPublicKeys.values())).toString();
     }
 
     @GetMapping("oidc/.well-known/openid-configuration")

@@ -205,27 +205,6 @@ public class TokenGenerator implements MapTypeReference {
         return signedJWT.getJWTClaimsSet().getClaims();
     }
 
-    private Map<String, Object> doDecryptAccessToken(String jweString, JWEDecrypter decrypter) throws ParseException, JOSEException {
-        JWEObject jweObject = JWEObject.parse(jweString);
-        jweObject.decrypt(decrypter);
-        SignedJWT signedJWT = jweObject.getPayload().toSignedJWT();
-        return verifyClaims(signedJWT);
-    }
-
-    private String encryptedAccessToken(Map<String, Object> input, JWEEncrypter encrypter) throws JOSEException {
-        JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder();
-        input.forEach((name, value) -> builder.claim(name, value));
-
-        SignedJWT signedJWT = getSignedJWT(builder);
-        JWEHeader header = encrypter instanceof RSACryptoProvider ?
-                new JWEHeader(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A256GCM) :
-                new JWEHeader(JWEAlgorithm.DIR, EncryptionMethod.A256CBC_HS512);
-
-        JWEObject jweObject = new JWEObject(header, new Payload(signedJWT));
-        jweObject.encrypt(encrypter);
-        return jweObject.serialize();
-    }
-
     private String idToken(OpenIDClient client, Optional<User> user, Map<String, Object> additionalClaims,
                            List<String> idTokenClaims) throws JOSEException {
         JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
