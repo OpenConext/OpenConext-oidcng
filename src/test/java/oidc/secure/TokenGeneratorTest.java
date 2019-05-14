@@ -1,66 +1,50 @@
 package oidc.secure;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.crypto.RSASSASigner;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
-import oidc.TestUtils;
-import oidc.exceptions.InvalidSignatureException;
+import oidc.AbstractIntegrationTest;
+import oidc.model.OpenIDClient;
+import oidc.model.User;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 import java.io.IOException;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.text.ParseException;
+import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
-public class TokenGeneratorTest implements TestUtils {
+public class TokenGeneratorTest extends AbstractIntegrationTest {
 
-    private TokenGenerator subject = new TokenGenerator(
-            new ClassPathResource("oidc.keystore.jwks.json"),
-            "issuer",
-            "Y3nS5p0bKLI8bR/thxo0CFS3uItJXifjfRymRGOGJhRgij48ttTjPR33ZdAhobHrXd5MJNz4X69wYKvsUMlIfg==");
-
-    public TokenGeneratorTest() throws ParseException, JOSEException, IOException {
-    }
+    @Autowired
+    private TokenGenerator subject;
 
     @Test
-    public void generateEncryptedAccessToken() throws IOException, JOSEException, ParseException {
-        Map<String, Object> data = getUserInfo();
-        String jweString = subject.generateEncryptedAccessToken(data);
+    public void generateAccessTokenWithEmbeddedUserInfo() throws IOException {
+        User user = new User("sub", "unspecifiedNameId", "http://mockidp", "clientId", getUserInfo());
 
-        Map<String, Object> parsed = subject.decryptAccessToken(jweString);
-        assertEquals(data, parsed);
-    }
+        String clientId = "http@//mock-sp";
+        OpenIDClient client = mongoTemplate.find(Query.query(Criteria.where("clientId").is(clientId)), OpenIDClient.class).get(0);
 
-    @Test(expected = InvalidSignatureException.class)
-    public void tamperWithEncryptedAccessToken() throws JOSEException, ParseException, NoSuchAlgorithmException {
-        SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), new JWTClaimsSet.Builder().build());
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-        keyPairGenerator.initialize(2048);
-        signedJWT.sign(new RSASSASigner(keyPairGenerator.generateKeyPair().getPrivate()));
-        subject.verifyClaims(signedJWT);
-    }
+        List<String> scopes = Arrays.asList("openid", "groups");
+        String accessToken = subject.generateAccessTokenWithEmbeddedUserInfo(user, client, scopes);
 
-    @Test
-    public void generateSymmetricEncryptedAccessToken() throws IOException, JOSEException, ParseException {
-        Map<String, Object> data = getUserInfo();
-        String jweString = subject.generateSymmetricEncryptedAccessToken(data);
+        Map<String, Object> userInfo = subject.decryptAccessTokenWithEmbeddedUserInfo(accessToken);
 
-        Map<String, Object> parsed = subject.decryptSymmtricAccessToken(jweString);
-        assertEquals(data, parsed);
+        assertEquals(String.join(",", scopes), userInfo.get("scope"));
+        assertEquals(clientId, userInfo.get("client_id"));
+
+        User convertedUser = (User) userInfo.get("user");
+
+        assertEquals(user, convertedUser);
     }
 
     private Map<String, Object> getUserInfo() throws IOException {
-        return objectMapper.readValue(new ClassPathResource("oidc/userinfo_endpoint.json").getInputStream(),
-                new TypeReference<Map<String, Object>>() {
-                });
+        return objectMapper.readValue(new ClassPathResource("oidc/userinfo_endpoint.json").getInputStream(), mapTypeReference);
     }
 
 }

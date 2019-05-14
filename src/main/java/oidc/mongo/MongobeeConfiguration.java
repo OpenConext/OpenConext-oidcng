@@ -8,6 +8,7 @@ import com.mongodb.MongoClientURI;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
+import oidc.model.RefreshToken;
 import oidc.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,10 +20,11 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.index.IndexOperations;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static java.util.Collections.singletonList;
 
 @Configuration
 @ChangeLog
@@ -56,11 +58,26 @@ public class MongobeeConfiguration {
     public void createCollections(MongoTemplate mongoTemplate) {
         Map<Class<? extends Object>, List<String>> indexInfo = new HashMap<>();
 
-        indexInfo.put(AccessToken.class, Arrays.asList("value"));
-        indexInfo.put(AuthorizationCode.class, Arrays.asList("code"));
-        indexInfo.put(User.class, Arrays.asList("sub"));
-        indexInfo.put(OpenIDClient.class, Arrays.asList("clientId"));
+        indexInfo.put(AccessToken.class, singletonList("value"));
+        indexInfo.put(AuthorizationCode.class, singletonList("code"));
+        indexInfo.put(User.class, singletonList("sub"));
+        indexInfo.put(OpenIDClient.class, singletonList("clientId"));
 
+        ensureCollectionsAndIndexes(mongoTemplate, indexInfo);
+    }
+
+    @ChangeSet(order = "002", id = "createRefreshTokenIndex", author = "Okke Harsta")
+    public void createRefreshTokenIndex(MongoTemplate mongoTemplate) {
+        mongoTemplate.dropCollection(RefreshToken.class);
+
+        Map<Class<? extends Object>, List<String>> indexInfo = new HashMap<>();
+
+        indexInfo.put(RefreshToken.class, singletonList("innerValue"));
+
+        ensureCollectionsAndIndexes(mongoTemplate, indexInfo);
+    }
+
+    private void ensureCollectionsAndIndexes(MongoTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {
         indexInfo.forEach((collection, fields) -> {
             if (!mongoTemplate.collectionExists(collection)) {
                 mongoTemplate.createCollection(collection);
@@ -71,4 +88,5 @@ public class MongobeeConfiguration {
             });
         });
     }
+
 }

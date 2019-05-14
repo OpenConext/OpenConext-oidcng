@@ -11,12 +11,16 @@ import oidc.AbstractIntegrationTest;
 import oidc.OidcEndpointTest;
 import oidc.model.AccessToken;
 import oidc.model.RefreshToken;
+import oidc.model.User;
 import oidc.secure.TokenGenerator;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -36,14 +40,11 @@ import static org.junit.Assert.assertNull;
 @SuppressWarnings("unchecked")
 public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEndpointTest {
 
-    private String issuer = "issuer";
-    private TokenGenerator tokenGenerator = new TokenGenerator(
-            new ClassPathResource("oidc.keystore.jwks.json"),
-            issuer,
-            "Y3nS5p0bKLI8bR/thxo0CFS3uItJXifjfRymRGOGJhRgij48ttTjPR33ZdAhobHrXd5MJNz4X69wYKvsUMlIfg==");
+    @Autowired
+    private TokenGenerator tokenGenerator ;
 
-    public TokenEndpointTest() throws ParseException, JOSEException, IOException {
-    }
+    @Autowired
+    private @Value("${spring.security.saml2.service-provider.entity-id}") String issuer;
 
     @Test
     public void token() throws MalformedURLException, ParseException, JOSEException, BadJOSEException, UnsupportedEncodingException {
@@ -221,9 +222,9 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
-    public void unsupportedClientAuthentication() throws JOSEException, UnsupportedEncodingException {
+    public void unsupportedClientAuthentication() throws JOSEException, IOException {
         String code = doAuthorize();
-        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.empty(), issuer, Collections.emptyList());
+        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user(issuer)), openIDClient(), Collections.emptyList());
         Map<String, Object> body = given()
                 .when()
                 .header("Content-type", "application/x-www-form-urlencoded")
@@ -235,5 +236,11 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
                 .as(mapTypeRef);
         assertEquals("Unsupported 'class com.nimbusds.oauth2.sdk.auth.PrivateKeyJWT' findByClientId authentication in token endpoint",
                 body.get("message"));
+    }
+
+    private User user(String issuer) {
+        User user = new User();
+        ReflectionTestUtils.setField(user, "sub", issuer);
+        return user;
     }
 }

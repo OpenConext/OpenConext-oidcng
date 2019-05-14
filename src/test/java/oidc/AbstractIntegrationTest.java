@@ -2,15 +2,19 @@ package oidc;
 
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.openid.connect.sdk.ClaimsRequest;
 import io.restassured.RestAssured;
+
 import io.restassured.mapper.TypeRef;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import oidc.endpoints.MapTypeReference;
 import oidc.model.AccessToken;
 import oidc.model.OpenIDClient;
+import org.eclipse.jetty.util.IO;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,13 +55,16 @@ import static org.junit.Assert.assertEquals;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.data.mongodb.uri=mongodb://127.0.0.1:27017/oidc_test", "mongodb_db=oidc_test"})
 @ActiveProfiles("dev")
-public abstract class AbstractIntegrationTest implements TestUtils {
+public abstract class AbstractIntegrationTest implements TestUtils, MapTypeReference {
 
     @LocalServerPort
     protected int port;
 
     @Autowired
     protected MongoTemplate mongoTemplate;
+
+    @Autowired
+    protected ObjectMapper objectMapper;
 
     protected TypeRef<Map<String, Object>> mapTypeRef = new TypeRef<Map<String, Object>>() {
     };
@@ -78,6 +85,10 @@ public abstract class AbstractIntegrationTest implements TestUtils {
             this.openIDClients = serviceProviders().stream().map(OpenIDClient::new).collect(Collectors.toList());
         }
         return this.openIDClients;
+    }
+
+    protected OpenIDClient openIDClient() throws IOException {
+        return this.openIDClients().get(0);
     }
 
     protected List<Map<String, Object>> serviceProviders() throws IOException {
@@ -176,7 +187,7 @@ public abstract class AbstractIntegrationTest implements TestUtils {
     }
 
     protected void expireAccessToken(String token) {
-        AccessToken accessToken = mongoTemplate.find(Query.query(Criteria.where("value").is(token)), AccessToken.class).get(0);
+        AccessToken accessToken = mongoTemplate.find(Query.query(Criteria.where("innerValue").is(token)), AccessToken.class).get(0);
         Date expiresIn = Date.from(LocalDateTime.now().minusYears(1L).atZone(ZoneId.systemDefault()).toInstant());
         ReflectionTestUtils.setField(accessToken, "expiresIn", expiresIn);
         mongoTemplate.save(accessToken);

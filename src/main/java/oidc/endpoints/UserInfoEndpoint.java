@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.time.Clock;
 import java.util.Date;
 import java.util.Map;
 
@@ -46,7 +47,7 @@ public class UserInfoEndpoint {
 
         AccessToken accessToken = accessTokenRepository.findByValue(userInfoRequest.getAccessToken().getValue());
 
-        if (accessToken.isExpired()) {
+        if (accessToken.isExpired(Clock.systemDefaultZone())) {
             throw new UnauthorizedException("Access token expired");
         }
         User user = userRepository.findUserBySub(accessToken.getSub());

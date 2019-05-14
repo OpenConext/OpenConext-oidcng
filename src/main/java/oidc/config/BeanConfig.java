@@ -23,9 +23,12 @@ import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
 import oidc.user.SamlProvisioningAuthenticationManager;
 import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
+import oidc.web.FakeSamlAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.core.io.Resource;
 import org.springframework.security.saml.SamlRequestMatcher;
 import org.springframework.security.saml.provider.SamlServerConfiguration;
@@ -36,30 +39,42 @@ import org.springframework.security.saml.provider.service.config.SamlServiceProv
 
 import javax.servlet.Filter;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.text.ParseException;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 
 @Configuration
 public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
 
+    public static final Instant instant = Instant.parse("2100-01-01T00:00:00.00Z");
+
+    private Environment environment;
     private AppConfig appConfiguration;
     private UserRepository userRepository;
     private ObjectMapper objectMapper;
     private String issuer;
-    private String secureSecret;
     private Resource jwksKeyStorePath;
+    private Resource secretKeySetPath;
+    private String associatedData;
 
     public BeanConfig(AppConfig config,
                       UserRepository userRepository,
                       ObjectMapper objectMapper,
+                      Environment environment,
                       @Value("${jwks_key_store_path}") Resource jwksKeyStorePath,
-                      @Value("${spring.security.saml2.service-provider.entity-id}") String issuer,
-                      @Value("${secure_secret}") String secureSecret) {
+                      @Value("${secret_key_set_path}") Resource secretKeySetPath,
+                      @Value("${associated_data}") String associatedData,
+                      @Value("${spring.security.saml2.service-provider.entity-id}") String issuer) {
         this.appConfiguration = config;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
         this.jwksKeyStorePath = jwksKeyStorePath;
+        this.secretKeySetPath = secretKeySetPath;
+        this.associatedData = associatedData;
         this.issuer = issuer;
-        this.secureSecret = secureSecret;
+        this.environment = environment;
     }
 
     @Override
@@ -87,15 +102,17 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     }
 
     @Bean
-    public TokenGenerator tokenGenerator() throws ParseException, JOSEException, IOException {
-        return new TokenGenerator(jwksKeyStorePath, issuer, secureSecret);
+    public TokenGenerator tokenGenerator() throws ParseException, JOSEException, IOException, GeneralSecurityException {
+        Clock clock = environment.acceptsProfiles(Profiles.of("dev")) ? Clock.fixed(instant, ZoneId.systemDefault()) : Clock.systemDefaultZone();
+
+        return new TokenGenerator(jwksKeyStorePath, issuer, secretKeySetPath, associatedData, objectMapper, clock);
     }
 
     @Override
     @Bean
     public Filter spAuthenticationResponseFilter() {
         SamlAuthenticationResponseFilter filter =
-                SamlAuthenticationResponseFilter.class.cast(super.spAuthenticationResponseFilter());
+                (SamlAuthenticationResponseFilter) super.spAuthenticationResponseFilter();
         try {
             filter.setAuthenticationManager(this.samlProvisioningAuthenticationManager());
         } catch (IOException e) {

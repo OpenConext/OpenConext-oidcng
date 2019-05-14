@@ -29,6 +29,11 @@ to bypass the redirect to EB.
 ### [Wiki](#wiki)
 
 See the oidcng [github wiki](https://github.com/OpenConext/OpenConext-oidcng/wiki) for additional documentation.
+```
+ curl http://localhost:8080/oidc/generate-secret-key-set | jq .
+ curl http://localhost:8080/oidc/certs | jq .
+ 
+```
 
 ### [Testing](#testing)
 

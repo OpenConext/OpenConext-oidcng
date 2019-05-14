@@ -16,6 +16,7 @@ import java.util.Map;
 import static com.nimbusds.jose.JWSAlgorithm.RS256;
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class JwkKeysEndpointTest extends AbstractIntegrationTest {
 
@@ -41,10 +42,9 @@ public class JwkKeysEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void generateSecretKey() {
-        Map<String, Object> res = getMapFromEndpoint("oidc/generate-secret-key");
-        byte[] keys = Base64.getDecoder().decode(String.class.cast(res.get("key")));
-        assertEquals(512, keys.length * Byte.SIZE);
+    public void generateSecretKeySet() {
+        Map<String, Object> res = getMapFromEndpoint("oidc/generate-secret-key-set");
+        assertTrue(res.containsKey("key"));
     }
 
     private void assertRSAKey(Map<String, Object> res, boolean isPrivate) throws ParseException, JsonProcessingException {

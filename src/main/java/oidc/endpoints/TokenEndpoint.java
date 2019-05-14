@@ -151,13 +151,13 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         }
         authorizationCodeRepository.delete(authorizationCode);
         User user = userRepository.findUserBySub(authorizationCode.getSub());
-        Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes(), authorizationCode.getIdTokenClaims());
+        Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes(), authorizationCode.getIdTokenClaims(), false);
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 
     private ResponseEntity handleRefreshCodeGrant(RefreshTokenGrant refreshTokenGrant, OpenIDClient client) throws JOSEException {
         String refreshTokenValue = refreshTokenGrant.getRefreshToken().getValue();
-        RefreshToken refreshToken = refreshTokenRepository.findByValue(refreshTokenValue);
+        RefreshToken refreshToken = refreshTokenRepository.findByInnerValue(refreshTokenValue);
         if (!refreshToken.getClientId().equals(client.getClientId())) {
             throw new BadCredentialsException("Client is not authorized for the refresh token");
         }
@@ -168,13 +168,13 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         accessToken.ifPresent(token ->accessTokenRepository.delete(token));
 
         User user = userRepository.findUserBySub(refreshToken.getSub());
-        Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, refreshToken.getScopes(), Collections.emptyList());
+        Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, refreshToken.getScopes(), Collections.emptyList(), false);
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 
 
     private ResponseEntity handleClientCredentialsGrant(OpenIDClient client) throws JOSEException {
-        Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes(), Collections.emptyList());
+        Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes(), Collections.emptyList(), true);
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 

@@ -1,6 +1,7 @@
 package oidc.user;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import oidc.TestUtils;
 import oidc.model.User;
 import oidc.repository.UserRepository;
 import org.junit.Test;
@@ -28,7 +29,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 //Hard to test, because of SAML dependency
-public class SamlProvisioningAuthenticationManagerTest {
+public class SamlProvisioningAuthenticationManagerTest implements TestUtils {
 
     private OpenSamlImplementation openSamlImplementation = new OpenSamlImplementation(Clock.systemDefaultZone());
 
@@ -37,7 +38,7 @@ public class SamlProvisioningAuthenticationManagerTest {
     }
 
     private UserRepository userRepository = mock(UserRepository.class);
-    private SamlProvisioningAuthenticationManager subject = new SamlProvisioningAuthenticationManager(userRepository, new ObjectMapper());
+    private SamlProvisioningAuthenticationManager subject = new SamlProvisioningAuthenticationManager(userRepository, objectMapper);
 
     public SamlProvisioningAuthenticationManagerTest() throws IOException {
     }

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.time.Clock;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
@@ -48,20 +49,22 @@ public class IntrospectEndpoint extends SecureEndpoint {
         TokenIntrospectionRequest tokenIntrospectionRequest = TokenIntrospectionRequest.parse(httpRequest);
         ClientAuthentication clientAuthentication = tokenIntrospectionRequest.getClientAuthentication();
         String value = tokenIntrospectionRequest.getToken().getValue();
+
         //https://tools.ietf.org/html/rfc7662 is vague about the authorization requirements, but we enforce basic auth
-        if (clientAuthentication == null || !(clientAuthentication instanceof PlainClientSecret)) {
+        if (!(clientAuthentication instanceof PlainClientSecret)) {
             throw new BadCredentialsException("Invalid user / secret");
         }
         OpenIDClient client = openIDClientRepository.findByClientId(clientAuthentication.getClientID().getValue());
 
-        if (!secretsMatch(PlainClientSecret.class.cast(clientAuthentication), client)) {
+        if (!secretsMatch((PlainClientSecret) clientAuthentication, client)) {
             throw new BadCredentialsException("Invalid user / secret");
         }
         if (!client.isResourceServer()) {
             throw new BadCredentialsException("Requires ResourceServer");
         }
+
         AccessToken accessToken = accessTokenRepository.findByValue(value);
-        if (accessToken.isExpired()) {
+        if (accessToken.isExpired(Clock.systemDefaultZone())) {
             return Collections.singletonMap("active", false);
         }
         User user = userRepository.findUserBySub(accessToken.getSub());

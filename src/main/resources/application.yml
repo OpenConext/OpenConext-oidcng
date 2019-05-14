@@ -17,8 +17,9 @@ info:
     version: "@project.version@"
 
 mongodb_db: oidc_test
-secure_secret: Y3nS5p0bKLI8bR/thxo0CFS3uItJXifjfRymRGOGJhRgij48ttTjPR33ZdAhobHrXd5MJNz4X69wYKvsUMlIfg==
 jwks_key_store_path: classpath:/oidc.keystore.jwks.json
+secret_key_set_path: classpath:/secret_keyset.json
+associated_data: 4CEFFA8B-90DD-4737-8B04-6DA51C5B29AE
 private_key_path: classpath:/id_rsa
 certificate_path: classpath:/id_rsa.pub
 
