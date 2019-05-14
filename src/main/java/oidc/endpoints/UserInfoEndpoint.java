@@ -4,11 +4,13 @@ import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.openid.connect.sdk.UserInfoRequest;
+import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.UnauthorizedException;
 import oidc.model.AccessToken;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.UserRepository;
+import oidc.secure.TokenGenerator;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,10 +27,12 @@ public class UserInfoEndpoint {
 
     private AccessTokenRepository accessTokenRepository;
     private UserRepository userRepository;
+    private TokenGenerator tokenGenerator;
 
-    public UserInfoEndpoint(AccessTokenRepository accessTokenRepository, UserRepository userRepository) {
+    public UserInfoEndpoint(AccessTokenRepository accessTokenRepository, UserRepository userRepository, TokenGenerator tokenGenerator) {
         this.accessTokenRepository = accessTokenRepository;
         this.userRepository = userRepository;
+        this.tokenGenerator = tokenGenerator;
     }
 
     @GetMapping("oidc/userinfo")
@@ -45,12 +49,17 @@ public class UserInfoEndpoint {
         HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
         UserInfoRequest userInfoRequest = UserInfoRequest.parse(httpRequest);
 
-        AccessToken accessToken = accessTokenRepository.findByValue(userInfoRequest.getAccessToken().getValue());
+        String accessTokenValue = userInfoRequest.getAccessToken().getValue();
+        AccessToken accessToken = accessTokenRepository.findByValue(accessTokenValue);
 
         if (accessToken.isExpired(Clock.systemDefaultZone())) {
             throw new UnauthorizedException("Access token expired");
         }
-        User user = userRepository.findUserBySub(accessToken.getSub());
+        if (accessToken.isClientCredentials()) {
+            throw new InvalidGrantException("UserEndpoint not allowed for Client Credentials");
+        }
+        Map<String, Object> userInfo = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessTokenValue);
+        User user = (User) userInfo.get("user");
         Map<String, Object> attributes = user.getAttributes();
         attributes.put("updated_at", user.getUpdatedAt());
         return attributes;

@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.swing.*;
 import java.util.Collections;
@@ -36,7 +37,9 @@ public class AccessTokenRepositoryTest extends AbstractIntegrationTest {
         subject.insert(new AccessToken(value,"sub","clientId", singletonList("openid"), new Date(),false));
 
         AccessToken accessToken = subject.findByValue(value);
-        System.out.println(accessToken);
+        assertEquals(value, ReflectionTestUtils.getField(accessToken, "innerValue"));
+
+        assertEquals(true, subject.findOptionalAccessTokenByValue(value).isPresent());
     }
 
 

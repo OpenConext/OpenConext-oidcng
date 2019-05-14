@@ -1,5 +1,6 @@
 package oidc.endpoints;
 
+import com.nimbusds.oauth2.sdk.GrantType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
@@ -22,7 +23,6 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
     @Test
     public void postUserInfo() throws UnsupportedEncodingException {
         userInfo("POST");
-
     }
 
     @Test
@@ -37,6 +37,19 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
                 .post("oidc/userinfo")
                 .as(mapTypeRef);
         assertEquals("Access token expired", body.get("message"));
+    }
+
+    @Test
+    public void userInfoClientCredentials() throws UnsupportedEncodingException {
+        String token = getClientCredentialsAccessToken();
+
+        Map<String, Object> body = given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .formParam("access_token", token)
+                .post("oidc/userinfo")
+                .as(mapTypeRef);
+        assertEquals("UserEndpoint not allowed for Client Credentials", body.get("message"));
     }
 
     private void userInfo(String method) throws UnsupportedEncodingException {
@@ -65,6 +78,11 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
     private String getAccessToken() throws UnsupportedEncodingException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
+        return (String) body.get("access_token");
+    }
+
+    private String getClientCredentialsAccessToken() throws UnsupportedEncodingException {
+        Map<String, Object> body = doToken(null, "http@//mock-sp", "secret", GrantType.CLIENT_CREDENTIALS);
         return (String) body.get("access_token");
     }
 

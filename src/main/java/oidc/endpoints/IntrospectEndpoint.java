@@ -12,6 +12,7 @@ import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.OpenIDClientRepository;
 import oidc.repository.UserRepository;
+import oidc.secure.TokenGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -22,7 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.Collections;
-import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -32,14 +33,17 @@ public class IntrospectEndpoint extends SecureEndpoint {
     private UserRepository userRepository;
     private OpenIDClientRepository openIDClientRepository;
     private String issuer;
+    private TokenGenerator tokenGenerator;
 
     public IntrospectEndpoint(AccessTokenRepository accessTokenRepository,
                               UserRepository userRepository,
                               OpenIDClientRepository openIDClientRepository,
+                              TokenGenerator tokenGenerator,
                               @Value("${spring.security.saml2.service-provider.entity-id}") String issuer) {
         this.accessTokenRepository = accessTokenRepository;
         this.userRepository = userRepository;
         this.openIDClientRepository = openIDClientRepository;
+        this.tokenGenerator = tokenGenerator;
         this.issuer = issuer;
     }
 
@@ -48,7 +52,7 @@ public class IntrospectEndpoint extends SecureEndpoint {
         HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
         TokenIntrospectionRequest tokenIntrospectionRequest = TokenIntrospectionRequest.parse(httpRequest);
         ClientAuthentication clientAuthentication = tokenIntrospectionRequest.getClientAuthentication();
-        String value = tokenIntrospectionRequest.getToken().getValue();
+        String accessTokenValue = tokenIntrospectionRequest.getToken().getValue();
 
         //https://tools.ietf.org/html/rfc7662 is vague about the authorization requirements, but we enforce basic auth
         if (!(clientAuthentication instanceof PlainClientSecret)) {
@@ -63,25 +67,28 @@ public class IntrospectEndpoint extends SecureEndpoint {
             throw new BadCredentialsException("Requires ResourceServer");
         }
 
-        AccessToken accessToken = accessTokenRepository.findByValue(value);
+        AccessToken accessToken = accessTokenRepository.findByValue(accessTokenValue);
         if (accessToken.isExpired(Clock.systemDefaultZone())) {
             return Collections.singletonMap("active", false);
         }
-        User user = userRepository.findUserBySub(accessToken.getSub());
 
-        Map<String, Object> attributes = user.getAttributes();
-        attributes.put("updated_at", user.getUpdatedAt());
-        attributes.put("unspecified_id", user.getUnspecifiedNameId());
+        Map<String, Object> result = new HashMap<>();
+        result.put("active", true);
+        result.put("scope", String.join(",", accessToken.getScopes()));
+        result.put("client_id", client.getClientId());
+        result.put("exp", accessToken.getExpiresIn().getTime() / 1000L);
+        result.put("sub", accessToken.getSub());
+        result.put("iss", issuer);
+        result.put("token_type", "Bearer");
 
-        attributes.put("active", true);
-        attributes.put("scope", String.join(",", accessToken.getScopes()));
-        attributes.put("client_id", client.getClientId());
-        attributes.put("exp", accessToken.getExpiresIn().getTime() / 1000L);
-        attributes.put("sub", user.getSub());
-        attributes.put("authenticating_authority", user.getAuthenticatingAuthority());
-        attributes.put("iss", issuer);
-        attributes.put("token_type", "Bearer");
-        return attributes;
+        if (!accessToken.isClientCredentials()){
+            User user = (User) tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessTokenValue).get("user");
+            result.put("updated_at", user.getUpdatedAt());
+            result.put("unspecified_id", user.getUnspecifiedNameId());
+            result.put("authenticating_authority", user.getAuthenticatingAuthority());
+            result.put("sub", user.getSub());
+        }
+        return result;
     }
 
 }

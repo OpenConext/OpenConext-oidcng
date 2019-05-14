@@ -1,5 +1,6 @@
 package oidc.endpoints;
 
+import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.TokenIntrospectionRequest;
 import com.nimbusds.oauth2.sdk.http.CommonContentTypes;
@@ -32,6 +33,16 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     public void introspection() throws UnsupportedEncodingException {
         Map<String, Object> result = doIntrospection("http@//mock-sp", "secret");
         assertEquals(true, result.get("active"));
+    }
+
+    @Test
+    public void introspectionClientCredentials() {
+        Map<String, Object> body = doToken(null, "http@//mock-sp", "secret", GrantType.CLIENT_CREDENTIALS);
+        String accessToken = (String) body.get("access_token");
+        Map<String, Object> result = callIntrospection("http@//mock-sp", accessToken, "secret");
+        assertEquals(true, result.get("active"));
+        assertEquals("openid,groups", result.get("scope"));
+        assertEquals("http@//mock-sp", result.get("sub"));
     }
 
     @Test
