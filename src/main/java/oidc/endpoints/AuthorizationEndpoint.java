@@ -150,7 +150,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 code, user.getSub(), client.getClientId(), scopes, redirectionURI,
                 codeChallengeValue,
                 codeChallengeMethodValue,
-                idTokenClaims);
+                idTokenClaims,
+                tokenValidity(5 * 60));
     }
 
     private void validateRedirectionURI(String redirectionURI, OpenIDClient client) {

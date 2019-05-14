@@ -18,6 +18,7 @@ import oidc.exceptions.ClientAuthenticationNotSupported;
 import oidc.exceptions.CodeVerifierMissingException;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.RedirectMismatchException;
+import oidc.exceptions.UnauthorizedException;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
@@ -39,6 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.time.Clock;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -137,6 +139,10 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                 !authorizationCodeGrant.getRedirectionURI().toString().equals(authorizationCode.getRedirectUri())) {
             throw new RedirectMismatchException("Redirects do not match");
         }
+        if (authorizationCode.isExpired(Clock.systemDefaultZone())) {
+            throw new UnauthorizedException("Authorization code expired");
+        }
+
         CodeVerifier codeVerifier = authorizationCodeGrant.getCodeVerifier();
         if (codeVerifier != null) {
             if (authorizationCode.getCodeChallenge() == null) {
@@ -161,6 +167,10 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         if (!refreshToken.getClientId().equals(client.getClientId())) {
             throw new BadCredentialsException("Client is not authorized for the refresh token");
         }
+        if (refreshToken.isExpired(Clock.systemDefaultZone())) {
+            throw new UnauthorizedException("Refresh token expired");
+        }
+
         //New tokens will be issued
         refreshTokenRepository.delete(refreshToken);
         //It is possible that the access token is already removed by cron cleanup actions

@@ -17,7 +17,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -101,11 +100,30 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
+    public void authorizationCodeExpired() throws  UnsupportedEncodingException {
+        String code = doAuthorize();
+        expireAuthorizationCode(code);
+        Map<String, Object> body = doToken(code);
+        assertEquals("Authorization code expired", body.get("message"));
+    }
+
+        @Test
     public void refreshToken() throws ParseException, JOSEException, MalformedURLException, UnsupportedEncodingException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
 
         doRefreshToken(body, "secret");
+    }
+
+    @Test
+    public void refreshTokenExpired() throws ParseException, JOSEException, MalformedURLException, UnsupportedEncodingException {
+        String code = doAuthorize();
+        Map<String, Object> body = doToken(code);
+        String refreshToken = (String) body.get("refresh_token");
+        expireRefreshToken(refreshToken);
+
+        Map<String, Object> result = doRefreshToken(body, "secret");
+        assertEquals("Refresh token expired", result.get("message"));
     }
 
     @Test
@@ -121,7 +139,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
         doRefreshToken(body, null);
     }
 
-    private void doRefreshToken(Map<String, Object> body, String secret) throws MalformedURLException, JOSEException, ParseException {
+    private Map<String, Object> doRefreshToken(Map<String, Object> body, String secret) throws MalformedURLException, JOSEException, ParseException {
         String refreshToken = (String) body.get("refresh_token");
         String accessToken = (String) body.get("access_token");
         RequestSpecification header = given()
@@ -137,6 +155,9 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
                 .formParam(GrantType.REFRESH_TOKEN.getValue(), refreshToken)
                 .post("oidc/token")
                 .as(Map.class);
+        if (result.containsKey("error")) {
+            return result;
+        }
         verifySignedJWT((String) result.get("id_token"), port);
 
         assertEquals(0, mongoTemplate.find(Query.query(Criteria.where("value").is(accessToken)), AccessToken.class).size());
@@ -144,6 +165,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
 
         assertNotNull(body.get("refresh_token"));
         assertNotNull(body.get("access_token"));
+        return result;
     }
 
 

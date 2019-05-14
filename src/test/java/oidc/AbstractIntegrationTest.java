@@ -13,8 +13,9 @@ import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import oidc.endpoints.MapTypeReference;
 import oidc.model.AccessToken;
+import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
-import org.eclipse.jetty.util.IO;
+import oidc.model.RefreshToken;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -187,11 +188,25 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
     }
 
     protected void expireAccessToken(String token) {
-        AccessToken accessToken = mongoTemplate.find(Query.query(Criteria.where("innerValue").is(token)), AccessToken.class).get(0);
-        Date expiresIn = Date.from(LocalDateTime.now().minusYears(1L).atZone(ZoneId.systemDefault()).toInstant());
-        ReflectionTestUtils.setField(accessToken, "expiresIn", expiresIn);
-        mongoTemplate.save(accessToken);
+        doExpire(token, AccessToken.class);
     }
 
+    protected void expireRefreshToken(String token) {
+        doExpire(token, RefreshToken.class);
+    }
 
+    protected void expireAuthorizationCode(String code) {
+        doExpireWithFindProperty(code, AuthorizationCode.class, "code");
+    }
+
+    private <T> void doExpire(String token, Class<T> clazz) {
+        doExpireWithFindProperty(token, clazz, "innerValue");
+    }
+
+    private <T> void doExpireWithFindProperty(String token, Class<T> clazz, String property) {
+        Object o = mongoTemplate.find(Query.query(Criteria.where(property).is(token)), clazz).get(0);
+        Date expiresIn = Date.from(LocalDateTime.now().minusYears(1L).atZone(ZoneId.systemDefault()).toInstant());
+        ReflectionTestUtils.setField(o, "expiresIn", expiresIn);
+        mongoTemplate.save(o);
+    }
 }
