@@ -3,11 +3,12 @@ package oidc.endpoints;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.GrantType;
-import com.nimbusds.oauth2.sdk.ResponseType;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.ClaimsRequest;
-import com.nimbusds.openid.connect.sdk.claims.AccessTokenHash;
 import oidc.model.AccessToken;
+import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
 import oidc.model.User;
@@ -53,25 +54,25 @@ public interface OidcEndpoint {
         return map;
     }
 
-    default Map<String, Object> authorizationEndpointResponse(User user, OpenIDClient client, AuthorizationRequest authorizationRequest,
-                                                              List<String> scopes, ResponseType responseType) throws JOSEException {
-        Map<String, Object> map = new HashMap<>();
-        String value = getTokenGenerator().generateAccessTokenWithEmbeddedUserInfo(user, client, scopes);
-        if (AccessTokenHash.isRequiredInIDTokenClaims(responseType) || !isOpenIDRequest(authorizationRequest)) {
-            getAccessTokenRepository().insert(new AccessToken(value, user.getSub(), client.getClientId(), scopes,
-                    accessTokenValidity(client), false));
-            map.put("access_token", value);
-        }
-        if (isOpenIDRequest(authorizationRequest)) {
-            AuthenticationRequest authenticationRequest = (AuthenticationRequest) authorizationRequest;
-            List<String> claims = getClaims(authorizationRequest);
-            String idToken = getTokenGenerator().generateIDTokenForAuthorizationEndpoint(
-                    user, client, authenticationRequest.getNonce(), responseType, value, claims);
-            map.put("id_token", idToken);
-        }
-        addSharedProperties(map, client);
-        return map;
+    default AuthorizationCode constructAuthorizationCode(AuthorizationRequest authorizationRequest, OpenIDClient client, User user) {
+        String redirectionURI = authorizationRequest.getRedirectionURI().toString();
+        List<String> scopes = authorizationRequest.getScope().toStringList();
+        //Optional code challenges for PKCE
+        CodeChallenge codeChallenge = authorizationRequest.getCodeChallenge();
+        String codeChallengeValue = codeChallenge != null ? codeChallenge.getValue() : null;
+        CodeChallengeMethod codeChallengeMethod = authorizationRequest.getCodeChallengeMethod();
+        String codeChallengeMethodValue = codeChallengeMethod != null ? codeChallengeMethod.getValue() :
+                (codeChallengeValue != null ? CodeChallengeMethod.getDefault().getValue() : null);
+        List<String> idTokenClaims = getClaims(authorizationRequest);
+        String code = getTokenGenerator().generateAuthorizationCode();
+        return new AuthorizationCode(
+                code, user.getSub(), client.getClientId(), scopes, redirectionURI,
+                codeChallengeValue,
+                codeChallengeMethodValue,
+                idTokenClaims,
+                tokenValidity(10 * 60));
     }
+
 
     default boolean isOpenIDRequest(AuthorizationRequest authorizationRequest) {
         return authorizationRequest instanceof AuthenticationRequest;

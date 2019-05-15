@@ -4,7 +4,8 @@
 <form method="post" th:action="${redirect_uri}">
     <input th:if="${state != null}" type="hidden" name="state" th:value="${state}"/>
     <input th:if="${access_token != null}" type="hidden" name="access_token" th:value="${access_token}"/>
-    <input type="hidden" name="id_token" th:value="${id_token}"/>
+    <input th:if="${code != null}" type="hidden" name="code" th:value="${code}"/>
+    <input th:if="${id_token != null}" type="hidden" name="id_token" th:value="${id_token}"/>
 </form>
 </body>
 </html>

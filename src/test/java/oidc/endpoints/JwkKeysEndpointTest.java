@@ -5,6 +5,7 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import oidc.AbstractIntegrationTest;
+import oidc.secure.TokenGenerator;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -12,7 +13,6 @@ import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 
-import static com.nimbusds.jose.JWSAlgorithm.RS256;
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -52,7 +52,7 @@ public class JwkKeysEndpointTest extends AbstractIntegrationTest {
 
         RSAKey rsaKey = (RSAKey) jwkList.get(0);
         assertEquals(isPrivate, rsaKey.isPrivate());
-        assertEquals(RS256, rsaKey.getAlgorithm());
+        assertEquals(TokenGenerator.signingAlg, rsaKey.getAlgorithm());
     }
 
     private Map<String, Object> getMapFromEndpoint(String path) {

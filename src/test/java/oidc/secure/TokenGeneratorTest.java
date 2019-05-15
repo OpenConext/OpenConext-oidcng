@@ -1,6 +1,12 @@
 package oidc.secure;
 
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import oidc.AbstractIntegrationTest;
+import oidc.exceptions.InvalidSignatureException;
 import oidc.model.OpenIDClient;
 import oidc.model.User;
 import org.junit.Test;
@@ -10,6 +16,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +29,22 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
     private TokenGenerator subject;
 
     @Test
-    public void generateAccessTokenWithEmbeddedUserInfo() throws IOException {
+    public void encryptAndDecryptAccessToken() throws IOException {
+        doEncryptAndDecryptAccessToken();
+    }
+
+    @Test(expected = InvalidSignatureException.class)
+    public void encryptAndDecryptAccessTokenTampered() throws IOException, ParseException, JOSEException {
+        String accessToken = doEncryptAndDecryptAccessToken();
+        SignedJWT signedJWT = SignedJWT.parse(accessToken);
+        JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
+        SignedJWT tamperedJWT = new SignedJWT(signedJWT.getHeader(), claimsSet);
+        tamperedJWT.sign(new RSASSASigner(new RSAKeyGenerator(RSAKeyGenerator.MIN_KEY_SIZE_BITS).generate()));
+        String s = tamperedJWT.serialize();
+        subject.decryptAccessTokenWithEmbeddedUserInfo(s);
+    }
+
+    private String doEncryptAndDecryptAccessToken() throws IOException {
         User user = new User("sub", "unspecifiedNameId", "http://mockidp", "clientId", getUserInfo());
 
         String clientId = "http@//mock-sp";
@@ -39,6 +61,8 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         User convertedUser = (User) userInfo.get("user");
 
         assertEquals(user, convertedUser);
+
+        return accessToken;
     }
 
     private Map<String, Object> getUserInfo() throws IOException {

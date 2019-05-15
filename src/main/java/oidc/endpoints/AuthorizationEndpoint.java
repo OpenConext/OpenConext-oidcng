@@ -7,11 +7,10 @@ import com.nimbusds.oauth2.sdk.ResponseMode;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.id.State;
-import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
-import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import oidc.exceptions.InvalidScopeException;
 import oidc.exceptions.RedirectMismatchException;
+import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
 import oidc.model.User;
@@ -39,8 +38,10 @@ import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Controller
@@ -95,12 +96,10 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         ResponseType responseType = authenticationRequest.getResponseType();
         if (responseType.impliesCodeFlow()) {
-            String code = tokenGenerator.generateAuthorizationCode();
-            AuthorizationCode authorizationCode = constructAuthorizationCode(authenticationRequest, client, user, code);
-            authorizationCodeRepository.insert(authorizationCode);
-            return new ModelAndView(new RedirectView(authorizationRedirect(redirectionURI, state, code)));
-        } else if (responseType.impliesImplicitFlow()) {
-            Map<String, Object> body = authorizationEndpointResponse(user, client, authenticationRequest, scopes, responseType);
+            AuthorizationCode authorizationCode = createAndSaveAuthorizationCode(authenticationRequest, client, user);
+            return new ModelAndView(new RedirectView(authorizationRedirect(redirectionURI, state, authorizationCode.getCode())));
+        } else if (responseType.impliesImplicitFlow() || responseType.impliesHybridFlow()) {
+            Map<String, Object> body = authorizationEndpointResponse(user, client, authenticationRequest, scopes, responseType, state);
             if (state != null) {
                 body.put("state", state);
             }
@@ -124,29 +123,41 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 return new ModelAndView(new RedirectView(builder.toUriString()));
             }
             throw new IllegalArgumentException("Response mode " + responseMode + " not supported");
-        } else if (responseType.impliesHybridFlow()) {
-            //TODO
         }
         throw new IllegalArgumentException("Not yet implemented response_type: " + responseType.toString());
     }
 
-    private AuthorizationCode constructAuthorizationCode(AuthorizationRequest authorizationRequest, OpenIDClient client, User user, String code) {
-        String redirectionURI = authorizationRequest.getRedirectionURI().toString();
-        List<String> scopes = authorizationRequest.getScope().toStringList();
-        //Optional code challenges for PKCE
-        CodeChallenge codeChallenge = authorizationRequest.getCodeChallenge();
-        String codeChallengeValue = codeChallenge != null ? codeChallenge.getValue() : null;
-        CodeChallengeMethod codeChallengeMethod = authorizationRequest.getCodeChallengeMethod();
-        String codeChallengeMethodValue = codeChallengeMethod != null ? codeChallengeMethod.getValue() :
-                (codeChallengeValue != null ? CodeChallengeMethod.getDefault().getValue() : null);
-        List<String> idTokenClaims = getClaims(authorizationRequest);
-        return new AuthorizationCode(
-                code, user.getSub(), client.getClientId(), scopes, redirectionURI,
-                codeChallengeValue,
-                codeChallengeMethodValue,
-                idTokenClaims,
-                tokenValidity(5 * 60));
+    private Map<String, Object> authorizationEndpointResponse(User user, OpenIDClient client, AuthorizationRequest authorizationRequest,
+                                                              List<String> scopes, ResponseType responseType, State state) throws JOSEException {
+        Map<String, Object> map = new HashMap<>();
+        String value = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client, scopes);
+        if (responseType.contains("token") || !isOpenIDRequest(authorizationRequest)) {
+            getAccessTokenRepository().insert(new AccessToken(value, user.getSub(), client.getClientId(), scopes,
+                    accessTokenValidity(client), false));
+            map.put("access_token", value);
+        }
+        if (responseType.contains("code")) {
+            AuthorizationCode authorizationCode = createAndSaveAuthorizationCode(authorizationRequest, client, user);
+            map.put("code", authorizationCode.getCode());
+        }
+        if (responseType.contains("id_token")) {
+            AuthenticationRequest authenticationRequest = (AuthenticationRequest) authorizationRequest;
+            List<String> claims = getClaims(authorizationRequest);
+            String idToken = getTokenGenerator().generateIDTokenForAuthorizationEndpoint(
+                    user, client, authenticationRequest.getNonce(), responseType, value, claims,
+                    Optional.ofNullable((String) map.get("code")), state);
+            map.put("id_token", idToken);
+        }
+        addSharedProperties(map, client);
+        return map;
     }
+
+    private AuthorizationCode createAndSaveAuthorizationCode(AuthorizationRequest authenticationRequest, OpenIDClient client, User user) {
+        AuthorizationCode authorizationCode = constructAuthorizationCode(authenticationRequest, client, user);
+        authorizationCodeRepository.insert(authorizationCode);
+        return authorizationCode;
+    }
+
 
     private void validateRedirectionURI(String redirectionURI, OpenIDClient client) {
         if (!client.getRedirectUrls().contains(redirectionURI)) {

@@ -1,7 +1,6 @@
 package oidc;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.JWK;
@@ -17,6 +16,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
+import oidc.secure.TokenGenerator;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -31,8 +31,7 @@ public interface OidcEndpointTest {
 
     default JWTClaimsSet processToken(String token, int port) throws ParseException, MalformedURLException, BadJOSEException, JOSEException {
         JWKSource keySource = new RemoteJWKSet(new URL("http://localhost:" + port + "/oidc/certs"));
-        JWSAlgorithm expectedJWSAlg = JWSAlgorithm.RS256;
-        JWSKeySelector keySelector = new JWSVerificationKeySelector(expectedJWSAlg, keySource);
+        JWSKeySelector keySelector = new JWSVerificationKeySelector(TokenGenerator.signingAlg, keySource);
         ConfigurableJWTProcessor jwtProcessor = new DefaultJWTProcessor();
         jwtProcessor.setJWSKeySelector(keySelector);
         return jwtProcessor.process(token, null);
