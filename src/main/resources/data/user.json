@@ -1,6 +1,9 @@
 {
   "id": "b6a6db1f-ddb6-4091-b165-52a36a050a69",
   "sub": "cb6e40b7-1e07-48d0-a32c-4c994df8afd8",
+  "unspecifiedNameId": "urn:collab:person:example.com:admin",
+  "authenticatingAuthority": "http://mock-idp",
+  "clientId": "http@//mock-sp",
   "attributes": {
     "preferred_username": "Johnny D.",
     "name": "John Doe",
