@@ -9,7 +9,6 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.text.ParseException;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 

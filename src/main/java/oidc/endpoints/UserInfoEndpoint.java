@@ -9,7 +9,6 @@ import oidc.exceptions.UnauthorizedException;
 import oidc.model.AccessToken;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
-import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.Clock;
-import java.util.Date;
 import java.util.Map;
 
 @RestController

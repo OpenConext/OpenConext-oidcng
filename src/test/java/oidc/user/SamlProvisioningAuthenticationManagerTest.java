@@ -1,6 +1,5 @@
 package oidc.user;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import oidc.TestUtils;
 import oidc.model.User;
 import oidc.repository.UserRepository;

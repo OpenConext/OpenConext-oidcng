@@ -40,10 +40,11 @@ import static org.junit.Assert.assertNull;
 public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEndpointTest {
 
     @Autowired
-    private TokenGenerator tokenGenerator ;
+    private TokenGenerator tokenGenerator;
 
     @Autowired
-    private @Value("${spring.security.saml2.service-provider.entity-id}") String issuer;
+    private @Value("${spring.security.saml2.service-provider.entity-id}")
+    String issuer;
 
     @Test
     public void token() throws MalformedURLException, ParseException, JOSEException, BadJOSEException, UnsupportedEncodingException {
@@ -100,14 +101,14 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
-    public void authorizationCodeExpired() throws  UnsupportedEncodingException {
+    public void authorizationCodeExpired() throws UnsupportedEncodingException {
         String code = doAuthorize();
         expireAuthorizationCode(code);
         Map<String, Object> body = doToken(code);
         assertEquals("Authorization code expired", body.get("message"));
     }
 
-        @Test
+    @Test
     public void refreshToken() throws ParseException, JOSEException, MalformedURLException, UnsupportedEncodingException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);

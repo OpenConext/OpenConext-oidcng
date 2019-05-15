@@ -11,6 +11,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import net.minidev.json.JSONObject;
 import oidc.secure.TokenGenerator;
 import org.apache.commons.io.IOUtils;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
@@ -48,13 +49,13 @@ public class JwkKeysEndpoint implements MapTypeReference {
         json = json.replaceAll("@@base_url@@", basePath).replaceAll("@@issuer@@", issuer);
         this.wellKnownConfiguration = objectMapper.readValue(json, mapTypeReference);
         this.objectMapper = objectMapper;
+
+        Security.addProvider(new BouncyCastleProvider());
     }
 
     @GetMapping("oidc/generate-jwks-keystore")
     public Map<String, List<JSONObject>> generate(@RequestParam(value = "keyID", required = false, defaultValue = "oidc") String keyID)
             throws Exception {
-        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA", "BC");
         kpg.initialize(2048);
         KeyPair keyPair = kpg.generateKeyPair();

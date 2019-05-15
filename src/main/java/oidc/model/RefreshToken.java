@@ -1,13 +1,10 @@
 package oidc.model;
 
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 @NoArgsConstructor
 @Document(collection = "refresh_tokens")

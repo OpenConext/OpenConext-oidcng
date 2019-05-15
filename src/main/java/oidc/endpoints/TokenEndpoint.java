@@ -175,7 +175,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         refreshTokenRepository.delete(refreshToken);
         //It is possible that the access token is already removed by cron cleanup actions
         Optional<AccessToken> accessToken = accessTokenRepository.findOptionalAccessTokenByValue(refreshToken.getAccessTokenValue());
-        accessToken.ifPresent(token ->accessTokenRepository.delete(token));
+        accessToken.ifPresent(token -> accessTokenRepository.delete(token));
 
         User user = userRepository.findUserBySub(refreshToken.getSub());
         Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, refreshToken.getScopes(), Collections.emptyList(), false);

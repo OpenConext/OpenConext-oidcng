@@ -11,7 +11,6 @@ import oidc.model.OpenIDClient;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.OpenIDClientRepository;
-import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -78,7 +77,7 @@ public class IntrospectEndpoint extends SecureEndpoint {
         result.put("iss", issuer);
         result.put("token_type", "Bearer");
 
-        if (!accessToken.isClientCredentials()){
+        if (!accessToken.isClientCredentials()) {
             User user = (User) tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessTokenValue).get("user");
             result.put("updated_at", user.getUpdatedAt());
             result.put("unspecified_id", user.getUnspecifiedNameId());
