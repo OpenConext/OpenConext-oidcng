@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.ByteArrayOutputStream;
@@ -50,7 +51,8 @@ public class JwkKeysEndpoint implements MapTypeReference {
     }
 
     @GetMapping("oidc/generate-jwks-keystore")
-    public Map<String, List<JSONObject>> generate() throws Exception {
+    public Map<String, List<JSONObject>> generate(@RequestParam(value = "keyID", required = false, defaultValue = "oidc") String keyID)
+            throws Exception {
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA", "BC");
@@ -62,7 +64,7 @@ public class JwkKeysEndpoint implements MapTypeReference {
         com.nimbusds.jose.jwk.RSAKey build = new com.nimbusds.jose.jwk.RSAKey.Builder(publicKey)
                 .privateKey(privateKey)
                 .algorithm(new Algorithm("RS256"))
-                .keyID("oidc")
+                .keyID(keyID)
                 .build();
 
         return Collections.singletonMap("keys", Collections.singletonList(build.toJSONObject()));

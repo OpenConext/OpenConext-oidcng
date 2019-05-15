@@ -17,22 +17,23 @@ OpenID Connect - SAML proxy
 
 `mvn clean install`
 
-### [The manage-server](#manage-server)
+### [The oidcng-server](#oidcng-server)
 
 This project uses Spring Boot and Maven. To run locally, type:
 
 `mvn spring-boot:run -Drun.jvmArguments="-Dspring.profiles.active=dev"`
 
-When developing, it's convenient to just execute the applications main-method. The dev profile uses a fake authorization
+When developing, it's convenient to just execute the applications main-method. The `dev` profile uses a fake authorization
 to bypass the redirect to EB.
 
-### [Wiki](#wiki)
+### [Endpoints](#endpoint)
 
-See the oidcng [github wiki](https://github.com/OpenConext/OpenConext-oidcng/wiki) for additional documentation.
+TODO
 ```
- curl http://localhost:8080/oidc/generate-secret-key-set | jq .
- curl http://localhost:8080/oidc/certs | jq .
- 
+https://oidcng.test2.surfconext.nl/oidc/.well-known/openid-configuration
+https://oidcng.test2.surfconext.nl/oidc/generate-jwks-keystore
+https://oidcng.test2.surfconext.nl/oidc/generate-secret-key-set
+https://oidcng.test2.surfconext.nl/oidc/certs 
 ```
 
 ### [Testing](#testing)
