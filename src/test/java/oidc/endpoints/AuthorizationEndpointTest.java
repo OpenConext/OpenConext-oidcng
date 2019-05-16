@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 public class AuthorizationEndpointTest extends AbstractIntegrationTest implements OidcEndpointTest {
@@ -45,9 +46,21 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void oauth2NonOidcFlow() throws UnsupportedEncodingException {
+    public void oauth2NonOidcCodeFlow() throws UnsupportedEncodingException {
         String code = doAuthorizeWithScopes("http@//mock-sp", "code", "code", "groups");
         assertEquals(12, code.length());
+        Map<String, Object> tokenResponse = doToken(code);
+        assertFalse(tokenResponse.containsKey("id_token"));
+    }
+
+    @Test
+    public void oauth2NonOidcImplicitFlow() throws UnsupportedEncodingException {
+        Response response = doAuthorizeWithClaimsAndScopes("http@//mock-sp", "token",
+                null, null, null, null, "groups");
+        String url = response.getHeader("Location");
+        String fragment = url.substring(url.indexOf("#") + 1);
+        Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&")).map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
+        assertFalse(fragmentParameters.containsKey("id_token"));
     }
 
     @Test
