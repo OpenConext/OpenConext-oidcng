@@ -132,6 +132,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, OpenIDClient client) throws JOSEException {
         String code = authorizationCodeGrant.getAuthorizationCode().getValue();
         AuthorizationCode authorizationCode = authorizationCodeRepository.findByCode(code);
+        authorizationCodeRepository.delete(authorizationCode);
+
         if (!authorizationCode.getClientId().equals(client.getClientId())) {
             throw new BadCredentialsException("Client is not authorized for the authorization code");
         }
@@ -155,7 +157,6 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                 throw new CodeVerifierMissingException("code_verifier does not match code_challenge");
             }
         }
-        authorizationCodeRepository.delete(authorizationCode);
         User user = userRepository.findUserBySub(authorizationCode.getSub());
         //User information is encrypted in access token
         userRepository.delete(user);
