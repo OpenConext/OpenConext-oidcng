@@ -30,6 +30,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -106,12 +107,8 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
 
     protected String getCode(Response response) {
         String location = response.getHeader("Location");
-
-        Matcher matcher = Pattern.compile(
-                "\\Qhttp://localhost:8080?code=\\E(.*)\\Q&state=example\\E")
-                .matcher(location);
-        matcher.find();
-        return matcher.group(1);
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(location);
+        return builder.build().getQueryParams().getFirst("code");
     }
 
     protected Response doAuthorize(String clientId, String responseType, String responseMode, String nonce, String codeChallenge) throws UnsupportedEncodingException {
@@ -120,20 +117,20 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
 
     protected Response doAuthorizeWithClaims(String clientId, String responseType, String responseMode, String nonce, String codeChallenge,
                                              List<String> claims) throws UnsupportedEncodingException {
-        return doAuthorizeWithClaimsAndScopes(clientId, responseType, responseMode, nonce, codeChallenge, claims, "openid profile");
+        return doAuthorizeWithClaimsAndScopes(clientId, responseType, responseMode, nonce, codeChallenge, claims, "openid profile", "example");
     }
 
     protected String doAuthorizeWithScopes(String clientId, String responseType, String responseMode, String scopes) throws UnsupportedEncodingException {
-        return getCode(doAuthorizeWithClaimsAndScopes(clientId, responseType, responseMode, null, null, null, scopes));
+        return getCode(doAuthorizeWithClaimsAndScopes(clientId, responseType, responseMode, null, null, null, scopes, "example"));
     }
 
-    protected Response doAuthorizeWithClaimsAndScopes(String clientId, String responseType, String responseMode, String nonce, String codeChallenge, List<String> claims, String scopes) {
+    protected Response doAuthorizeWithClaimsAndScopes(String clientId, String responseType, String responseMode, String nonce, String codeChallenge, List<String> claims, String scopes, String state) {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", scopes);
         queryParams.put("response_type", responseType);
         queryParams.put("client_id", clientId);
         queryParams.put("redirect_uri", "http%3A%2F%2Flocalhost%3A8080");
-        queryParams.put("state", "example");
+        queryParams.put("state", state);
         if (StringUtils.hasText(responseMode)) {
             queryParams.put("response_mode", responseMode);
         }

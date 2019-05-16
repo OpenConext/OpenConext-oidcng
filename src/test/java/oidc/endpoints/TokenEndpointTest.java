@@ -140,7 +140,21 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
         doRefreshToken(body, null);
     }
 
+    @Test
+    public void deviceCodeNotSupported() throws ParseException, JOSEException, MalformedURLException, UnsupportedEncodingException {
+        String code = doAuthorize();
+        Map<String, Object> body = doToken(code);
+
+        Map<String, Object> result = doTokenWithGrantType(body, "secret", GrantType.DEVICE_CODE, Collections.singletonMap("device_code", "12345"));
+        assertEquals("Not supported - yet - authorizationGrant urn:ietf:params:oauth:grant-type:device_code", result.get("message"));
+    }
+
     private Map<String, Object> doRefreshToken(Map<String, Object> body, String secret) throws MalformedURLException, JOSEException, ParseException {
+        return doTokenWithGrantType(body, secret, GrantType.REFRESH_TOKEN, Collections.emptyMap());
+    }
+
+    private Map<String, Object> doTokenWithGrantType(Map<String, Object> body, String secret, GrantType grantType,
+                                                     Map<String, String> additionalParameters) throws MalformedURLException, JOSEException, ParseException {
         String refreshToken = (String) body.get("refresh_token");
         String accessToken = (String) body.get("access_token");
         RequestSpecification header = given()
@@ -151,9 +165,11 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
         } else {
             header = header.formParam("client_id", "http@//mock-sp");
         }
+
         Map<String, Object> result = header
-                .formParam("grant_type", GrantType.REFRESH_TOKEN.getValue())
-                .formParam(GrantType.REFRESH_TOKEN.getValue(), refreshToken)
+                .formParam("grant_type", grantType.getValue())
+                .formParam(grantType.getValue(), refreshToken)
+                .formParams(additionalParameters)
                 .post("oidc/token")
                 .as(Map.class);
         if (result.containsKey("error")) {
@@ -174,7 +190,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     public void clientCredentialsInvalidGrant() throws ParseException {
         Map<String, Object> body = doToken(null, "http@//mock-rp", "secret", GrantType.CLIENT_CREDENTIALS);
 
-        assertEquals("Invalid grant", body.get("message"));
+        assertEquals("Invalid grant: client_credentials", body.get("message"));
     }
 
     @Test

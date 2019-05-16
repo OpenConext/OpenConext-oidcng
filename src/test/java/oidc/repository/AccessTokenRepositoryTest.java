@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 
 import static java.util.Collections.singletonList;
@@ -39,5 +41,15 @@ public class AccessTokenRepositoryTest extends AbstractIntegrationTest {
         assertEquals(true, subject.findOptionalAccessTokenByValue(value).isPresent());
     }
 
+    @Test
+    public void deleteByExpiresInBefore() {
+        subject.deleteAll();
+        Date expiresIn = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
+        subject.insert(new AccessToken("value", "sub", "clientId", singletonList("openid"), expiresIn, false));
+
+        long count = subject.deleteByExpiresInBefore(new Date());
+
+        assertEquals(1L, count);
+    }
 
 }

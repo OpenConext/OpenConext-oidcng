@@ -56,11 +56,20 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     @Test
     public void oauth2NonOidcImplicitFlow() throws UnsupportedEncodingException {
         Response response = doAuthorizeWithClaimsAndScopes("http@//mock-sp", "token",
-                null, null, null, null, "groups");
+                null, null, null, null, "groups", "example");
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&")).map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
         assertFalse(fragmentParameters.containsKey("id_token"));
+    }
+
+    @Test
+    public void noScopeNoState() throws UnsupportedEncodingException {
+        String code = getCode(doAuthorizeWithClaimsAndScopes("http@//mock-sp", "code",
+                null, null, null, null, null, null));
+        assertEquals(12, code.length());
+        Map<String, Object> tokenResponse = doToken(code);
+        assertFalse(tokenResponse.containsKey("id_token"));
     }
 
     @Test

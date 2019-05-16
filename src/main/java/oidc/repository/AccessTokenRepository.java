@@ -4,8 +4,10 @@ import oidc.model.AccessToken;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.Charset;
+import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,6 +23,8 @@ public interface AccessTokenRepository extends MongoRepository<AccessToken, Stri
         String newValue = UUID.nameUUIDFromBytes(value.getBytes(Charset.defaultCharset())).toString();
         return findAccessTokenByValue(newValue);
     }
+
+    Long deleteByExpiresInBefore(Date expiryDate);
 
     //Do not use
     Optional<AccessToken> findAccessTokenByValue(String value);

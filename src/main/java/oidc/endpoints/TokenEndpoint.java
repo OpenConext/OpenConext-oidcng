@@ -100,7 +100,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
             throw new BadCredentialsException("Invalid user / secret");
         }
         if (!client.getGrants().contains(authorizationGrant.getType().getValue())) {
-            throw new InvalidGrantException("Invalid grant");
+            throw new InvalidGrantException("Invalid grant: " + authorizationGrant.getType().getValue());
         }
 
         if (authorizationGrant instanceof AuthorizationCodeGrant) {
@@ -110,7 +110,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         } else if (authorizationGrant instanceof RefreshTokenGrant) {
             return handleRefreshCodeGrant((RefreshTokenGrant) authorizationGrant, client);
         }
-        throw new IllegalArgumentException("Not supported - yet - authorizationGrant " + authorizationGrant);
+        throw new IllegalArgumentException("Not supported - yet - authorizationGrant " + authorizationGrant.getType().getValue());
 
     }
 

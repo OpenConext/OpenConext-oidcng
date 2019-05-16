@@ -8,7 +8,8 @@ logging:
     org.springframework.data: INFO
 
 cron:
-  node-cron-job-responsible: True
+  node-cron-job-responsible: true
+  expression: "0 0/15 * * * *"
 
 # used by the git plugin
 info:

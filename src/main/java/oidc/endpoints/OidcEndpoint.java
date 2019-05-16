@@ -3,6 +3,7 @@ package oidc.endpoints;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.GrantType;
+import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
@@ -19,6 +20,7 @@ import oidc.secure.TokenGenerator;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +31,8 @@ import java.util.stream.Collectors;
 public interface OidcEndpoint {
 
     default Map<String, Object> tokenEndpointResponse(Optional<User> user, OpenIDClient client,
-                                                      List<String> scopes, List<String> idTokenClaims, boolean clientCredentials) throws JOSEException {
+                                                      List<String> scopes, List<String> idTokenClaims,
+                                                      boolean clientCredentials) throws JOSEException {
         Map<String, Object> map = new HashMap<>();
         TokenGenerator tokenGenerator = getTokenGenerator();
         String accessTokenValue = user.map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client, scopes)).orElse(tokenGenerator.generateAccessToken());
@@ -56,7 +59,8 @@ public interface OidcEndpoint {
 
     default AuthorizationCode constructAuthorizationCode(AuthorizationRequest authorizationRequest, OpenIDClient client, User user) {
         String redirectionURI = authorizationRequest.getRedirectionURI().toString();
-        List<String> scopes = authorizationRequest.getScope().toStringList();
+        Scope scope = authorizationRequest.getScope();
+        List<String> scopes = scope != null ? scope.toStringList() : Collections.emptyList();
         //Optional code challenges for PKCE
         CodeChallenge codeChallenge = authorizationRequest.getCodeChallenge();
         String codeChallengeValue = codeChallenge != null ? codeChallenge.getValue() : null;
