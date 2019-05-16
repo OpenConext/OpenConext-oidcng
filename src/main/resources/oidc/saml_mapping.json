@@ -47,12 +47,12 @@
   },
   {
     "saml": "urn:mace:dir:attribute-def:eduPersonAffiliation",
-    "oidc": "edu_person_affiliations",
+    "oidc": "eduperson_affiliation",
     "multiValue": true
   },
   {
     "saml": "urn:mace:dir:attribute-def:eduPersonScopedAffiliation",
-    "oidc": "edu_person_scoped_affiliations",
+    "oidc": "eduperson_scoped_affiliation",
     "multiValue": true
   },
   {
@@ -62,7 +62,7 @@
   },
   {
     "saml": "urn:mace:dir:attribute-def:eduPersonEntitlement",
-    "oidc": "edu_person_entitlements",
+    "oidc": "eduperson_entitlement",
     "multiValue": true
   },
   {
@@ -72,7 +72,7 @@
   },
   {
     "saml": "urn:mace:dir:attribute-def:eduPersonPrincipalName",
-    "oidc": "edu_person_principal_name",
+    "oidc": "eduperson_principal_name",
     "multiValue": false
   },
   {
