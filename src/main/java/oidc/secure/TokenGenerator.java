@@ -127,12 +127,7 @@ public class TokenGenerator implements MapTypeReference {
     }
 
     private String doGenerateAccessTokenWithEmbeddedUser(User user, OpenIDClient client, List<String> scopes) throws JsonProcessingException, GeneralSecurityException, JOSEException {
-        Map<String, Object> result = new HashMap<>();
-        result.put("user", user);
-        result.put("scope", String.join(",", scopes));
-        result.put("client_id", client.getClientId());
-        result.put("exp", (this.clock.millis() / 1000L) + client.getAccessTokenValidity());
-        String json = objectMapper.writeValueAsString(result);
+        String json = objectMapper.writeValueAsString(user);
 
         Aead aead = AeadFactory.getPrimitive(keysetHandle);
         byte[] src = aead.encrypt(json.getBytes(defaultCharset()), associatedData.getBytes(defaultCharset()));
@@ -145,7 +140,7 @@ public class TokenGenerator implements MapTypeReference {
         return idToken(client, Optional.empty(), additionalClaims, Collections.emptyList());
     }
 
-    public Map<String, Object> decryptAccessTokenWithEmbeddedUserInfo(String accessToken) {
+    public User decryptAccessTokenWithEmbeddedUserInfo(String accessToken) {
         try {
             return doDecryptAccessTokenWithEmbeddedUserInfo(accessToken);
         } catch (Exception e) {
@@ -154,7 +149,7 @@ public class TokenGenerator implements MapTypeReference {
         }
     }
 
-    private Map<String, Object> doDecryptAccessTokenWithEmbeddedUserInfo(String accessToken) throws ParseException, JOSEException, GeneralSecurityException, IOException {
+    private User doDecryptAccessTokenWithEmbeddedUserInfo(String accessToken) throws ParseException, JOSEException, GeneralSecurityException, IOException {
         SignedJWT signedJWT = SignedJWT.parse(accessToken);
         Map<String, Object> claims = verifyClaims(signedJWT);
         String encryptedClaims = (String) claims.get("claims");
@@ -163,9 +158,7 @@ public class TokenGenerator implements MapTypeReference {
         byte[] decoded = Base64.getDecoder().decode(encryptedClaims);
         String s = new String(aead.decrypt(decoded, associatedData.getBytes(defaultCharset())));
 
-        Map<String, Object> map = objectMapper.readValue(s, mapTypeReference);
-        map.put("user", objectMapper.convertValue(map.get("user"), User.class));
-        return map;
+        return objectMapper.readValue(s, User.class);
     }
 
     public String generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, List<String> idTokenClaims) throws JOSEException {

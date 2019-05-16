@@ -78,7 +78,7 @@ public class IntrospectEndpoint extends SecureEndpoint {
         result.put("token_type", "Bearer");
 
         if (!accessToken.isClientCredentials()) {
-            User user = (User) tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessTokenValue).get("user");
+            User user = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessTokenValue);
             result.put("updated_at", user.getUpdatedAt());
             result.put("unspecified_id", user.getUnspecifiedNameId());
             result.put("authenticating_authority", user.getAuthenticatingAuthority());

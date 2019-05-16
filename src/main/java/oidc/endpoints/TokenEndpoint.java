@@ -165,7 +165,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         Optional<AccessToken> accessToken = accessTokenRepository.findOptionalAccessTokenByValue(refreshToken.getAccessTokenValue());
         accessToken.ifPresent(token -> accessTokenRepository.delete(token));
 
-        Optional<User> optionalUser = refreshToken.isClientCredentials() ? Optional.empty() : Optional.of((User) tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(refreshToken.getAccessTokenValue()).get("user"));
+        Optional<User> optionalUser = refreshToken.isClientCredentials() ? Optional.empty() :
+                Optional.of(tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(refreshToken.getAccessTokenValue()));
         Map<String, Object> body = tokenEndpointResponse(optionalUser, client, refreshToken.getScopes(), Collections.emptyList(), false);
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }

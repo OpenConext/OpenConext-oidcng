@@ -54,8 +54,7 @@ public class UserInfoEndpoint {
         if (accessToken.isClientCredentials()) {
             throw new InvalidGrantException("UserEndpoint not allowed for Client Credentials");
         }
-        Map<String, Object> userInfo = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessTokenValue);
-        User user = (User) userInfo.get("user");
+        User user = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessTokenValue);
         Map<String, Object> attributes = user.getAttributes();
         attributes.put("updated_at", user.getUpdatedAt());
         return attributes;

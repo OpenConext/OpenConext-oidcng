@@ -51,12 +51,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         List<String> scopes = Arrays.asList("openid", "groups");
         String accessToken = subject.generateAccessTokenWithEmbeddedUserInfo(user, client, scopes);
 
-        Map<String, Object> userInfo = subject.decryptAccessTokenWithEmbeddedUserInfo(accessToken);
-
-        assertEquals(String.join(",", scopes), userInfo.get("scope"));
-        assertEquals(clientId, userInfo.get("client_id"));
-
-        User convertedUser = (User) userInfo.get("user");
+        User convertedUser = subject.decryptAccessTokenWithEmbeddedUserInfo(accessToken);
 
         assertEquals(user, convertedUser);
 
