@@ -28,14 +28,25 @@ to bypass the redirect to EB.
 
 ### [Endpoints](#endpoint)
 
-TODO
+Discovery Endpoint describing the OIDC supported options. 
+The content is from [https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/openid-configuration.json](https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/openid-configuration.json)
 ```
 https://oidcng.test2.surfconext.nl/oidc/.well-known/openid-configuration
-https://oidcng.test2.surfconext.nl/oidc/generate-jwks-keystore
-https://oidcng.test2.surfconext.nl/oidc/generate-secret-key-set
-https://oidcng.test2.surfconext.nl/oidc/certs 
 ```
-
+Generate a JWKS keystore for signing the JWT's. 
+The output is used in ansible to create the file [https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/oidc.keystore.jwks.json](https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/oidc.keystore.jwks.json)
+```
+https://oidcng.test2.surfconext.nl/oidc/generate-jwks-keystore
+```
+Generate a Secret Key Set for encryption / decryption of the user claims in the access token.
+The output is used in ansible to create the file [https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/secret_keyset.json](https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/secret_keyset.json)
+```
+https://oidcng.test2.surfconext.nl/oidc/generate-secret-key-set
+```
+The public certificate that RP's can use to validate the signed JWT. This endpoint is also configured in the `.well-known/openid-configuration` endpoint. 
+```
+https://oidcng.test2.surfconext.nl/oidc/certs
+```
 ### [Testing](#testing)
 
 Ensure there is a valid RP in the OpenConext proxy defined in the key `spring.security.saml2.service-provider.providers[0].metadata`
