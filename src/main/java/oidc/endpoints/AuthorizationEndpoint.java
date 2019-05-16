@@ -18,6 +18,7 @@ import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.OpenIDClientRepository;
 import oidc.repository.RefreshTokenRepository;
+import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
 import oidc.user.OidcSamlAuthentication;
 import org.apache.commons.logging.Log;
@@ -52,6 +53,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     private TokenGenerator tokenGenerator;
     private AuthorizationCodeRepository authorizationCodeRepository;
     private AccessTokenRepository accessTokenRepository;
+    private UserRepository userRepository;
     private RefreshTokenRepository refreshTokenRepository;
     private OpenIDClientRepository openIDClientRepository;
     private List<String> forFreeOpenIDScopes = Arrays.asList("profile", "email", "address", "phone");
@@ -60,11 +62,13 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     public AuthorizationEndpoint(AuthorizationCodeRepository authorizationCodeRepository,
                                  AccessTokenRepository accessTokenRepository,
                                  RefreshTokenRepository refreshTokenRepository,
+                                 UserRepository userRepository,
                                  OpenIDClientRepository openIDClientRepository,
                                  TokenGenerator tokenGenerator) {
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.accessTokenRepository = accessTokenRepository;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.userRepository = userRepository;
         this.openIDClientRepository = openIDClientRepository;
         this.tokenGenerator = tokenGenerator;
     }
@@ -99,10 +103,10 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             AuthorizationCode authorizationCode = createAndSaveAuthorizationCode(authenticationRequest, client, user);
             return new ModelAndView(new RedirectView(authorizationRedirect(redirectionURI, state, authorizationCode.getCode())));
         } else if (responseType.impliesImplicitFlow() || responseType.impliesHybridFlow()) {
+            //User information is encrypted in access token
+            userRepository.delete(user);
+
             Map<String, Object> body = authorizationEndpointResponse(user, client, authenticationRequest, scopes, responseType, state);
-            if (state != null) {
-                body.put("state", state);
-            }
             ResponseMode responseMode = authenticationRequest.impliedResponseMode();
             if (responseMode.equals(ResponseMode.FORM_POST)) {
                 body.put("redirect_uri", redirectionURI);
@@ -129,27 +133,30 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
     private Map<String, Object> authorizationEndpointResponse(User user, OpenIDClient client, AuthorizationRequest authorizationRequest,
                                                               List<String> scopes, ResponseType responseType, State state) throws JOSEException {
-        Map<String, Object> map = new HashMap<>();
+        Map<String, Object> result = new HashMap<>();
         String value = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client, scopes);
         if (responseType.contains("token") || !isOpenIDRequest(authorizationRequest)) {
             getAccessTokenRepository().insert(new AccessToken(value, user.getSub(), client.getClientId(), scopes,
                     accessTokenValidity(client), false));
-            map.put("access_token", value);
+            result.put("access_token", value);
         }
         if (responseType.contains("code")) {
             AuthorizationCode authorizationCode = createAndSaveAuthorizationCode(authorizationRequest, client, user);
-            map.put("code", authorizationCode.getCode());
+            result.put("code", authorizationCode.getCode());
         }
         if (responseType.contains("id_token")) {
             AuthenticationRequest authenticationRequest = (AuthenticationRequest) authorizationRequest;
             List<String> claims = getClaims(authorizationRequest);
             String idToken = getTokenGenerator().generateIDTokenForAuthorizationEndpoint(
                     user, client, authenticationRequest.getNonce(), responseType, value, claims,
-                    Optional.ofNullable((String) map.get("code")), state);
-            map.put("id_token", idToken);
+                    Optional.ofNullable((String) result.get("code")), state);
+            result.put("id_token", idToken);
         }
-        addSharedProperties(map, client);
-        return map;
+        if (state != null) {
+            result.put("state", state);
+        }
+        addSharedProperties(result, client);
+        return result;
     }
 
     private AuthorizationCode createAndSaveAuthorizationCode(AuthorizationRequest authenticationRequest, OpenIDClient client, User user) {

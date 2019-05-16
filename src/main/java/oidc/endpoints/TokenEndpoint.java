@@ -157,6 +157,9 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         }
         authorizationCodeRepository.delete(authorizationCode);
         User user = userRepository.findUserBySub(authorizationCode.getSub());
+        //User information is encrypted in access token
+        userRepository.delete(user);
+
         Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes(), authorizationCode.getIdTokenClaims(), false);
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
@@ -170,15 +173,14 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         if (refreshToken.isExpired(Clock.systemDefaultZone())) {
             throw new UnauthorizedException("Refresh token expired");
         }
-
         //New tokens will be issued
         refreshTokenRepository.delete(refreshToken);
         //It is possible that the access token is already removed by cron cleanup actions
         Optional<AccessToken> accessToken = accessTokenRepository.findOptionalAccessTokenByValue(refreshToken.getAccessTokenValue());
         accessToken.ifPresent(token -> accessTokenRepository.delete(token));
 
-        User user = userRepository.findUserBySub(refreshToken.getSub());
-        Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, refreshToken.getScopes(), Collections.emptyList(), false);
+        Optional<User> optionalUser = refreshToken.isClientCredentials() ? Optional.empty() : Optional.of((User) tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(refreshToken.getAccessTokenValue()).get("user"));
+        Map<String, Object> body = tokenEndpointResponse(optionalUser, client, refreshToken.getScopes(), Collections.emptyList(), false);
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 
