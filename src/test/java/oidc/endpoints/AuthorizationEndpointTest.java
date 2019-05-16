@@ -143,7 +143,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void hybridFlowFragment() throws MalformedURLException, BadJOSEException, ParseException, JOSEException, UnsupportedEncodingException {
-        Response response = doAuthorize("http@//mock-sp", "code id_token token",null, "nonce", null);
+        Response response = doAuthorize("http@//mock-sp", "code id_token token", null, "nonce", null);
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&")).map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));

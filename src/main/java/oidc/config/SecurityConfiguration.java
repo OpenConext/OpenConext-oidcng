@@ -49,7 +49,6 @@ public class SecurityConfiguration {
 
     private static final Log LOG = LogFactory.getLog(SecurityConfiguration.class);
 
-
     @Configuration
     @Order(1)
     public static class SamlSecurity extends SamlServiceProviderSecurityConfiguration {

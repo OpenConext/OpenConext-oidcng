@@ -3,7 +3,6 @@ package oidc.secure;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
-import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import oidc.AbstractIntegrationTest;
 import oidc.exceptions.InvalidSignatureException;

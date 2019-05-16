@@ -2,7 +2,6 @@ package oidc.repository;
 
 import oidc.AbstractIntegrationTest;
 import oidc.model.AuthorizationCode;
-import oidc.model.RefreshToken;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -13,7 +12,6 @@ import java.util.Date;
 import java.util.UUID;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
 public class AuthorizationCodeRepositoryTest extends AbstractIntegrationTest {
