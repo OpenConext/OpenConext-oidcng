@@ -174,9 +174,11 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         if (StringUtils.hasText(codeVerifier)) {
             header = header.formParam("code_verifier", codeVerifier);
         }
+        if (StringUtils.hasText(code)) {
+            header = header.formParam("code", code);
+        }
         return header
                 .formParam("grant_type", grantType.getValue())
-                .formParam(grantType.equals(GrantType.CLIENT_CREDENTIALS) ? "bogus" : "code", code)
                 .post("oidc/token")
                 .as(Map.class);
     }

@@ -20,6 +20,7 @@ package oidc.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import oidc.repository.UserRepository;
+import oidc.secure.LoggingStrictHttpFirewall;
 import oidc.secure.TokenGenerator;
 import oidc.user.SamlProvisioningAuthenticationManager;
 import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
@@ -35,6 +36,7 @@ import org.springframework.security.saml.provider.provisioning.SamlProviderProvi
 import org.springframework.security.saml.provider.service.ServiceProviderService;
 import org.springframework.security.saml.provider.service.authentication.SamlAuthenticationResponseFilter;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderServerBeanConfiguration;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
 
 import javax.servlet.Filter;
 import java.io.IOException;
@@ -105,6 +107,11 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
         Clock clock = environment.acceptsProfiles(Profiles.of("dev")) ? Clock.fixed(instant, ZoneId.systemDefault()) : Clock.systemDefaultZone();
 
         return new TokenGenerator(jwksKeyStorePath, issuer, secretKeySetPath, associatedData, objectMapper, clock);
+    }
+
+    @Bean
+    public StrictHttpFirewall strictHttpFirewall() {
+        return new LoggingStrictHttpFirewall();
     }
 
     @Override

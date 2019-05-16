@@ -114,21 +114,6 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
     }
 
-    @Override
-    public TokenGenerator getTokenGenerator() {
-        return tokenGenerator;
-    }
-
-    @Override
-    public AccessTokenRepository getAccessTokenRepository() {
-        return accessTokenRepository;
-    }
-
-    @Override
-    public RefreshTokenRepository getRefreshTokenRepository() {
-        return refreshTokenRepository;
-    }
-
     private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, OpenIDClient client) throws JOSEException {
         String code = authorizationCodeGrant.getAuthorizationCode().getValue();
         AuthorizationCode authorizationCode = authorizationCodeRepository.findByCode(code);
@@ -158,8 +143,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
             }
         }
         User user = userRepository.findUserBySub(authorizationCode.getSub());
-        //User information is encrypted in access token
-        userRepository.delete(user);
+        logout(user);
 
         Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes(), authorizationCode.getIdTokenClaims(), false);
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
@@ -198,5 +182,26 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         headers.set(HttpHeaders.PRAGMA, "no-cache");
         return headers;
     }
+
+    @Override
+    public TokenGenerator getTokenGenerator() {
+        return tokenGenerator;
+    }
+
+    @Override
+    public AccessTokenRepository getAccessTokenRepository() {
+        return accessTokenRepository;
+    }
+
+    @Override
+    public RefreshTokenRepository getRefreshTokenRepository() {
+        return refreshTokenRepository;
+    }
+
+    @Override
+    public UserRepository getUserRepository() {
+        return userRepository;
+    }
+
 
 }

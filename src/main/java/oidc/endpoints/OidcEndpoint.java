@@ -15,8 +15,14 @@ import oidc.model.RefreshToken;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.RefreshTokenRepository;
+import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -107,6 +113,20 @@ public interface OidcEndpoint {
         map.put("expires_in", client.getAccessTokenValidity());
     }
 
+    default void logout(User user) {
+        //User information is encrypted in access token
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        SecurityContextHolder.getContext().setAuthentication(null);
+        SecurityContextHolder.clearContext();
+        getUserRepository().delete(user);
+    }
+
+
+
     default Date accessTokenValidity(OpenIDClient client) {
         return tokenValidity(client.getAccessTokenValidity());
     }
@@ -121,6 +141,8 @@ public interface OidcEndpoint {
     }
 
     TokenGenerator getTokenGenerator();
+
+    UserRepository getUserRepository();
 
     AccessTokenRepository getAccessTokenRepository();
 
