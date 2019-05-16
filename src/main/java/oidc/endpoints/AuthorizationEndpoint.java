@@ -25,7 +25,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
@@ -35,8 +34,6 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
@@ -80,6 +77,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     public ModelAndView authorize(@RequestParam MultiValueMap<String, String> parameters,
                                   Authentication authentication) throws ParseException, JOSEException, UnsupportedEncodingException {
         LOG.info(String.format("doAuthorize %s %s", authentication.getDetails(), parameters));
+        //We do not provide SSO as does EB not - up to the identity provider
+        logout();
 
         OidcSamlAuthentication samlAuthentication = (OidcSamlAuthentication) authentication;
         AuthorizationRequest authenticationRequest = AuthorizationRequest.parse(parameters);
@@ -106,7 +105,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             AuthorizationCode authorizationCode = createAndSaveAuthorizationCode(authenticationRequest, client, user);
             return new ModelAndView(new RedirectView(authorizationRedirect(redirectionURI, state, authorizationCode.getCode())));
         } else if (responseType.impliesImplicitFlow() || responseType.impliesHybridFlow()) {
-            logout(user);
+            //User information is encrypted in access token
+            userRepository.delete(user);
 
             Map<String, Object> body = authorizationEndpointResponse(user, client, authenticationRequest, scopes, responseType, state);
             ResponseMode responseMode = authenticationRequest.impliedResponseMode();
@@ -214,8 +214,4 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         return refreshTokenRepository;
     }
 
-    @Override
-    public UserRepository getUserRepository() {
-        return userRepository;
-    }
 }

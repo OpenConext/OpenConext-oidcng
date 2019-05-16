@@ -143,7 +143,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
             }
         }
         User user = userRepository.findUserBySub(authorizationCode.getSub());
-        logout(user);
+        //User information is encrypted in access token
+        userRepository.delete(user);
 
         Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes(), authorizationCode.getIdTokenClaims(), false);
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
@@ -197,11 +198,4 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     public RefreshTokenRepository getRefreshTokenRepository() {
         return refreshTokenRepository;
     }
-
-    @Override
-    public UserRepository getUserRepository() {
-        return userRepository;
-    }
-
-
 }

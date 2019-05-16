@@ -113,8 +113,7 @@ public interface OidcEndpoint {
         map.put("expires_in", client.getAccessTokenValidity());
     }
 
-    default void logout(User user) {
-        //User information is encrypted in access token
+    default void logout() {
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
         HttpSession session = request.getSession(false);
         if (session != null) {
@@ -122,7 +121,6 @@ public interface OidcEndpoint {
         }
         SecurityContextHolder.getContext().setAuthentication(null);
         SecurityContextHolder.clearContext();
-        getUserRepository().delete(user);
     }
 
 
@@ -141,8 +139,6 @@ public interface OidcEndpoint {
     }
 
     TokenGenerator getTokenGenerator();
-
-    UserRepository getUserRepository();
 
     AccessTokenRepository getAccessTokenRepository();
 

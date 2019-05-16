@@ -47,11 +47,6 @@ The public certificate that RP's can use to validate the signed JWT. This endpoi
 ```
 https://oidcng.test2.surfconext.nl/oidc/certs
 ```
-### [Testing](#testing)
-
-Ensure there is a valid RP in the OpenConext proxy defined in the key `spring.security.saml2.service-provider.providers[0].metadata`
-of the `application.yml` and then go to
-the [authorization endpoint](http://localhost:8080/oidc/authorize?response_type=code&client_id=http@//mock-sp&scope=openid&redirect_uri=http://localhost:8080)
 
 ### [cUrl](#curl-testing)
 
