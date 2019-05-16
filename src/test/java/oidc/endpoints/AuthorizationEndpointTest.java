@@ -120,6 +120,28 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
+    public void hybridFlowFragment() throws MalformedURLException, BadJOSEException, ParseException, JOSEException, UnsupportedEncodingException {
+        Response response = doAuthorize("http@//mock-sp", "code id_token token",null, "nonce", null);
+        String url = response.getHeader("Location");
+        String fragment = url.substring(url.indexOf("#") + 1);
+        Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&")).map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
+        String code = fragmentParameters.get("code");
+        String accessToken = fragmentParameters.get("accessToken");
+        JWTClaimsSet claimsSet = assertImplicitFlowResponse(fragmentParameters);
+
+        Map<String, Object> tokenResponse = doToken(code);
+        String newAccessToken = (String) tokenResponse.get("accessToken");
+        assertEquals(accessToken, newAccessToken);
+
+        String idToken = (String) tokenResponse.get("id_token");
+        JWTClaimsSet newClaimsSet = processToken(idToken, port);
+
+        assertEquals(claimsSet.getAudience(), newClaimsSet.getAudience());
+        assertEquals(claimsSet.getSubject(), newClaimsSet.getSubject());
+        assertEquals(claimsSet.getIssuer(), newClaimsSet.getIssuer());
+    }
+
+    @Test
     public void implicitFlowQuery() throws MalformedURLException, BadJOSEException, ParseException, JOSEException, UnsupportedEncodingException {
         Response response = doAuthorize("http@//mock-sp", "id_token token", ResponseMode.QUERY.getValue(), "nonce", null);
         String url = response.getHeader("Location");
@@ -127,8 +149,8 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         assertImplicitFlowResponse(queryParameters);
     }
 
-    private JWTClaimsSet assertImplicitFlowResponse(Map<String, String> parameters) throws ParseException, MalformedURLException, BadJOSEException, JOSEException {
-        String idToken = parameters.get("id_token");
+    private JWTClaimsSet assertImplicitFlowResponse(Map<String, ? extends Object> parameters) throws ParseException, MalformedURLException, BadJOSEException, JOSEException {
+        String idToken = (String) parameters.get("id_token");
         JWTClaimsSet claimsSet = processToken(idToken, port);
         assertEquals("nonce", claimsSet.getClaim("nonce"));
         assertNotNull(claimsSet.getClaim("at_hash"));
