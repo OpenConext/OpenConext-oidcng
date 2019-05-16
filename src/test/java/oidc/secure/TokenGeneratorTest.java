@@ -36,12 +36,11 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
     @Test(expected = InvalidSignatureException.class)
     public void encryptAndDecryptAccessTokenTampered() throws IOException, ParseException, JOSEException {
         String accessToken = doEncryptAndDecryptAccessToken();
+
         SignedJWT signedJWT = SignedJWT.parse(accessToken);
-        JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
-        SignedJWT tamperedJWT = new SignedJWT(signedJWT.getHeader(), claimsSet);
+        SignedJWT tamperedJWT = new SignedJWT(signedJWT.getHeader(), signedJWT.getJWTClaimsSet());
         tamperedJWT.sign(new RSASSASigner(new RSAKeyGenerator(RSAKeyGenerator.MIN_KEY_SIZE_BITS).generate()));
-        String s = tamperedJWT.serialize();
-        subject.decryptAccessTokenWithEmbeddedUserInfo(s);
+        subject.decryptAccessTokenWithEmbeddedUserInfo(tamperedJWT.serialize());
     }
 
     private String doEncryptAndDecryptAccessToken() throws IOException {

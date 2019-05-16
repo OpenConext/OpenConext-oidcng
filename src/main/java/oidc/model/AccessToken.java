@@ -50,13 +50,6 @@ public class AccessToken {
         return clock.instant().isAfter(expiresIn.toInstant());
     }
 
-    @Transient
-    public static AccessToken fromValue(String value) {
-        AccessToken accessToken = new AccessToken();
-        accessToken.value = UUID.nameUUIDFromBytes(value.getBytes(Charset.defaultCharset())).toString();
-        return accessToken;
-    }
-
     public String getSub() {
         return sub;
     }
