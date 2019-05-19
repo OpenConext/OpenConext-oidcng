@@ -83,7 +83,7 @@ public class SecurityConfiguration {
         @Override
         protected void configure(HttpSecurity http) throws Exception {
             super.configure(http);
-            http.cors().configurationSource(new OidcCorsConfigurationSource());
+            http.cors().configurationSource(new OidcCorsConfigurationSource()).configure(http);
             http.apply(serviceProvider())
                     .configure(appConfiguration)
                     .rotatingKeys(getKeys());
