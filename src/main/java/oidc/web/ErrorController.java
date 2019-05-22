@@ -4,6 +4,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.boot.web.servlet.error.ErrorAttributes;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Map;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -56,6 +59,12 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
             result.put("details", error.getMessage());
             ResponseStatus annotation = AnnotationUtils.getAnnotation(error.getClass(), ResponseStatus.class);
             statusCode = annotation != null ? annotation.value() : statusCode;
+
+            if (error instanceof DataAccessException) {
+                Arrays.asList("error", "message", "details").forEach(s -> result.put(s, "Not Found"));
+                result.put("status", 404);
+
+            }
         }
         HttpHeaders headers = new HttpHeaders();
         String redirectUri = request.getParameter("redirect_uri");

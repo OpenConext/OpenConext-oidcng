@@ -75,6 +75,13 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
         assertNull(idToken);
     }
 
+    @Test
+    public void invalidToken() {
+        Map<String, Object> body = doToken("nope");
+
+        assertEquals(body.get("status"), 404);
+        assertEquals(body.get("error"), "Not Found");
+    }
 
     @Test
     public void tokenWithClaims() throws MalformedURLException, ParseException, JOSEException, BadJOSEException, UnsupportedEncodingException {
