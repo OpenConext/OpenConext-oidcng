@@ -28,13 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 //Hard to test, because of SAML dependency
-public class SamlProvisioningAuthenticationManagerTest implements TestUtils {
-
-    private OpenSamlImplementation openSamlImplementation = new OpenSamlImplementation(Clock.systemDefaultZone());
-
-    {
-        ReflectionTestUtils.invokeMethod(openSamlImplementation, "bootstrap");
-    }
+public class SamlProvisioningAuthenticationManagerTest extends AbstractSamlTest {
 
     private UserRepository userRepository = mock(UserRepository.class);
     private SamlProvisioningAuthenticationManager subject = new SamlProvisioningAuthenticationManager(userRepository, objectMapper);
@@ -44,9 +38,8 @@ public class SamlProvisioningAuthenticationManagerTest implements TestUtils {
 
     @Test
     public void authenticate() throws IOException {
-        byte[] xml = StreamUtils.copyToByteArray(
-                new ClassPathResource("saml/authn_response.xml").getInputStream());
-        Response response = (Response) openSamlImplementation.resolve(xml, Collections.emptyList(), Collections.emptyList());
+        Response response = resolveXml(Response.class, "saml/authn_response.xml");
+
         Assertion assertion = response.getAssertions().get(0);
         DefaultSamlAuthentication samlAuthentication = new DefaultSamlAuthentication(true, assertion, null, null, "oidc_client");
         OidcSamlAuthentication authenticate = (OidcSamlAuthentication) subject.authenticate(samlAuthentication);

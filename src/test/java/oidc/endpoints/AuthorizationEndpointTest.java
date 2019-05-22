@@ -7,6 +7,7 @@ import com.nimbusds.oauth2.sdk.ResponseMode;
 import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import oidc.OidcEndpointTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.w3c.dom.Document;
@@ -51,6 +52,19 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         assertEquals(12, code.length());
         Map<String, Object> tokenResponse = doToken(code);
         assertFalse(tokenResponse.containsKey("id_token"));
+    }
+
+    @Test
+    @Ignore
+    public void authorizeCodeFlowWithNonce() throws UnsupportedEncodingException, MalformedURLException, BadJOSEException, ParseException, JOSEException {
+        Response response = doAuthorize("http@//mock-sp", "code", "code", "nonce", null);
+        String code = getCode(response);
+
+        Map<String, Object> tokenResponse = doToken(code);
+        String idToken = (String) tokenResponse.get("id_token");
+        // TODO implement storing the nonce in the AuthorizationCode
+        JWTClaimsSet claimsSet = processToken(idToken, port);
+        assertEquals("nonce", claimsSet.getClaim("nonce"));
     }
 
     @Test
