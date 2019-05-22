@@ -34,12 +34,14 @@ public class AuthorizationCode {
 
     private String codeChallengeMethod;
 
+    private String nonce;
+
     private List<String> idTokenClaims;
 
     private Date expiresIn;
 
     public AuthorizationCode(String code, String sub, String clientId, List<String> scopes, String redirectUri,
-                             String codeChallenge, String codeChallengeMethod, List<String> idTokenClaims,
+                             String codeChallenge, String codeChallengeMethod, String nonce, List<String> idTokenClaims,
                              Date expiresIn) {
         this.code = code;
         this.sub = sub;
@@ -48,6 +50,7 @@ public class AuthorizationCode {
         this.redirectUri = redirectUri;
         this.codeChallenge = codeChallenge;
         this.codeChallengeMethod = codeChallengeMethod;
+        this.nonce = nonce;
         this.idTokenClaims = idTokenClaims;
         this.expiresIn = expiresIn != null ? expiresIn :
                 Date.from(LocalDateTime.now().plusMinutes(5).atZone(ZoneId.systemDefault()).toInstant());

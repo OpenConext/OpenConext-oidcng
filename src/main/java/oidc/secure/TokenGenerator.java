@@ -161,8 +161,9 @@ public class TokenGenerator implements MapTypeReference {
         return objectMapper.readValue(s, User.class);
     }
 
-    public String generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, List<String> idTokenClaims) throws JOSEException {
-        return idToken(client, user, Collections.emptyMap(), idTokenClaims);
+    public String generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, String nonce, List<String> idTokenClaims) throws JOSEException {
+        Map<String, Object> additionalClaims = StringUtils.hasText(nonce) ? Collections.singletonMap("nonce", nonce) : Collections.emptyMap();
+        return idToken(client, user, additionalClaims, idTokenClaims);
     }
 
     public String generateIDTokenForAuthorizationEndpoint(User user, OpenIDClient client, Nonce nonce,

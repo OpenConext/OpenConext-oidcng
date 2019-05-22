@@ -30,6 +30,6 @@ public class AuthorizationCodeTest {
     private AuthorizationCode authorizationCode(Date expiresIn) {
         return new AuthorizationCode("code", "sub", "clientId",
                 singletonList("openid"), "http://redirect_uri", "codeChallende",
-                "codeChallengeMethod", emptyList(), expiresIn);
+                "codeChallengeMethod", "nonce", emptyList(), expiresIn);
     }
 }

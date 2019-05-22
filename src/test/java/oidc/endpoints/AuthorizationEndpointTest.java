@@ -55,14 +55,13 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    @Ignore
     public void authorizeCodeFlowWithNonce() throws UnsupportedEncodingException, MalformedURLException, BadJOSEException, ParseException, JOSEException {
         Response response = doAuthorize("http@//mock-sp", "code", "code", "nonce", null);
         String code = getCode(response);
 
         Map<String, Object> tokenResponse = doToken(code);
         String idToken = (String) tokenResponse.get("id_token");
-        // TODO implement storing the nonce in the AuthorizationCode
+
         JWTClaimsSet claimsSet = processToken(idToken, port);
         assertEquals("nonce", claimsSet.getClaim("nonce"));
     }

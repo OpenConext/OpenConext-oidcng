@@ -8,6 +8,7 @@ import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.ClaimsRequest;
+import com.nimbusds.openid.connect.sdk.Nonce;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
@@ -18,6 +19,7 @@ import oidc.repository.RefreshTokenRepository;
 import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -38,7 +40,7 @@ public interface OidcEndpoint {
 
     default Map<String, Object> tokenEndpointResponse(Optional<User> user, OpenIDClient client,
                                                       List<String> scopes, List<String> idTokenClaims,
-                                                      boolean clientCredentials) throws JOSEException {
+                                                      boolean clientCredentials, String nonce) throws JOSEException {
         Map<String, Object> map = new HashMap<>();
         TokenGenerator tokenGenerator = getTokenGenerator();
         String accessTokenValue = user.map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client, scopes)).orElse(tokenGenerator.generateAccessToken());
@@ -56,7 +58,7 @@ public interface OidcEndpoint {
         }
 
         if (isOpenIDRequest(scopes)) {
-            map.put("id_token", tokenGenerator.generateIDTokenForTokenEndpoint(user, client, idTokenClaims));
+            map.put("id_token", tokenGenerator.generateIDTokenForTokenEndpoint(user, client, nonce, idTokenClaims));
         }
 
         addSharedProperties(map, client);
@@ -75,10 +77,15 @@ public interface OidcEndpoint {
                 (codeChallengeValue != null ? CodeChallengeMethod.getDefault().getValue() : null);
         List<String> idTokenClaims = getClaims(authorizationRequest);
         String code = getTokenGenerator().generateAuthorizationCode();
+        Nonce nonce = authorizationRequest instanceof AuthenticationRequest ? AuthenticationRequest.class.cast(authorizationRequest).getNonce() : null;
         return new AuthorizationCode(
-                code, user.getSub(), client.getClientId(), scopes, redirectionURI,
+                code, user.getSub(),
+                client.getClientId(),
+                scopes,
+                redirectionURI,
                 codeChallengeValue,
                 codeChallengeMethodValue,
+                nonce != null ? nonce.getValue() : null,
                 idTokenClaims,
                 tokenValidity(10 * 60));
     }

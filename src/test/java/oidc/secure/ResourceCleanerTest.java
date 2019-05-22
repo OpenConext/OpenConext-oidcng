@@ -31,7 +31,7 @@ public class ResourceCleanerTest extends AbstractIntegrationTest {
                 new AccessToken("value", "sub", "clientId", singletonList("openid"), expiresIn, false),
                 new RefreshToken("value", "sub", "clientId", singletonList("openid"), expiresIn, "value", false),
                 new AuthorizationCode("code", "sub", "clientId", emptyList(), "redirectUri",
-                        "codeChallenge", "codeChallengeMethod", emptyList(), expiresIn)
+                        "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), expiresIn)
         ).forEach(o -> mongoTemplate.insert(o));
 
         subject.clean();

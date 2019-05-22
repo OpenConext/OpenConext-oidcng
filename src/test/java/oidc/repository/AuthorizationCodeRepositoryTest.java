@@ -23,7 +23,7 @@ public class AuthorizationCodeRepositoryTest extends AbstractIntegrationTest {
     public void findByCode() {
         String code = UUID.randomUUID().toString();
         subject.insert(new AuthorizationCode(code, "sub", "clientId", emptyList(), "redirectUri",
-                "codeChallenge", "codeChallengeMethod", emptyList(), new Date()));
+                "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), new Date()));
         assertEquals(code, subject.findByCode(code).getCode());
     }
 
@@ -37,7 +37,7 @@ public class AuthorizationCodeRepositoryTest extends AbstractIntegrationTest {
         subject.deleteAll();
         Date expiresIn = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
         subject.insert(new AuthorizationCode("code", "sub", "clientId", emptyList(), "redirectUri",
-                "codeChallenge", "codeChallengeMethod", emptyList(), new Date()));
+                "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), new Date()));
         long count = subject.deleteByExpiresInBefore(new Date());
 
         assertEquals(1L, count);

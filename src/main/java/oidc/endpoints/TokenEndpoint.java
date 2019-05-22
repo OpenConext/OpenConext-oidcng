@@ -146,7 +146,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         //User information is encrypted in access token
         userRepository.delete(user);
 
-        Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes(), authorizationCode.getIdTokenClaims(), false);
+        Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes(),
+                authorizationCode.getIdTokenClaims(), false, authorizationCode.getNonce());
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 
@@ -167,13 +168,15 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
         Optional<User> optionalUser = refreshToken.isClientCredentials() ? Optional.empty() :
                 Optional.of(tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(refreshToken.getAccessTokenValue()));
-        Map<String, Object> body = tokenEndpointResponse(optionalUser, client, refreshToken.getScopes(), Collections.emptyList(), false);
+        Map<String, Object> body = tokenEndpointResponse(optionalUser, client, refreshToken.getScopes(),
+                Collections.emptyList(), false, null);
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 
 
     private ResponseEntity handleClientCredentialsGrant(OpenIDClient client) throws JOSEException {
-        Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes(), Collections.emptyList(), true);
+        Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes(),
+                Collections.emptyList(), true, null);
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 

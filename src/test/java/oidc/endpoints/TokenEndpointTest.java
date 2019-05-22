@@ -43,8 +43,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     private TokenGenerator tokenGenerator;
 
     @Autowired
-    private @Value("${spring.security.saml2.service-provider.entity-id}")
-    String issuer;
+    private @Value("${spring.security.saml2.service-provider.entity-id}") String issuer;
 
     @Test
     public void token() throws MalformedURLException, ParseException, JOSEException, BadJOSEException, UnsupportedEncodingException {
@@ -263,7 +262,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     @Test
     public void unsupportedClientAuthentication() throws JOSEException, IOException {
         String code = doAuthorize();
-        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user(issuer)), openIDClient(), Collections.emptyList());
+        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user(issuer)), openIDClient(), "nonce", Collections.emptyList());
         Map<String, Object> body = given()
                 .when()
                 .header("Content-type", "application/x-www-form-urlencoded")
