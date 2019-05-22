@@ -14,6 +14,7 @@ import org.apache.commons.io.IOUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -42,12 +43,10 @@ public class JwkKeysEndpoint implements MapTypeReference {
 
     public JwkKeysEndpoint(TokenGenerator tokenGenerator,
                            ObjectMapper objectMapper,
-                           @Value("${spring.security.saml2.service-provider.base-path}") String basePath,
+                           @Value("${openid_configuration_path}") Resource configurationPath,
                            @Value("${spring.security.saml2.service-provider.entity-id}") String issuer) throws IOException {
         this.tokenGenerator = tokenGenerator;
-        String json = IOUtils.toString(new ClassPathResource("openid-configuration.json").getInputStream(), Charset.defaultCharset());
-        json = json.replaceAll("@@base_url@@", basePath).replaceAll("@@issuer@@", issuer);
-        this.wellKnownConfiguration = objectMapper.readValue(json, mapTypeReference);
+        this.wellKnownConfiguration = objectMapper.readValue(configurationPath.getInputStream(), mapTypeReference);
         this.objectMapper = objectMapper;
 
         Security.addProvider(new BouncyCastleProvider());

@@ -1,10 +1,10 @@
 {
-  "issuer": "@@issuer@@",
-  "authorization_endpoint": "@@base_url@@/oidc/authorize",
-  "token_endpoint": "@@base_url@@/oidc/token",
-  "userinfo_endpoint": "@@base_url@@/oidc/userinfo",
-  "introspect_endpoint": "@@base_url@@/oidc/introspect",
-  "jwks_uri": "@@base_url@@/oidc/certs",
+  "issuer": "https://org.openconext.oidc.ng",
+  "authorization_endpoint": "http://localhost:8080/oidc/authorize",
+  "token_endpoint": "http://localhost:8080/oidc/token",
+  "userinfo_endpoint": "http://localhost:8080/oidc/userinfo",
+  "introspect_endpoint": "http://localhost:8080/oidc/introspect",
+  "jwks_uri": "http://localhost:8080/oidc/certs",
   "response_types_supported": [
     "code",
     "token",
@@ -74,6 +74,13 @@
     "uids"
   ],
   "claims_parameter_supported": true,
+  "acr_values_supported": [
+    "http://test.surfconext.nl/assurance/loa1",
+    "http://test.surfconext.nl/assurance/loa2",
+    "http://test.surfconext.nl/assurance/loa3",
+    "http://test.surfconext.nl/assurance/sfo-level2",
+    "http://test.surfconext.nl/assurance/sfo-level3"
+  ],
   "code_challenge_methods_supported": [
     "plain",
     "S256"
