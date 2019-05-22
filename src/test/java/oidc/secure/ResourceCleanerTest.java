@@ -28,7 +28,7 @@ public class ResourceCleanerTest extends AbstractIntegrationTest {
                 .forEach(clazz -> mongoTemplate.remove(new Query(), clazz));
         Date expiresIn = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
         Stream.of(
-                new AccessToken("value", "sub", "clientId", singletonList("openid"), expiresIn, false),
+                new AccessToken("value", "sub", "clientId", singletonList("openid"), "K0000001",expiresIn, false),
                 new RefreshToken("value", "sub", "clientId", singletonList("openid"), expiresIn, "value", false),
                 new AuthorizationCode("code", "sub", "clientId", emptyList(), "redirectUri",
                         "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), expiresIn)

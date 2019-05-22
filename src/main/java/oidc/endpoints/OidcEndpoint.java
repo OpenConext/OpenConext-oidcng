@@ -47,7 +47,7 @@ public interface OidcEndpoint {
         String sub = user.map(User::getSub).orElse(client.getClientId());
 
         getAccessTokenRepository().insert(new AccessToken(accessTokenValue, sub, client.getClientId(), scopes,
-                accessTokenValidity(client), !user.isPresent()));
+                "K0000001",accessTokenValidity(client), !user.isPresent()));
         map.put("access_token", accessTokenValue);
 
         if (client.getGrants().contains(GrantType.REFRESH_TOKEN.getValue())) {

@@ -33,7 +33,7 @@ public class AccessTokenRepositoryTest extends AbstractIntegrationTest {
     @Test
     public void findByInnerValue() {
         String value = RandomStringUtils.random(3200, true, true);
-        subject.insert(new AccessToken(value, "sub", "clientId", singletonList("openid"), new Date(), false));
+        subject.insert(new AccessToken(value, "sub", "clientId", singletonList("openid"),"K0000001", new Date(), false));
 
         AccessToken accessToken = subject.findByValue(value);
         assertEquals(value, ReflectionTestUtils.getField(accessToken, "innerValue"));
@@ -45,7 +45,7 @@ public class AccessTokenRepositoryTest extends AbstractIntegrationTest {
     public void deleteByExpiresInBefore() {
         subject.deleteAll();
         Date expiresIn = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
-        subject.insert(new AccessToken("value", "sub", "clientId", singletonList("openid"), expiresIn, false));
+        subject.insert(new AccessToken("value", "sub", "clientId", singletonList("openid"),"K0000001", expiresIn, false));
 
         long count = subject.deleteByExpiresInBefore(new Date());
 

@@ -16,7 +16,7 @@ public class AccessTokenTest {
     @Test
     public void isExpiredNotNull() {
         AccessToken accessToken = new AccessToken("value", "sub", "clientId",
-                singletonList("openid"), null, false);
+                singletonList("openid"), "K0000001", null, false);
 
         assertFalse(accessToken.isExpired(Clock.systemDefaultZone()));
     }
@@ -25,7 +25,7 @@ public class AccessTokenTest {
     public void isExpired() {
         Date expiresIn = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
         AccessToken accessToken = new AccessToken("value", "sub", "clientId",
-                singletonList("openid"), expiresIn, false);
+                singletonList("openid"), "K0000001", expiresIn, false);
 
         assertTrue(accessToken.isExpired(Clock.systemDefaultZone()));
     }
