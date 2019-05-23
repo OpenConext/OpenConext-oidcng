@@ -7,8 +7,13 @@ import com.nimbusds.oauth2.sdk.ResponseMode;
 import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import oidc.OidcEndpointTest;
+import oidc.model.AccessToken;
+import oidc.model.AuthorizationCode;
+import oidc.model.User;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -29,6 +34,7 @@ import java.net.MalformedURLException;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -161,10 +167,19 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&")).map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
         String code = fragmentParameters.get("code");
+
+        AuthorizationCode authorizationCode = mongoTemplate.findOne(Query.query(Criteria.where("code").is(code)), AuthorizationCode.class);
+        User user = mongoTemplate.findOne(Query.query(Criteria.where("sub").is(authorizationCode.getSub())), User.class);
+        assertNotNull(user);
+
         String accessToken = fragmentParameters.get("accessToken");
         JWTClaimsSet claimsSet = assertImplicitFlowResponse(fragmentParameters);
 
         Map<String, Object> tokenResponse = doToken(code);
+
+        List<User> users = mongoTemplate.find(Query.query(Criteria.where("sub").is(authorizationCode.getSub())), User.class);
+        assertEquals(0, users.size());
+
         String newAccessToken = (String) tokenResponse.get("accessToken");
         assertEquals(accessToken, newAccessToken);
 

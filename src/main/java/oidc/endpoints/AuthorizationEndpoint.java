@@ -105,9 +105,10 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             AuthorizationCode authorizationCode = createAndSaveAuthorizationCode(authenticationRequest, client, user);
             return new ModelAndView(new RedirectView(authorizationRedirect(redirectionURI, state, authorizationCode.getCode())));
         } else if (responseType.impliesImplicitFlow() || responseType.impliesHybridFlow()) {
-            //User information is encrypted in access token
-            userRepository.delete(user);
-
+            if (responseType.impliesImplicitFlow()) {
+                //User information is encrypted in access token
+                userRepository.delete(user);
+            }
             Map<String, Object> body = authorizationEndpointResponse(user, client, authenticationRequest, scopes, responseType, state);
             ResponseMode responseMode = authenticationRequest.impliedResponseMode();
             if (responseMode.equals(ResponseMode.FORM_POST)) {
