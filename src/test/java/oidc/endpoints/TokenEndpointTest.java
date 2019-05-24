@@ -27,6 +27,7 @@ import java.net.MalformedURLException;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -43,7 +44,8 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     private TokenGenerator tokenGenerator;
 
     @Autowired
-    private @Value("${spring.security.saml2.service-provider.entity-id}") String issuer;
+    private @Value("${spring.security.saml2.service-provider.entity-id}")
+    String issuer;
 
     @Test
     public void token() throws MalformedURLException, ParseException, JOSEException, BadJOSEException, UnsupportedEncodingException {
@@ -55,6 +57,9 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
 
         String accessToken = (String) body.get("access_token");
         assertNotNull(accessToken);
+        JWTClaimsSet accessTokenClaimsSet = processToken(accessToken, port);
+        List<String> audience = accessTokenClaimsSet.getAudience();
+        assertEquals(Arrays.asList("http@//mock-sp", "http://resource-server"), audience);
 
         String idToken = (String) body.get("id_token");
         verifySignedJWT(idToken, port);

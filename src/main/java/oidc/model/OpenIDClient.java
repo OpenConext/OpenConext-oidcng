@@ -6,6 +6,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +25,7 @@ public class OpenIDClient {
     private List<String> redirectUrls;
     private List<String> scopes;
     private List<String> grants;
+    private List<String> allowedResourceServers;
     private boolean resourceServer;
     private boolean publicClient;
     //seconds
@@ -43,6 +45,7 @@ public class OpenIDClient {
         this.redirectUrls = List.class.cast(metaDataFields.get("redirectUrls"));
         this.scopes = List.class.cast(metaDataFields.getOrDefault("scopes", "oidc"));
         this.grants = List.class.cast(metaDataFields.getOrDefault("grants", "authorization_code"));
+        this.allowedResourceServers = List.class.cast(data.getOrDefault("allowedResourceServers", new ArrayList<>()));
         this.resourceServer = parseBoolean(metaDataFields.get("isResourceServer"));
         this.publicClient = parseBoolean(metaDataFields.get("isPublicClient"));
         this.accessTokenValidity = Integer.class.cast(metaDataFields.getOrDefault("accessTokenValidity", 3600));

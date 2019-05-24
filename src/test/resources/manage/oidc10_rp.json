@@ -15,6 +15,9 @@
       "eid": 9,
       "state": "testaccepted",
       "allowedall": true,
+      "allowedResourceServers": [
+        "http://resource-server"
+      ],
       "metaDataFields": {
         "name:en": "OpenConext Mock SP",
         "name:nl": "OpenConext Mock SP",
@@ -78,5 +81,38 @@
         "refreshTokenValidity": 3600
       }
     }
+  },
+  {
+    "id": "11",
+    "version": 0,
+    "type": "oidc10_rp",
+    "revision": {
+      "number": 0,
+      "created": 1529050834.575000000,
+      "parentId": null,
+      "updatedBy": "oidc_user.com",
+      "terminated": null
+    },
+    "data": {
+      "entityid": "http://resource-server",
+      "eid": 10,
+      "state": "testaccepted",
+      "allowedall": true,
+      "metaDataFields": {
+        "name:en": "ResourceServer",
+        "name:nl": "ResourceServer",
+        "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
+        "scopes": [
+          "openid"
+        ],
+        "grants": [
+          "client_credentials"
+        ],
+        "accessTokenValidity": 3600,
+        "isResourceServer": "1",
+        "refreshTokenValidity": 3600
+      }
+    }
   }
+
 ]

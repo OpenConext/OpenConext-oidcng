@@ -2,7 +2,6 @@ package oidc.secure;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 import com.google.crypto.tink.Aead;
 import com.google.crypto.tink.CleartextKeysetHandle;
 import com.google.crypto.tink.JsonKeysetReader;
@@ -43,6 +42,8 @@ import java.security.SecureRandom;
 import java.text.ParseException;
 import java.time.Clock;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
@@ -137,7 +138,7 @@ public class TokenGenerator implements MapTypeReference {
         additionalClaims.put("claims", encryptedClaims);
         additionalClaims.put("claim_key_id", kid);
 
-        return idToken(client, Optional.empty(), additionalClaims, Collections.emptyList());
+        return idToken(client, Optional.empty(), additionalClaims, Collections.emptyList(), true);
     }
 
     public User decryptAccessTokenWithEmbeddedUserInfo(String accessToken) {
@@ -163,7 +164,7 @@ public class TokenGenerator implements MapTypeReference {
 
     public String generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, String nonce, List<String> idTokenClaims) throws JOSEException {
         Map<String, Object> additionalClaims = StringUtils.hasText(nonce) ? Collections.singletonMap("nonce", nonce) : Collections.emptyMap();
-        return idToken(client, user, additionalClaims, idTokenClaims);
+        return idToken(client, user, additionalClaims, idTokenClaims, false);
     }
 
     public String generateIDTokenForAuthorizationEndpoint(User user, OpenIDClient client, Nonce nonce,
@@ -186,7 +187,7 @@ public class TokenGenerator implements MapTypeReference {
         if (state != null && StringUtils.hasText(state.getValue())) {
             additionalClaims.put("s_hash", StateHash.compute(state, signingAlg));
         }
-        return idToken(client, Optional.of(user), additionalClaims, claims);
+        return idToken(client, Optional.of(user), additionalClaims, claims, false);
     }
 
     public Map<String, ? extends JWK> getAllPublicKeys() {
@@ -201,9 +202,14 @@ public class TokenGenerator implements MapTypeReference {
     }
 
     private String idToken(OpenIDClient client, Optional<User> user, Map<String, Object> additionalClaims,
-                           List<String> idTokenClaims) throws JOSEException {
+                           List<String> idTokenClaims, boolean includeAllowedResourceServers) throws JOSEException {
+        List<String> audiences = new ArrayList<>();
+        audiences.add(client.getClientId());
+        if (includeAllowedResourceServers) {
+            audiences.addAll(client.getAllowedResourceServers());
+        }
         JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
-                .audience(Lists.newArrayList(client.getClientId()))
+                .audience(audiences)
                 .expirationTime(Date.from(clock.instant().plus(client.getAccessTokenValidity(), ChronoUnit.SECONDS)))
                 .jwtID(UUID.randomUUID().toString())
                 .issuer(issuer)
