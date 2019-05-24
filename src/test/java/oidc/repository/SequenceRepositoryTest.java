@@ -2,11 +2,10 @@ package oidc.repository;
 
 import oidc.AbstractIntegrationTest;
 import oidc.model.Sequence;
-import oidc.model.SigningKey;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class SequenceRepositoryTest extends AbstractIntegrationTest {
 

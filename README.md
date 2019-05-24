@@ -32,8 +32,8 @@ The content is from [https://github.com/OpenConext/OpenConext-oidcng/blob/master
 ```
 https://oidcng.test2.surfconext.nl/oidc/.well-known/openid-configuration
 ```
-Generate a JWKS keystore for signing the JWT's. 
-The output is used in ansible to create the file [https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/oidc.keystore.jwks.json](https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/oidc.keystore.jwks.json)
+Generate a JWKS keystore for signing the JWT's. This endpoint is used in the automatic key roll-over. 
+
 ```
 https://oidcng.test2.surfconext.nl/oidc/generate-jwks-keystore
 ```

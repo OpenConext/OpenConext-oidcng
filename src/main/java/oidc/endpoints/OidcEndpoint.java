@@ -16,10 +16,8 @@ import oidc.model.RefreshToken;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.RefreshTokenRepository;
-import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -131,7 +129,6 @@ public interface OidcEndpoint {
         SecurityContextHolder.getContext().setAuthentication(null);
         SecurityContextHolder.clearContext();
     }
-
 
 
     default Date accessTokenValidity(OpenIDClient client) {

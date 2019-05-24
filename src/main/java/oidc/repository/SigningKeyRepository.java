@@ -1,8 +1,6 @@
 package oidc.repository;
 
-import oidc.model.OpenIDClient;
 import oidc.model.SigningKey;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 

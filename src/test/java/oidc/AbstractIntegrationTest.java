@@ -142,7 +142,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
 
         for (int i = 1; i < numberOfSigningKeys + 1; i++) {
             SigningKey signingKey = tokenGenerator.rolloverSigningKeys();
-            assertEquals("key_"+i, signingKey.getKeyId());
+            assertEquals("key_" + i, signingKey.getKeyId());
         }
     }
 

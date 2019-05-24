@@ -7,7 +7,6 @@ import com.nimbusds.jwt.SignedJWT;
 import oidc.AbstractIntegrationTest;
 import oidc.exceptions.InvalidSignatureException;
 import oidc.model.OpenIDClient;
-import oidc.model.Sequence;
 import oidc.model.SigningKey;
 import oidc.model.User;
 import oidc.repository.SigningKeyRepository;

@@ -39,10 +39,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.saml.key.SimpleKey;
 import org.springframework.security.saml.provider.config.RotatingKeys;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityConfiguration;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.charset.Charset;
 

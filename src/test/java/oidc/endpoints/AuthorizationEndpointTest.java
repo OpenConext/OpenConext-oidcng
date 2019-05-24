@@ -41,7 +41,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
-public class AuthorizationEndpointTest extends AbstractIntegrationTest  {
+public class AuthorizationEndpointTest extends AbstractIntegrationTest {
 
     @Test
     public void authorize() throws UnsupportedEncodingException {

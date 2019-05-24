@@ -7,7 +7,7 @@ import org.junit.Test;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class KeyRolloverTest extends AbstractIntegrationTest {
 

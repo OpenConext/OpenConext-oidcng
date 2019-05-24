@@ -16,7 +16,8 @@
       "state": "testaccepted",
       "allowedall": true,
       "allowedResourceServers": [
-        "resource-server", "mock-sp"
+        "resource-server",
+        "mock-sp"
       ],
       "metaDataFields": {
         "name:en": "OpenConext Mock SP",
@@ -114,5 +115,4 @@
       }
     }
   }
-
 ]

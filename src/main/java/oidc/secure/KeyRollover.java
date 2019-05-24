@@ -32,6 +32,7 @@ public class KeyRollover {
         try {
             SigningKey signingKey = tokenGenerator.rolloverSigningKeys();
             LOG.info("Successful signing key rollover. New signing key: " + signingKey.getKeyId());
+            //TODO clean up keys that are not used in any access_tokens
         } catch (NoSuchProviderException | NoSuchAlgorithmException e) {
             LOG.error("Rollover exception", e);
         }

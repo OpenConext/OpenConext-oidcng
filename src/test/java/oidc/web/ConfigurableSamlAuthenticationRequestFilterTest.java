@@ -7,11 +7,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.nio.charset.Charset;
 
 import static io.restassured.RestAssured.given;
-import static org.junit.Assert.assertEquals;
 
 @ActiveProfiles(profiles = {"prod"}, inheritProfiles = false)
 public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractIntegrationTest {

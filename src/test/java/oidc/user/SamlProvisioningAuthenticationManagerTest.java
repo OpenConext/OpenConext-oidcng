@@ -1,19 +1,13 @@
 package oidc.user;
 
-import oidc.TestUtils;
 import oidc.model.User;
 import oidc.repository.UserRepository;
 import org.junit.Test;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.saml.saml2.authentication.Assertion;
 import org.springframework.security.saml.saml2.authentication.Response;
 import org.springframework.security.saml.spi.DefaultSamlAuthentication;
-import org.springframework.security.saml.spi.opensaml.OpenSamlImplementation;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
-import java.time.Clock;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.regex.Pattern;

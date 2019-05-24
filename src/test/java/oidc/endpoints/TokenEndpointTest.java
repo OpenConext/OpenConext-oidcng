@@ -39,7 +39,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 @SuppressWarnings("unchecked")
-public class TokenEndpointTest extends AbstractIntegrationTest  {
+public class TokenEndpointTest extends AbstractIntegrationTest {
 
     @Autowired
     private TokenGenerator tokenGenerator;
