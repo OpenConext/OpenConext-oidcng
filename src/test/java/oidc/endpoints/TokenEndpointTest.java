@@ -8,7 +8,6 @@ import com.nimbusds.oauth2.sdk.GrantType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
-import oidc.OidcEndpointTest;
 import oidc.model.AccessToken;
 import oidc.model.RefreshToken;
 import oidc.model.User;
@@ -24,6 +23,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 @SuppressWarnings("unchecked")
-public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEndpointTest {
+public class TokenEndpointTest extends AbstractIntegrationTest  {
 
     @Autowired
     private TokenGenerator tokenGenerator;
@@ -272,7 +273,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     }
 
     @Test
-    public void unsupportedClientAuthentication() throws JOSEException, IOException {
+    public void unsupportedClientAuthentication() throws JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException {
         String code = doAuthorize();
         String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user(issuer)), openIDClient(), "nonce", Collections.emptyList());
         Map<String, Object> body = given()

@@ -6,11 +6,8 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.oauth2.sdk.ResponseMode;
 import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
-import oidc.OidcEndpointTest;
-import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.User;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -44,7 +41,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
-public class AuthorizationEndpointTest extends AbstractIntegrationTest implements OidcEndpointTest {
+public class AuthorizationEndpointTest extends AbstractIntegrationTest  {
 
     @Test
     public void authorize() throws UnsupportedEncodingException {

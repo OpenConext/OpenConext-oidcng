@@ -3,6 +3,22 @@ package oidc;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKMatcher;
+import com.nimbusds.jose.jwk.JWKSelector;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.jwk.source.RemoteJWKSet;
+import com.nimbusds.jose.proc.BadJOSEException;
+import com.nimbusds.jose.proc.JWSKeySelector;
+import com.nimbusds.jose.proc.JWSVerificationKeySelector;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
+import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.openid.connect.sdk.ClaimsRequest;
@@ -15,6 +31,9 @@ import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
+import oidc.model.Sequence;
+import oidc.model.SigningKey;
+import oidc.secure.TokenGenerator;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +53,11 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
@@ -45,6 +69,8 @@ import java.util.stream.Collectors;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -52,7 +78,11 @@ import static org.junit.Assert.assertEquals;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"spring.data.mongodb.uri=mongodb://127.0.0.1:27017/oidc_test", "mongodb_db=oidc_test"})
+        properties = {
+                "spring.data.mongodb.uri=mongodb://127.0.0.1:27017/oidc_test",
+                "mongodb_db=oidc_test",
+                "cron.node-cron-job-responsible=false"
+        })
 @ActiveProfiles("dev")
 public abstract class AbstractIntegrationTest implements TestUtils, MapTypeReference {
 
@@ -61,6 +91,9 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
 
     @Autowired
     protected MongoTemplate mongoTemplate;
+
+    @Autowired
+    protected TokenGenerator tokenGenerator;
 
     @Autowired
     protected ObjectMapper objectMapper;
@@ -81,7 +114,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
 
     protected List<OpenIDClient> openIDClients() throws IOException {
         if (CollectionUtils.isEmpty(this.openIDClients)) {
-            this.openIDClients = serviceProviders().stream().map(OpenIDClient::new).collect(Collectors.toList());
+            this.openIDClients = relyingParties().stream().map(OpenIDClient::new).collect(Collectors.toList());
         }
         return this.openIDClients;
     }
@@ -90,7 +123,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         return this.openIDClients().get(0);
     }
 
-    protected List<Map<String, Object>> serviceProviders() throws IOException {
+    protected List<Map<String, Object>> relyingParties() throws IOException {
         return objectMapper.readValue(new ClassPathResource("manage/oidc10_rp.json").getInputStream(),
                 new TypeReference<List<Map<String, Object>>>() {
                 });
@@ -101,6 +134,40 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         assertEquals(302, response.getStatusCode());
 
         return getCode(response);
+    }
+
+    protected void resetAndCreateSigningKeys(int numberOfSigningKeys) throws NoSuchProviderException, NoSuchAlgorithmException {
+        mongoTemplate.dropCollection(Sequence.class);
+        mongoTemplate.dropCollection(SigningKey.class);
+
+        for (int i = 1; i < numberOfSigningKeys + 1; i++) {
+            SigningKey signingKey = tokenGenerator.rolloverSigningKeys();
+            assertEquals("key_"+i, signingKey.getKeyId());
+        }
+    }
+
+    protected JWTClaimsSet processToken(String token, int port) throws ParseException, MalformedURLException, BadJOSEException, JOSEException {
+        JWKSource keySource = new RemoteJWKSet(new URL("http://localhost:" + port + "/oidc/certs"));
+        JWSKeySelector keySelector = new JWSVerificationKeySelector(TokenGenerator.signingAlg, keySource);
+        ConfigurableJWTProcessor jwtProcessor = new DefaultJWTProcessor();
+        jwtProcessor.setJWSKeySelector(keySelector);
+        return jwtProcessor.process(token, null);
+    }
+
+    protected JWTClaimsSet verifySignedJWT(String token, int port) throws MalformedURLException, JOSEException, ParseException {
+        JWKSource keySource = new RemoteJWKSet(new URL("http://localhost:" + port + "/oidc/certs"));
+        List<JWK> list = keySource.get(new JWKSelector(new JWKMatcher.Builder().build()), null);
+
+        SignedJWT signedJWT = SignedJWT.parse(token);
+
+        RSAKey rsaKey = (RSAKey) list.stream().filter(jwk -> jwk.getKeyID().equals(signedJWT.getHeader().getKeyID())).findAny().get();
+        assertFalse(rsaKey.isPrivate());
+
+        JWSVerifier verifier = new RSASSAVerifier(rsaKey);
+        boolean verified = signedJWT.verify(verifier);
+
+        assertTrue(verified);
+        return signedJWT.getJWTClaimsSet();
     }
 
     protected String getCode(Response response) {

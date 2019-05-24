@@ -9,15 +9,16 @@ import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.RefreshTokenRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
 import java.util.Date;
 
-@Configuration
-@EnableScheduling
+@Component
 public class ResourceCleaner {
 
     private static final Log LOG = LogFactory.getLog(ResourceCleaner.class);
@@ -27,6 +28,7 @@ public class ResourceCleaner {
     private AuthorizationCodeRepository authorizationCodeRepository;
     private boolean cronJobResponsible;
 
+    @Autowired
     public ResourceCleaner(AccessTokenRepository accessTokenRepository,
                            RefreshTokenRepository refreshTokenRepository,
                            AuthorizationCodeRepository authorizationCodeRepository,
@@ -37,7 +39,7 @@ public class ResourceCleaner {
         this.cronJobResponsible = cronJobResponsible;
     }
 
-    @Scheduled(cron = "${cron.expression}")
+    @Scheduled(cron = "${cron.token-cleaner-expression}")
     public void clean() {
         if (!cronJobResponsible) {
             return;

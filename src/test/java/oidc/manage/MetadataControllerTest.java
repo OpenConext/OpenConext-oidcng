@@ -27,10 +27,10 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
     public void connections() throws IOException {
         mongoTemplate.remove(new Query(), OpenIDClient.class);
 
-        postConnections(serviceProviders());
+        postConnections(relyingParties());
         assertEquals(3L, mongoTemplate.count(new Query(), OpenIDClient.class));
 
-        List<Map<String, Object>> serviceProviders = serviceProviders();
+        List<Map<String, Object>> serviceProviders = relyingParties();
         Map<String, Object> mockSp = serviceProviders.get(0);
         ((Map) mockSp.get("data")).put("entityid", "changed");
 

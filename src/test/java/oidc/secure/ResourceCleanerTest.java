@@ -6,6 +6,7 @@ import oidc.model.AuthorizationCode;
 import oidc.model.RefreshToken;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.mongodb.core.query.Query;
 
 import java.time.LocalDateTime;
@@ -17,6 +18,12 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {
+                "spring.data.mongodb.uri=mongodb://127.0.0.1:27017/oidc_test",
+                "mongodb_db=oidc_test",
+                "cron.node-cron-job-responsible=true"
+        })
 public class ResourceCleanerTest extends AbstractIntegrationTest {
 
     @Autowired

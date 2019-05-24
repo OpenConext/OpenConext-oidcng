@@ -37,6 +37,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -75,7 +77,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
     @GetMapping("/oidc/authorize")
     public ModelAndView authorize(@RequestParam MultiValueMap<String, String> parameters,
-                                  Authentication authentication) throws ParseException, JOSEException, UnsupportedEncodingException {
+                                  Authentication authentication) throws ParseException, JOSEException, UnsupportedEncodingException, NoSuchProviderException, NoSuchAlgorithmException {
         LOG.info(String.format("doAuthorize %s %s", authentication.getDetails(), parameters));
         //We do not provide SSO as does EB not - up to the identity provider
         logout();
@@ -135,12 +137,12 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     }
 
     private Map<String, Object> authorizationEndpointResponse(User user, OpenIDClient client, AuthorizationRequest authorizationRequest,
-                                                              List<String> scopes, ResponseType responseType, State state) throws JOSEException {
+                                                              List<String> scopes, ResponseType responseType, State state) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> result = new HashMap<>();
         String value = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client, scopes);
         if (responseType.contains("token") || !isOpenIDRequest(authorizationRequest)) {
             getAccessTokenRepository().insert(new AccessToken(value, user.getSub(), client.getClientId(), scopes,
-                    "K0000001", accessTokenValidity(client), false));
+                    tokenGenerator.getCurrentSigningKeyId(), accessTokenValidity(client), false));
             result.put("access_token", value);
         }
         if (responseType.contains("code")) {

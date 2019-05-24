@@ -19,8 +19,11 @@ package oidc.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
+import oidc.repository.SequenceRepository;
+import oidc.repository.SigningKeyRepository;
 import oidc.repository.UserRepository;
 import oidc.secure.LoggingStrictHttpFirewall;
+import oidc.secure.ResourceCleaner;
 import oidc.secure.TokenGenerator;
 import oidc.user.SamlProvisioningAuthenticationManager;
 import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
@@ -30,6 +33,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.core.io.Resource;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.saml.SamlRequestMatcher;
 import org.springframework.security.saml.provider.SamlServerConfiguration;
 import org.springframework.security.saml.provider.provisioning.SamlProviderProvisioning;
@@ -47,13 +51,15 @@ import java.time.Instant;
 import java.time.ZoneId;
 
 @Configuration
+@EnableScheduling
 public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
 
-    public static final Instant instant = Instant.parse("2100-01-01T00:00:00.00Z");
 
     private Environment environment;
     private AppConfig appConfiguration;
     private UserRepository userRepository;
+    private SigningKeyRepository signingKeyRepository;
+    private SequenceRepository sequenceRepository;
     private ObjectMapper objectMapper;
     private String issuer;
     private Resource jwksKeyStorePath;
@@ -62,16 +68,19 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
 
     public BeanConfig(AppConfig config,
                       UserRepository userRepository,
+                      SigningKeyRepository signingKeyRepository,
+                      SequenceRepository sequenceRepository,
                       ObjectMapper objectMapper,
                       Environment environment,
-                      @Value("${jwks_key_store_path}") Resource jwksKeyStorePath,
                       @Value("${secret_key_set_path}") Resource secretKeySetPath,
                       @Value("${associated_data}") String associatedData,
-                      @Value("${spring.security.saml2.service-provider.entity-id}") String issuer) {
+                      @Value("${spring.security.saml2.service-provider.entity-id}") String issuer,
+                      @Value("${cron.node-cron-job-responsible}") boolean cronJobResponsible) {
         this.appConfiguration = config;
         this.userRepository = userRepository;
+        this.signingKeyRepository = signingKeyRepository;
+        this.sequenceRepository = sequenceRepository;
         this.objectMapper = objectMapper;
-        this.jwksKeyStorePath = jwksKeyStorePath;
         this.secretKeySetPath = secretKeySetPath;
         this.associatedData = associatedData;
         this.issuer = issuer;
@@ -100,13 +109,6 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     @Bean
     public SamlProvisioningAuthenticationManager samlProvisioningAuthenticationManager() throws IOException {
         return new SamlProvisioningAuthenticationManager(this.userRepository, this.objectMapper);
-    }
-
-    @Bean
-    public TokenGenerator tokenGenerator() throws ParseException, JOSEException, IOException, GeneralSecurityException {
-        Clock clock = environment.acceptsProfiles(Profiles.of("dev")) ? Clock.fixed(instant, ZoneId.systemDefault()) : Clock.systemDefaultZone();
-
-        return new TokenGenerator(jwksKeyStorePath, issuer, secretKeySetPath, associatedData, objectMapper, clock);
     }
 
     @Bean

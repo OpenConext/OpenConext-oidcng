@@ -9,6 +9,8 @@ import oidc.secure.TokenGenerator;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
@@ -25,13 +27,15 @@ public class JwkKeysEndpointTest extends AbstractIntegrationTest {
     @Test
     public void generate() throws ParseException, JsonProcessingException {
         Map<String, Object> res = getMapFromEndpoint("oidc/generate-jwks-keystore");
-        assertRSAKey(res, true);
+        assertRSAKey(res, true, 1);
     }
 
     @Test
-    public void publishClientJwk() throws ParseException, JsonProcessingException {
+    public void publishClientJwk() throws ParseException, JsonProcessingException, NoSuchProviderException, NoSuchAlgorithmException {
+        resetAndCreateSigningKeys(3);
+
         Map<String, Object> res = getMapFromEndpoint("oidc/certs");
-        assertRSAKey(res, false);
+        assertRSAKey(res, false, 3);
     }
 
     @Test
@@ -46,13 +50,15 @@ public class JwkKeysEndpointTest extends AbstractIntegrationTest {
         assertTrue(res.containsKey("key"));
     }
 
-    private void assertRSAKey(Map<String, Object> res, boolean isPrivate) throws ParseException, JsonProcessingException {
+    private void assertRSAKey(Map<String, Object> res, boolean isPrivate, int expected) throws ParseException, JsonProcessingException {
         List<JWK> jwkList = JWKSet.parse(objectMapper.writeValueAsString(res)).getKeys();
-        assertEquals(1, jwkList.size());
+        assertEquals(expected, jwkList.size());
 
-        RSAKey rsaKey = (RSAKey) jwkList.get(0);
-        assertEquals(isPrivate, rsaKey.isPrivate());
-        assertEquals(TokenGenerator.signingAlg, rsaKey.getAlgorithm());
+        jwkList.forEach(jwk -> {
+            RSAKey rsaKey = (RSAKey) jwk;
+            assertEquals(isPrivate, rsaKey.isPrivate());
+            assertEquals(TokenGenerator.signingAlg, rsaKey.getAlgorithm());
+        });
     }
 
     private Map<String, Object> getMapFromEndpoint(String path) {

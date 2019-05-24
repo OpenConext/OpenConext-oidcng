@@ -9,6 +9,8 @@ import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
+import oidc.model.Sequence;
+import oidc.model.SigningKey;
 import oidc.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -76,6 +78,17 @@ public class MongobeeConfiguration {
 
         ensureCollectionsAndIndexes(mongoTemplate, indexInfo);
     }
+
+    @ChangeSet(order = "003", id = "createSigningKeyCollection", author = "Okke Harsta")
+    public void createSigningKeyCollection(MongoTemplate mongoTemplate) {
+        if (mongoTemplate.collectionExists("signing_keys")) {
+            mongoTemplate.dropCollection("signing_keys");
+        }
+        mongoTemplate.createCollection("signing_keys");
+        IndexOperations indexOperations = mongoTemplate.indexOps(SigningKey.class);
+        indexOperations.ensureIndex(new Index("created",Sort.Direction.DESC));
+    }
+
 
     private void ensureCollectionsAndIndexes(MongoTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {
         indexInfo.forEach((collection, fields) -> {

@@ -12,6 +12,8 @@ import org.junit.Test;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.Map;
 
 import static com.nimbusds.oauth2.sdk.http.HTTPRequest.Method.POST;
@@ -35,6 +37,18 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
         Map<String, Object> result = doIntrospection("mock-sp", "secret");
         assertEquals(true, result.get("active"));
     }
+
+    @Test
+    public void introspectionWithKeyRollover() throws UnsupportedEncodingException, NoSuchProviderException, NoSuchAlgorithmException {
+        String accessToken = getAccessToken();
+
+        //ensure the correct key is used to verify
+        tokenGenerator.rolloverSigningKeys();
+
+        Map<String, Object> result = callIntrospection("mock-sp", accessToken, "secret");
+        assertEquals(true, result.get("active"));
+    }
+
 
     @Test
     public void introspectionNotAllowedResourceServer() throws UnsupportedEncodingException {

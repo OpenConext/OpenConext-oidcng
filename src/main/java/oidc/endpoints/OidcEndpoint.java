@@ -25,6 +25,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -40,14 +42,14 @@ public interface OidcEndpoint {
 
     default Map<String, Object> tokenEndpointResponse(Optional<User> user, OpenIDClient client,
                                                       List<String> scopes, List<String> idTokenClaims,
-                                                      boolean clientCredentials, String nonce) throws JOSEException {
+                                                      boolean clientCredentials, String nonce) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> map = new HashMap<>();
         TokenGenerator tokenGenerator = getTokenGenerator();
         String accessTokenValue = user.map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client, scopes)).orElse(tokenGenerator.generateAccessToken());
         String sub = user.map(User::getSub).orElse(client.getClientId());
 
         getAccessTokenRepository().insert(new AccessToken(accessTokenValue, sub, client.getClientId(), scopes,
-                "K0000001",accessTokenValidity(client), !user.isPresent()));
+                getTokenGenerator().getCurrentSigningKeyId(), accessTokenValidity(client), !user.isPresent()));
         map.put("access_token", accessTokenValue);
 
         if (client.getGrants().contains(GrantType.REFRESH_TOKEN.getValue())) {

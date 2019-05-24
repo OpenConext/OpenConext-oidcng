@@ -40,6 +40,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.Map;
@@ -73,7 +75,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     }
 
     @PostMapping(value = "oidc/token", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
-    public ResponseEntity token(HttpServletRequest request) throws IOException, ParseException, JOSEException {
+    public ResponseEntity token(HttpServletRequest request) throws IOException, ParseException, JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
         TokenRequest tokenRequest = TokenRequest.parse(httpRequest);
 
@@ -114,7 +116,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
     }
 
-    private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, OpenIDClient client) throws JOSEException {
+    private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, OpenIDClient client) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         String code = authorizationCodeGrant.getAuthorizationCode().getValue();
         AuthorizationCode authorizationCode = authorizationCodeRepository.findByCode(code);
         authorizationCodeRepository.delete(authorizationCode);
@@ -151,7 +153,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 
-    private ResponseEntity handleRefreshCodeGrant(RefreshTokenGrant refreshTokenGrant, OpenIDClient client) throws JOSEException {
+    private ResponseEntity handleRefreshCodeGrant(RefreshTokenGrant refreshTokenGrant, OpenIDClient client) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         String refreshTokenValue = refreshTokenGrant.getRefreshToken().getValue();
         RefreshToken refreshToken = refreshTokenRepository.findByInnerValue(refreshTokenValue);
         if (!refreshToken.getClientId().equals(client.getClientId())) {
@@ -174,7 +176,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     }
 
 
-    private ResponseEntity handleClientCredentialsGrant(OpenIDClient client) throws JOSEException {
+    private ResponseEntity handleClientCredentialsGrant(OpenIDClient client) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes(),
                 Collections.emptyList(), true, null);
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);

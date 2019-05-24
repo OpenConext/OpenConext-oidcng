@@ -8,6 +8,7 @@ import com.google.crypto.tink.aead.AeadKeyTemplates;
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
 import net.minidev.json.JSONObject;
 import oidc.secure.TokenGenerator;
 import org.apache.commons.io.IOUtils;
@@ -26,6 +27,8 @@ import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -55,17 +58,7 @@ public class JwkKeysEndpoint implements MapTypeReference {
     @GetMapping("oidc/generate-jwks-keystore")
     public Map<String, List<JSONObject>> generate(@RequestParam(value = "keyID", required = false, defaultValue = "oidc") String keyID)
             throws Exception {
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA", "BC");
-        kpg.initialize(2048);
-        KeyPair keyPair = kpg.generateKeyPair();
-        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
-        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-
-        com.nimbusds.jose.jwk.RSAKey build = new com.nimbusds.jose.jwk.RSAKey.Builder(publicKey)
-                .privateKey(privateKey)
-                .algorithm(new Algorithm("RS256"))
-                .keyID(keyID)
-                .build();
+        RSAKey build = tokenGenerator.generateRsaKey(keyID);
 
         return Collections.singletonMap("keys", Collections.singletonList(build.toJSONObject()));
     }
@@ -81,8 +74,7 @@ public class JwkKeysEndpoint implements MapTypeReference {
 
     @GetMapping(value = {"/oidc/certs"}, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public String publishClientJwk() {
-        Map<String, ? extends JWK> allPublicKeys = tokenGenerator.getAllPublicKeys();
-        return new JWKSet(new ArrayList<>(allPublicKeys.values())).toString();
+        return new JWKSet(tokenGenerator.getAllPublicKeys()).toJSONObject().toString();
     }
 
     @GetMapping("oidc/.well-known/openid-configuration")

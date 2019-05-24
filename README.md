@@ -57,7 +57,7 @@ Note that this only works because of the `dev` profile where there is pre-authen
 First obtain an authorization code:
 
 ```
-curl -i  "http://localhost:8080/oidc/authorize?response_type=code&client_id=http@//mock-sp&scope=openid&redirect_uri=http://localhost:8091/redirect"
+curl -i  "http://localhost:8080/oidc/authorize?response_type=code&client_id=mock-sp&scope=openid&redirect_uri=http://localhost:8091/redirect"
 ```
 
 This will output the following:
@@ -84,7 +84,7 @@ Save the code in the query parameter of the location response header in a variab
 And then exchange the code for an access token:
 
 ```
-curl -X POST -u http@//mock-sp:secret -d "grant_type=authorization_code&code=${code}&redirect_uri=http://localhost:8091/redirect" http://localhost:8080/oidc/token | jq .
+curl -X POST -u mock-sp:secret -d "grant_type=authorization_code&code=${code}&redirect_uri=http://localhost:8091/redirect" http://localhost:8080/oidc/token | jq .
 ```
 
 This will return the access_token and id_token.
@@ -108,7 +108,7 @@ export access_token=eyJraWQiOiJvaWRjIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJhd
 Now you can ask the server to return the information stored with this access_token by calling the introspect endpoint (note that this endpoint is only for resource servers):
 
 ```
-curl -u http@//mock-sp:secret -H "Content-Type: application/x-www-form-urlencoded" -X POST "http://localhost:8080/oidc/introspect?token=${access_token}" | jq .
+curl -u mock-sp:secret -H "Content-Type: application/x-www-form-urlencoded" -X POST "http://localhost:8080/oidc/introspect?token=${access_token}" | jq .
 ```
 
 This will return:
@@ -124,7 +124,7 @@ This will return:
   "authenticatingAuthority": "http://mock-idp",
   "exp": 1557923111,
   "token_type": "Bearer",
-  "client_id": "http@//mock-sp"
+  "client_id": "mock-sp"
 }
 ```
 
