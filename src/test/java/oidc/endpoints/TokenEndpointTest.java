@@ -59,18 +59,18 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
         assertNotNull(accessToken);
         JWTClaimsSet accessTokenClaimsSet = processToken(accessToken, port);
         List<String> audience = accessTokenClaimsSet.getAudience();
-        assertEquals(Arrays.asList("http@//mock-sp", "http://resource-server"), audience);
+        assertEquals(Arrays.asList("mock-sp", "resource-server"), audience);
 
         String idToken = (String) body.get("id_token");
         verifySignedJWT(idToken, port);
         JWTClaimsSet claimsSet = processToken(idToken, port);
 
-        assertEquals(Collections.singletonList("http@//mock-sp"), claimsSet.getAudience());
+        assertEquals(Collections.singletonList("mock-sp"), claimsSet.getAudience());
     }
 
     @Test
     public void oauth2NonOidcFlow() throws UnsupportedEncodingException {
-        String code = doAuthorizeWithScopes("http@//mock-sp", "code", "code", "groups");
+        String code = doAuthorizeWithScopes("mock-sp", "code", "code", "groups");
         Map<String, Object> body = doToken(code);
 
         String accessToken = (String) body.get("access_token");
@@ -90,7 +90,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
 
     @Test
     public void tokenWithClaims() throws MalformedURLException, ParseException, JOSEException, BadJOSEException, UnsupportedEncodingException {
-        Response response = doAuthorizeWithClaims("http@//mock-sp", "code", null, null, null, Arrays.asList("email", "nickname"));
+        Response response = doAuthorizeWithClaims("mock-sp", "code", null, null, null, Arrays.asList("email", "nickname"));
         String code = getCode(response);
         Map<String, Object> body = doToken(code);
 
@@ -103,12 +103,12 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
 
     @Test
     public void clientCredentials() throws ParseException {
-        Map<String, Object> body = doToken(null, "http@//mock-sp", "secret", GrantType.CLIENT_CREDENTIALS);
+        Map<String, Object> body = doToken(null, "mock-sp", "secret", GrantType.CLIENT_CREDENTIALS);
         String idToken = (String) body.get("id_token");
         SignedJWT jwt = SignedJWT.parse(idToken);
         JWTClaimsSet claimsSet = jwt.getJWTClaimsSet();
 
-        assertEquals(Collections.singletonList("http@//mock-sp"), claimsSet.getAudience());
+        assertEquals(Collections.singletonList("mock-sp"), claimsSet.getAudience());
     }
 
     @Test
@@ -141,11 +141,11 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     @Test
     public void refreshTokenForPublicClient() throws ParseException, JOSEException, MalformedURLException, UnsupportedEncodingException {
         String codeChallenge = StringUtils.leftPad("token", 45, "*");
-        Response response = doAuthorize("http@//mock-sp", "code", null, "nonce",
+        Response response = doAuthorize("mock-sp", "code", null, "nonce",
                 codeChallenge);
         String code = getCode(response);
 
-        Map<String, Object> body = doToken(code, "http@//mock-sp", null, GrantType.AUTHORIZATION_CODE,
+        Map<String, Object> body = doToken(code, "mock-sp", null, GrantType.AUTHORIZATION_CODE,
                 codeChallenge);
 
         doRefreshToken(body, null);
@@ -172,9 +172,9 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
                 .when()
                 .header("Content-type", "application/x-www-form-urlencoded");
         if (!StringUtils.isEmpty(secret)) {
-            header = header.auth().preemptive().basic("http@//mock-sp", secret);
+            header = header.auth().preemptive().basic("mock-sp", secret);
         } else {
-            header = header.formParam("client_id", "http@//mock-sp");
+            header = header.formParam("client_id", "mock-sp");
         }
 
         Map<String, Object> result = header
@@ -199,14 +199,14 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
 
     @Test
     public void clientCredentialsInvalidGrant() throws ParseException {
-        Map<String, Object> body = doToken(null, "http@//mock-rp", "secret", GrantType.CLIENT_CREDENTIALS);
+        Map<String, Object> body = doToken(null, "mock-rp", "secret", GrantType.CLIENT_CREDENTIALS);
 
         assertEquals("Invalid grant: client_credentials", body.get("message"));
     }
 
     @Test
     public void invalidSecret() {
-        Map<String, Object> body = doToken(null, "http@//mock-sp", "nope", GrantType.CLIENT_CREDENTIALS);
+        Map<String, Object> body = doToken(null, "mock-sp", "nope", GrantType.CLIENT_CREDENTIALS);
 
         assertEquals("Invalid user / secret", body.get("details"));
     }
@@ -214,7 +214,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     @Test
     public void nonPublicClient() throws UnsupportedEncodingException {
         String code = doAuthorize();
-        Map<String, Object> body = doToken(code, "http@//mock-rp", null, GrantType.AUTHORIZATION_CODE,
+        Map<String, Object> body = doToken(code, "mock-rp", null, GrantType.AUTHORIZATION_CODE,
                 StringUtils.leftPad("token", 45, "*"));
 
         assertEquals("Non-public client requires authentication", body.get("details"));
@@ -223,7 +223,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     @Test
     public void clientMismatch() throws UnsupportedEncodingException {
         String code = doAuthorize();
-        Map<String, Object> body = doToken(code, "http@//mock-rp", "secret", GrantType.AUTHORIZATION_CODE, null);
+        Map<String, Object> body = doToken(code, "mock-rp", "secret", GrantType.AUTHORIZATION_CODE, null);
 
         assertEquals("Client is not authorized for the authorization code", body.get("details"));
     }
@@ -231,26 +231,26 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
     @Test
     public void codeChallengeMissing() throws UnsupportedEncodingException {
         String code = doAuthorize();
-        Map<String, Object> body = doToken(code, "http@//mock-sp", null, GrantType.AUTHORIZATION_CODE);
+        Map<String, Object> body = doToken(code, "mock-sp", null, GrantType.AUTHORIZATION_CODE);
 
         assertEquals("code_verifier required without client authentication", body.get("message"));
     }
 
     @Test
     public void codeChallengeInvalid() throws UnsupportedEncodingException {
-        Response response = doAuthorize("http@//mock-sp", "code", null, null,
+        Response response = doAuthorize("mock-sp", "code", null, null,
                 StringUtils.leftPad("token", 45, "-"));
         String code = getCode(response);
-        Map<String, Object> body = doToken(code, "http@//mock-sp", null, GrantType.AUTHORIZATION_CODE,
+        Map<String, Object> body = doToken(code, "mock-sp", null, GrantType.AUTHORIZATION_CODE,
                 StringUtils.leftPad("token", 45, "*"));
         assertEquals("code_verifier does not match code_challenge", body.get("message"));
     }
 
     @Test
     public void codeChallengeNotInAuthorisationCode() throws UnsupportedEncodingException {
-        Response response = doAuthorize("http@//mock-sp", "code", null, null, null);
+        Response response = doAuthorize("mock-sp", "code", null, null, null);
         String code = getCode(response);
-        Map<String, Object> body = doToken(code, "http@//mock-sp", null, GrantType.AUTHORIZATION_CODE,
+        Map<String, Object> body = doToken(code, "mock-sp", null, GrantType.AUTHORIZATION_CODE,
                 StringUtils.leftPad("token", 45, "*"));
         assertEquals("code_verifier present, but no code_challenge in the authorization_code", body.get("message"));
     }
@@ -262,7 +262,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements OidcEn
                 .when()
                 .header("Content-type", "application/x-www-form-urlencoded")
                 .auth().preemptive()
-                .basic("http@//mock-sp", "secret")
+                .basic("mock-sp", "secret")
                 .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
                 .formParam("code", code)
                 .formParam("redirect_uri", "http://nope")

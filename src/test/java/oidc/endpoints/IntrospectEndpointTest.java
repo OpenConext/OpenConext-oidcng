@@ -5,6 +5,7 @@ import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.TokenIntrospectionRequest;
 import com.nimbusds.oauth2.sdk.http.CommonContentTypes;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
+import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import org.junit.Test;
 
@@ -31,25 +32,36 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
 
     @Test
     public void introspection() throws UnsupportedEncodingException {
-        Map<String, Object> result = doIntrospection("http@//mock-sp", "secret");
+        Map<String, Object> result = doIntrospection("mock-sp", "secret");
         assertEquals(true, result.get("active"));
     }
 
     @Test
+    public void introspectionNotAllowedResourceServer() throws UnsupportedEncodingException {
+        Response response = doAuthorize("mock-rp", "code", null, null, null);
+        String code = getCode(response);
+        Map<String, Object> results = doToken(code, "mock-rp", "secret", GrantType.AUTHORIZATION_CODE);
+
+        results = callIntrospection("resource-server", (String) results.get("access_token"), "secret");
+        assertEquals("RP mock-rp is not allowed to use the API of resource server resource-server. Allowed resource servers are []",
+                results.get("details"));
+    }
+
+    @Test
     public void introspectionClientCredentials() {
-        Map<String, Object> body = doToken(null, "http@//mock-sp", "secret", GrantType.CLIENT_CREDENTIALS);
+        Map<String, Object> body = doToken(null, "mock-sp", "secret", GrantType.CLIENT_CREDENTIALS);
         String accessToken = (String) body.get("access_token");
-        Map<String, Object> result = callIntrospection("http@//mock-sp", accessToken, "secret");
+        Map<String, Object> result = callIntrospection("mock-sp", accessToken, "secret");
         assertEquals(true, result.get("active"));
         assertEquals("openid,groups", result.get("scope"));
-        assertEquals("http@//mock-sp", result.get("sub"));
+        assertEquals("mock-sp", result.get("sub"));
     }
 
     @Test
     public void introspectionWithExpiredAccessToken() throws UnsupportedEncodingException {
         String accessToken = getAccessToken();
         expireAccessToken(accessToken);
-        Map<String, Object> result = callIntrospection("http@//mock-sp", accessToken, "secret");
+        Map<String, Object> result = callIntrospection("mock-sp", accessToken, "secret");
         assertEquals(false, result.get("active"));
     }
 
@@ -68,13 +80,13 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
 
     @Test
     public void introspectionNoResourceServer() throws UnsupportedEncodingException {
-        Map<String, Object> result = doIntrospection("http@//mock-rp", "secret");
+        Map<String, Object> result = doIntrospection("mock-rp", "secret");
         assertEquals("Requires ResourceServer", result.get("details"));
     }
 
     @Test
     public void introspectionWrongSecret() throws UnsupportedEncodingException {
-        Map<String, Object> result = doIntrospection("http@//mock-sp", "nope");
+        Map<String, Object> result = doIntrospection("mock-sp", "nope");
         assertEquals("Invalid user / secret", result.get("details"));
     }
 

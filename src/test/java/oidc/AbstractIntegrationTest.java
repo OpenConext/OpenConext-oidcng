@@ -97,7 +97,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
     }
 
     protected String doAuthorize() throws UnsupportedEncodingException {
-        Response response = doAuthorize("http@//mock-sp", "code", null, null, null);
+        Response response = doAuthorize("mock-sp", "code", null, null, null);
         assertEquals(302, response.getStatusCode());
 
         return getCode(response);
@@ -154,7 +154,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
     }
 
     protected Map<String, Object> doToken(String code) {
-        return doToken(code, "http@//mock-sp", "secret", GrantType.AUTHORIZATION_CODE);
+        return doToken(code, "mock-sp", "secret", GrantType.AUTHORIZATION_CODE);
     }
 
     protected Map<String, Object> doToken(String code, String clientId, String secret, GrantType grantType) {

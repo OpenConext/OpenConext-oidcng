@@ -6,6 +6,7 @@ import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
+import oidc.exceptions.UnauthorizedException;
 import oidc.model.AccessToken;
 import oidc.model.OpenIDClient;
 import oidc.model.User;
@@ -66,6 +67,12 @@ public class IntrospectEndpoint extends SecureEndpoint {
         AccessToken accessToken = accessTokenRepository.findByValue(accessTokenValue);
         if (accessToken.isExpired(Clock.systemDefaultZone())) {
             return Collections.singletonMap("active", false);
+        }
+        OpenIDClient rp = openIDClientRepository.findByClientId(accessToken.getClientId());
+        if (!rp.getAllowedResourceServers().contains(client.getClientId())) {
+            throw new UnauthorizedException(
+                    String.format("RP %s is not allowed to use the API of resource server %s. Allowed resource servers are %s",
+                            accessToken.getClientId(), client.getClientId(), rp.getAllowedResourceServers()));
         }
 
         Map<String, Object> result = new HashMap<>();

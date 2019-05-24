@@ -54,7 +54,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void oauth2NonOidcCodeFlow() throws UnsupportedEncodingException {
-        String code = doAuthorizeWithScopes("http@//mock-sp", "code", "code", "groups");
+        String code = doAuthorizeWithScopes("mock-sp", "code", "code", "groups");
         assertEquals(12, code.length());
         Map<String, Object> tokenResponse = doToken(code);
         assertFalse(tokenResponse.containsKey("id_token"));
@@ -62,7 +62,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void authorizeCodeFlowWithNonce() throws UnsupportedEncodingException, MalformedURLException, BadJOSEException, ParseException, JOSEException {
-        Response response = doAuthorize("http@//mock-sp", "code", "code", "nonce", null);
+        Response response = doAuthorize("mock-sp", "code", "code", "nonce", null);
         String code = getCode(response);
 
         Map<String, Object> tokenResponse = doToken(code);
@@ -74,7 +74,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void oauth2NonOidcImplicitFlow() throws UnsupportedEncodingException {
-        Response response = doAuthorizeWithClaimsAndScopes("http@//mock-sp", "token",
+        Response response = doAuthorizeWithClaimsAndScopes("mock-sp", "token",
                 null, null, null, null, "groups", "example");
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
@@ -84,7 +84,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void noScopeNoState() throws UnsupportedEncodingException {
-        String code = getCode(doAuthorizeWithClaimsAndScopes("http@//mock-sp", "code",
+        String code = getCode(doAuthorizeWithClaimsAndScopes("mock-sp", "code",
                 null, null, null, null, null, null));
         assertEquals(12, code.length());
         Map<String, Object> tokenResponse = doToken(code);
@@ -112,7 +112,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", "openid nope");
         queryParams.put("response_type", "code");
-        queryParams.put("client_id", "http@//mock-sp");
+        queryParams.put("client_id", "mock-sp");
         queryParams.put("redirect_uri", "http%3A%2F%2Flocalhost%3A8080");
 
         given().redirects().follow(false)
@@ -123,7 +123,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 .then()
                 .statusCode(302)
                 .header("Location",
-                        "http://localhost:8080?error=invalid_request&error_description=Scope(s)%20[nope]%20are%20not%20allowed%20for%20http@//mock-sp.%20Allowed%20scopes:%20[openid,%20groups,%20profile,%20email,%20address,%20phone]&state")
+                        "http://localhost:8080?error=invalid_request&error_description=Scope(s)%20[nope]%20are%20not%20allowed%20for%20mock-sp.%20Allowed%20scopes:%20[openid,%20groups,%20profile,%20email,%20address,%20phone]&state")
                 .body(containsString("not allowed"));
     }
 
@@ -132,7 +132,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", "openid");
         queryParams.put("response_type", "code");
-        queryParams.put("client_id", "http@//mock-sp");
+        queryParams.put("client_id", "mock-sp");
         queryParams.put("redirect_uri", "http://nope");
 
         Map<String, Object> body = given().redirects().follow(false)
@@ -141,7 +141,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 .queryParams(queryParams)
                 .get("oidc/authorize")
                 .as(mapTypeRef);
-        assertEquals("Client http@//mock-sp with registered redirect URI's " +
+        assertEquals("Client mock-sp with registered redirect URI's " +
                         "[http://localhost:8091/redirect, http://localhost:8080] requested " +
                         "authorization with redirectURI http://nope",
                 body.get("message"));
@@ -149,7 +149,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void implicitFlowFragment() throws MalformedURLException, BadJOSEException, ParseException, JOSEException, UnsupportedEncodingException {
-        Response response = doAuthorizeWithClaims("http@//mock-sp", "id_token token",
+        Response response = doAuthorizeWithClaims("mock-sp", "id_token token",
                 null, "nonce", null, Arrays.asList("email", "nickname"));
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
@@ -162,7 +162,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void hybridFlowFragment() throws MalformedURLException, BadJOSEException, ParseException, JOSEException, UnsupportedEncodingException {
-        Response response = doAuthorize("http@//mock-sp", "code id_token token", null, "nonce", null);
+        Response response = doAuthorize("mock-sp", "code id_token token", null, "nonce", null);
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&")).map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
@@ -193,7 +193,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void implicitFlowQuery() throws MalformedURLException, BadJOSEException, ParseException, JOSEException, UnsupportedEncodingException {
-        Response response = doAuthorize("http@//mock-sp", "id_token token", ResponseMode.QUERY.getValue(), "nonce", null);
+        Response response = doAuthorize("mock-sp", "id_token token", ResponseMode.QUERY.getValue(), "nonce", null);
         String url = response.getHeader("Location");
         Map<String, String> queryParameters = UriComponentsBuilder.fromUriString(url).build().getQueryParams().toSingleValueMap();
         assertImplicitFlowResponse(queryParameters);
@@ -209,7 +209,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void implicitFlowFormPost() throws IOException, BadJOSEException, ParseException, JOSEException, ParserConfigurationException, SAXException, XPathExpressionException {
-        Response response = doAuthorize("http@//mock-sp", "id_token token", ResponseMode.FORM_POST.getValue(), "nonce", null);
+        Response response = doAuthorize("mock-sp", "id_token token", ResponseMode.FORM_POST.getValue(), "nonce", null);
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
         Document doc = dBuilder.parse(new ByteArrayInputStream(response.asByteArray()));

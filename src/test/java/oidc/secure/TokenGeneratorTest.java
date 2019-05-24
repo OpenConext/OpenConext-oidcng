@@ -45,7 +45,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
     private String doEncryptAndDecryptAccessToken() throws IOException {
         User user = new User("sub", "unspecifiedNameId", "http://mockidp", "clientId", getUserInfo());
 
-        String clientId = "http@//mock-sp";
+        String clientId = "mock-sp";
         OpenIDClient client = mongoTemplate.find(Query.query(Criteria.where("clientId").is(clientId)), OpenIDClient.class).get(0);
 
         List<String> scopes = Arrays.asList("openid", "groups");

@@ -82,7 +82,7 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
     }
 
     private String getClientCredentialsAccessToken() throws UnsupportedEncodingException {
-        Map<String, Object> body = doToken(null, "http@//mock-sp", "secret", GrantType.CLIENT_CREDENTIALS);
+        Map<String, Object> body = doToken(null, "mock-sp", "secret", GrantType.CLIENT_CREDENTIALS);
         return (String) body.get("access_token");
     }
 

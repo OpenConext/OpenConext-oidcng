@@ -11,12 +11,12 @@
       "terminated": null
     },
     "data": {
-      "entityid": "http://mock-sp",
+      "entityid": "mock-sp",
       "eid": 9,
       "state": "testaccepted",
       "allowedall": true,
       "allowedResourceServers": [
-        "http://resource-server"
+        "resource-server", "mock-sp"
       ],
       "metaDataFields": {
         "name:en": "OpenConext Mock SP",
@@ -56,7 +56,7 @@
       "terminated": null
     },
     "data": {
-      "entityid": "http://mock-rp",
+      "entityid": "mock-rp",
       "eid": 10,
       "state": "testaccepted",
       "allowedall": true,
@@ -94,7 +94,7 @@
       "terminated": null
     },
     "data": {
-      "entityid": "http://resource-server",
+      "entityid": "resource-server",
       "eid": 10,
       "state": "testaccepted",
       "allowedall": true,

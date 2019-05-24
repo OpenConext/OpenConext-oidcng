@@ -53,6 +53,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static java.nio.charset.Charset.defaultCharset;
 
@@ -206,7 +207,9 @@ public class TokenGenerator implements MapTypeReference {
         List<String> audiences = new ArrayList<>();
         audiences.add(client.getClientId());
         if (includeAllowedResourceServers) {
-            audiences.addAll(client.getAllowedResourceServers());
+            audiences.addAll(client.getAllowedResourceServers().stream()
+                    .filter(rsEntityId -> !client.getClientId().equals(rsEntityId))
+                    .collect(Collectors.toList()));
         }
         JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
                 .audience(audiences)
