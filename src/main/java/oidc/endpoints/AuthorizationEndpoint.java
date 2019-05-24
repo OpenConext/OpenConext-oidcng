@@ -94,7 +94,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         OpenIDClient client = openIDClientRepository.findByClientId(authenticationRequest.getClientID().getValue());
         String redirectionURI = authenticationRequest.getRedirectionURI().toString();
-        redirectionURI = URLDecoder.decode(redirectionURI, Charset.defaultCharset().toString());
+        redirectionURI = URLDecoder.decode(redirectionURI, "UTF-8");
         validateRedirectionURI(redirectionURI, client);
 
         List<String> scopes = scope != null ? scope.toStringList() : Collections.emptyList();

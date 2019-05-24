@@ -70,7 +70,7 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         String redirectUri = request.getParameter("redirect_uri");
         if ((statusCode.is3xxRedirection() || ((String) result.getOrDefault("path", "")).contains("authorize"))
                 && StringUtils.hasText(redirectUri)) {
-            String url = URLDecoder.decode(redirectUri, Charset.defaultCharset().toString());
+            String url = URLDecoder.decode(redirectUri, "UTF-8");
             URI uri = UriComponentsBuilder.fromUriString(url)
                     .queryParam("error", "invalid_request")
                     .queryParam("error_description", error != null ? error.getMessage() : "unknown_exception")
