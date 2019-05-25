@@ -33,6 +33,8 @@ public class KeyRollover {
             SigningKey signingKey = tokenGenerator.rolloverSigningKeys();
             LOG.info("Successful signing key rollover. New signing key: " + signingKey.getKeyId());
             //TODO clean up keys that are not used in any access_tokens
+            //see https://stackoverflow.com/questions/37077687/spring-data-mongo-query-methods-and-distinct-field
+            //see https://docs.spring.io/spring-data/mongodb/docs/1.4.1.RELEASE/reference/htmlsingle/ 322
         } catch (NoSuchProviderException | NoSuchAlgorithmException e) {
             LOG.error("Rollover exception", e);
         }
