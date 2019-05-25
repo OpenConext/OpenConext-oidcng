@@ -280,7 +280,7 @@ public class TokenGenerator implements MapTypeReference {
 
         return new RSAKey.Builder(publicKey)
                 .privateKey(privateKey)
-                .algorithm(new Algorithm("RS256"))
+                .algorithm(signingAlg)
                 .keyID(keyID)
                 .build();
     }

@@ -7,8 +7,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 
 import static io.restassured.RestAssured.given;
+import static org.junit.Assert.assertEquals;
 
 @ActiveProfiles(profiles = {"prod"}, inheritProfiles = false)
 public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractIntegrationTest {
@@ -23,8 +25,6 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
                 .get("oidc/authorize");
         String location = response.getHeader("Location");
         String relayState = UriComponentsBuilder.fromUriString(location).build().getQueryParams().getFirst("RelayState");
-        System.out.println(location);
-        //TODO travis fails
-        // assertEquals(clientId, URLDecoder.decode(relayState, "UTF-8"));
+        assertEquals(clientId, URLDecoder.decode(relayState, "UTF-8"));
     }
 }
