@@ -23,7 +23,7 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
                 .get("oidc/authorize");
         String location = response.getHeader("Location");
         String relayState = UriComponentsBuilder.fromUriString(location).build().getQueryParams().getFirst("RelayState");
-
+        System.out.println(location);
         //TODO travis fails
         // assertEquals(clientId, URLDecoder.decode(relayState, "UTF-8"));
     }
