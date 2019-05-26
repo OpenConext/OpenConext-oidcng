@@ -338,7 +338,7 @@ public class TokenGenerator implements MapTypeReference {
         JWTClaimsSet claimsSet = builder.build();
         JWSHeader header = new JWSHeader.Builder(signingAlg).type(JOSEObjectType.JWT).keyID(signingKey).build();
         SignedJWT signedJWT = new SignedJWT(header, claimsSet);
-        signedJWT.sign(signers.getOrDefault(signedJWT.getHeader().getKeyID(), signers.values().iterator().next()));
+        signedJWT.sign(signers.getOrDefault(signingKey, signers.values().iterator().next()));
         return signedJWT.serialize();
     }
 

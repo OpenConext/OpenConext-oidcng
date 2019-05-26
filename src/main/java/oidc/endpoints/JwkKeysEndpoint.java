@@ -70,4 +70,5 @@ public class JwkKeysEndpoint implements MapTypeReference {
         return this.wellKnownConfiguration;
     }
 
+
 }

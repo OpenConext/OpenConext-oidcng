@@ -12,7 +12,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
@@ -23,7 +22,12 @@ public class KeyRolloverTest extends AbstractIntegrationTest implements SeedUtil
     @Test
     public void rollover() throws NoSuchProviderException, NoSuchAlgorithmException {
         resetAndCreateSigningKeys(3);
-        List<AccessToken> tokens = IntStream.rangeClosed(0, 5).mapToObj(i -> accessToken("val" + i, "key_" + (i % 2))).collect(toList());
+        assertEquals(Arrays.asList("key_1", "key_2", "key_3"),
+                mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().collect(toList()));
+
+        List<String> signingKeys = Arrays.asList("key_2", "key_3");
+
+        List<AccessToken> tokens = IntStream.rangeClosed(0, 10).mapToObj(i -> accessToken("val" + i, signingKeys.get(i % 2))).collect(toList());
         mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, AccessToken.class)
                 .remove(new Query())
                 .insert(tokens)
@@ -32,8 +36,8 @@ public class KeyRolloverTest extends AbstractIntegrationTest implements SeedUtil
         KeyRollover keyRollover = new KeyRollover(tokenGenerator, mongoTemplate, true);
         keyRollover.rollover();
 
-        assertEquals(Arrays.asList("key_1", "key_4"),
-                mongoTemplate.findAll(SigningKey.class).stream().map(signingKey -> signingKey.getKeyId()).sorted().collect(toList()));
-
+        assertEquals(Arrays.asList("key_2", "key_3", "key_4"),
+                mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().collect(toList()));
+        assertEquals("key_4", tokenGenerator.getCurrentSigningKeyId());
     }
 }

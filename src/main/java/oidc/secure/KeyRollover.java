@@ -38,6 +38,10 @@ public class KeyRollover {
         if (!cronJobResponsible) {
             return;
         }
+        doRollover();
+    }
+
+    public void doRollover() {
         try {
             SigningKey signingKey = tokenGenerator.rolloverSigningKeys();
             LOG.info("Successful signing key rollover. New signing key: " + signingKey.getKeyId());
