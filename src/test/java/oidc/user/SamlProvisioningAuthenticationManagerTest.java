@@ -22,8 +22,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 //Hard to test, because of SAML dependency
-public class SamlProvisioningAuthenticationManagerTest extends AbstractSamlTest {
+public class SamlProvisioningAuthenticationManagerTest implements SamlTest {
 
+    private Pattern uuidPattern = Pattern.compile("([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}){1}");
     private UserRepository userRepository = mock(UserRepository.class);
     private SamlProvisioningAuthenticationManager subject = new SamlProvisioningAuthenticationManager(userRepository, objectMapper);
 
@@ -32,7 +33,7 @@ public class SamlProvisioningAuthenticationManagerTest extends AbstractSamlTest 
 
     @Test
     public void authenticate() throws IOException {
-        Response response = resolveXml(Response.class, "saml/authn_response.xml");
+        Response response = resolveFromXMLFile(Response.class, "saml/authn_response.xml");
 
         Assertion assertion = response.getAssertions().get(0);
         DefaultSamlAuthentication samlAuthentication = new DefaultSamlAuthentication(true, assertion, null, null, "oidc_client");
@@ -78,7 +79,7 @@ public class SamlProvisioningAuthenticationManagerTest extends AbstractSamlTest 
         user = authenticate.getUser();
 
         assertNotEquals(sub, user.getSub());
-        assertEquals(true, Pattern.compile("([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}){1}").matcher(user.getSub()).matches());
+        assertEquals(true, uuidPattern.matcher(user.getSub()).matches());
     }
 
 

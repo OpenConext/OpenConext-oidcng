@@ -28,7 +28,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
         mongoTemplate.remove(new Query(), OpenIDClient.class);
 
         postConnections(relyingParties());
-        assertEquals(3L, mongoTemplate.count(new Query(), OpenIDClient.class));
+        assertEquals(4L, mongoTemplate.count(new Query(), OpenIDClient.class));
 
         List<Map<String, Object>> serviceProviders = relyingParties();
         Map<String, Object> mockSp = serviceProviders.get(0);
@@ -39,7 +39,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
 
         postConnections(serviceProviders);
 
-        assertEquals(3L, mongoTemplate.count(new Query(), OpenIDClient.class));
+        assertEquals(4L, mongoTemplate.count(new Query(), OpenIDClient.class));
 
         OpenIDClient openIDClient = mongoTemplate.find(Query.query(Criteria.where("clientId").is("changed")), OpenIDClient.class).get(0);
         assertEquals("changed", openIDClient.getClientId());
@@ -57,7 +57,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
 
         List<String> clientIds = mongoTemplate.find(new Query(), OpenIDClient.class).stream().map(OpenIDClient::getClientId).collect(Collectors.toList());
         clientIds.sort(String::compareTo);
-        assertEquals(Arrays.asList("mock-rp", "mock-sp", "resource-server"), clientIds);
+        assertEquals(Arrays.asList("mock-rp", "mock-sp", "resource-server", "playground"), clientIds);
     }
 
     private void postConnections(List<Map<String, Object>> serviceProviders) throws IOException {

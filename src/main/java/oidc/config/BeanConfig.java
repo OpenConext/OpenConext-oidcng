@@ -46,36 +46,16 @@ import java.io.IOException;
 public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
 
 
-    private Environment environment;
     private AppConfig appConfiguration;
     private UserRepository userRepository;
-    private SigningKeyRepository signingKeyRepository;
-    private SequenceRepository sequenceRepository;
     private ObjectMapper objectMapper;
-    private String issuer;
-    private Resource jwksKeyStorePath;
-    private Resource secretKeySetPath;
-    private String associatedData;
 
     public BeanConfig(AppConfig config,
                       UserRepository userRepository,
-                      SigningKeyRepository signingKeyRepository,
-                      SequenceRepository sequenceRepository,
-                      ObjectMapper objectMapper,
-                      Environment environment,
-                      @Value("${secret_key_set_path}") Resource secretKeySetPath,
-                      @Value("${associated_data}") String associatedData,
-                      @Value("${spring.security.saml2.service-provider.entity-id}") String issuer,
-                      @Value("${cron.node-cron-job-responsible}") boolean cronJobResponsible) {
+                      ObjectMapper objectMapper) {
         this.appConfiguration = config;
         this.userRepository = userRepository;
-        this.signingKeyRepository = signingKeyRepository;
-        this.sequenceRepository = sequenceRepository;
         this.objectMapper = objectMapper;
-        this.secretKeySetPath = secretKeySetPath;
-        this.associatedData = associatedData;
-        this.issuer = issuer;
-        this.environment = environment;
     }
 
     @Override

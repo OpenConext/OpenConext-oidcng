@@ -14,18 +14,18 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
-public class LoaParsingTest extends AbstractSamlTest {
+public class LoaParsingTest implements SamlTest {
 
     @Test
     public void parseRequestedAuthnContext() throws IOException {
-        AuthenticationRequest authenticationRequest = resolveXml(AuthenticationRequest.class, "saml/loa_authn_request.xml");
+        AuthenticationRequest authenticationRequest = resolveFromXMLFile(AuthenticationRequest.class, "saml/loa_authn_request.xml");
         RequestedAuthenticationContext requestedAuthenticationContext = authenticationRequest.getRequestedAuthenticationContext();
         //TODO ensure the values http://surfconext.nl/assurance/loa2 are present. Wait for pull request to be accepted.
     }
 
     @Test
     public void parseAuthnContextClassRef() throws IOException {
-        Response response = resolveXml(Response.class, "saml/loa_authn_response.xml");
+        Response response = resolveFromXMLFile(Response.class, "saml/loa_authn_response.xml");
         List<AuthenticationStatement> authenticationStatements = response.getAssertions()
                 .stream()
                 .map(Assertion::getAuthenticationStatements)
@@ -34,7 +34,8 @@ public class LoaParsingTest extends AbstractSamlTest {
         assertEquals(1, authenticationStatements.size());
 
         AuthenticationStatement authenticationStatement = authenticationStatements.get(0);
-        authenticationStatement.getAuthenticationContext().getClassReference().toString();
+        String classReference = authenticationStatement.getAuthenticationContext().getClassReference().toString();
+        //TODO ensure the classReference is http://stepup.example.org/verified-second-factor/level2
 
 
     }

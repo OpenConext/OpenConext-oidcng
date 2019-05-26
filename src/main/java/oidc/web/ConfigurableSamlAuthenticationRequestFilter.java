@@ -42,6 +42,10 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             String entityId = ServiceProviderTranslation.translateClientId(clientId);
             authenticationRequest.setScoping(new Scoping(null, Collections.singletonList(entityId), 1));
         }
+        String prompt = request.getParameter("prompt");
+        if ("login".equals(prompt)) {
+            authenticationRequest.setForceAuth(Boolean.TRUE);
+        }
         return authenticationRequest;
     }
 

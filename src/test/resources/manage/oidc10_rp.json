@@ -3,13 +3,6 @@
     "id": "9",
     "version": 0,
     "type": "oidc10_rp",
-    "revision": {
-      "number": 0,
-      "created": 1529050834.575000000,
-      "parentId": null,
-      "updatedBy": "oidc_user.com",
-      "terminated": null
-    },
     "data": {
       "entityid": "mock-sp",
       "eid": 9,
@@ -49,13 +42,6 @@
     "id": "10",
     "version": 0,
     "type": "oidc10_rp",
-    "revision": {
-      "number": 0,
-      "created": 1529050834.575000000,
-      "parentId": null,
-      "updatedBy": "oidc_user.com",
-      "terminated": null
-    },
     "data": {
       "entityid": "mock-rp",
       "eid": 10,
@@ -87,13 +73,6 @@
     "id": "11",
     "version": 0,
     "type": "oidc10_rp",
-    "revision": {
-      "number": 0,
-      "created": 1529050834.575000000,
-      "parentId": null,
-      "updatedBy": "oidc_user.com",
-      "terminated": null
-    },
     "data": {
       "entityid": "resource-server",
       "eid": 10,
@@ -107,6 +86,35 @@
           "openid"
         ],
         "grants": [
+          "client_credentials"
+        ],
+        "accessTokenValidity": 3600,
+        "isResourceServer": "1",
+        "isPublicClient": "1",
+        "refreshTokenValidity": 3600
+      }
+    }
+  },
+  {
+    "id": "12",
+    "version": 0,
+    "type": "oidc10_rp",
+    "data": {
+      "entityid": "playground",
+      "eid": 10,
+      "state": "testaccepted",
+      "allowedall": true,
+      "metaDataFields": {
+        "name:en": "Playground",
+        "name:nl": "Playground",
+        "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
+        "scopes": [
+          "openid", "groups"
+        ],
+        "grants": [
+          "authorization_code",
+          "implicit",
+          "refresh_token",
           "client_credentials"
         ],
         "accessTokenValidity": 3600,

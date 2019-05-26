@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class SequenceRepository {
 
+    private FindAndModifyOptions options = FindAndModifyOptions.options().returnNew(true);
     private MongoTemplate mongoTemplate;
 
     private BasicQuery basicQuery = new BasicQuery(String.format("{\"_id\":\"%s\"}", Sequence.ID_VALUE));
@@ -23,7 +24,7 @@ public class SequenceRepository {
     public Long increment() {
         Update updateInc = new Update();
         updateInc.inc("value", 1L);
-        Sequence res = mongoTemplate.findAndModify(basicQuery, updateInc, FindAndModifyOptions.options().returnNew(true), Sequence.class);
+        Sequence res = mongoTemplate.findAndModify(basicQuery, updateInc, options, Sequence.class);
         if (res == null) {
             mongoTemplate.save(new Sequence(Sequence.ID_VALUE, 1L));
             return 1L;
