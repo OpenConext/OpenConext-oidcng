@@ -1,5 +1,6 @@
 package oidc.model;
 
+import oidc.SeedUtils;
 import org.junit.Test;
 
 import java.time.Clock;
@@ -11,12 +12,11 @@ import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class AccessTokenTest {
+public class AccessTokenTest implements SeedUtils {
 
     @Test
     public void isExpiredNotNull() {
-        AccessToken accessToken = new AccessToken("value", "sub", "clientId",
-                singletonList("openid"), "K0000001", null, false);
+        AccessToken accessToken = accessToken("value", (Date)null);
 
         assertFalse(accessToken.isExpired(Clock.systemDefaultZone()));
     }
@@ -24,8 +24,7 @@ public class AccessTokenTest {
     @Test
     public void isExpired() {
         Date expiresIn = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
-        AccessToken accessToken = new AccessToken("value", "sub", "clientId",
-                singletonList("openid"), "K0000001", expiresIn, false);
+        AccessToken accessToken = accessToken("value", expiresIn);
 
         assertTrue(accessToken.isExpired(Clock.systemDefaultZone()));
     }

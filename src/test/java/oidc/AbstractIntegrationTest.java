@@ -66,6 +66,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
@@ -139,7 +140,6 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
     protected void resetAndCreateSigningKeys(int numberOfSigningKeys) throws NoSuchProviderException, NoSuchAlgorithmException {
         mongoTemplate.dropCollection(Sequence.class);
         mongoTemplate.dropCollection(SigningKey.class);
-
         for (int i = 1; i < numberOfSigningKeys + 1; i++) {
             SigningKey signingKey = tokenGenerator.rolloverSigningKeys();
             assertEquals("key_" + i, signingKey.getKeyId());

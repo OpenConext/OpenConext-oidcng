@@ -8,7 +8,6 @@ import com.google.crypto.tink.JsonKeysetReader;
 import com.google.crypto.tink.KeysetHandle;
 import com.google.crypto.tink.aead.AeadConfig;
 import com.google.crypto.tink.aead.AeadFactory;
-import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -128,7 +127,7 @@ public class TokenGenerator implements MapTypeReference {
         initializeSigningKeys();
     }
 
-    private void initializeSigningKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
+    private String initializeSigningKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
         List<RSAKey> rsaKeys = this.signingKeyRepository.findAllByOrderByCreatedDesc().stream()
                 .map(this::parseEncryptedRsaKey)
                 .collect(Collectors.toList());
@@ -144,6 +143,7 @@ public class TokenGenerator implements MapTypeReference {
         this.currentSigningKeyId = rsaKeys.get(0).getKeyID();
         this.signers = rsaKeys.stream().collect(Collectors.toMap(JWK::getKeyID, this::createRSASigner));
         this.verifiers = rsaKeys.stream().collect(Collectors.toMap(JWK::getKeyID, this::createRSAVerifier));
+        return this.currentSigningKeyId;
     }
 
     public SigningKey rolloverSigningKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
@@ -179,25 +179,25 @@ public class TokenGenerator implements MapTypeReference {
         return new String(chars);
     }
 
-    public String generateAccessTokenWithEmbeddedUserInfo(User user, OpenIDClient client, List<String> scopes) {
+    public String generateAccessTokenWithEmbeddedUserInfo(User user, OpenIDClient client) {
         try {
-            return doGenerateAccessTokenWithEmbeddedUser(user, client, scopes);
+            String signingKey = ensureLatestSigningKey();
+            return doGenerateAccessTokenWithEmbeddedUser(user, client, signingKey);
         } catch (Exception e) {
             //anti pattern but too many exceptions to catch without any surviving option
             throw e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
         }
     }
 
-    private String doGenerateAccessTokenWithEmbeddedUser(User user, OpenIDClient client, List<String> scopes) throws JsonProcessingException, GeneralSecurityException, JOSEException {
+    private String doGenerateAccessTokenWithEmbeddedUser(User user, OpenIDClient client, String signingKey) throws JsonProcessingException, GeneralSecurityException, JOSEException {
         String json = objectMapper.writeValueAsString(user);
 
         String encryptedClaims = encryptAead(json);
 
         Map<String, Object> additionalClaims = new HashMap<>();
         additionalClaims.put("claims", encryptedClaims);
-        additionalClaims.put("claim_key_id", currentSigningKeyId);
 
-        return idToken(client, Optional.empty(), additionalClaims, Collections.emptyList(), true);
+        return idToken(client, Optional.empty(), additionalClaims, Collections.emptyList(), true, signingKey);
     }
 
     private String encryptAead(String s) {
@@ -241,7 +241,8 @@ public class TokenGenerator implements MapTypeReference {
 
     public String generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, String nonce, List<String> idTokenClaims) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> additionalClaims = StringUtils.hasText(nonce) ? Collections.singletonMap("nonce", nonce) : Collections.emptyMap();
-        return idToken(client, user, additionalClaims, idTokenClaims, false);
+        String signingKey = ensureLatestSigningKey();
+        return idToken(client, user, additionalClaims, idTokenClaims, false, signingKey);
     }
 
     public String generateIDTokenForAuthorizationEndpoint(User user, OpenIDClient client, Nonce nonce,
@@ -264,7 +265,8 @@ public class TokenGenerator implements MapTypeReference {
         if (state != null && StringUtils.hasText(state.getValue())) {
             additionalClaims.put("s_hash", StateHash.compute(state, signingAlg));
         }
-        return idToken(client, Optional.of(user), additionalClaims, claims, false);
+        String signingKey = ensureLatestSigningKey();
+        return idToken(client, Optional.of(user), additionalClaims, claims, false, signingKey);
     }
 
     public List<JWK> getAllPublicKeys() {
@@ -296,8 +298,7 @@ public class TokenGenerator implements MapTypeReference {
         return String.format("key_%s", increment);
     }
 
-    private Map<String, Object> verifyClaims(SignedJWT signedJWT) throws ParseException, JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
-        ensureLatestSigningKey();
+    private Map<String, Object> verifyClaims(SignedJWT signedJWT) throws ParseException, JOSEException {
         String keyID = signedJWT.getHeader().getKeyID();
         if (!signedJWT.verify(verifiers.getOrDefault(keyID, verifiers.values().iterator().next()))) {
             throw new InvalidSignatureException("Tampered JWT");
@@ -306,7 +307,7 @@ public class TokenGenerator implements MapTypeReference {
     }
 
     private String idToken(OpenIDClient client, Optional<User> user, Map<String, Object> additionalClaims,
-                           List<String> idTokenClaims, boolean includeAllowedResourceServers) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
+                           List<String> idTokenClaims, boolean includeAllowedResourceServers, String signingKey) throws JOSEException {
         List<String> audiences = new ArrayList<>();
         audiences.add(client.getClientId());
         if (includeAllowedResourceServers) {
@@ -320,7 +321,7 @@ public class TokenGenerator implements MapTypeReference {
                 .jwtID(UUID.randomUUID().toString())
                 .issuer(issuer)
                 .issueTime(Date.from(clock.instant()))
-                .subject(user.map(u -> u.getSub()).orElse(client.getClientId()))
+                .subject(user.map(User::getSub).orElse(client.getClientId()))
                 .notBeforeTime(new Date(System.currentTimeMillis()));
 
 
@@ -332,20 +333,20 @@ public class TokenGenerator implements MapTypeReference {
                 }
             });
         }
-        additionalClaims.forEach((name, value) -> builder.claim(name, value));
+        additionalClaims.forEach(builder::claim);
 
         JWTClaimsSet claimsSet = builder.build();
-        JWSHeader header = new JWSHeader.Builder(signingAlg).type(JOSEObjectType.JWT).keyID(currentSigningKeyId).build();
+        JWSHeader header = new JWSHeader.Builder(signingAlg).type(JOSEObjectType.JWT).keyID(signingKey).build();
         SignedJWT signedJWT = new SignedJWT(header, claimsSet);
-        ensureLatestSigningKey();
         signedJWT.sign(signers.getOrDefault(signedJWT.getHeader().getKeyID(), signers.values().iterator().next()));
         return signedJWT.serialize();
     }
 
-    private void ensureLatestSigningKey() throws NoSuchProviderException, NoSuchAlgorithmException {
+    private String ensureLatestSigningKey() throws NoSuchProviderException, NoSuchAlgorithmException {
         if (!signingKeyFormat(sequenceRepository.currentSequence()).equals(this.currentSigningKeyId)) {
-            this.initializeSigningKeys();
+            return this.initializeSigningKeys();
         }
+        return this.currentSigningKeyId;
     }
 
     private RSASSASigner createRSASigner(RSAKey k) {

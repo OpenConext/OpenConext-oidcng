@@ -43,7 +43,7 @@ public interface OidcEndpoint {
                                                       boolean clientCredentials, String nonce) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> map = new HashMap<>();
         TokenGenerator tokenGenerator = getTokenGenerator();
-        String accessTokenValue = user.map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client, scopes)).orElse(tokenGenerator.generateAccessToken());
+        String accessTokenValue = user.map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client)).orElse(tokenGenerator.generateAccessToken());
         String sub = user.map(User::getSub).orElse(client.getClientId());
 
         getAccessTokenRepository().insert(new AccessToken(accessTokenValue, sub, client.getClientId(), scopes,

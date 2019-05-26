@@ -59,8 +59,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         String clientId = "mock-sp";
         OpenIDClient client = mongoTemplate.find(Query.query(Criteria.where("clientId").is(clientId)), OpenIDClient.class).get(0);
 
-        List<String> scopes = Arrays.asList("openid", "groups");
-        String accessToken = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client, scopes);
+        String accessToken = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client);
         User convertedUser = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessToken);
 
         assertEquals(user, convertedUser);

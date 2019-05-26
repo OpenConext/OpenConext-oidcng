@@ -138,7 +138,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     private Map<String, Object> authorizationEndpointResponse(User user, OpenIDClient client, AuthorizationRequest authorizationRequest,
                                                               List<String> scopes, ResponseType responseType, State state) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> result = new HashMap<>();
-        String value = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client, scopes);
+        String value = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client);
         if (responseType.contains("token") || !isOpenIDRequest(authorizationRequest)) {
             getAccessTokenRepository().insert(new AccessToken(value, user.getSub(), client.getClientId(), scopes,
                     tokenGenerator.getCurrentSigningKeyId(), accessTokenValidity(client), false));

@@ -1,6 +1,7 @@
 package oidc.secure;
 
 import oidc.AbstractIntegrationTest;
+import oidc.SeedUtils;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.RefreshToken;
@@ -24,7 +25,7 @@ import static org.junit.Assert.assertEquals;
                 "mongodb_db=oidc_test",
                 "cron.node-cron-job-responsible=true"
         })
-public class ResourceCleanerTest extends AbstractIntegrationTest {
+public class ResourceCleanerTest extends AbstractIntegrationTest implements SeedUtils {
 
     @Autowired
     private ResourceCleaner subject;
@@ -35,7 +36,7 @@ public class ResourceCleanerTest extends AbstractIntegrationTest {
                 .forEach(clazz -> mongoTemplate.remove(new Query(), clazz));
         Date expiresIn = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
         Stream.of(
-                new AccessToken("value", "sub", "clientId", singletonList("openid"), "K0000001", expiresIn, false),
+                accessToken("value", expiresIn),
                 new RefreshToken("value", "sub", "clientId", singletonList("openid"), expiresIn, "value", false),
                 new AuthorizationCode("code", "sub", "clientId", emptyList(), "redirectUri",
                         "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), expiresIn)
