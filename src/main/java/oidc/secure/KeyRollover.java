@@ -76,7 +76,6 @@ public class KeyRollover {
     private void cleanUpSymmetricKeys() {
         List<String> symmetricKeyValues = mongoTemplate.findDistinct("symmetricKeyId", SigningKey.class, String.class);
         symmetricKeyValues.add(tokenGenerator.getCurrentSymmetricKeyId());
-        symmetricKeyValues.add(SymmetricKey.PRIMARY_KEY);
 
         Query query = Query.query(Criteria.where("keyId").not().in(symmetricKeyValues));
         List<SymmetricKey> symmetricKeys = mongoTemplate.findAllAndRemove(query, SymmetricKey.class);

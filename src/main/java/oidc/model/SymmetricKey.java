@@ -13,9 +13,6 @@ import java.util.Date;
 @Document(collection = "symmetric_keys")
 public class SymmetricKey {
 
-    @Transient
-    public static final String PRIMARY_KEY = "primary";
-
     @Id
     private String id;
 

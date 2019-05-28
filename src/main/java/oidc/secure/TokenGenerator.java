@@ -44,6 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -100,13 +101,13 @@ public class TokenGenerator implements MapTypeReference {
 
     private List<RSAKey> publicKeys;
 
+    private byte[] associatedData;
+
     private KeysetHandle primaryKeysetHandle;
 
     private Map<String, KeysetHandle> keysetHandleMap;
 
     private String currentSymmetricKeyId;
-
-    private byte[] associatedData = "associatedData".getBytes(defaultCharset());
 
     private ObjectMapper objectMapper;
 
@@ -120,6 +121,8 @@ public class TokenGenerator implements MapTypeReference {
 
     @Autowired
     public TokenGenerator(@Value("${spring.security.saml2.service-provider.entity-id}") String issuer,
+                          @Value("${secret_key_set_path}") Resource secretKeySetPath,
+                          @Value("${associated_data}") String associatedData,
                           ObjectMapper objectMapper,
                           SigningKeyRepository signingKeyRepository,
                           SequenceRepository sequenceRepository,
@@ -135,6 +138,9 @@ public class TokenGenerator implements MapTypeReference {
 
         this.objectMapper = objectMapper;
         this.clock = environment.acceptsProfiles(Profiles.of("dev")) ? Clock.fixed(instant, ZoneId.systemDefault()) : Clock.systemDefaultZone();
+
+        this.primaryKeysetHandle = CleartextKeysetHandle.read(JsonKeysetReader.withInputStream(secretKeySetPath.getInputStream()));
+        this.associatedData = associatedData.getBytes(defaultCharset());
 
         initializeSymmetricKeys();
         initializeSigningKeys();
@@ -167,17 +173,14 @@ public class TokenGenerator implements MapTypeReference {
     }
 
     private void initializeSymmetricKeys() {
-        Optional<SymmetricKey> optionalSymmetricKey = this.symmetricKeyRepository.findPrimaryKey();
-        SymmetricKey primarySymmetricKey = optionalSymmetricKey.orElseGet(() -> generateSymmetricKey(true));
-        this.primaryKeysetHandle = parseKeysetHandle(primarySymmetricKey, true);
         List<KeysetHandle> keysetHandles = this.symmetricKeyRepository.findAllByOrderByCreatedDesc().stream()
-                .filter(symmetricKey -> !symmetricKey.getKeyId().equals(SymmetricKey.PRIMARY_KEY))
-                .map(symmetricKey -> this.parseKeysetHandle(symmetricKey, false))
+                .map(symmetricKey -> this.parseKeysetHandle(symmetricKey))
                 .collect(Collectors.toList());
 
         if (keysetHandles.isEmpty()) {
-            SymmetricKey symmetricKey = generateSymmetricKey(false);
-            keysetHandles = Collections.singletonList(parseKeysetHandle(symmetricKey, false));
+            signingKeyRepository.deleteAll();
+            SymmetricKey symmetricKey = generateSymmetricKey();
+            keysetHandles = Collections.singletonList(parseKeysetHandle(symmetricKey));
         }
         this.currentSymmetricKeyId = String.valueOf(keysetHandles.get(0).getKeysetInfo().getPrimaryKeyId());
         this.keysetHandleMap = keysetHandles.stream().collect(toMap(
@@ -185,17 +188,14 @@ public class TokenGenerator implements MapTypeReference {
                 keysetHandle -> keysetHandle));
     }
 
-    private SymmetricKey generateSymmetricKey(boolean isPrimary) {
+    private SymmetricKey generateSymmetricKey() {
         try {
             KeysetHandle keysetHandle = KeysetHandle.generateNew(AeadKeyTemplates.AES256_CTR_HMAC_SHA256);
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            if (isPrimary) {
-                CleartextKeysetHandle.write(keysetHandle, JsonKeysetWriter.withOutputStream(outputStream));
-            } else {
-                keysetHandle.write(JsonKeysetWriter.withOutputStream(outputStream), AeadFactory.getPrimitive(primaryKeysetHandle));
-            }
-            String keyId = isPrimary ? SymmetricKey.PRIMARY_KEY : String.valueOf(keysetHandle.getKeysetInfo().getPrimaryKeyId());
-            SymmetricKey symmetricKey = new SymmetricKey(keyId, Base64.getEncoder().encodeToString(outputStream.toString().getBytes(defaultCharset())), new Date());
+            keysetHandle.write(JsonKeysetWriter.withOutputStream(outputStream), AeadFactory.getPrimitive(primaryKeysetHandle));
+            String keyId = String.valueOf(keysetHandle.getKeysetInfo().getPrimaryKeyId());
+            String aead = Base64.getEncoder().encodeToString(outputStream.toString().getBytes(defaultCharset()));
+            SymmetricKey symmetricKey = new SymmetricKey(keyId, aead, new Date());
             symmetricKeyRepository.save(symmetricKey);
             return symmetricKey;
         } catch (IOException | GeneralSecurityException e) {
@@ -203,8 +203,8 @@ public class TokenGenerator implements MapTypeReference {
         }
     }
 
-    public SymmetricKey rolloverSymmetricKeys() throws GeneralSecurityException, IOException {
-        SymmetricKey symmetricKey = generateSymmetricKey(false);
+    public SymmetricKey rolloverSymmetricKeys() {
+        SymmetricKey symmetricKey = generateSymmetricKey();
         this.initializeSymmetricKeys();
         return symmetricKey;
     }
@@ -217,11 +217,10 @@ public class TokenGenerator implements MapTypeReference {
         }
     }
 
-    private KeysetHandle parseKeysetHandle(SymmetricKey symmetricKey, boolean isPrimary) {
+    private KeysetHandle parseKeysetHandle(SymmetricKey symmetricKey) {
         byte[] decoded = Base64.getDecoder().decode(symmetricKey.getAead());
         try {
-            return isPrimary ? CleartextKeysetHandle.read(JsonKeysetReader.withBytes(decoded)) :
-                    KeysetHandle.read(JsonKeysetReader.withBytes(decoded), AeadFactory.getPrimitive(primaryKeysetHandle));
+            return KeysetHandle.read(JsonKeysetReader.withBytes(decoded), AeadFactory.getPrimitive(primaryKeysetHandle));
         } catch (IOException | GeneralSecurityException e) {
             throw new RuntimeException(e);
         }

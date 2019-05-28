@@ -29,6 +29,7 @@ import java.util.Map;
 public class JwkKeysEndpoint implements MapTypeReference {
 
     private TokenGenerator tokenGenerator;
+    private ObjectMapper objectMapper;
     private Map<String, Object> wellKnownConfiguration;
 
     public JwkKeysEndpoint(TokenGenerator tokenGenerator,
@@ -36,11 +37,21 @@ public class JwkKeysEndpoint implements MapTypeReference {
                            @Value("${openid_configuration_path}") Resource configurationPath) throws IOException {
         this.tokenGenerator = tokenGenerator;
         this.wellKnownConfiguration = objectMapper.readValue(configurationPath.getInputStream(), mapTypeReference);
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping(value = {"/oidc/certs"}, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public String publishClientJwk() {
         return new JWKSet(tokenGenerator.getAllPublicKeys()).toJSONObject().toString();
+    }
+
+    @GetMapping("oidc/generate-secret-key-set")
+    public Map<String, Object> generateSymmetricSecretKey() throws GeneralSecurityException, IOException {
+        KeysetHandle keysetHandle = KeysetHandle.generateNew(AeadKeyTemplates.AES256_CTR_HMAC_SHA256);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        CleartextKeysetHandle.write(keysetHandle, JsonKeysetWriter.withOutputStream(outputStream));
+        return objectMapper.readValue(outputStream.toString(), mapTypeReference);
     }
 
     @GetMapping("oidc/.well-known/openid-configuration")

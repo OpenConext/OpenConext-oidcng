@@ -13,9 +13,4 @@ public interface SymmetricKeyRepository extends MongoRepository<SymmetricKey, St
 
     List<SymmetricKey> findAllByOrderByCreatedDesc();
 
-    default Optional<SymmetricKey> findPrimaryKey() {
-        return findByKeyId(SymmetricKey.PRIMARY_KEY);
-    }
-
-    Optional<SymmetricKey> findByKeyId(String keyId);
 }

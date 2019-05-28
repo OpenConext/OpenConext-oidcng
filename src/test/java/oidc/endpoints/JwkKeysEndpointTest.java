@@ -38,6 +38,12 @@ public class JwkKeysEndpointTest extends AbstractIntegrationTest {
         assertEquals(issuer, res.get("issuer"));
     }
 
+    @Test
+    public void generateSecretKeySet() {
+        Map<String, Object> res = getMapFromEndpoint("oidc/generate-secret-key-set");
+        assertTrue(res.containsKey("key"));
+    }
+
     private void assertRSAKey(Map<String, Object> res, boolean isPrivate, int expected) throws ParseException, JsonProcessingException {
         List<JWK> jwkList = JWKSet.parse(objectMapper.writeValueAsString(res)).getKeys();
         assertEquals(expected, jwkList.size());
