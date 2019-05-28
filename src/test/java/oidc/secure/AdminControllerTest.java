@@ -47,7 +47,7 @@ public class AdminControllerTest extends AbstractIntegrationTest {
                 .auth()
                 .preemptive()
                 .basic(user, secret)
-                .get("manage/force-key-rollover" )
+                .get("manage/force-signing-key-rollover" )
                 .then()
                 .statusCode(expectedStatusCode);
     }

@@ -25,12 +25,6 @@ public class JwkKeysEndpointTest extends AbstractIntegrationTest {
     private String issuer;
 
     @Test
-    public void generate() throws ParseException, JsonProcessingException {
-        Map<String, Object> res = getMapFromEndpoint("oidc/generate-jwks-keystore");
-        assertRSAKey(res, true, 1);
-    }
-
-    @Test
     public void publishClientJwk() throws ParseException, JsonProcessingException, NoSuchProviderException, NoSuchAlgorithmException {
         resetAndCreateSigningKeys(3);
 
@@ -42,12 +36,6 @@ public class JwkKeysEndpointTest extends AbstractIntegrationTest {
     public void wellKnownConfiguration() {
         Map<String, Object> res = getMapFromEndpoint("oidc/.well-known/openid-configuration");
         assertEquals(issuer, res.get("issuer"));
-    }
-
-    @Test
-    public void generateSecretKeySet() {
-        Map<String, Object> res = getMapFromEndpoint("oidc/generate-secret-key-set");
-        assertTrue(res.containsKey("key"));
     }
 
     private void assertRSAKey(Map<String, Object> res, boolean isPrivate, int expected) throws ParseException, JsonProcessingException {

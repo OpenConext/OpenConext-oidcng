@@ -20,8 +20,6 @@ info:
 
 mongodb_db: oidc_test
 openid_configuration_path: classpath:/openid-configuration.json
-secret_key_set_path: classpath:/secret_keyset.json
-associated_data: 4CEFFA8B-90DD-4737-8B04-6DA51C5B29AE
 private_key_path: classpath:/id_rsa
 certificate_path: classpath:/id_rsa.pub
 

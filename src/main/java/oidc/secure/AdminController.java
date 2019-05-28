@@ -18,14 +18,24 @@ public class AdminController {
     @Autowired
     private KeyRollover keyRollover;
 
-
-    @GetMapping("manage/force-key-rollover")
-    public ResponseEntity<Void> rollover(Authentication authentication) {
+    @GetMapping("manage/force-signing-key-rollover")
+    public ResponseEntity<Void> rolloverSigningKey(Authentication authentication) {
         String name = authentication.getName();
 
-        LOG.info("Starting a forced key rollover from: " + name);
+        LOG.info("Starting a forced signing key rollover from: " + name);
 
-        keyRollover.doRollover();
+        keyRollover.doSigningKeyRollover();
+
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @GetMapping("manage/force-symmetric-key-rollover")
+    public ResponseEntity<Void> rolloverSymmetricKey(Authentication authentication) {
+        String name = authentication.getName();
+
+        LOG.info("Starting a forced symmetric key rollover from: " + name);
+
+        keyRollover.doSymmetricKeyRollover();
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }

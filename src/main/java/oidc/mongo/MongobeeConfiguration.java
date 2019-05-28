@@ -10,6 +10,7 @@ import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
 import oidc.model.SigningKey;
+import oidc.model.SymmetricKey;
 import oidc.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,10 +21,12 @@ import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.index.IndexOperations;
+import org.springframework.data.mongodb.core.query.Query;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
 
@@ -80,14 +83,27 @@ public class MongobeeConfiguration {
 
     @ChangeSet(order = "003", id = "createSigningKeyCollection", author = "Okke Harsta")
     public void createSigningKeyCollection(MongoTemplate mongoTemplate) {
-        if (mongoTemplate.collectionExists("signing_keys")) {
-            mongoTemplate.dropCollection("signing_keys");
+        if (!mongoTemplate.collectionExists("signing_keys")) {
+            mongoTemplate.createCollection("signing_keys");
         }
-        mongoTemplate.createCollection("signing_keys");
         IndexOperations indexOperations = mongoTemplate.indexOps(SigningKey.class);
         indexOperations.ensureIndex(new Index("created", Sort.Direction.DESC));
     }
 
+    @ChangeSet(order = "004", id = "createSymmetricKeyCollection", author = "Okke Harsta")
+    public void createSymmetricKeyCollection(MongoTemplate mongoTemplate) {
+        if (!mongoTemplate.collectionExists("symmetric_keys")) {
+            mongoTemplate.createCollection("symmetric_keys");
+        }
+        IndexOperations indexOperations = mongoTemplate.indexOps(SymmetricKey.class);
+        indexOperations.ensureIndex(new Index("created", Sort.Direction.DESC));
+    }
+
+    @ChangeSet(order = "005", id = "deleteTokens", author = "Okke Harsta")
+    public void deleteTokens(MongoTemplate mongoTemplate) {
+        Stream.of(AccessToken.class, RefreshToken.class, AuthorizationCode.class, User.class)
+                .forEach(clazz -> mongoTemplate.remove(new Query(), clazz));
+    }
 
     private void ensureCollectionsAndIndexes(MongoTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {
         indexInfo.forEach((collection, fields) -> {

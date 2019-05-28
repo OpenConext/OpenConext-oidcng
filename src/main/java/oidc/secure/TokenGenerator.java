@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.crypto.tink.Aead;
 import com.google.crypto.tink.CleartextKeysetHandle;
 import com.google.crypto.tink.JsonKeysetReader;
+import com.google.crypto.tink.JsonKeysetWriter;
 import com.google.crypto.tink.KeysetHandle;
 import com.google.crypto.tink.aead.AeadConfig;
 import com.google.crypto.tink.aead.AeadFactory;
+import com.google.crypto.tink.aead.AeadKeyTemplates;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -32,18 +34,21 @@ import oidc.endpoints.MapTypeReference;
 import oidc.exceptions.InvalidSignatureException;
 import oidc.model.OpenIDClient;
 import oidc.model.SigningKey;
+import oidc.model.SymmetricKey;
 import oidc.model.User;
 import oidc.repository.SequenceRepository;
 import oidc.repository.SigningKeyRepository;
+import oidc.repository.SymmetricKeyRepository;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -51,6 +56,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
+import java.security.Security;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
@@ -71,6 +77,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.Charset.defaultCharset;
+import static java.util.stream.Collectors.toMap;
 
 @Component
 public class TokenGenerator implements MapTypeReference {
@@ -93,9 +100,13 @@ public class TokenGenerator implements MapTypeReference {
 
     private List<RSAKey> publicKeys;
 
-    private KeysetHandle keysetHandle;
+    private KeysetHandle primaryKeysetHandle;
 
-    private String associatedData;
+    private Map<String, KeysetHandle> keysetHandleMap;
+
+    private String currentSymmetricKeyId;
+
+    private byte[] associatedData = "associatedData".getBytes(defaultCharset());
 
     private ObjectMapper objectMapper;
 
@@ -103,32 +114,35 @@ public class TokenGenerator implements MapTypeReference {
 
     private SigningKeyRepository signingKeyRepository;
 
+    private SymmetricKeyRepository symmetricKeyRepository;
+
     private SequenceRepository sequenceRepository;
 
     @Autowired
     public TokenGenerator(@Value("${spring.security.saml2.service-provider.entity-id}") String issuer,
-                          @Value("${secret_key_set_path}") Resource secretKeySetPath,
-                          @Value("${associated_data}") String associatedData,
                           ObjectMapper objectMapper,
                           SigningKeyRepository signingKeyRepository,
                           SequenceRepository sequenceRepository,
+                          SymmetricKeyRepository symmetricKeyRepository,
                           Environment environment) throws IOException, GeneralSecurityException {
+        Security.addProvider(new BouncyCastleProvider());
         AeadConfig.register();
 
         this.signingKeyRepository = signingKeyRepository;
         this.sequenceRepository = sequenceRepository;
+        this.symmetricKeyRepository = symmetricKeyRepository;
         this.issuer = issuer;
 
-        this.keysetHandle = CleartextKeysetHandle.read(JsonKeysetReader.withInputStream(secretKeySetPath.getInputStream()));
-        this.associatedData = associatedData;
         this.objectMapper = objectMapper;
         this.clock = environment.acceptsProfiles(Profiles.of("dev")) ? Clock.fixed(instant, ZoneId.systemDefault()) : Clock.systemDefaultZone();
 
+        initializeSymmetricKeys();
         initializeSigningKeys();
     }
 
-    private String initializeSigningKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
+    private void initializeSigningKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
         List<RSAKey> rsaKeys = this.signingKeyRepository.findAllByOrderByCreatedDesc().stream()
+                .filter(signingKey -> StringUtils.hasText(signingKey.getSymmetricKeyId()))
                 .map(this::parseEncryptedRsaKey)
                 .collect(Collectors.toList());
 
@@ -141,9 +155,8 @@ public class TokenGenerator implements MapTypeReference {
 
         this.publicKeys = rsaKeys.stream().map(RSAKey::toPublicJWK).collect(Collectors.toList());
         this.currentSigningKeyId = rsaKeys.get(0).getKeyID();
-        this.signers = rsaKeys.stream().collect(Collectors.toMap(JWK::getKeyID, this::createRSASigner));
-        this.verifiers = rsaKeys.stream().collect(Collectors.toMap(JWK::getKeyID, this::createRSAVerifier));
-        return this.currentSigningKeyId;
+        this.signers = rsaKeys.stream().collect(toMap(JWK::getKeyID, this::createRSASigner));
+        this.verifiers = rsaKeys.stream().collect(toMap(JWK::getKeyID, this::createRSAVerifier));
     }
 
     public SigningKey rolloverSigningKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
@@ -153,10 +166,63 @@ public class TokenGenerator implements MapTypeReference {
         return signingKey;
     }
 
+    private void initializeSymmetricKeys() {
+        Optional<SymmetricKey> optionalSymmetricKey = this.symmetricKeyRepository.findPrimaryKey();
+        SymmetricKey primarySymmetricKey = optionalSymmetricKey.orElseGet(() -> generateSymmetricKey(true));
+        this.primaryKeysetHandle = parseKeysetHandle(primarySymmetricKey, true);
+        List<KeysetHandle> keysetHandles = this.symmetricKeyRepository.findAllByOrderByCreatedDesc().stream()
+                .filter(symmetricKey -> !symmetricKey.getKeyId().equals(SymmetricKey.PRIMARY_KEY))
+                .map(symmetricKey -> this.parseKeysetHandle(symmetricKey, false))
+                .collect(Collectors.toList());
+
+        if (keysetHandles.isEmpty()) {
+            SymmetricKey symmetricKey = generateSymmetricKey(false);
+            keysetHandles = Collections.singletonList(parseKeysetHandle(symmetricKey, false));
+        }
+        this.currentSymmetricKeyId = String.valueOf(keysetHandles.get(0).getKeysetInfo().getPrimaryKeyId());
+        this.keysetHandleMap = keysetHandles.stream().collect(toMap(
+                keysetHandle -> String.valueOf(keysetHandle.getKeysetInfo().getPrimaryKeyId()),
+                keysetHandle -> keysetHandle));
+    }
+
+    private SymmetricKey generateSymmetricKey(boolean isPrimary) {
+        try {
+            KeysetHandle keysetHandle = KeysetHandle.generateNew(AeadKeyTemplates.AES256_CTR_HMAC_SHA256);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            if (isPrimary) {
+                CleartextKeysetHandle.write(keysetHandle, JsonKeysetWriter.withOutputStream(outputStream));
+            } else {
+                keysetHandle.write(JsonKeysetWriter.withOutputStream(outputStream), AeadFactory.getPrimitive(primaryKeysetHandle));
+            }
+            String keyId = isPrimary ? SymmetricKey.PRIMARY_KEY : String.valueOf(keysetHandle.getKeysetInfo().getPrimaryKeyId());
+            SymmetricKey symmetricKey = new SymmetricKey(keyId, Base64.getEncoder().encodeToString(outputStream.toString().getBytes(defaultCharset())), new Date());
+            symmetricKeyRepository.save(symmetricKey);
+            return symmetricKey;
+        } catch (IOException | GeneralSecurityException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public SymmetricKey rolloverSymmetricKeys() throws GeneralSecurityException, IOException {
+        SymmetricKey symmetricKey = generateSymmetricKey(false);
+        this.initializeSymmetricKeys();
+        return symmetricKey;
+    }
+
     private RSAKey parseEncryptedRsaKey(SigningKey signingKey) {
         try {
-            return RSAKey.parse(decryptAead(signingKey.getJwk()));
+            return RSAKey.parse(decryptAead(signingKey.getJwk(), signingKey.getSymmetricKeyId()));
         } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private KeysetHandle parseKeysetHandle(SymmetricKey symmetricKey, boolean isPrimary) {
+        byte[] decoded = Base64.getDecoder().decode(symmetricKey.getAead());
+        try {
+            return isPrimary ? CleartextKeysetHandle.read(JsonKeysetReader.withBytes(decoded)) :
+                    KeysetHandle.read(JsonKeysetReader.withBytes(decoded), AeadFactory.getPrimitive(primaryKeysetHandle));
+        } catch (IOException | GeneralSecurityException e) {
             throw new RuntimeException(e);
         }
     }
@@ -196,14 +262,16 @@ public class TokenGenerator implements MapTypeReference {
 
         Map<String, Object> additionalClaims = new HashMap<>();
         additionalClaims.put("claims", encryptedClaims);
+        additionalClaims.put("claim_key_id", currentSymmetricKeyId);
 
         return idToken(client, Optional.empty(), additionalClaims, Collections.emptyList(), true, signingKey);
     }
 
     private String encryptAead(String s) {
         try {
+            KeysetHandle keysetHandle = this.safeGet(currentSymmetricKeyId, this.keysetHandleMap);
             Aead aead = AeadFactory.getPrimitive(keysetHandle);
-            byte[] src = aead.encrypt(s.getBytes(defaultCharset()), associatedData.getBytes(defaultCharset()));
+            byte[] src = aead.encrypt(s.getBytes(defaultCharset()), associatedData);
             return Base64.getEncoder().encodeToString(src);
         } catch (GeneralSecurityException e) {
             throw new RuntimeException(e);
@@ -223,17 +291,19 @@ public class TokenGenerator implements MapTypeReference {
         SignedJWT signedJWT = SignedJWT.parse(accessToken);
         Map<String, Object> claims = verifyClaims(signedJWT);
         String encryptedClaims = (String) claims.get("claims");
+        String keyId = (String) claims.get("claim_key_id");
 
-        String s = decryptAead(encryptedClaims);
+        String s = decryptAead(encryptedClaims, keyId);
 
         return objectMapper.readValue(s, User.class);
     }
 
-    private String decryptAead(String s) {
+    private String decryptAead(String s, String symmetricKeyId) {
         try {
+            KeysetHandle keysetHandle = safeGet(symmetricKeyId, this.keysetHandleMap);
             Aead aead = AeadFactory.getPrimitive(keysetHandle);
             byte[] decoded = Base64.getDecoder().decode(s);
-            return new String(aead.decrypt(decoded, associatedData.getBytes(defaultCharset())));
+            return new String(aead.decrypt(decoded, associatedData));
         } catch (GeneralSecurityException e) {
             throw new RuntimeException(e);
         }
@@ -291,7 +361,7 @@ public class TokenGenerator implements MapTypeReference {
         Long increment = this.sequenceRepository.increment();
         RSAKey rsaKey = generateRsaKey(signingKeyFormat(increment));
         String encryptedKey = encryptAead(rsaKey.toJSONString());
-        return new SigningKey(rsaKey.getKeyID(), encryptedKey, new Date());
+        return new SigningKey(rsaKey.getKeyID(), currentSymmetricKeyId, encryptedKey, new Date());
     }
 
     private String signingKeyFormat(Long increment) {
@@ -300,7 +370,8 @@ public class TokenGenerator implements MapTypeReference {
 
     private Map<String, Object> verifyClaims(SignedJWT signedJWT) throws ParseException, JOSEException {
         String keyID = signedJWT.getHeader().getKeyID();
-        if (!signedJWT.verify(verifiers.getOrDefault(keyID, verifiers.values().iterator().next()))) {
+        JWSVerifier verifier = this.safeGet(keyID, verifiers);
+        if (!signedJWT.verify(verifier)) {
             throw new InvalidSignatureException("Tampered JWT");
         }
         return signedJWT.getJWTClaimsSet().getClaims();
@@ -338,13 +409,14 @@ public class TokenGenerator implements MapTypeReference {
         JWTClaimsSet claimsSet = builder.build();
         JWSHeader header = new JWSHeader.Builder(signingAlg).type(JOSEObjectType.JWT).keyID(signingKey).build();
         SignedJWT signedJWT = new SignedJWT(header, claimsSet);
-        signedJWT.sign(signers.getOrDefault(signingKey, signers.values().iterator().next()));
+        JWSSigner jswsSigner = this.safeGet(signingKey, signers);
+        signedJWT.sign(jswsSigner);
         return signedJWT.serialize();
     }
 
     private String ensureLatestSigningKey() throws NoSuchProviderException, NoSuchAlgorithmException {
         if (!signingKeyFormat(sequenceRepository.currentSequence()).equals(this.currentSigningKeyId)) {
-            return this.initializeSigningKeys();
+            this.initializeSigningKeys();
         }
         return this.currentSigningKeyId;
     }
@@ -365,7 +437,19 @@ public class TokenGenerator implements MapTypeReference {
         }
     }
 
+    private <T> T safeGet(String k, Map<String, T> map) {
+        T t = map.get(k);
+        if (t == null) {
+            throw new IllegalArgumentException(String.format("Map with keys %s does not contain key %s", map.keySet(), k));
+        }
+        return t;
+    }
+
     public String getCurrentSigningKeyId() {
         return this.currentSigningKeyId;
+    }
+
+    public String getCurrentSymmetricKeyId() {
+        return currentSymmetricKeyId;
     }
 }

@@ -30,34 +30,12 @@ public class JwkKeysEndpoint implements MapTypeReference {
 
     private TokenGenerator tokenGenerator;
     private Map<String, Object> wellKnownConfiguration;
-    private ObjectMapper objectMapper;
 
     public JwkKeysEndpoint(TokenGenerator tokenGenerator,
                            ObjectMapper objectMapper,
-                           @Value("${openid_configuration_path}") Resource configurationPath,
-                           @Value("${spring.security.saml2.service-provider.entity-id}") String issuer) throws IOException {
+                           @Value("${openid_configuration_path}") Resource configurationPath) throws IOException {
         this.tokenGenerator = tokenGenerator;
         this.wellKnownConfiguration = objectMapper.readValue(configurationPath.getInputStream(), mapTypeReference);
-        this.objectMapper = objectMapper;
-
-        Security.addProvider(new BouncyCastleProvider());
-    }
-
-    @GetMapping("oidc/generate-jwks-keystore")
-    public Map<String, List<JSONObject>> generate(@RequestParam(value = "keyID", required = false, defaultValue = "oidc") String keyID)
-            throws Exception {
-        RSAKey build = tokenGenerator.generateRsaKey(keyID);
-
-        return Collections.singletonMap("keys", Collections.singletonList(build.toJSONObject()));
-    }
-
-    @GetMapping("oidc/generate-secret-key-set")
-    public Map<String, Object> generateSymmetricSecretKey() throws GeneralSecurityException, IOException {
-        KeysetHandle keysetHandle = KeysetHandle.generateNew(AeadKeyTemplates.AES256_CTR_HMAC_SHA256);
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-        CleartextKeysetHandle.write(keysetHandle, JsonKeysetWriter.withOutputStream(outputStream));
-        return objectMapper.readValue(outputStream.toString(), mapTypeReference);
     }
 
     @GetMapping(value = {"/oidc/certs"}, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)

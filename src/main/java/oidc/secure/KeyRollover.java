@@ -2,6 +2,7 @@ package oidc.secure;
 
 import oidc.model.AccessToken;
 import oidc.model.SigningKey;
+import oidc.model.SymmetricKey;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,8 +12,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,15 +37,26 @@ public class KeyRollover {
         if (!cronJobResponsible) {
             return;
         }
-        doRollover();
+        doSigningKeyRollover();
     }
 
-    public void doRollover() {
+    void doSigningKeyRollover() {
         try {
             SigningKey signingKey = tokenGenerator.rolloverSigningKeys();
             LOG.info("Successful signing key rollover. New signing key: " + signingKey.getKeyId());
 
             cleanUpSigningKeys();
+        } catch (Exception e) {
+            LOG.error("Rollover exception", e);
+        }
+    }
+
+    void doSymmetricKeyRollover() {
+        try {
+            SymmetricKey symmetricKey = tokenGenerator.rolloverSymmetricKeys();
+            LOG.info("Successful symmetric key rollover. New symmetric key: " + symmetricKey.getKeyId());
+
+            cleanUpSymmetricKeys();
         } catch (Exception e) {
             LOG.error("Rollover exception", e);
         }
@@ -63,4 +73,15 @@ public class KeyRollover {
         LOG.info("Deleted signing keys that are no longer referenced by access_tokens: " + String.join(", ", deleted));
     }
 
+    private void cleanUpSymmetricKeys() {
+        List<String> symmetricKeyValues = mongoTemplate.findDistinct("symmetricKeyId", SigningKey.class, String.class);
+        symmetricKeyValues.add(tokenGenerator.getCurrentSymmetricKeyId());
+        symmetricKeyValues.add(SymmetricKey.PRIMARY_KEY);
+
+        Query query = Query.query(Criteria.where("keyId").not().in(symmetricKeyValues));
+        List<SymmetricKey> symmetricKeys = mongoTemplate.findAllAndRemove(query, SymmetricKey.class);
+
+        List<String> deleted = symmetricKeys.stream().map(SymmetricKey::getKeyId).collect(Collectors.toList());
+        LOG.info("Deleted symmetric keys that are no longer referenced by signing keys: " + String.join(", ", deleted));
+    }
 }
