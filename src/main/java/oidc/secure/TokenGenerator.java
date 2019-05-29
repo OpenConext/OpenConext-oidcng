@@ -279,6 +279,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private String encryptAead(String s) {
         try {
+            this.ensureLatestSymmetricKey();
             KeysetHandle keysetHandle = this.safeGet(currentSymmetricKeyId, this.keysetHandleMap);
             Aead aead = AeadFactory.getPrimitive(keysetHandle);
             byte[] src = aead.encrypt(s.getBytes(defaultCharset()), associatedData);
@@ -310,6 +311,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private String decryptAead(String s, String symmetricKeyId) {
         try {
+            this.ensureLatestSymmetricKey();
             KeysetHandle keysetHandle = safeGet(symmetricKeyId, this.keysetHandleMap);
             Aead aead = AeadFactory.getPrimitive(keysetHandle);
             byte[] decoded = Base64.getDecoder().decode(s);
@@ -368,7 +370,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     private SigningKey generateEncryptedRsaKey() throws NoSuchProviderException, NoSuchAlgorithmException {
-        Long increment = this.sequenceRepository.increment();
+        Long increment = this.sequenceRepository.incrementSigningKeyId();
         RSAKey rsaKey = generateRsaKey(signingKeyFormat(increment));
         String encryptedKey = encryptAead(rsaKey.toJSONString());
         return new SigningKey(rsaKey.getKeyID(), currentSymmetricKeyId, encryptedKey, new Date());
@@ -376,6 +378,10 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private String signingKeyFormat(Long increment) {
         return String.format("key_%s", increment);
+    }
+
+    private String symmetricKeyFormat(Long nbr) {
+        return Integer.toString(nbr.intValue());
     }
 
     private Map<String, Object> verifyClaims(SignedJWT signedJWT) throws ParseException, JOSEException {
@@ -425,8 +431,15 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     private String ensureLatestSigningKey() throws NoSuchProviderException, NoSuchAlgorithmException {
-        if (!signingKeyFormat(sequenceRepository.currentSequence()).equals(this.currentSigningKeyId)) {
+        if (!signingKeyFormat(sequenceRepository.currentSigningKeyId()).equals(this.currentSigningKeyId)) {
             this.initializeSigningKeys();
+        }
+        return this.currentSigningKeyId;
+    }
+
+    private String ensureLatestSymmetricKey() throws NoSuchProviderException, NoSuchAlgorithmException {
+        if (!symmetricKeyFormat(sequenceRepository.currentSymmetricKeyId()).equals(this.currentSymmetricKeyId)) {
+            this.initializeSymmetricKeys();
         }
         return this.currentSigningKeyId;
     }

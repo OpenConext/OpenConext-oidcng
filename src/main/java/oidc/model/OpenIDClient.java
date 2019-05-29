@@ -33,6 +33,10 @@ public class OpenIDClient {
     private int accessTokenValidity;
     private int refreshTokenValidity;
 
+    private String discoveryUrl;
+    private String signingCertificate;
+    private String signingCertificateUrl;
+
     @SuppressWarnings("unchecked")
     public OpenIDClient(Map<String, Object> root) {
         Map<String, Object> data = (Map<String, Object>) root.get("data");
@@ -41,17 +45,21 @@ public class OpenIDClient {
 
         Map<String, Object> metaDataFields = (Map<String, Object>) data.get("metaDataFields");
 
-        this.name = String.class.cast(metaDataFields.get("name:en"));
-        this.secret = String.class.cast(metaDataFields.get("secret"));
-        this.redirectUrls = List.class.cast(metaDataFields.get("redirectUrls"));
-        this.scopes = List.class.cast(metaDataFields.getOrDefault("scopes", "oidc"));
-        this.grants = List.class.cast(metaDataFields.getOrDefault("grants", "authorization_code"));
+        this.name = (String) metaDataFields.get("name:en");
+        this.secret = (String) metaDataFields.get("secret");
+        this.redirectUrls = (List) metaDataFields.get("redirectUrls");
+        this.scopes = (List) metaDataFields.getOrDefault("scopes", "oidc");
+        this.grants = (List) metaDataFields.getOrDefault("grants", "authorization_code");
         this.allowedResourceServers = ((List<Map<String, String>>) data.getOrDefault("allowedResourceServers", new ArrayList<>()))
                 .stream().map(e -> e.get("name")).collect(Collectors.toList());
         this.resourceServer = parseBoolean(metaDataFields.get("isResourceServer"));
         this.publicClient = parseBoolean(metaDataFields.get("isPublicClient"));
-        this.accessTokenValidity = Integer.class.cast(metaDataFields.getOrDefault("accessTokenValidity", 3600));
-        this.refreshTokenValidity = Integer.class.cast(metaDataFields.getOrDefault("refreshTokenValidity", 3600));
+        this.accessTokenValidity = (Integer) metaDataFields.getOrDefault("accessTokenValidity", 3600);
+        this.refreshTokenValidity = (Integer) metaDataFields.getOrDefault("refreshTokenValidity", 3600);
+
+        this.discoveryUrl = (String) metaDataFields.get("discoveryurl");
+        this.signingCertificate = (String) metaDataFields.get("oidc:signingCertificate");
+        this.signingCertificateUrl = (String) metaDataFields.get("oidc:signingCertificateUrl");
     }
 
     @Transient

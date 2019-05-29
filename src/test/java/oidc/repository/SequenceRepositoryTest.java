@@ -13,14 +13,24 @@ public class SequenceRepositoryTest extends AbstractIntegrationTest {
     private SequenceRepository sequenceRepository;
 
     @Test
-    public void increment() {
+    public void incrementSigningKeyId() {
         mongoTemplate.dropCollection(Sequence.class);
 
-        sequenceRepository.increment();
-        assertEquals(1L, sequenceRepository.currentSequence().longValue());
+        sequenceRepository.incrementSigningKeyId();
+        assertEquals(1L, sequenceRepository.currentSigningKeyId().longValue());
 
-        sequenceRepository.increment();
-        assertEquals(2L, sequenceRepository.currentSequence().longValue());
+        sequenceRepository.incrementSigningKeyId();
+        assertEquals(2L, sequenceRepository.currentSigningKeyId().longValue());
     }
 
+    @Test
+    public void updateSymmetricKeyId() {
+        mongoTemplate.dropCollection(Sequence.class);
+
+        sequenceRepository.updateSymmetricKeyId(1221L);
+        assertEquals(1221L, sequenceRepository.currentSymmetricKeyId().longValue());
+
+        sequenceRepository.updateSymmetricKeyId(9999L);
+        assertEquals(9999L, sequenceRepository.currentSymmetricKeyId().longValue());
+    }
 }

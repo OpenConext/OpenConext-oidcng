@@ -15,9 +15,6 @@ import java.io.Serializable;
 @Document(collection = "sequences")
 public class Sequence implements Serializable {
 
-    @Transient
-    public static final String ID_VALUE = Sequence.class.getName().toLowerCase();
-
     @Id
     private String _id;
 
