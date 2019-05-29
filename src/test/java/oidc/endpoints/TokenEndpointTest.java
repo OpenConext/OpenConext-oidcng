@@ -5,6 +5,9 @@ import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
+import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
@@ -37,6 +40,7 @@ import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("unchecked")
 public class TokenEndpointTest extends AbstractIntegrationTest {
@@ -254,6 +258,17 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
         Map<String, Object> body = doToken(code, "mock-sp", null, GrantType.AUTHORIZATION_CODE,
                 StringUtils.leftPad("token", 45, "*"));
         assertEquals("code_verifier present, but no code_challenge in the authorization_code", body.get("message"));
+    }
+
+    @Test
+    public void codeChallengeFlow() {
+        String codeChallenge = StringUtils.leftPad("code_challenge", 45, "*");
+        Response response = doAuthorizeWithClaimsAndScopesAndCodeChallengeMethod("mock-sp", "code", null, "nonce",
+                codeChallenge, Collections.emptyList(), "openid", "state", CodeChallengeMethod.S256.getValue());
+        String code = getCode(response);
+        CodeChallenge challenge = CodeChallenge.compute(CodeChallengeMethod.S256, new CodeVerifier(codeChallenge));
+        Map<String, Object> body = doToken(code, "mock-sp", null, GrantType.AUTHORIZATION_CODE, challenge.getValue());
+        assertTrue(body.containsKey("id_token"));
     }
 
     @Test

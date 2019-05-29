@@ -30,6 +30,9 @@ import oidc.repository.OpenIDClientRepository;
 import oidc.repository.RefreshTokenRepository;
 import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
+import oidc.web.ErrorController;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -51,6 +54,8 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 @RestController
 public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
+
+    private static final Log LOG = LogFactory.getLog(TokenEndpoint.class);
 
     private AuthorizationCodeRepository authorizationCodeRepository;
     private AccessTokenRepository accessTokenRepository;
@@ -137,10 +142,12 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
             if (authorizationCode.getCodeChallenge() == null) {
                 throw new CodeVerifierMissingException("code_verifier present, but no code_challenge in the authorization_code");
             }
-            CodeChallenge computed = CodeChallenge.compute(CodeChallengeMethod.parse(authorizationCode.getCodeChallengeMethod()),
-                    new CodeVerifier(authorizationCode.getCodeChallenge()));
+            CodeChallengeMethod codeChallengeMethod = CodeChallengeMethod.parse(authorizationCode.getCodeChallengeMethod());
+            CodeChallenge computed = CodeChallenge.compute(codeChallengeMethod, new CodeVerifier(authorizationCode.getCodeChallenge()));
 
             if (!codeVerifier.getValue().equals(computed.getValue())) {
+                LOG.error(String.format("CodeVerifier %s with  method %s does not match codeChallenge %s",
+                        codeVerifier.getValue(), codeChallengeMethod, authorizationCode.getCodeChallenge()));
                 throw new CodeVerifierMissingException("code_verifier does not match code_challenge");
             }
         }

@@ -66,7 +66,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
@@ -189,7 +188,16 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         return getCode(doAuthorizeWithClaimsAndScopes(clientId, responseType, responseMode, null, null, null, scopes, "example"));
     }
 
-    protected Response doAuthorizeWithClaimsAndScopes(String clientId, String responseType, String responseMode, String nonce, String codeChallenge, List<String> claims, String scopes, String state) {
+    protected Response doAuthorizeWithClaimsAndScopes(String clientId, String responseType, String responseMode,
+                                                      String nonce, String codeChallenge, List<String> claims,
+                                                      String scopes, String state) {
+        return doAuthorizeWithClaimsAndScopesAndCodeChallengeMethod(clientId, responseType, responseMode, nonce, codeChallenge, claims, scopes, state, CodeChallengeMethod.PLAIN.getValue());
+    }
+
+    protected Response doAuthorizeWithClaimsAndScopesAndCodeChallengeMethod(String clientId, String responseType,
+                                                                          String responseMode, String nonce,
+                                                                          String codeChallenge, List<String> claims,
+                                                                          String scopes, String state, String codeChallengeMethod) {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", scopes);
         queryParams.put("response_type", responseType);
@@ -204,7 +212,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         }
         if (StringUtils.hasText(codeChallenge)) {
             queryParams.put("code_challenge", codeChallenge);
-            queryParams.put("code_challenge_method", CodeChallengeMethod.PLAIN.getValue());
+            queryParams.put("code_challenge_method", codeChallengeMethod);
         }
         if (!CollectionUtils.isEmpty(claims)) {
             ClaimsRequest claimsRequest = new ClaimsRequest();
