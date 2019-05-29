@@ -22,7 +22,7 @@ public class AdminController {
     public ResponseEntity<Void> rolloverSigningKey(Authentication authentication) {
         String name = authentication.getName();
 
-        LOG.info("Starting a forced signing key rollover from: " + name);
+        LOG.info("Starting a forced signing key rollover by: " + name);
 
         keyRollover.doSigningKeyRollover();
 
@@ -33,7 +33,7 @@ public class AdminController {
     public ResponseEntity<Void> rolloverSymmetricKey(Authentication authentication) {
         String name = authentication.getName();
 
-        LOG.info("Starting a forced symmetric key rollover from: " + name);
+        LOG.info("Starting a forced symmetric key rollover by: " + name);
 
         keyRollover.doSymmetricKeyRollover();
 
