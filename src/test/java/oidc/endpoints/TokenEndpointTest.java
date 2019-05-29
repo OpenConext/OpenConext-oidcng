@@ -1,5 +1,6 @@
 package oidc.endpoints;
 
+import com.google.crypto.tink.subtle.Base64;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -26,8 +27,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.nio.charset.Charset;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -261,13 +265,14 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void codeChallengeFlow() {
-        String codeChallenge = StringUtils.leftPad("code_challenge", 45, "*");
+    public void codeChallengeFlowMismatch() throws UnsupportedEncodingException, NoSuchAlgorithmException {
+        String verifier = "12345678901234567890123456789012345678901234567890";
+        CodeChallenge codeChallenge = CodeChallenge.compute(CodeChallengeMethod.S256, new CodeVerifier(verifier));
+
         Response response = doAuthorizeWithClaimsAndScopesAndCodeChallengeMethod("mock-sp", "code", null, "nonce",
-                codeChallenge, Collections.emptyList(), "openid", "state", CodeChallengeMethod.S256.getValue());
+                codeChallenge.getValue(), Collections.emptyList(), "openid", "state", CodeChallengeMethod.S256.getValue());
         String code = getCode(response);
-        CodeChallenge challenge = CodeChallenge.compute(CodeChallengeMethod.S256, new CodeVerifier(codeChallenge));
-        Map<String, Object> body = doToken(code, "mock-sp", null, GrantType.AUTHORIZATION_CODE, challenge.getValue());
+        Map<String, Object> body = doToken(code, "mock-sp", null, GrantType.AUTHORIZATION_CODE, verifier);
         assertTrue(body.containsKey("id_token"));
     }
 

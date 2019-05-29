@@ -138,16 +138,17 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         }
 
         CodeVerifier codeVerifier = authorizationCodeGrant.getCodeVerifier();
+        String codeChallenge = authorizationCode.getCodeChallenge();
         if (codeVerifier != null) {
-            if (authorizationCode.getCodeChallenge() == null) {
+            if (codeChallenge == null) {
                 throw new CodeVerifierMissingException("code_verifier present, but no code_challenge in the authorization_code");
             }
             CodeChallengeMethod codeChallengeMethod = CodeChallengeMethod.parse(authorizationCode.getCodeChallengeMethod());
-            CodeChallenge computed = CodeChallenge.compute(codeChallengeMethod, new CodeVerifier(authorizationCode.getCodeChallenge()));
+            CodeChallenge computed = CodeChallenge.compute(codeChallengeMethod, codeVerifier);
 
-            if (!codeVerifier.getValue().equals(computed.getValue())) {
+            if (!codeChallenge.equals(computed.getValue())) {
                 LOG.error(String.format("CodeVerifier %s with  method %s does not match codeChallenge %s",
-                        codeVerifier.getValue(), codeChallengeMethod, authorizationCode.getCodeChallenge()));
+                        codeVerifier.getValue(), codeChallengeMethod, codeChallenge));
                 throw new CodeVerifierMissingException("code_verifier does not match code_challenge");
             }
         }
