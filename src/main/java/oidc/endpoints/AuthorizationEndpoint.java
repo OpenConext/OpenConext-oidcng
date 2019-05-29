@@ -8,6 +8,7 @@ import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
+import com.nimbusds.openid.connect.sdk.OIDCResponseTypeValue;
 import oidc.exceptions.InvalidScopeException;
 import oidc.exceptions.RedirectMismatchException;
 import oidc.model.AccessToken;
@@ -41,6 +42,7 @@ import java.security.NoSuchProviderException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -137,18 +139,19 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
     private Map<String, Object> authorizationEndpointResponse(User user, OpenIDClient client, AuthorizationRequest authorizationRequest,
                                                               List<String> scopes, ResponseType responseType, State state) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
-        Map<String, Object> result = new HashMap<>();
+        Map<String, Object> result = new LinkedHashMap<>();
         String value = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client);
-        if (responseType.contains("token") || !isOpenIDRequest(authorizationRequest)) {
+        if (responseType.contains(ResponseType.Value.TOKEN.getValue()) || !isOpenIDRequest(authorizationRequest)) {
             getAccessTokenRepository().insert(new AccessToken(value, user.getSub(), client.getClientId(), scopes,
                     tokenGenerator.getCurrentSigningKeyId(), accessTokenValidity(client), false));
             result.put("access_token", value);
+            result.put("token_type", "Bearer");
         }
-        if (responseType.contains("code")) {
+        if (responseType.contains(ResponseType.Value.CODE.getValue())) {
             AuthorizationCode authorizationCode = createAndSaveAuthorizationCode(authorizationRequest, client, user);
             result.put("code", authorizationCode.getCode());
         }
-        if (responseType.contains("id_token")) {
+        if (responseType.contains(OIDCResponseTypeValue.ID_TOKEN.getValue())) {
             AuthenticationRequest authenticationRequest = (AuthenticationRequest) authorizationRequest;
             List<String> claims = getClaims(authorizationRequest);
             String idToken = getTokenGenerator().generateIDTokenForAuthorizationEndpoint(
@@ -156,10 +159,10 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                     Optional.ofNullable((String) result.get("code")), state);
             result.put("id_token", idToken);
         }
+        result.put("expires_in", client.getAccessTokenValidity());
         if (state != null) {
             result.put("state", state);
         }
-        addSharedProperties(result, client);
         return result;
     }
 

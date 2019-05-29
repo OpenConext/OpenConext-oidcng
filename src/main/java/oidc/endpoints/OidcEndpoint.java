@@ -3,6 +3,7 @@ package oidc.endpoints;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.GrantType;
+import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
@@ -30,7 +31,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,7 +42,7 @@ public interface OidcEndpoint {
     default Map<String, Object> tokenEndpointResponse(Optional<User> user, OpenIDClient client,
                                                       List<String> scopes, List<String> idTokenClaims,
                                                       boolean clientCredentials, String nonce) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
-        Map<String, Object> map = new HashMap<>();
+        Map<String, Object> map = new LinkedHashMap<>();
         TokenGenerator tokenGenerator = getTokenGenerator();
         String accessTokenValue = user.map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client)).orElse(tokenGenerator.generateAccessToken());
         String sub = user.map(User::getSub).orElse(client.getClientId());
@@ -49,19 +50,17 @@ public interface OidcEndpoint {
         getAccessTokenRepository().insert(new AccessToken(accessTokenValue, sub, client.getClientId(), scopes,
                 getTokenGenerator().getCurrentSigningKeyId(), accessTokenValidity(client), !user.isPresent()));
         map.put("access_token", accessTokenValue);
-
+        map.put("token_type", "Bearer");
         if (client.getGrants().contains(GrantType.REFRESH_TOKEN.getValue())) {
             String refreshTokenValue = tokenGenerator.generateRefreshToken();
             getRefreshTokenRepository().insert(new RefreshToken(refreshTokenValue, sub, client.getClientId(), scopes,
                     refreshTokenValidity(client), accessTokenValue, clientCredentials));
             map.put("refresh_token", refreshTokenValue);
         }
-
+        map.put("expires_in", client.getAccessTokenValidity());
         if (isOpenIDRequest(scopes)) {
             map.put("id_token", tokenGenerator.generateIDTokenForTokenEndpoint(user, client, nonce, idTokenClaims));
         }
-
-        addSharedProperties(map, client);
         return map;
     }
 
@@ -114,11 +113,6 @@ public interface OidcEndpoint {
         return idTokenClaims;
     }
 
-
-    default void addSharedProperties(Map<String, Object> map, OpenIDClient client) {
-        map.put("token_type", "Bearer");
-        map.put("expires_in", client.getAccessTokenValidity());
-    }
 
     default void logout() {
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();

@@ -147,8 +147,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
             CodeChallenge computed = CodeChallenge.compute(codeChallengeMethod, codeVerifier);
 
             if (!codeChallenge.equals(computed.getValue())) {
-                LOG.error(String.format("CodeVerifier %s with  method %s does not match codeChallenge %s",
-                        codeVerifier.getValue(), codeChallengeMethod, codeChallenge));
+                LOG.error(String.format("CodeVerifier %s with method %s does not match codeChallenge %s. Expected codeChallenge is %s",
+                        codeVerifier.getValue(), codeChallengeMethod, codeChallenge, computed.getValue()));
                 throw new CodeVerifierMissingException("code_verifier does not match code_challenge");
             }
         }
