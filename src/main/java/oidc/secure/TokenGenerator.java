@@ -42,6 +42,8 @@ import oidc.repository.SymmetricKeyRepository;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationStartedEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.core.io.Resource;
@@ -81,7 +83,7 @@ import static java.nio.charset.Charset.defaultCharset;
 import static java.util.stream.Collectors.toMap;
 
 @Component
-public class TokenGenerator implements MapTypeReference {
+public class TokenGenerator implements MapTypeReference, ApplicationListener<ApplicationStartedEvent> {
 
     public static final JWSAlgorithm signingAlg = JWSAlgorithm.RS256;
     public static final Instant instant = Instant.parse("2100-01-01T00:00:00.00Z");
@@ -142,8 +144,17 @@ public class TokenGenerator implements MapTypeReference {
         this.primaryKeysetHandle = CleartextKeysetHandle.read(JsonKeysetReader.withInputStream(secretKeySetPath.getInputStream()));
         this.associatedData = associatedData.getBytes(defaultCharset());
 
-        initializeSymmetricKeys();
-        initializeSigningKeys();
+    }
+
+    @Override
+    public void onApplicationEvent(ApplicationStartedEvent event) {
+        //we need to run this after any possible mongo migrations
+        try {
+            initializeSymmetricKeys();
+            initializeSigningKeys();
+        } catch (NoSuchProviderException | NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void initializeSigningKeys() throws NoSuchProviderException, NoSuchAlgorithmException {

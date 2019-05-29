@@ -33,6 +33,7 @@ import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
 import oidc.model.Sequence;
 import oidc.model.SigningKey;
+import oidc.model.SymmetricKey;
 import oidc.secure.TokenGenerator;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -60,6 +61,7 @@ import java.security.NoSuchProviderException;
 import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -70,6 +72,7 @@ import java.util.stream.Collectors;
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 
@@ -110,6 +113,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
                 .remove(new Query())
                 .insert(openIDClients())
                 .execute();
+        Arrays.asList(SigningKey.class, SymmetricKey.class, AccessToken.class).forEach(clazz -> mongoTemplate.remove(new Query(), clazz));
     }
 
     protected List<OpenIDClient> openIDClients() throws IOException {
@@ -142,6 +146,14 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         for (int i = 1; i < numberOfSigningKeys + 1; i++) {
             SigningKey signingKey = tokenGenerator.rolloverSigningKeys();
             assertEquals("key_" + i, signingKey.getKeyId());
+        }
+    }
+
+    protected void resetAndCreateSymmetricKeys(int numberOfSymmetricKeys) throws NoSuchProviderException, NoSuchAlgorithmException {
+        mongoTemplate.dropCollection(SymmetricKey.class);
+        for (int i = 1; i < numberOfSymmetricKeys + 1; i++) {
+            SymmetricKey symmetricKey = tokenGenerator.rolloverSymmetricKeys();
+            assertNotNull(symmetricKey.getKeyId());
         }
     }
 
@@ -195,9 +207,9 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
     }
 
     protected Response doAuthorizeWithClaimsAndScopesAndCodeChallengeMethod(String clientId, String responseType,
-                                                                          String responseMode, String nonce,
-                                                                          String codeChallenge, List<String> claims,
-                                                                          String scopes, String state, String codeChallengeMethod) {
+                                                                            String responseMode, String nonce,
+                                                                            String codeChallenge, List<String> claims,
+                                                                            String scopes, String state, String codeChallengeMethod) {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", scopes);
         queryParams.put("response_type", responseType);

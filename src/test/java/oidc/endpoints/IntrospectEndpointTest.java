@@ -40,9 +40,10 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
 
     @Test
     public void introspectionWithKeyRollover() throws UnsupportedEncodingException, NoSuchProviderException, NoSuchAlgorithmException {
+        tokenGenerator.rolloverSigningKeys();
+
         String accessToken = getAccessToken();
 
-        //ensure the correct key is used to verify
         tokenGenerator.rolloverSigningKeys();
 
         Map<String, Object> result = callIntrospection("mock-sp", accessToken, "secret");

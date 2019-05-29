@@ -8,6 +8,7 @@ import oidc.AbstractIntegrationTest;
 import oidc.exceptions.InvalidSignatureException;
 import oidc.model.OpenIDClient;
 import oidc.model.SigningKey;
+import oidc.model.SymmetricKey;
 import oidc.model.User;
 import oidc.repository.SigningKeyRepository;
 import org.junit.Test;
@@ -51,6 +52,17 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         resetAndCreateSigningKeys(3);
         SigningKey signingKey = signingKeyRepository.findAllByOrderByCreatedDesc().get(0);
         assertEquals("key_3", signingKey.getKeyId());
+    }
+
+    @Test
+    public void onApplicationEvent() {
+        mongoTemplate.findAllAndRemove(new Query(), SigningKey.class);
+        mongoTemplate.findAllAndRemove(new Query(), SymmetricKey.class);
+
+        tokenGenerator.onApplicationEvent(null);
+
+        assertEquals(1, mongoTemplate.count(new Query(), SigningKey.class));
+        assertEquals(1, mongoTemplate.count(new Query(), SymmetricKey.class));
     }
 
     private String doEncryptAndDecryptAccessToken() throws IOException {
