@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static oidc.manage.ServiceProviderTranslation.translateServiceProviderEntityId;
 
@@ -45,7 +46,8 @@ public class OpenIDClient {
         this.redirectUrls = List.class.cast(metaDataFields.get("redirectUrls"));
         this.scopes = List.class.cast(metaDataFields.getOrDefault("scopes", "oidc"));
         this.grants = List.class.cast(metaDataFields.getOrDefault("grants", "authorization_code"));
-        this.allowedResourceServers = List.class.cast(data.getOrDefault("allowedResourceServers", new ArrayList<>()));
+        this.allowedResourceServers = ((List<Map<String, String>>) data.getOrDefault("allowedResourceServers", new ArrayList<>()))
+                .stream().map(e -> e.get("name")).collect(Collectors.toList());
         this.resourceServer = parseBoolean(metaDataFields.get("isResourceServer"));
         this.publicClient = parseBoolean(metaDataFields.get("isPublicClient"));
         this.accessTokenValidity = Integer.class.cast(metaDataFields.getOrDefault("accessTokenValidity", 3600));

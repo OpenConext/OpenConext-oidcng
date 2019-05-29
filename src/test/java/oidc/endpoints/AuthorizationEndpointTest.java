@@ -30,6 +30,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +56,22 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest {
         assertEquals(12, code.length());
         Map<String, Object> tokenResponse = doToken(code);
         assertFalse(tokenResponse.containsKey("id_token"));
+    }
+
+    @Test
+    public void authorizeWithNoImplicitGrant() {
+        Response response = doAuthorizeWithClaimsAndScopes("mock-rp", "token", "fragment", "nonce", null, Collections.emptyList(), "openid", "state");
+        Map<String, Object> result = response.as(mapTypeRef);
+        assertEquals("Grant types [authorization_code] does not allow for implicit / hybrid flow",result.get("message"));
+        assertEquals(401,result.get("status"));
+    }
+
+    @Test
+    public void authorizeWithNoAuthorizationCodeGrant() {
+        Response response = doAuthorizeWithClaimsAndScopes("resource-server", "code", "code", "nonce", null, Collections.emptyList(), "openid", "state");
+        Map<String, Object> result = response.as(mapTypeRef);
+        assertEquals("Grant types [client_credentials] does not allow for authorization code flow",result.get("message"));
+        assertEquals(401,result.get("status"));
     }
 
     @Test

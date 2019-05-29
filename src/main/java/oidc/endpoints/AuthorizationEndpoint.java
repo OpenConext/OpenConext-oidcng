@@ -1,7 +1,9 @@
 package oidc.endpoints;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
+import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseMode;
 import com.nimbusds.oauth2.sdk.ResponseType;
@@ -9,6 +11,7 @@ import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.OIDCResponseTypeValue;
+import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.InvalidScopeException;
 import oidc.exceptions.RedirectMismatchException;
 import oidc.model.AccessToken;
@@ -27,6 +30,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -101,9 +105,16 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         List<String> scopes = scope != null ? scope.toStringList() : Collections.emptyList();
         validateScopes(scopes, client);
 
-        User user = samlAuthentication.getUser();
-
         ResponseType responseType = authenticationRequest.getResponseType();
+        List<String> grants = client.getGrants();
+        if ((responseType.impliesImplicitFlow() || responseType.impliesHybridFlow()) && !grants.contains(GrantType.IMPLICIT.getValue())) {
+            throw new InvalidGrantException(String.format("Grant types %s does not allow for implicit / hybrid flow", grants));
+        }
+        if (responseType.impliesCodeFlow() && !grants.contains(GrantType.AUTHORIZATION_CODE.getValue())) {
+            throw new InvalidGrantException(String.format("Grant types %s does not allow for authorization code flow", grants));
+        }
+
+        User user = samlAuthentication.getUser();
         if (responseType.impliesCodeFlow()) {
             AuthorizationCode authorizationCode = createAndSaveAuthorizationCode(authenticationRequest, client, user);
             return new ModelAndView(new RedirectView(authorizationRedirect(redirectionURI, state, authorizationCode.getCode())));
@@ -174,10 +185,11 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
 
     private void validateRedirectionURI(String redirectionURI, OpenIDClient client) {
-        if (!client.getRedirectUrls().contains(redirectionURI)) {
+        List<String> redirectUrls = client.getRedirectUrls();
+        if (CollectionUtils.isEmpty(redirectUrls) || !redirectUrls.contains(redirectionURI)) {
             throw new RedirectMismatchException(
                     String.format("Client %s with registered redirect URI's %s requested authorization with redirectURI %s",
-                            client.getClientId(), client.getRedirectUrls(), redirectionURI));
+                            client.getClientId(), redirectUrls, redirectionURI));
         }
     }
 
