@@ -42,6 +42,7 @@ import java.util.Optional;
 import static com.nimbusds.oauth2.sdk.auth.JWTAuthentication.CLIENT_ASSERTION_TYPE;
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -113,11 +114,8 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     @Test
     public void clientCredentials() throws ParseException {
         Map<String, Object> body = doToken(null, "mock-sp", "secret", GrantType.CLIENT_CREDENTIALS);
-        String idToken = (String) body.get("id_token");
-        SignedJWT jwt = SignedJWT.parse(idToken);
-        JWTClaimsSet claimsSet = jwt.getJWTClaimsSet();
-
-        assertEquals(Collections.singletonList("mock-sp"), claimsSet.getAudience());
+        assertEquals(false, body.containsKey("id_token"));
+        assertEquals(true, uuidPattern.matcher((String) body.get("access_token")).matches());
     }
 
     @Test

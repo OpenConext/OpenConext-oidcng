@@ -162,7 +162,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             AuthorizationCode authorizationCode = createAndSaveAuthorizationCode(authorizationRequest, client, user);
             result.put("code", authorizationCode.getCode());
         }
-        if (responseType.contains(OIDCResponseTypeValue.ID_TOKEN.getValue())) {
+        if (responseType.contains(OIDCResponseTypeValue.ID_TOKEN.getValue()) && isOpenIDRequest(scopes) && isOpenIDRequest(authorizationRequest)) {
             AuthenticationRequest authenticationRequest = (AuthenticationRequest) authorizationRequest;
             List<String> claims = getClaims(authorizationRequest);
             String idToken = getTokenGenerator().generateIDTokenForAuthorizationEndpoint(

@@ -58,7 +58,7 @@ public interface OidcEndpoint {
             map.put("refresh_token", refreshTokenValue);
         }
         map.put("expires_in", client.getAccessTokenValidity());
-        if (isOpenIDRequest(scopes)) {
+        if (isOpenIDRequest(scopes) && !clientCredentials) {
             map.put("id_token", tokenGenerator.generateIDTokenForTokenEndpoint(user, client, nonce, idTokenClaims));
         }
         return map;

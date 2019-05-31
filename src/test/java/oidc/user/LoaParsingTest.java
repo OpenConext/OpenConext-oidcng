@@ -20,7 +20,8 @@ public class LoaParsingTest implements SamlTest {
     public void parseRequestedAuthnContext() throws IOException {
         AuthenticationRequest authenticationRequest = resolveFromXMLFile(AuthenticationRequest.class, "saml/loa_authn_request.xml");
         RequestedAuthenticationContext requestedAuthenticationContext = authenticationRequest.getRequestedAuthenticationContext();
-        //TODO ensure the values http://surfconext.nl/assurance/loa2 are present. Wait for pull request to be accepted.
+        //TODO ensure the values http://surfconext.nl/assurance/loa2 are present.
+        // Wait for pull request https://github.com/spring-projects/spring-security-saml/pull/440 to be accepted.
     }
 
     @Test
@@ -36,8 +37,7 @@ public class LoaParsingTest implements SamlTest {
         AuthenticationStatement authenticationStatement = authenticationStatements.get(0);
         String classReference = authenticationStatement.getAuthenticationContext().getClassReference().toString();
         //TODO ensure the classReference is http://stepup.example.org/verified-second-factor/level2
-
-
+        // Wait for pull request https://github.com/spring-projects/spring-security-saml/pull/440 to be accepted.
     }
 
 

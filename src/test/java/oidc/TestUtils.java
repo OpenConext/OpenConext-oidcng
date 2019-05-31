@@ -6,6 +6,7 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.regex.Pattern;
 
 public interface TestUtils {
 
@@ -16,6 +17,9 @@ public interface TestUtils {
             throw new IllegalArgumentException(e);
         }
     }
+
+    Pattern uuidPattern = Pattern.compile("([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}){1}");
+
 
     ObjectMapper objectMapper = ObjectMapperWrapper.init();
 

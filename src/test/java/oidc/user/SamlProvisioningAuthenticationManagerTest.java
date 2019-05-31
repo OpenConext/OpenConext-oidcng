@@ -24,7 +24,6 @@ import static org.mockito.Mockito.when;
 //Hard to test, because of SAML dependency
 public class SamlProvisioningAuthenticationManagerTest implements SamlTest {
 
-    private Pattern uuidPattern = Pattern.compile("([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}){1}");
     private UserRepository userRepository = mock(UserRepository.class);
     private SamlProvisioningAuthenticationManager subject = new SamlProvisioningAuthenticationManager(userRepository, objectMapper);
 
