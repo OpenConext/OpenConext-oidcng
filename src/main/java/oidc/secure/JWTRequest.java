@@ -38,7 +38,7 @@ public class JWTRequest {
 
     public static Map<String, String> parse(AuthenticationRequest authenticationRequest, OpenIDClient openIDClient) throws CertificateException, JOSEException, IOException, ParseException, BadJOSEException {
         if (!openIDClient.certificateSpecified()) {
-            throw new UnsupportedJWTException("RP does not have a certificate, url or discovery url. " + openIDClient.getClientId());
+            throw new UnsupportedJWTException(String.format("RP %s does not have a certificate, url or discovery url. ",openIDClient.getClientId()));
         }
         Map<String, List<String>> parameters = authenticationRequest.toParameters();
 
@@ -81,11 +81,8 @@ public class JWTRequest {
         if (!signingCertificate.contains("BEGIN CERTIFICATE")) {
             signingCertificate = "-----BEGIN CERTIFICATE-----\n" + signingCertificate + "\n-----END CERTIFICATE-----";
         }
-        Certificate cert = CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(signingCertificate.getBytes()));
-        if (!(cert instanceof X509Certificate)) {
-            throw new UnsupportedJWTException("Certificate is not a X509Certificate, but " + cert.getClass().getName());
-        }
-        return new JWKSet(RSAKey.parse((X509Certificate) cert));
+        X509Certificate cert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(signingCertificate.getBytes()));
+        return new JWKSet(RSAKey.parse(cert));
     }
 
     @SuppressWarnings("unchecked")
