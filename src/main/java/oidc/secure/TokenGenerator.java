@@ -279,8 +279,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private String encryptAead(String s) {
         try {
-            this.ensureLatestSymmetricKey();
-            KeysetHandle keysetHandle = this.safeGet(currentSymmetricKeyId, this.keysetHandleMap);
+            KeysetHandle keysetHandle = this.safeGet(this.ensureLatestSymmetricKey(), this.keysetHandleMap);
             Aead aead = AeadFactory.getPrimitive(keysetHandle);
             byte[] src = aead.encrypt(s.getBytes(defaultCharset()), associatedData);
             return Base64.getEncoder().encodeToString(src);
@@ -355,7 +354,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         return new ArrayList<>(this.publicKeys);
     }
 
-    public RSAKey generateRsaKey(String keyID) throws NoSuchAlgorithmException, NoSuchProviderException {
+    private RSAKey generateRsaKey(String keyID) throws NoSuchAlgorithmException, NoSuchProviderException {
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA", "BC");
         kpg.initialize(2048);
         KeyPair keyPair = kpg.generateKeyPair();
@@ -441,7 +440,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         if (!symmetricKeyFormat(sequenceRepository.currentSymmetricKeyId()).equals(this.currentSymmetricKeyId)) {
             this.initializeSymmetricKeys();
         }
-        return this.currentSigningKeyId;
+        return this.currentSymmetricKeyId;
     }
 
     private RSASSASigner createRSASigner(RSAKey k) {
