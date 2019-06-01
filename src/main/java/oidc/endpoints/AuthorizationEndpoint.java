@@ -1,7 +1,7 @@
 package oidc.endpoints;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.oauth2.sdk.AuthorizationGrant;
+import com.nimbusds.jwt.JWT;
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ParseException;
@@ -40,12 +40,12 @@ import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,17 +90,24 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         OidcSamlAuthentication samlAuthentication = (OidcSamlAuthentication) authentication;
         AuthorizationRequest authenticationRequest = AuthorizationRequest.parse(parameters);
 
+        URI redirectionURI = authenticationRequest.getRedirectionURI();
         Scope scope = authenticationRequest.getScope();
         boolean isOpenIdClient = scope != null && isOpenIDRequest(scope.toStringList());
+
+        State state = authenticationRequest.getState();
+        OpenIDClient client = openIDClientRepository.findByClientId(authenticationRequest.getClientID().getValue());
+
         if (isOpenIdClient) {
             authenticationRequest = AuthenticationRequest.parse(parameters);
+            AuthenticationRequest oidcAuthenticationRequest = (AuthenticationRequest) authenticationRequest;
+            if (oidcAuthenticationRequest.specifiesRequestObject()) {
+                //TODO
+            }
         }
-        State state = authenticationRequest.getState();
 
-        OpenIDClient client = openIDClientRepository.findByClientId(authenticationRequest.getClientID().getValue());
-        String redirectionURI = authenticationRequest.getRedirectionURI().toString();
-        redirectionURI = URLDecoder.decode(redirectionURI, "UTF-8");
-        validateRedirectionURI(redirectionURI, client);
+        String redirectURI = redirectionURI.toString();
+        redirectURI = URLDecoder.decode(redirectURI, "UTF-8");
+        validateRedirectionURI(redirectURI, client);
 
         List<String> scopes = scope != null ? scope.toStringList() : Collections.emptyList();
         validateScopes(scopes, client);
@@ -117,7 +124,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         User user = samlAuthentication.getUser();
         if (responseType.impliesCodeFlow()) {
             AuthorizationCode authorizationCode = createAndSaveAuthorizationCode(authenticationRequest, client, user);
-            return new ModelAndView(new RedirectView(authorizationRedirect(redirectionURI, state, authorizationCode.getCode())));
+            return new ModelAndView(new RedirectView(authorizationRedirect(redirectURI, state, authorizationCode.getCode())));
         } else if (responseType.impliesImplicitFlow() || responseType.impliesHybridFlow()) {
             if (responseType.impliesImplicitFlow()) {
                 //User information is encrypted in access token
@@ -126,21 +133,21 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             Map<String, Object> body = authorizationEndpointResponse(user, client, authenticationRequest, scopes, responseType, state);
             ResponseMode responseMode = authenticationRequest.impliedResponseMode();
             if (responseMode.equals(ResponseMode.FORM_POST)) {
-                body.put("redirect_uri", redirectionURI);
-                LOG.info(String.format("Returning implicit flow %s %s", ResponseMode.FORM_POST, redirectionURI));
+                body.put("redirect_uri", redirectURI);
+                LOG.info(String.format("Returning implicit flow %s %s", ResponseMode.FORM_POST, redirectURI));
                 return new ModelAndView("form_post", body);
             }
             if (responseMode.equals(ResponseMode.QUERY)) {
-                UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectionURI);
+                UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectURI);
                 body.forEach(builder::queryParam);
-                LOG.info(String.format("Returning implicit flow %s %s", ResponseMode.QUERY, redirectionURI));
+                LOG.info(String.format("Returning implicit flow %s %s", ResponseMode.QUERY, redirectURI));
                 return new ModelAndView(new RedirectView(builder.toUriString()));
             }
             if (responseMode.equals(ResponseMode.FRAGMENT)) {
-                UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectionURI);
+                UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectURI);
                 String fragment = body.entrySet().stream().map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue())).collect(Collectors.joining("&"));
                 builder.fragment(fragment);
-                LOG.info(String.format("Returning implicit flow %s %s", ResponseMode.FRAGMENT, redirectionURI));
+                LOG.info(String.format("Returning implicit flow %s %s", ResponseMode.FRAGMENT, redirectURI));
                 return new ModelAndView(new RedirectView(builder.toUriString()));
             }
             throw new IllegalArgumentException("Response mode " + responseMode + " not supported");

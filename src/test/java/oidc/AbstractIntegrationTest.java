@@ -23,7 +23,7 @@ import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.openid.connect.sdk.ClaimsRequest;
 import io.restassured.RestAssured;
-import io.restassured.mapper.TypeRef;
+
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import oidc.endpoints.MapTypeReference;
@@ -98,12 +98,6 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
     @Autowired
     protected TokenGenerator tokenGenerator;
 
-    @Autowired
-    protected ObjectMapper objectMapper;
-
-    protected TypeRef<Map<String, Object>> mapTypeRef = new TypeRef<Map<String, Object>>() {
-    };
-
     private List<OpenIDClient> openIDClients;
 
     @Before
@@ -126,12 +120,6 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
 
     protected OpenIDClient openIDClient() throws IOException {
         return this.openIDClients().get(0);
-    }
-
-    protected List<Map<String, Object>> relyingParties() throws IOException {
-        return objectMapper.readValue(new ClassPathResource("manage/oidc10_rp.json").getInputStream(),
-                new TypeReference<List<Map<String, Object>>>() {
-                });
     }
 
     protected String doAuthorize() throws UnsupportedEncodingException {

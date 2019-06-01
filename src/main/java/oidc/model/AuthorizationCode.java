@@ -53,7 +53,7 @@ public class AuthorizationCode {
         this.nonce = nonce;
         this.idTokenClaims = idTokenClaims;
         this.expiresIn = expiresIn != null ? expiresIn :
-                Date.from(LocalDateTime.now().plusMinutes(5).atZone(ZoneId.systemDefault()).toInstant());
+                Date.from(LocalDateTime.now().plusMinutes(10).atZone(ZoneId.systemDefault()).toInstant());
     }
 
     @Transient

@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +61,12 @@ public class OpenIDClient {
         this.discoveryUrl = (String) metaDataFields.get("discoveryurl");
         this.signingCertificate = (String) metaDataFields.get("oidc:signingCertificate");
         this.signingCertificateUrl = (String) metaDataFields.get("oidc:signingCertificateUrl");
+    }
+
+    @Transient
+    public boolean certificateSpecified() {
+        return StringUtils.hasText(signingCertificate) || StringUtils.hasText(signingCertificateUrl)
+                || StringUtils.hasText(discoveryUrl);
     }
 
     @Transient
