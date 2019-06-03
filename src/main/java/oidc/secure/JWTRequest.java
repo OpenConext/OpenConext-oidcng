@@ -36,7 +36,8 @@ import static java.nio.charset.Charset.defaultCharset;
 
 public class JWTRequest {
 
-    public static Map<String, String> parse(AuthenticationRequest authenticationRequest, OpenIDClient openIDClient) throws CertificateException, JOSEException, IOException, ParseException, BadJOSEException {
+    public static Map<String, String> parse(AuthenticationRequest authenticationRequest, OpenIDClient openIDClient)
+            throws CertificateException, JOSEException, IOException, ParseException, BadJOSEException {
         if (!openIDClient.certificateSpecified()) {
             throw new UnsupportedJWTException(String.format("RP %s does not have a certificate, url or discovery url. ",openIDClient.getClientId()));
         }

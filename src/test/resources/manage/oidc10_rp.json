@@ -109,13 +109,13 @@
     "version": 0,
     "type": "oidc10_rp",
     "data": {
-      "entityid": "playground",
+      "entityid": "playground_client",
       "eid": 10,
       "state": "testaccepted",
       "allowedall": true,
       "metaDataFields": {
-        "name:en": "Playground",
-        "name:nl": "Playground",
+        "name:en": "Playground Client",
+        "name:nl": "Playground Client",
         "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
         "scopes": [
           "openid",
@@ -126,6 +126,10 @@
           "implicit",
           "refresh_token",
           "client_credentials"
+        ],
+        "redirectUrls": [
+          "http://localhost:3000/redirect",
+          "http://localhost:3000/oidc/api/redirect"
         ],
         "accessTokenValidity": 3600,
         "isResourceServer": "1",
