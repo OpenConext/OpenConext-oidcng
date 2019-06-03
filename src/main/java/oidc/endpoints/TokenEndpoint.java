@@ -30,7 +30,6 @@ import oidc.repository.OpenIDClientRepository;
 import oidc.repository.RefreshTokenRepository;
 import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
-import oidc.web.ErrorController;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpHeaders;

@@ -88,8 +88,7 @@ public class JWTRequest {
     @SuppressWarnings("unchecked")
     private static JWTClaimsSet claimsSet(JWKSet jwkSet, SignedJWT signedJWT) throws BadJOSEException, JOSEException {
         ConfigurableJWTProcessor jwtProcessor = new DefaultJWTProcessor();
-        JWKSource keySource = new ImmutableJWKSet(jwkSet);
-        JWSKeySelector keySelector = new JWSVerificationKeySelector(signedJWT.getHeader().getAlgorithm(), keySource);
+        JWSKeySelector keySelector = new JWSVerificationKeySelector(signedJWT.getHeader().getAlgorithm(), new ImmutableJWKSet(jwkSet));
         jwtProcessor.setJWSKeySelector(keySelector);
         return jwtProcessor.process(signedJWT, null);
     }
