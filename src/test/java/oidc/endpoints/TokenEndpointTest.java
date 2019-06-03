@@ -263,7 +263,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void codeChallengeFlowMismatch() {
+    public void codeChallengeFlow() {
         String verifier = "12345678901234567890123456789012345678901234567890";
         CodeChallenge codeChallenge = CodeChallenge.compute(CodeChallengeMethod.S256, new CodeVerifier(verifier));
 

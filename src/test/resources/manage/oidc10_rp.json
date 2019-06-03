@@ -132,8 +132,9 @@
           "http://localhost:3000/oidc/api/redirect"
         ],
         "accessTokenValidity": 3600,
+        "refreshTokenValidity": 3600,
         "isResourceServer": "1",
-        "refreshTokenValidity": 3600
+        "isPublicClient": "1"
       }
     }
   }
