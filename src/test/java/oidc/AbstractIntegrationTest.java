@@ -1,8 +1,6 @@
 package oidc;
 
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
@@ -23,7 +21,6 @@ import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.openid.connect.sdk.ClaimsRequest;
 import io.restassured.RestAssured;
-
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import oidc.endpoints.MapTypeReference;
@@ -40,7 +37,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -199,6 +195,19 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
                                                                             String responseMode, String nonce,
                                                                             String codeChallenge, List<String> claims,
                                                                             String scopes, String state, String codeChallengeMethod) {
+        return doAuthorizeQueryParameters(clientId, responseType, responseMode, nonce, codeChallenge, claims, scopes, state, codeChallengeMethod, null, null);
+    }
+
+    protected Response doAuthorizeWithJWTRequest(String clientId, String responseType, String responseMode,
+                                                 SignedJWT signedJWT, String requestURL) {
+        return doAuthorizeQueryParameters(clientId, responseType, responseMode, "nonce", null,
+                null, "openid", "state", null, signedJWT, requestURL);
+    }
+
+    protected Response doAuthorizeQueryParameters(String clientId, String responseType, String responseMode,
+                                                  String nonce, String codeChallenge, List<String> claims,
+                                                  String scopes, String state, String codeChallengeMethod,
+                                                  SignedJWT signedJWT, String requestURL) {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", scopes);
         queryParams.put("response_type", responseType);
@@ -220,6 +229,12 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
             claims.forEach(claim -> claimsRequest.addIDTokenClaim(claim));
             String claimsRequestString = claimsRequest.toString();
             queryParams.put("claims", claimsRequestString);
+        }
+        if (signedJWT != null) {
+            queryParams.put("request", signedJWT.serialize());
+        }
+        if (StringUtils.hasText(requestURL)) {
+            queryParams.put("request_uri", requestURL);
         }
         Response response = given().redirects().follow(false)
                 .when()

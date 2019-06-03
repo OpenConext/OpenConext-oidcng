@@ -14,13 +14,14 @@ import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.ClaimsRequest;
+import com.nimbusds.openid.connect.sdk.claims.ACR;
 import oidc.TestUtils;
 import oidc.endpoints.MapTypeReference;
 import oidc.exceptions.UnsupportedJWTException;
 import oidc.model.OpenIDClient;
-import oidc.model.User;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -43,8 +44,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -52,7 +53,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.Assert.assertEquals;
 
-public class JWTRequestTest implements TestUtils, MapTypeReference {
+public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTest {
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(8089);
@@ -80,7 +81,7 @@ public class JWTRequestTest implements TestUtils, MapTypeReference {
         OpenIDClient client = getClient();
         String keyID = getCertificateKeyID(client);
 
-        SignedJWT signedJWT = doParseWithSpecifiedRequest(client, keyID, false);
+        SignedJWT signedJWT = doParseWithSpecifiedRequest(client, keyID);
         stubFor(get(urlPathMatching("/request")).willReturn(aResponse()
                 .withHeader("Content-Type", "application/json")
                 .withBody(signedJWT.serialize())));
@@ -102,7 +103,6 @@ public class JWTRequestTest implements TestUtils, MapTypeReference {
                 .build();
 
         assertEquals("RSA", build.toJSONObject().get("kty"));
-
     }
 
     @Test
@@ -140,7 +140,7 @@ public class JWTRequestTest implements TestUtils, MapTypeReference {
     @Test(expected = UnsupportedJWTException.class)
     public void plainJWT() throws Exception {
         OpenIDClient client = getClient();
-        doParseWithSpecifiedRequest(client, "keyID", false);
+        doParseWithSpecifiedRequest(client, "keyID");
         PlainJWT jwt = new PlainJWT(new JWTClaimsSet.Builder().jwtID(UUID.randomUUID().toString()).build());
         AuthenticationRequest authenticationRequest = new AuthenticationRequest.Builder(ResponseType.getDefault(),
                 new Scope("openid"), new ClientID(client.getClientId()), new URI("http://localhost:8080"))
@@ -149,14 +149,18 @@ public class JWTRequestTest implements TestUtils, MapTypeReference {
     }
 
     private void doParse(OpenIDClient client, String keyID) throws Exception {
-        SignedJWT signedJWT = doParseWithSpecifiedRequest(client, keyID, false);
-        AuthenticationRequest authenticationRequest = new AuthenticationRequest.Builder(ResponseType.getDefault(),
-                new Scope("openid"), new ClientID(client.getClientId()), new URI("http://localhost:8080"))
+        SignedJWT signedJWT = doParseWithSpecifiedRequest(client, keyID);
+        AuthenticationRequest authenticationRequest = new AuthenticationRequest.Builder(
+                ResponseType.getDefault(),
+                new Scope("openid"),
+                new ClientID(client.getClientId()),
+                new URI("http://localhost:8080"))
+                .state(new State("old"))
                 .requestObject(signedJWT).build();
         callParse(client, authenticationRequest);
     }
 
-    private SignedJWT doParseWithSpecifiedRequest(OpenIDClient client, String keyID, boolean withRequestURL) throws Exception {
+    private SignedJWT doParseWithSpecifiedRequest(OpenIDClient client, String keyID) throws Exception {
         ClaimsRequest claimsRequest = new ClaimsRequest();
         claimsRequest.addIDTokenClaim("email");
 
@@ -172,7 +176,9 @@ public class JWTRequestTest implements TestUtils, MapTypeReference {
                 .claim("redirect_uri", "http://localhost:8080/redirect")
                 .claim("scope", "openid groups")
                 .claim("nonce", "123456")
-                .claim("claims", claimsRequest.toString());
+                .claim("state", "new")
+                .claim("claims", claimsRequest.toString())
+                .claim("acr_values", "loa1 loa2 loa3");
         JWTClaimsSet claimsSet = builder.build();
         JWSHeader header = new JWSHeader.Builder(TokenGenerator.signingAlg).type(JOSEObjectType.JWT).keyID(keyID).build();
         SignedJWT signedJWT = new SignedJWT(header, claimsSet);
@@ -182,36 +188,15 @@ public class JWTRequestTest implements TestUtils, MapTypeReference {
     }
 
     private void callParse(OpenIDClient client, AuthenticationRequest authenticationRequest) throws Exception {
-        Map<String, String> parameters = JWTRequest.parse(authenticationRequest, client);
-        assertEquals("openid groups", parameters.get("scope"));
+        AuthenticationRequest parsed = JWTRequest.parse(authenticationRequest, client);
+        assertEquals("openid groups", parsed.getScope().toString());
+        assertEquals("123456", parsed.getNonce().getValue());
+        assertEquals("new", parsed.getState().getValue());
+        assertEquals("loa1 loa2 loa3", parsed.getACRValues().stream().map(ACR::getValue).collect(Collectors.joining(" ")));
 
-        Collection<ClaimsRequest.Entry> claims = ClaimsRequest.parse(parameters.get("claims")).getIDTokenClaims();
+        Collection<ClaimsRequest.Entry> claims = parsed.getClaims().getIDTokenClaims();
         assertEquals(1, claims.size());
         assertEquals("email", claims.iterator().next().getClaimName());
-    }
-
-    private String getCertificateKeyID(OpenIDClient client) throws CertificateException {
-        String cert = "-----BEGIN CERTIFICATE-----\n" + client.getSigningCertificate() + "\n-----END CERTIFICATE-----";
-        return getCertificateKeyIDFromCertificate(cert);
-    }
-
-    private String getCertificateKeyIDFromCertificate(String cert) throws CertificateException {
-        return ((X509Certificate) CertificateFactory.getInstance("X.509")
-                .generateCertificate(new ByteArrayInputStream(cert.getBytes())))
-                .getSerialNumber().toString(10);
-    }
-
-    private RSAPrivateKey privateKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
-        String privateKey = readFile("keys/key.pem")
-                .replaceAll("\\Q-----BEGIN PRIVATE KEY-----\\E|\\Q-----END PRIVATE KEY-----\\E|\n", "");
-        byte[] decodedKey = Base64.getDecoder().decode(privateKey.getBytes());
-        return (RSAPrivateKey) KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(decodedKey));
-    }
-
-    private void setCertificateFields(OpenIDClient client, String signingCertificate, String signingCertificateUrl, String discoveryUrl) {
-        ReflectionTestUtils.setField(client, "signingCertificate", signingCertificate);
-        ReflectionTestUtils.setField(client, "signingCertificateUrl", signingCertificateUrl);
-        ReflectionTestUtils.setField(client, "discoveryUrl", discoveryUrl);
     }
 
     private OpenIDClient getClient() throws IOException {

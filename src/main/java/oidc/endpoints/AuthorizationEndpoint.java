@@ -1,6 +1,7 @@
 package oidc.endpoints;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.GrantType;
@@ -23,6 +24,7 @@ import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.OpenIDClientRepository;
 import oidc.repository.RefreshTokenRepository;
 import oidc.repository.UserRepository;
+import oidc.secure.JWTRequest;
 import oidc.secure.TokenGenerator;
 import oidc.user.OidcSamlAuthentication;
 import org.apache.commons.logging.Log;
@@ -39,11 +41,14 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -82,7 +87,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
     @GetMapping("/oidc/authorize")
     public ModelAndView authorize(@RequestParam MultiValueMap<String, String> parameters,
-                                  Authentication authentication) throws ParseException, JOSEException, UnsupportedEncodingException, NoSuchProviderException, NoSuchAlgorithmException {
+                                  Authentication authentication) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
         LOG.info(String.format("doAuthorize %s %s", authentication.getDetails(), parameters));
         //We do not provide SSO as does EB not - up to the identity provider
         logout();
@@ -98,11 +103,12 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         OpenIDClient client = openIDClientRepository.findByClientId(authenticationRequest.getClientID().getValue());
 
         if (isOpenIdClient) {
-            authenticationRequest = AuthenticationRequest.parse(parameters);
-            AuthenticationRequest oidcAuthenticationRequest = (AuthenticationRequest) authenticationRequest;
+            AuthenticationRequest oidcAuthenticationRequest = AuthenticationRequest.parse(parameters);
             if (oidcAuthenticationRequest.specifiesRequestObject()) {
-                //TODO
+                oidcAuthenticationRequest = JWTRequest.parse(oidcAuthenticationRequest, client);
             }
+            //swap reference
+            authenticationRequest = oidcAuthenticationRequest;
         }
 
         String redirectURI = redirectionURI.toString();
