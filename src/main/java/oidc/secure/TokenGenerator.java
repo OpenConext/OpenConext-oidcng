@@ -380,7 +380,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     private String symmetricKeyFormat(Long nbr) {
-        return Integer.toString(nbr.intValue());
+        return nbr != null ? Integer.toString(nbr.intValue()) : "0";
     }
 
     private Map<String, Object> verifyClaims(SignedJWT signedJWT) throws ParseException, JOSEException {
@@ -436,7 +436,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         return this.currentSigningKeyId;
     }
 
-    private String ensureLatestSymmetricKey() throws NoSuchProviderException, NoSuchAlgorithmException {
+    private String ensureLatestSymmetricKey() throws NoSuchAlgorithmException {
         if (!symmetricKeyFormat(sequenceRepository.currentSymmetricKeyId()).equals(this.currentSymmetricKeyId)) {
             this.initializeSymmetricKeys();
         }

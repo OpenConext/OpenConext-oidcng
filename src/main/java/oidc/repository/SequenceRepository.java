@@ -50,6 +50,10 @@ public class SequenceRepository {
     }
 
     public Long currentSymmetricKeyId() {
-        return mongoTemplate.findOne(symmetricKeyBasicQuery, Sequence.class).getValue();
+        Sequence one = mongoTemplate.findOne(symmetricKeyBasicQuery, Sequence.class);
+        if (one == null) {
+            return -1L;
+        }
+        return one.getValue();
     }
 }
