@@ -57,8 +57,8 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
         String code = getCode(response);
         Map<String, Object> results = doToken(code, "mock-rp", "secret", GrantType.AUTHORIZATION_CODE);
 
-        results = callIntrospection("resource-server", (String) results.get("access_token"), "secret");
-        assertEquals("RP mock-rp is not allowed to use the API of resource server resource-server. Allowed resource servers are []",
+        results = callIntrospection("resource-server-playground-client", (String) results.get("access_token"), "secret");
+        assertEquals("RP mock-rp is not allowed to use the API of resource server resource-server-playground-client. Allowed resource servers are []",
                 results.get("details"));
     }
 

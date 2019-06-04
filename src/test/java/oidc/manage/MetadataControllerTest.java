@@ -57,7 +57,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
 
         List<String> clientIds = mongoTemplate.find(new Query(), OpenIDClient.class).stream().map(OpenIDClient::getClientId).collect(Collectors.toList());
         clientIds.sort(String::compareTo);
-        assertEquals(Arrays.asList("mock-rp", "mock-sp", "resource-server", "playground_client"), clientIds);
+        assertEquals(Arrays.asList("mock-rp", "mock-sp", "resource-server-playground-client", "playground_client"), clientIds);
     }
 
     private void postConnections(List<Map<String, Object>> serviceProviders) throws IOException {

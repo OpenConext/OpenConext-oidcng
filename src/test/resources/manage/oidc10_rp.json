@@ -10,7 +10,7 @@
       "allowedall": true,
       "allowedResourceServers": [
         {
-          "name": "resource-server"
+          "name": "resource-server-playground-client"
         },
         {
           "name": "mock-sp"
@@ -79,7 +79,7 @@
     "version": 0,
     "type": "oidc10_rp",
     "data": {
-      "entityid": "resource-server",
+      "entityid": "resource-server-playground-client",
       "eid": 10,
       "state": "testaccepted",
       "allowedall": true,
@@ -113,6 +113,11 @@
       "eid": 10,
       "state": "testaccepted",
       "allowedall": true,
+      "allowedResourceServers": [
+        {
+          "name": "resource-server-playground-client"
+        }
+      ],
       "metaDataFields": {
         "name:en": "Playground Client",
         "name:nl": "Playground Client",

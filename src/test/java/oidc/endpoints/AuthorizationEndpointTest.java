@@ -73,7 +73,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void authorizeWithNoAuthorizationCodeGrant() {
-        Response response = doAuthorizeWithClaimsAndScopes("resource-server", "code", "code", "nonce", null, Collections.emptyList(), "openid", "state");
+        Response response = doAuthorizeWithClaimsAndScopes("resource-server-playground-client", "code", "code", "nonce", null, Collections.emptyList(), "openid", "state");
         Map<String, Object> result = response.as(mapTypeRef);
         assertEquals("Grant types [client_credentials] does not allow for authorization code flow", result.get("message"));
         assertEquals(401, result.get("status"));
