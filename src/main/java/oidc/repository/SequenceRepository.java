@@ -2,6 +2,7 @@ package oidc.repository;
 
 import oidc.model.Sequence;
 import oidc.model.SigningKey;
+import oidc.model.SymmetricKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Repository;
 public class SequenceRepository {
 
     private static final String SIGNING_KEY_ID = SigningKey.class.getSimpleName();
-    private static final String SYMMETRIC_KEY_ID = SigningKey.class.getSimpleName();
+    private static final String SYMMETRIC_KEY_ID = SymmetricKey.class.getSimpleName();
 
     private FindAndModifyOptions options = FindAndModifyOptions.options().returnNew(true);
     private MongoTemplate mongoTemplate;
@@ -38,15 +39,19 @@ public class SequenceRepository {
         return res.getValue();
     }
 
+    public Long currentSigningKeyId() {
+        Sequence one = mongoTemplate.findOne(signingKeyBasicQuery, Sequence.class);
+        if (one == null) {
+            return -1L;
+        }
+        return one.getValue();
+    }
+
     public void updateSymmetricKeyId(Long newKeyId) {
-        Sequence res = mongoTemplate.findAndModify(signingKeyBasicQuery, Update.update("value", newKeyId), options, Sequence.class);
+        Sequence res = mongoTemplate.findAndModify(symmetricKeyBasicQuery, Update.update("value", newKeyId), options, Sequence.class);
         if (res == null) {
             mongoTemplate.save(new Sequence(SYMMETRIC_KEY_ID, newKeyId));
         }
-    }
-
-    public Long currentSigningKeyId() {
-        return mongoTemplate.findOne(signingKeyBasicQuery, Sequence.class).getValue();
     }
 
     public Long currentSymmetricKeyId() {

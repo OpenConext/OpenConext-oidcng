@@ -204,8 +204,10 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
             KeysetHandle keysetHandle = KeysetHandle.generateNew(AeadKeyTemplates.AES256_CTR_HMAC_SHA256);
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             keysetHandle.write(JsonKeysetWriter.withOutputStream(outputStream), AeadFactory.getPrimitive(primaryKeysetHandle));
-            String keyId = String.valueOf(keysetHandle.getKeysetInfo().getPrimaryKeyId());
+            int primaryKeyId = keysetHandle.getKeysetInfo().getPrimaryKeyId();
+            sequenceRepository.updateSymmetricKeyId(Long.valueOf(primaryKeyId));
             String aead = Base64.getEncoder().encodeToString(outputStream.toString().getBytes(defaultCharset()));
+            String keyId = String.valueOf(primaryKeyId);
             SymmetricKey symmetricKey = new SymmetricKey(keyId, aead, new Date());
             symmetricKeyRepository.save(symmetricKey);
             return symmetricKey;
