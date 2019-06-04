@@ -3,14 +3,18 @@ package oidc.endpoints;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ResponseMode;
 import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import oidc.model.AuthorizationCode;
 import oidc.model.User;
+import oidc.secure.JWTRequest;
+import oidc.secure.SignedJWTTest;
 import org.junit.Test;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -28,6 +32,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.security.cert.CertificateException;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,7 +47,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
-public class AuthorizationEndpointTest extends AbstractIntegrationTest {
+public class AuthorizationEndpointTest extends AbstractIntegrationTest implements SignedJWTTest {
 
     @Test
     public void authorize() throws UnsupportedEncodingException {
@@ -239,5 +244,30 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest {
         JWTClaimsSet claimsSet = processToken(idToken, port);
         assertEquals("nonce", claimsSet.getClaim("nonce"));
         assertNotNull(claimsSet.getClaim("at_hash"));
+    }
+
+    @Test
+    public void signedJwtAuthorization() throws Exception {
+        String cert = readFile("keys/certificate.crt");
+        String keyID = getCertificateKeyIDFromCertificate(cert);
+
+        SignedJWT signedJWT = signedJWT("mock-sp", keyID);
+        Response response = doAuthorizeWithJWTRequest("mock-sp", "code", null, signedJWT, null);
+
+        String location = response.getHeader("Location");
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(location);
+        MultiValueMap<String, String> queryParams = builder.build().getQueryParams();
+        String state = queryParams.getFirst("state");
+        assertEquals("new", state);
+
+        String code = queryParams.getFirst("code");
+        Map<String, Object> result = doToken(code);
+
+        String idToken = (String) result.get("id_token");
+
+        JWTClaimsSet claimsSet = processToken(idToken, port);
+        assertEquals("123456", claimsSet.getClaim("nonce"));
+        assertEquals("john.doe@example.org", claimsSet.getClaim("email"));
+
     }
 }

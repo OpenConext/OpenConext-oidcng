@@ -95,11 +95,9 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         OidcSamlAuthentication samlAuthentication = (OidcSamlAuthentication) authentication;
         AuthorizationRequest authenticationRequest = AuthorizationRequest.parse(parameters);
 
-        URI redirectionURI = authenticationRequest.getRedirectionURI();
         Scope scope = authenticationRequest.getScope();
         boolean isOpenIdClient = scope != null && isOpenIDRequest(scope.toStringList());
 
-        State state = authenticationRequest.getState();
         OpenIDClient client = openIDClientRepository.findByClientId(authenticationRequest.getClientID().getValue());
 
         if (isOpenIdClient) {
@@ -110,6 +108,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             //swap reference
             authenticationRequest = oidcAuthenticationRequest;
         }
+        State state = authenticationRequest.getState();
+        URI redirectionURI = authenticationRequest.getRedirectionURI();
 
         String redirectURI = redirectionURI.toString();
         redirectURI = URLDecoder.decode(redirectURI, "UTF-8");

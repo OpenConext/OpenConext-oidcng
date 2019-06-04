@@ -2,11 +2,6 @@ package oidc.secure;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.nimbusds.jose.Algorithm;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JOSEObjectType;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.PlainJWT;
@@ -24,26 +19,15 @@ import oidc.exceptions.UnsupportedJWTException;
 import oidc.model.OpenIDClient;
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Base64;
 import java.util.Collection;
-import java.util.Date;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -81,7 +65,7 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
         OpenIDClient client = getClient();
         String keyID = getCertificateKeyID(client);
 
-        SignedJWT signedJWT = doParseWithSpecifiedRequest(client, keyID);
+        SignedJWT signedJWT = signedJWT(client.getClientId(), keyID);
         stubFor(get(urlPathMatching("/request")).willReturn(aResponse()
                 .withHeader("Content-Type", "application/json")
                 .withBody(signedJWT.serialize())));
@@ -94,7 +78,7 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
 
 
     @Test
-    public void certificateToJWT() throws CertificateException, JOSEException {
+    public void certificateToJWT() throws CertificateException {
         X509Certificate x509Certificate = (X509Certificate) CertificateFactory.getInstance("X.509")
                 .generateCertificate(new ByteArrayInputStream((readFile("keys/certificate.crt")).getBytes()));
         RSAKey build = new RSAKey.Builder((RSAPublicKey) x509Certificate.getPublicKey())
@@ -140,7 +124,7 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
     @Test(expected = UnsupportedJWTException.class)
     public void plainJWT() throws Exception {
         OpenIDClient client = getClient();
-        doParseWithSpecifiedRequest(client, "keyID");
+        signedJWT(client.getClientId(), "keyID");
         PlainJWT jwt = new PlainJWT(new JWTClaimsSet.Builder().jwtID(UUID.randomUUID().toString()).build());
         AuthenticationRequest authenticationRequest = new AuthenticationRequest.Builder(ResponseType.getDefault(),
                 new Scope("openid"), new ClientID(client.getClientId()), new URI("http://localhost:8080"))
@@ -149,7 +133,7 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
     }
 
     private void doParse(OpenIDClient client, String keyID) throws Exception {
-        SignedJWT signedJWT = doParseWithSpecifiedRequest(client, keyID);
+        SignedJWT signedJWT = signedJWT(client.getClientId(), keyID);
         AuthenticationRequest authenticationRequest = new AuthenticationRequest.Builder(
                 ResponseType.getDefault(),
                 new Scope("openid"),
@@ -158,33 +142,6 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
                 .state(new State("old"))
                 .requestObject(signedJWT).build();
         callParse(client, authenticationRequest);
-    }
-
-    private SignedJWT doParseWithSpecifiedRequest(OpenIDClient client, String keyID) throws Exception {
-        ClaimsRequest claimsRequest = new ClaimsRequest();
-        claimsRequest.addIDTokenClaim("email");
-
-        Instant instant = Clock.systemDefaultZone().instant();
-        JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
-                .audience("audience")
-                .expirationTime(Date.from(instant.plus(3600, ChronoUnit.SECONDS)))
-                .jwtID(UUID.randomUUID().toString())
-                .issuer(client.getClientId())
-                .issueTime(Date.from(instant))
-                .subject(client.getClientId())
-                .notBeforeTime(new Date(System.currentTimeMillis()))
-                .claim("redirect_uri", "http://localhost:8080/redirect")
-                .claim("scope", "openid groups")
-                .claim("nonce", "123456")
-                .claim("state", "new")
-                .claim("claims", claimsRequest.toString())
-                .claim("acr_values", "loa1 loa2 loa3");
-        JWTClaimsSet claimsSet = builder.build();
-        JWSHeader header = new JWSHeader.Builder(TokenGenerator.signingAlg).type(JOSEObjectType.JWT).keyID(keyID).build();
-        SignedJWT signedJWT = new SignedJWT(header, claimsSet);
-        JWSSigner jswsSigner = new RSASSASigner(privateKey());
-        signedJWT.sign(jswsSigner);
-        return signedJWT;
     }
 
     private void callParse(OpenIDClient client, AuthenticationRequest authenticationRequest) throws Exception {

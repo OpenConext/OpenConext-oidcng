@@ -12,6 +12,11 @@ cron:
   token-cleaner-expression: "0 0/15 * * * *"
   key-rollover-expression: "0 0/15 * * * *"
 
+server:
+  max-http-header-size: 10000000
+  tomcat:
+    max-http-post-size: 10000000
+
 # used by the git plugin
 info:
   build:
