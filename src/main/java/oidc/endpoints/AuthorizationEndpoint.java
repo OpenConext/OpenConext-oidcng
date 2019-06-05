@@ -88,7 +88,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     @GetMapping("/oidc/authorize")
     public ModelAndView authorize(@RequestParam MultiValueMap<String, String> parameters,
                                   Authentication authentication) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
-        LOG.info(String.format("doAuthorize %s %s", authentication.getDetails(), parameters));
+        LOG.info(String.format("/oidc/authorize %s %s", authentication.getDetails(), parameters));
         //We do not provide SSO as does EB not - up to the identity provider
         logout();
 
@@ -104,6 +104,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             AuthenticationRequest oidcAuthenticationRequest = AuthenticationRequest.parse(parameters);
             if (oidcAuthenticationRequest.specifiesRequestObject()) {
                 oidcAuthenticationRequest = JWTRequest.parse(oidcAuthenticationRequest, client);
+                LOG.debug("/oidc/authorize with JWT 'request'");
             }
             //swap reference
             authenticationRequest = oidcAuthenticationRequest;

@@ -149,7 +149,7 @@ This will return all the information about the user. This endpoint is for Relayi
   "updated_at": 1557919511
 }
 ```
-### [client JWT(#client-jwt)
+### [client JWT](#client-jwt)
 The authorization endpoint also accepts signed JWT's from the RP. To verify the signature the signing certificate is required. This can be configured in Manage.
 
 For testing purposes a certificate can be generated:
