@@ -46,6 +46,7 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
     @Test
     public void parseWithCertificate() throws Exception {
         OpenIDClient client = getClient();
+        setCertificateFields(client, getStrippedCertificate(), null, null);
         String keyID = getCertificateKeyID(client);
 
         doParse(client, keyID);
@@ -158,6 +159,10 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
 
     private OpenIDClient getClient() throws IOException {
         return relyingParties().stream().map(OpenIDClient::new).filter(c -> c.getClientId().equals("mock-sp")).findAny().orElseThrow(IllegalArgumentException::new);
+    }
+
+    private String getStrippedCertificate() {
+        return readFile("keys/certificate.crt").replaceAll("\\Q-----BEGIN CERTIFICATE-----\\E|\\Q-----END CERTIFICATE-----\\E|\n", "");
     }
 
 }

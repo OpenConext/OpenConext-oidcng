@@ -51,7 +51,7 @@ public class JWTRequest {
     public static AuthenticationRequest parse(AuthenticationRequest authenticationRequest, OpenIDClient openIDClient)
             throws CertificateException, JOSEException, IOException, BadJOSEException, ParseException, com.nimbusds.oauth2.sdk.ParseException, URISyntaxException {
         if (!openIDClient.certificateSpecified()) {
-            throw new UnsupportedJWTException(String.format("RP %s does not have a certificate, url or discovery url. ",openIDClient.getClientId()));
+            throw new UnsupportedJWTException(String.format("RP %s does not have a certificate, url or discovery url. ", openIDClient.getClientId()));
         }
         JWT jwt = authenticationRequest.getRequestObject();
         if (jwt == null) {
@@ -63,10 +63,10 @@ public class JWTRequest {
         }
         SignedJWT signedJWT = (SignedJWT) jwt;
         String signingCertificate;
-        if (StringUtils.hasText(openIDClient.getSigningCertificate())) {
-            signingCertificate = openIDClient.getSigningCertificate();
-        } else if (StringUtils.hasText(openIDClient.getSigningCertificateUrl())) {
+        if (StringUtils.hasText(openIDClient.getSigningCertificateUrl())) {
             signingCertificate = read(openIDClient.getSigningCertificateUrl());
+        } else if (StringUtils.hasText(openIDClient.getSigningCertificate())) {
+            signingCertificate = openIDClient.getSigningCertificate();
         } else {
             String discovery = read(openIDClient.getDiscoveryUrl());
             String jwksUri = (String) JSONObjectUtils.parse(discovery).get("jwks_uri");
