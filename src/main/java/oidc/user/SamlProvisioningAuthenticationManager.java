@@ -13,6 +13,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.saml.saml2.attribute.Attribute;
 import org.springframework.security.saml.saml2.authentication.Assertion;
+import org.springframework.security.saml.saml2.authentication.AuthenticationContext;
+import org.springframework.security.saml.saml2.authentication.AuthenticationContextClassReference;
 import org.springframework.security.saml.saml2.authentication.AuthenticationStatement;
 import org.springframework.security.saml.spi.DefaultSamlAuthentication;
 import org.springframework.util.CollectionUtils;
@@ -21,6 +23,7 @@ import org.springframework.util.StringUtils;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -93,7 +96,19 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
                 .filter(oo -> oo[1] != null)
                 .collect(Collectors.toMap(oo -> (String) oo[0], oo -> oo[1]));
 
-        return new User(sub, unspecifiedNameId, authenticatingAuthority.get(), clientId, attributes);
+        List<String> acrClaims = assertion.getAuthenticationStatements().stream()
+                .map(authenticationStatement -> authenticationContextClassReference(authenticationStatement.getAuthenticationContext()))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+
+        return new User(sub, unspecifiedNameId, authenticatingAuthority.get(), clientId, attributes, acrClaims);
+    }
+
+    private Optional<String> authenticationContextClassReference(AuthenticationContext authenticationContext) {
+        return Optional.ofNullable(authenticationContext)
+                .map(AuthenticationContext::getClassReference)
+                .map(AuthenticationContextClassReference::getValue);
     }
 
     private String getAttributeValue(String samlAttributeName, Assertion assertion) {
@@ -106,10 +121,7 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
         if (firstAttribute != null) {
             List<Object> values = firstAttribute.getValues();
             if (!CollectionUtils.isEmpty(values) && values.size() > 0) {
-                return values.stream()
-                        .filter(val -> val != null)
-                        .map(val -> val.toString())
-                        .collect(Collectors.toSet());
+                return values.stream().filter(Objects::nonNull).map(Object::toString).collect(Collectors.toSet());
             }
         }
         return null;

@@ -22,6 +22,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -66,7 +67,8 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
     }
 
     private String doEncryptAndDecryptAccessToken() throws IOException {
-        User user = new User("sub", "unspecifiedNameId", "http://mockidp", "clientId", getUserInfo());
+        User user = new User("sub", "unspecifiedNameId", "http://mockidp",
+                "clientId", getUserInfo(), Collections.emptyList());
 
         String clientId = "mock-sp";
         OpenIDClient client = mongoTemplate.find(Query.query(Criteria.where("clientId").is(clientId)), OpenIDClient.class).get(0);

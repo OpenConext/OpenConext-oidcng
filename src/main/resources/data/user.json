@@ -4,6 +4,11 @@
   "unspecifiedNameId": "urn:collab:person:example.com:admin",
   "authenticatingAuthority": "http://mock-idp",
   "clientId": "http@//mock-sp",
+  "acrClaims": [
+    "loa1",
+    "loa2",
+    "loa3"
+  ],
   "attributes": {
     "preferred_username": "Johnny D.",
     "name": "John Doe",

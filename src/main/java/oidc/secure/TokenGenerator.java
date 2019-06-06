@@ -394,7 +394,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         return signedJWT.getJWTClaimsSet().getClaims();
     }
 
-    private String idToken(OpenIDClient client, Optional<User> user, Map<String, Object> additionalClaims,
+    private String idToken(OpenIDClient client, Optional<User> optionalUser, Map<String, Object> additionalClaims,
                            List<String> idTokenClaims, boolean includeAllowedResourceServers, String signingKey) throws JOSEException {
         List<String> audiences = new ArrayList<>();
         audiences.add(client.getClientId());
@@ -409,18 +409,30 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
                 .jwtID(UUID.randomUUID().toString())
                 .issuer(issuer)
                 .issueTime(Date.from(clock.instant()))
-                .subject(user.map(User::getSub).orElse(client.getClientId()))
+                .subject(optionalUser.map(User::getSub).orElse(client.getClientId()))
                 .notBeforeTime(new Date(System.currentTimeMillis()));
 
 
-        if (!CollectionUtils.isEmpty(idTokenClaims) && user.isPresent()) {
-            Map<String, Object> attributes = user.get().getAttributes();
+        if (!CollectionUtils.isEmpty(idTokenClaims) && optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            Map<String, Object> attributes = user.getAttributes();
             idTokenClaims.forEach(claim -> {
                 if (attributes.containsKey(claim)) {
                     builder.claim(claim, attributes.get(claim));
                 }
             });
         }
+        /*
+         * https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest:
+         * If the client requests the acr Claim using both the acr_values request parameter and an individual acr Claim
+         * request for the ID Token listing specific requested values, the resulting behavior is unspecified.
+         */
+        optionalUser.ifPresent(user -> {
+            if (!CollectionUtils.isEmpty(user.getAcrClaims())) {
+                builder.claim("acr", String.join(" ", user.getAcrClaims()));
+            }
+        });
+
         additionalClaims.forEach(builder::claim);
 
         JWTClaimsSet claimsSet = builder.build();
