@@ -18,6 +18,7 @@
 package oidc.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import oidc.repository.OpenIDClientRepository;
 import oidc.repository.SequenceRepository;
 import oidc.repository.SigningKeyRepository;
 import oidc.repository.UserRepository;
@@ -48,13 +49,16 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
 
     private AppConfig appConfiguration;
     private UserRepository userRepository;
+    private OpenIDClientRepository openIDClientRepository;
     private ObjectMapper objectMapper;
 
     public BeanConfig(AppConfig config,
                       UserRepository userRepository,
+                      OpenIDClientRepository openIDClientRepository,
                       ObjectMapper objectMapper) {
         this.appConfiguration = config;
         this.userRepository = userRepository;
+        this.openIDClientRepository = openIDClientRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -74,7 +78,7 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     public Filter spAuthenticationRequestFilter() {
         SamlProviderProvisioning<ServiceProviderService> provisioning = getSamlProvisioning();
         SamlRequestMatcher requestMatcher = new SamlRequestMatcher(provisioning, "authorize", false);
-        return new ConfigurableSamlAuthenticationRequestFilter(provisioning, requestMatcher);
+        return new ConfigurableSamlAuthenticationRequestFilter(provisioning, requestMatcher, openIDClientRepository);
     }
 
     @Bean

@@ -293,7 +293,11 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     @Test
     public void unsupportedClientAuthentication() throws JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException {
         String code = doAuthorize();
-        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user(issuer)), openIDClient(), "nonce", Collections.emptyList());
+        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(
+                Optional.of(user(issuer)),
+                openIDClient("mock-sp"),
+                "nonce",
+                Collections.emptyList());
         Map<String, Object> body = given()
                 .when()
                 .header("Content-type", "application/x-www-form-urlencoded")

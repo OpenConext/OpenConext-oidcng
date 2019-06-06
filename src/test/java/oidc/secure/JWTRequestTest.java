@@ -94,9 +94,10 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
     public void parseWithCertificateUrl() throws Exception {
         OpenIDClient client = getClient();
         setCertificateFields(client, null, "http://localhost:8089/certs", null);
+        String body = readFile("keys/rp_public_keys.json");
         stubFor(get(urlPathMatching("/certs")).willReturn(aResponse()
                 .withHeader("Content-Type", "application/json")
-                .withBody(readFile("keys/rp_public_keys.json"))));
+                .withBody(body)));
         doParse(client, "key_id");
     }
 
@@ -158,7 +159,10 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
     }
 
     private OpenIDClient getClient() throws IOException {
-        return relyingParties().stream().map(OpenIDClient::new).filter(c -> c.getClientId().equals("mock-sp")).findAny().orElseThrow(IllegalArgumentException::new);
+        return relyingParties().stream().map(OpenIDClient::new)
+                .filter(c -> c.getClientId().equals("mock-sp"))
+                .findAny()
+                .orElseThrow(IllegalArgumentException::new);
     }
 
     private String getStrippedCertificate() {

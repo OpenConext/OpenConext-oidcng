@@ -114,8 +114,11 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         return this.openIDClients;
     }
 
-    protected OpenIDClient openIDClient() throws IOException {
-        return this.openIDClients().get(0);
+    protected OpenIDClient openIDClient(String clientId) throws IOException {
+        return this.openIDClients().stream()
+                .filter(openIDClient -> openIDClient.getClientId().equals(clientId))
+                .findAny()
+                .orElseThrow(IllegalArgumentException::new);
     }
 
     protected String doAuthorize() throws UnsupportedEncodingException {
