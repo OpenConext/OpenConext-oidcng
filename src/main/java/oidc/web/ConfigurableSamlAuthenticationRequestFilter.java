@@ -71,6 +71,7 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
                     Stream.of(acrValues.split(" "))
                             .map(AuthenticationContextClassReference::fromUrn)
                             .collect(Collectors.toList()));
+            authenticationRequest.setRequestedAuthenticationContext(RequestedAuthenticationContext.exact);
         }
         String requestP = request.getParameter("request");
         String requestUrlP = request.getParameter("request_uri");
