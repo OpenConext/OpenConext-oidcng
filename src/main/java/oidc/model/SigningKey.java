@@ -27,7 +27,7 @@ public class SigningKey {
         Assert.notNull(keyId, "KeyID must not be null");
         Assert.notNull(symmetricKeyId, "SymmetricKeyId must not be null");
         Assert.notNull(jwk, "Jwk must not be null");
-        Assert.isTrue(Base64.isBase64(jwk),"Jwk must be base64 encoded");
+        Assert.isTrue(Base64.isBase64(jwk), "Jwk must be base64 encoded");
         this.keyId = keyId;
         this.symmetricKeyId = symmetricKeyId;
         this.jwk = jwk;

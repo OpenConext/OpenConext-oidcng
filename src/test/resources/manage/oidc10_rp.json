@@ -91,7 +91,7 @@
           "openid"
         ],
         "grants": [
-            "client_credentials"
+          "client_credentials"
         ],
         "redirectUrls": [
           "http://localhost:8091/redirect",

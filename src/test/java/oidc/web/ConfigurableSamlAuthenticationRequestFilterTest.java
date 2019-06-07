@@ -15,10 +15,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.security.cert.CertificateException;
 import java.text.ParseException;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,21 +32,32 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
         OpenIDClient client = openIDClient("mock-sp");
         String keyID = getCertificateKeyID(client);
         String requestSignedJWT = signedJWT(client.getClientId(), keyID).serialize();
-        doFilterInternal( "mock-sp", "login", requestSignedJWT);
+        doFilterInternal("mock-sp", "login", null, requestSignedJWT, true);
+    }
+
+    @Test
+    public void filterInternalWithLoa() throws Exception {
+        OpenIDClient client = openIDClient("mock-sp");
+        String keyID = getCertificateKeyID(client);
+        String requestSignedJWT = signedJWT(client.getClientId(), keyID).serialize();
+        doFilterInternal("mock-sp", null, "loa", requestSignedJWT, true);
     }
 
     @Test
     public void filterInternal() throws UnsupportedEncodingException, ParseException {
-        doFilterInternal( null, null, null);
+        doFilterInternal(null, null, null, null, false);
     }
 
-    private void doFilterInternal(String clientId, String prompt, String requestSignedJWT) throws UnsupportedEncodingException, ParseException {
+    private void doFilterInternal(String clientId, String prompt, String acrValue, String requestSignedJWT, boolean isForceAuth) throws UnsupportedEncodingException, ParseException {
         RequestSpecification when = given().redirects().follow(false).when();
         if (StringUtils.hasText(clientId)) {
             when.queryParam("client_id", clientId);
         }
         if (StringUtils.hasText(prompt)) {
             when.queryParam("prompt", prompt);
+        }
+        if (StringUtils.hasText(acrValue)) {
+            when.queryParam("acr_values", acrValue);
         }
         if (StringUtils.hasText(requestSignedJWT)) {
             when.queryParam("request", requestSignedJWT)
@@ -68,7 +77,7 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
 
         String samlRequest = URLDecoder.decode(queryParams.getFirst("SAMLRequest"), "UTF-8");
         AuthenticationRequest authenticationRequest = resolveFromEncodedXML(AuthenticationRequest.class, samlRequest);
-        assertEquals("login".equals(prompt), authenticationRequest.isForceAuth());
+        assertEquals(isForceAuth, authenticationRequest.isForceAuth());
         if (StringUtils.hasText(requestSignedJWT)) {
             String acrValues = (String) SignedJWT.parse(requestSignedJWT).getJWTClaimsSet().getClaim("acr_values");
             List<AuthenticationContextClassReference> classReferences = authenticationRequest.getAuthenticationContextClassReferences();

@@ -6,7 +6,8 @@
                     Destination="https://sa-gw.surfconext.nl/authentication/single-sign-on"
 >
     <saml:Issuer>http://test-sp.example.com</saml:Issuer>
-    <samlp:RequestedAuthnContext>
+    <samlp:RequestedAuthnContext Comparison="exact">
+        <saml:AuthnContextClassRef>http://surfconext.nl/assurance/loa1</saml:AuthnContextClassRef>
         <saml:AuthnContextClassRef>http://surfconext.nl/assurance/loa2</saml:AuthnContextClassRef>
     </samlp:RequestedAuthnContext>
 </samlp:AuthnRequest>

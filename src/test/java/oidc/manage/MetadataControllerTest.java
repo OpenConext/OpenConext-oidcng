@@ -2,7 +2,6 @@ package oidc.manage;
 
 import oidc.AbstractIntegrationTest;
 import oidc.model.OpenIDClient;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -50,14 +49,13 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Ignore
     public void rollback() throws IOException {
         List<Map<String, Object>> serviceProviders = new ArrayList<>();
         doPostConnections(serviceProviders, 500);
 
         List<String> clientIds = mongoTemplate.find(new Query(), OpenIDClient.class).stream().map(OpenIDClient::getClientId).collect(Collectors.toList());
         clientIds.sort(String::compareTo);
-        assertEquals(Arrays.asList("mock-rp", "mock-sp", "resource-server-playground-client", "playground_client"), clientIds);
+        assertEquals(Arrays.asList("mock-rp", "mock-sp", "playground_client", "resource-server-playground-client"), clientIds);
     }
 
     private void postConnections(List<Map<String, Object>> serviceProviders) throws IOException {

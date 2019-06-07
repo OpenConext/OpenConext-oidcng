@@ -8,6 +8,7 @@ import org.springframework.security.saml.saml2.authentication.RequestedAuthentic
 import org.springframework.security.saml.saml2.authentication.Response;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,8 +21,8 @@ public class LoaParsingTest implements SamlTest {
     public void parseRequestedAuthnContext() throws IOException {
         AuthenticationRequest authenticationRequest = resolveFromXMLFile(AuthenticationRequest.class, "saml/loa_authn_request.xml");
         RequestedAuthenticationContext requestedAuthenticationContext = authenticationRequest.getRequestedAuthenticationContext();
-        //TODO ensure the values http://surfconext.nl/assurance/loa2 are present.
-        // Wait for pull request https://github.com/spring-projects/spring-security-saml/pull/440 to be accepted.
+        List<String> loas = authenticationRequest.getAuthenticationContextClassReferences().stream().map(ref -> ref.getValue()).collect(Collectors.toList());
+        assertEquals(Arrays.asList("http://surfconext.nl/assurance/loa1", "http://surfconext.nl/assurance/loa2"), loas);
     }
 
     @Test
@@ -35,9 +36,8 @@ public class LoaParsingTest implements SamlTest {
         assertEquals(1, authenticationStatements.size());
 
         AuthenticationStatement authenticationStatement = authenticationStatements.get(0);
-        String classReference = authenticationStatement.getAuthenticationContext().getClassReference().toString();
-        //TODO ensure the classReference is http://stepup.example.org/verified-second-factor/level2
-        // Wait for pull request https://github.com/spring-projects/spring-security-saml/pull/440 to be accepted.
+        String loa = authenticationStatement.getAuthenticationContext().getClassReference().getValue();
+        assertEquals("http://stepup.example.org/verified-second-factor/level2", loa);
     }
 
 

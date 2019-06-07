@@ -75,7 +75,7 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
                 parseAcrValues(authenticationRequest, acrValuesObjects);
                 Prompt authRequestPrompt = authRequest.getPrompt();
                 if (authRequestPrompt != null && !authenticationRequest.isForceAuth()) {
-                    authenticationRequest.setForceAuth("login".equals(authRequestPrompt.toStringList().contains("prompt")));
+                    authenticationRequest.setForceAuth(authRequestPrompt.toStringList().contains("login"));
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);

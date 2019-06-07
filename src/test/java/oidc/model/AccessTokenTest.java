@@ -8,7 +8,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 
-import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -16,7 +15,7 @@ public class AccessTokenTest implements SeedUtils {
 
     @Test
     public void isExpiredNotNull() {
-        AccessToken accessToken = accessToken("value", (Date)null);
+        AccessToken accessToken = accessToken("value", (Date) null);
 
         assertFalse(accessToken.isExpired(Clock.systemDefaultZone()));
     }

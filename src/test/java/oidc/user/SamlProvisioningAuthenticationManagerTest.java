@@ -10,7 +10,6 @@ import org.springframework.security.saml.spi.DefaultSamlAuthentication;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;

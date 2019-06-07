@@ -2,6 +2,7 @@ package oidc;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.restassured.mapper.TypeRef;
 import org.apache.commons.io.IOUtils;
 import org.springframework.core.io.ClassPathResource;
 
@@ -10,7 +11,7 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import io.restassured.mapper.TypeRef;
+
 public interface TestUtils {
 
     default String readFile(String path) {

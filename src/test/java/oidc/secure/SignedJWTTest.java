@@ -73,6 +73,7 @@ public interface SignedJWTTest {
                 .claim("scope", "openid groups")
                 .claim("nonce", "123456")
                 .claim("state", "new")
+                .claim("prompt", "login")
                 .claim("claims", claimsRequest.toString())
                 .claim("acr_values", "loa1 loa2 loa3");
         JWTClaimsSet claimsSet = builder.build();

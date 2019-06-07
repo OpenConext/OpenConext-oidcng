@@ -4,7 +4,6 @@ import oidc.model.Sequence;
 import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.BasicQuery;

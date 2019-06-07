@@ -19,17 +19,12 @@ package oidc.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import oidc.repository.OpenIDClientRepository;
-import oidc.repository.SequenceRepository;
-import oidc.repository.SigningKeyRepository;
 import oidc.repository.UserRepository;
 import oidc.secure.LoggingStrictHttpFirewall;
 import oidc.user.SamlProvisioningAuthenticationManager;
 import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
-import org.springframework.core.io.Resource;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.saml.SamlRequestMatcher;
 import org.springframework.security.saml.provider.SamlServerConfiguration;

@@ -6,12 +6,20 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.langtag.LangTag;
+import com.nimbusds.oauth2.sdk.ResponseMode;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.id.State;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
+import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.ClaimsRequest;
+import com.nimbusds.openid.connect.sdk.Display;
+import com.nimbusds.openid.connect.sdk.Nonce;
+import com.nimbusds.openid.connect.sdk.Prompt;
 import com.nimbusds.openid.connect.sdk.claims.ACR;
 import oidc.TestUtils;
 import oidc.endpoints.MapTypeReference;
@@ -28,6 +36,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -132,6 +141,44 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
                 new Scope("openid"), new ClientID(client.getClientId()), new URI("http://localhost:8080"))
                 .requestObject(jwt).build();
         callParse(client, authenticationRequest);
+    }
+
+    @Test
+    public void fullBlown() throws Exception {
+        OpenIDClient client = getClient();
+        setCertificateFields(client, getStrippedCertificate(), null, null);
+        String keyID = getCertificateKeyID(client);
+        SignedJWT signedJWT = signedJWT(client.getClientId(), keyID);
+        ClaimsRequest claimsRequest = new ClaimsRequest();
+        claimsRequest.addIDTokenClaim("email");
+        AuthenticationRequest authenticationRequest = new AuthenticationRequest(
+                new URI("http://localhost/authorize"),
+                ResponseType.getDefault(),
+                ResponseMode.FRAGMENT,
+                new Scope("openid"),
+                new ClientID(client.getClientId()),
+                new URI(client.getRedirectUrls().get(0)),
+                new State("state"),
+                new Nonce("nonce"),
+                Display.getDefault(),
+                Prompt.parse("consent"),
+                1200,
+                Collections.singletonList(new LangTag("en")),
+                Collections.singletonList(new LangTag("en")),
+                null,
+                "hint",
+                Collections.singletonList(new ACR("loa")),
+                claimsRequest,
+                signedJWT,
+                null,
+                CodeChallenge.compute(CodeChallengeMethod.S256, new CodeVerifier()),
+                CodeChallengeMethod.S256,
+                Collections.singletonList(new URI("http://localhost")),
+                true,
+                Collections.singletonMap("custom", Collections.singletonList("value")));
+        authenticationRequest = JWTRequest.parse(authenticationRequest, client);
+
+        assertEquals("login", authenticationRequest.getPrompt().toString());
     }
 
     private void doParse(OpenIDClient client, String keyID) throws Exception {

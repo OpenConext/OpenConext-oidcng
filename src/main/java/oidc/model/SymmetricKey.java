@@ -3,7 +3,6 @@ package oidc.model;
 import lombok.Getter;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.util.Assert;
 
@@ -25,7 +24,7 @@ public class SymmetricKey {
     public SymmetricKey(String keyId, String aead, Date created) {
         Assert.notNull(keyId, "KeyID must not be null");
         Assert.notNull(aead, "Aead must not be null");
-        Assert.isTrue(Base64.isBase64(aead),"Aead must be base64 encoded");
+        Assert.isTrue(Base64.isBase64(aead), "Aead must be base64 encoded");
         this.keyId = keyId;
         this.aead = aead;
         this.created = created;

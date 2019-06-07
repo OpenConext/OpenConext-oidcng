@@ -30,7 +30,7 @@ public interface SamlTest extends TestUtils {
         return clazz.cast(openSamlImplementation.resolve(xml, Collections.emptyList(), Collections.emptyList()));
     }
 
-    default <T extends Saml2Object> T resolveFromEncodedXML(Class<T> clazz, String xml ) {
+    default <T extends Saml2Object> T resolveFromEncodedXML(Class<T> clazz, String xml) {
         String inflatedXml = openSamlImplementation.inflate(Base64.getDecoder().decode(xml));
         return clazz.cast(openSamlImplementation.resolve(inflatedXml, Collections.emptyList(), Collections.emptyList()));
     }

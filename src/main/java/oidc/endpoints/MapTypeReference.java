@@ -2,8 +2,6 @@ package oidc.endpoints;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
-
-
 import java.util.Map;
 
 public interface MapTypeReference {
