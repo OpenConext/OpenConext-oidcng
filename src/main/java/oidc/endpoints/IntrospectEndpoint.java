@@ -55,12 +55,12 @@ public class IntrospectEndpoint extends SecureEndpoint {
         if (!(clientAuthentication instanceof PlainClientSecret)) {
             throw new BadCredentialsException("Invalid user / secret");
         }
-        OpenIDClient client = openIDClientRepository.findByClientId(clientAuthentication.getClientID().getValue());
+        OpenIDClient resourceServer = openIDClientRepository.findByClientId(clientAuthentication.getClientID().getValue());
 
-        if (!secretsMatch((PlainClientSecret) clientAuthentication, client)) {
+        if (!secretsMatch((PlainClientSecret) clientAuthentication, resourceServer)) {
             throw new BadCredentialsException("Invalid user / secret");
         }
-        if (!client.isResourceServer()) {
+        if (!resourceServer.isResourceServer()) {
             throw new BadCredentialsException("Requires ResourceServer");
         }
 
@@ -68,17 +68,17 @@ public class IntrospectEndpoint extends SecureEndpoint {
         if (accessToken.isExpired(Clock.systemDefaultZone())) {
             return Collections.singletonMap("active", false);
         }
-        OpenIDClient rp = openIDClientRepository.findByClientId(accessToken.getClientId());
-        if (!rp.getAllowedResourceServers().contains(client.getClientId())) {
+        OpenIDClient openIDClient = openIDClientRepository.findByClientId(accessToken.getClientId());
+        if (!openIDClient.getAllowedResourceServers().contains(resourceServer.getClientId())) {
             throw new UnauthorizedException(
                     String.format("RP %s is not allowed to use the API of resource server %s. Allowed resource servers are %s",
-                            accessToken.getClientId(), client.getClientId(), rp.getAllowedResourceServers()));
+                            accessToken.getClientId(), resourceServer.getClientId(), openIDClient.getAllowedResourceServers()));
         }
 
         Map<String, Object> result = new HashMap<>();
         result.put("active", true);
         result.put("scope", String.join(",", accessToken.getScopes()));
-        result.put("client_id", client.getClientId());
+        result.put("client_id", resourceServer.getClientId());
         result.put("exp", accessToken.getExpiresIn().getTime() / 1000L);
         result.put("sub", accessToken.getSub());
         result.put("iss", issuer);
@@ -87,7 +87,9 @@ public class IntrospectEndpoint extends SecureEndpoint {
         if (!accessToken.isClientCredentials()) {
             User user = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessTokenValue);
             result.put("updated_at", user.getUpdatedAt());
-            result.put("unspecified_id", user.getUnspecifiedNameId());
+            if (resourceServer.isIncludeUnspecifiedNameID()) {
+                result.put("unspecified_id", user.getUnspecifiedNameId());
+            }
             result.put("authenticating_authority", user.getAuthenticatingAuthority());
             result.put("sub", user.getSub());
         }

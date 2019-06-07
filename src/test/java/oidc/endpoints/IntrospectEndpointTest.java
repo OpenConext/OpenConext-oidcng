@@ -36,6 +36,14 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     public void introspection() throws UnsupportedEncodingException {
         Map<String, Object> result = doIntrospection("mock-sp", "secret");
         assertEquals(true, result.get("active"));
+        assertEquals(true, result.containsKey("unspecified_id"));
+    }
+
+    @Test
+    public void introspectionWithDefaultRP() throws UnsupportedEncodingException {
+        Map<String, Object> result = doIntrospection("resource-server-playground-client", "secret");
+        assertEquals(true, result.get("active"));
+        assertEquals(false, result.containsKey("unspecified_id"));
     }
 
     @Test

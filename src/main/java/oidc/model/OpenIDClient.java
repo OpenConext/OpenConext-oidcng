@@ -5,9 +5,11 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.security.saml.saml2.metadata.NameIdFormat;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -18,6 +20,9 @@ import static oidc.manage.ServiceProviderTranslation.translateServiceProviderEnt
 @Document(collection = "clients")
 @NoArgsConstructor
 public class OpenIDClient {
+
+    @Transient
+    private static final List<String> nameIdFormats = Arrays.asList("NameIDFormat", "NameIDFormats:0", "NameIDFormats:1", "NameIDFormats:2");
 
     @Id
     private String id;
@@ -37,6 +42,8 @@ public class OpenIDClient {
     private String discoveryUrl;
     private String signingCertificate;
     private String signingCertificateUrl;
+
+    private boolean includeUnspecifiedNameID;
 
     @SuppressWarnings("unchecked")
     public OpenIDClient(Map<String, Object> root) {
@@ -61,6 +68,12 @@ public class OpenIDClient {
         this.discoveryUrl = (String) metaDataFields.get("discoveryurl");
         this.signingCertificate = (String) metaDataFields.get("oidc:signingCertificate");
         this.signingCertificateUrl = (String) metaDataFields.get("oidc:signingCertificateUrl");
+
+        this.includeUnspecifiedNameID = metaDataFields.keySet().stream()
+                .filter(key -> nameIdFormats.contains(key))
+                .map(key -> metaDataFields.get(key).equals(NameIdFormat.UNSPECIFIED))
+                .findAny()
+                .isPresent();
     }
 
     @Transient

@@ -31,10 +31,13 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
 
         List<Map<String, Object>> serviceProviders = relyingParties();
         Map<String, Object> mockSp = serviceProviders.get(0);
+        assertEquals(true, new OpenIDClient(mockSp).isIncludeUnspecifiedNameID());
+
         ((Map) mockSp.get("data")).put("entityid", "changed");
 
         Map<String, Object> mockRp = serviceProviders.get(1);
         ((Map) Map.class.cast(mockRp.get("data")).get("metaDataFields")).put("name:en", "changed");
+        assertEquals(false, new OpenIDClient(mockRp).isIncludeUnspecifiedNameID());
 
         postConnections(serviceProviders);
 
