@@ -1,9 +1,7 @@
 package oidc.web;
 
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.proc.BadJOSEException;
-import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
+import com.nimbusds.openid.connect.sdk.Prompt;
 import com.nimbusds.openid.connect.sdk.claims.ACR;
 import oidc.manage.ServiceProviderTranslation;
 import oidc.model.OpenIDClient;
@@ -30,12 +28,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.security.cert.CertificateException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticationRequestFilter {
 
@@ -61,17 +57,11 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             String entityId = ServiceProviderTranslation.translateClientId(clientId);
             authenticationRequest.setScoping(new Scoping(null, Collections.singletonList(entityId), 1));
         }
-        String prompt = request.getParameter("prompt");
-        if ("login".equals(prompt)) {
-            authenticationRequest.setForceAuth(Boolean.TRUE);
-        }
+        authenticationRequest.setForceAuth("login".equals(request.getParameter("prompt")));
         String acrValues = request.getParameter("acr_values");
         if (StringUtils.hasText(acrValues)) {
-            authenticationRequest.setAuthenticationContextClassReferences(
-                    Stream.of(acrValues.split(" "))
-                            .map(AuthenticationContextClassReference::fromUrn)
-                            .collect(Collectors.toList()));
-            authenticationRequest.setRequestedAuthenticationContext(RequestedAuthenticationContext.exact);
+            List<ACR> acrList = Arrays.stream(acrValues.split(" ")).map(ACR::new).collect(Collectors.toList());
+            parseAcrValues(authenticationRequest, acrList);
         }
         String requestP = request.getParameter("request");
         String requestUrlP = request.getParameter("request_uri");
@@ -80,13 +70,12 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             try {
                 com.nimbusds.openid.connect.sdk.AuthenticationRequest authRequest =
                         com.nimbusds.openid.connect.sdk.AuthenticationRequest.parse(ServletUtils.createHTTPRequest(request));
-                List<ACR> acrValuesObjects = JWTRequest.parse(authRequest, openIDClient).getACRValues();
-                if (!CollectionUtils.isEmpty(acrValuesObjects)) {
-                    authenticationRequest.setAuthenticationContextClassReferences(
-                            acrValuesObjects.stream()
-                                    .map(acrValue -> AuthenticationContextClassReference.fromUrn(acrValue.getValue()))
-                                    .collect(Collectors.toList()));
-                    authenticationRequest.setRequestedAuthenticationContext(RequestedAuthenticationContext.exact);
+                authRequest = JWTRequest.parse(authRequest, openIDClient);
+                List<ACR> acrValuesObjects = authRequest.getACRValues();
+                parseAcrValues(authenticationRequest, acrValuesObjects);
+                Prompt authRequestPrompt = authRequest.getPrompt();
+                if (authRequestPrompt != null && !authenticationRequest.isForceAuth()) {
+                    authenticationRequest.setForceAuth("login".equals(authRequestPrompt.toStringList().contains("prompt")));
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -116,4 +105,16 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             filterChain.doFilter(request, response);
         }
     }
+
+    private void parseAcrValues(AuthenticationRequest authenticationRequest, List<ACR> acrValuesObjects) {
+        if (!CollectionUtils.isEmpty(acrValuesObjects)) {
+
+            authenticationRequest.setAuthenticationContextClassReferences(
+                    acrValuesObjects.stream()
+                            .map(acrValue -> AuthenticationContextClassReference.fromUrn(acrValue.getValue()))
+                            .collect(Collectors.toList()));
+            authenticationRequest.setRequestedAuthenticationContext(RequestedAuthenticationContext.exact);
+        }
+    }
+
 }
