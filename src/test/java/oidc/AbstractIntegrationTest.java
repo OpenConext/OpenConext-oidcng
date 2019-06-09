@@ -55,6 +55,7 @@ import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
@@ -133,8 +134,12 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         mongoTemplate.dropCollection(SigningKey.class);
         for (int i = 1; i < numberOfSigningKeys + 1; i++) {
             SigningKey signingKey = tokenGenerator.rolloverSigningKeys();
-            assertEquals("key_" + i, signingKey.getKeyId());
+            assertNotNull(signingKey.getKeyId());
         }
+    }
+
+    protected String currentSigningKeyIdPrefix() {
+        return "key_" + new SimpleDateFormat("yyyy_MM_dd").format(new Date());
     }
 
     protected void resetAndCreateSymmetricKeys(int numberOfSymmetricKeys) throws NoSuchProviderException, NoSuchAlgorithmException {

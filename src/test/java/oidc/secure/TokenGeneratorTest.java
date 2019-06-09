@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TokenGeneratorTest extends AbstractIntegrationTest {
 
@@ -50,7 +51,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
     public void rolloverSigningKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
         resetAndCreateSigningKeys(3);
         SigningKey signingKey = signingKeyRepository.findAllByOrderByCreatedDesc().get(0);
-        assertEquals("key_3", signingKey.getKeyId());
+        assertTrue(signingKey.getKeyId().startsWith(currentSigningKeyIdPrefix()));
     }
 
     @Test

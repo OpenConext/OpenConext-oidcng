@@ -19,6 +19,8 @@ import java.util.Map;
 import static com.nimbusds.oauth2.sdk.http.HTTPRequest.Method.POST;
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class IntrospectEndpointTest extends AbstractIntegrationTest {
 
@@ -36,14 +38,14 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     public void introspection() throws UnsupportedEncodingException {
         Map<String, Object> result = doIntrospection("mock-sp", "secret");
         assertEquals(true, result.get("active"));
-        assertEquals(true, result.containsKey("unspecified_id"));
+        assertTrue(result.containsKey("unspecified_id"));
     }
 
     @Test
     public void introspectionWithDefaultRP() throws UnsupportedEncodingException {
         Map<String, Object> result = doIntrospection("resource-server-playground-client", "secret");
         assertEquals(true, result.get("active"));
-        assertEquals(false, result.containsKey("unspecified_id"));
+        assertFalse(result.containsKey("unspecified_id"));
     }
 
     @Test

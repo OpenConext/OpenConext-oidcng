@@ -10,26 +10,29 @@ import org.springframework.data.mongodb.core.query.Query;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.Arrays;
+import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class AdminControllerTest extends AbstractIntegrationTest {
 
     @Test
     public void rolloverSigningKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
         resetAndCreateSigningKeys(1);
-        assertEquals(Arrays.asList("key_1"),
-                mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().collect(toList()));
+        List<String> keys = mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().collect(toList());
+        assertEquals(1, keys.size());
 
         mongoTemplate.findAllAndRemove(new Query(), AccessToken.class);
 
         doRollover(201, "manage", "secret", "force-signing-key-rollover");
 
-        assertEquals(Arrays.asList("key_2"),
-                mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().collect(toList()));
+        List<String> newKeys = mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().collect(toList());
+        assertEquals(1, newKeys.size());
 
+        assertNotEquals(keys.get(0), newKeys.get(0));
     }
 
     @Test

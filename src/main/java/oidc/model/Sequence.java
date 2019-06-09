@@ -17,6 +17,6 @@ public class Sequence implements Serializable {
     @Id
     private String _id;
 
-    private Long value;
+    private String value;
 
 }

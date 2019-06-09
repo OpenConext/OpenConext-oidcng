@@ -63,6 +63,7 @@ import java.security.Security;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -205,7 +206,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             keysetHandle.write(JsonKeysetWriter.withOutputStream(outputStream), AeadFactory.getPrimitive(primaryKeysetHandle));
             int primaryKeyId = keysetHandle.getKeysetInfo().getPrimaryKeyId();
-            sequenceRepository.updateSymmetricKeyId(Long.valueOf(primaryKeyId));
+            sequenceRepository.updateSymmetricKeyId(String.valueOf(primaryKeyId));
             String aead = Base64.getEncoder().encodeToString(outputStream.toString().getBytes(defaultCharset()));
             String keyId = String.valueOf(primaryKeyId);
             SymmetricKey symmetricKey = new SymmetricKey(keyId, aead, new Date());
@@ -371,18 +372,11 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     private SigningKey generateEncryptedRsaKey() throws NoSuchProviderException, NoSuchAlgorithmException {
-        Long increment = this.sequenceRepository.incrementSigningKeyId();
-        RSAKey rsaKey = generateRsaKey(signingKeyFormat(increment));
+        String keyId = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS").format(new Date());
+        this.sequenceRepository.updateSigningKeyId(keyId);
+        RSAKey rsaKey = generateRsaKey(String.format("key_%s", keyId));
         String encryptedKey = encryptAead(rsaKey.toJSONString());
         return new SigningKey(rsaKey.getKeyID(), currentSymmetricKeyId, encryptedKey, new Date());
-    }
-
-    private String signingKeyFormat(Long increment) {
-        return String.format("key_%s", increment);
-    }
-
-    private String symmetricKeyFormat(Long nbr) {
-        return nbr != null ? Integer.toString(nbr.intValue()) : "0";
     }
 
     private Map<String, Object> verifyClaims(SignedJWT signedJWT) throws ParseException, JOSEException {
@@ -444,14 +438,14 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     private String ensureLatestSigningKey() throws NoSuchProviderException, NoSuchAlgorithmException {
-        if (!signingKeyFormat(sequenceRepository.currentSigningKeyId()).equals(this.currentSigningKeyId)) {
+        if (sequenceRepository.currentSigningKeyId().equals(this.currentSigningKeyId)) {
             this.initializeSigningKeys();
         }
         return this.currentSigningKeyId;
     }
 
     private String ensureLatestSymmetricKey() throws NoSuchAlgorithmException {
-        if (!symmetricKeyFormat(sequenceRepository.currentSymmetricKeyId()).equals(this.currentSymmetricKeyId)) {
+        if (sequenceRepository.currentSymmetricKeyId().equals(this.currentSymmetricKeyId)) {
             this.initializeSymmetricKeys();
         }
         return this.currentSymmetricKeyId;

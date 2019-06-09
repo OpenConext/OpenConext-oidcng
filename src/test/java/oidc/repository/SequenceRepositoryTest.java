@@ -11,26 +11,28 @@ public class SequenceRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired
     private SequenceRepository sequenceRepository;
+    private String newKeyId = "new_key_id";
+    private String newKeyId2 = "new_key_id" + 2;
 
     @Test
-    public void incrementSigningKeyId() {
+    public void udateSigningKeyId() {
         mongoTemplate.dropCollection(Sequence.class);
 
-        sequenceRepository.incrementSigningKeyId();
-        assertEquals(1L, sequenceRepository.currentSigningKeyId().longValue());
+        sequenceRepository.updateSigningKeyId(newKeyId);
+        assertEquals(newKeyId, sequenceRepository.currentSigningKeyId());
 
-        sequenceRepository.incrementSigningKeyId();
-        assertEquals(2L, sequenceRepository.currentSigningKeyId().longValue());
+        sequenceRepository.updateSigningKeyId(newKeyId2);
+        assertEquals(newKeyId2, sequenceRepository.currentSigningKeyId());
     }
 
     @Test
     public void updateSymmetricKeyId() {
         mongoTemplate.dropCollection(Sequence.class);
 
-        sequenceRepository.updateSymmetricKeyId(1221L);
-        assertEquals(1221L, sequenceRepository.currentSymmetricKeyId().longValue());
+        sequenceRepository.updateSymmetricKeyId(newKeyId);
+        assertEquals(newKeyId, sequenceRepository.currentSymmetricKeyId());
 
-        sequenceRepository.updateSymmetricKeyId(9999L);
-        assertEquals(9999L, sequenceRepository.currentSymmetricKeyId().longValue());
+        sequenceRepository.updateSymmetricKeyId(newKeyId2);
+        assertEquals(newKeyId2, sequenceRepository.currentSymmetricKeyId());
     }
 }

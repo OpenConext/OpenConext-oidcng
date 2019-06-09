@@ -47,11 +47,13 @@ public class JwkKeysEndpointTest extends AbstractIntegrationTest {
     private void assertRSAKey(Map<String, Object> res, boolean isPrivate, int expected) throws ParseException, JsonProcessingException {
         List<JWK> jwkList = JWKSet.parse(objectMapper.writeValueAsString(res)).getKeys();
         assertEquals(expected, jwkList.size());
+        String prefix = currentSigningKeyIdPrefix();
 
         jwkList.forEach(jwk -> {
             RSAKey rsaKey = (RSAKey) jwk;
             assertEquals(isPrivate, rsaKey.isPrivate());
             assertEquals(TokenGenerator.signingAlg, rsaKey.getAlgorithm());
+            assertTrue(jwk.getKeyID().startsWith(prefix));
         });
     }
 
