@@ -9,7 +9,10 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
@@ -34,12 +37,21 @@ public class AuthorizationCodeRepositoryTest extends AbstractIntegrationTest {
 
     @Test
     public void deleteByExpiresInBefore() {
-        subject.deleteAll();
         Date expiresIn = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
         subject.insert(new AuthorizationCode("code", "sub", "clientId", emptyList(), "redirectUri",
-                "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), new Date()));
+                "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), expiresIn));
         long count = subject.deleteByExpiresInBefore(new Date());
 
         assertEquals(1L, count);
+    }
+
+    @Test
+    public void findSub() {
+        IntStream.range(0, 3).forEach(i ->
+                subject.insert(new AuthorizationCode(UUID.randomUUID().toString(), "sub" + i, "clientId", emptyList(), "redirectUri",
+                        "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), new Date())));
+        List<String> subs = subject.findSub().stream().map(AuthorizationCode::getSub).collect(Collectors.toList());
+
+        assertEquals(3, subs.size());
     }
 }

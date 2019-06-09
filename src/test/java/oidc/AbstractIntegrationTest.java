@@ -104,7 +104,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
                 .remove(new Query())
                 .insert(openIDClients())
                 .execute();
-        Arrays.asList(SigningKey.class, SymmetricKey.class, AccessToken.class)
+        Arrays.asList(SigningKey.class, SymmetricKey.class, AccessToken.class, AuthorizationCode.class)
                 .forEach(clazz -> mongoTemplate.remove(new Query(), clazz));
     }
 

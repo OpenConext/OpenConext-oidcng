@@ -5,6 +5,7 @@ import oidc.SeedUtils;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.RefreshToken;
+import oidc.model.User;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,6 +13,7 @@ import org.springframework.data.mongodb.core.query.Query;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.Date;
 import java.util.stream.Stream;
 
@@ -32,19 +34,20 @@ public class ResourceCleanerTest extends AbstractIntegrationTest implements Seed
 
     @Test
     public void clean() {
-        Stream.of(AccessToken.class, RefreshToken.class, AuthorizationCode.class)
-                .forEach(clazz -> mongoTemplate.remove(new Query(), clazz));
+        Class[] classes = {AccessToken.class, RefreshToken.class, AuthorizationCode.class, User.class};
+        Stream.of(classes).forEach(clazz -> mongoTemplate.remove(new Query(), clazz));
         Date expiresIn = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
         Stream.of(
                 accessToken("value", expiresIn),
                 new RefreshToken("value", "sub", "clientId", singletonList("openid"), expiresIn, "value", false),
                 new AuthorizationCode("code", "sub", "clientId", emptyList(), "redirectUri",
-                        "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), expiresIn)
+                        "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), expiresIn),
+                new User("nope", "unspecifiedNameId", "authenticatingAuthority", "clientId",
+                        Collections.emptyMap(), Collections.emptyList())
         ).forEach(o -> mongoTemplate.insert(o));
 
         subject.clean();
 
-        Stream.of(AccessToken.class, RefreshToken.class, AuthorizationCode.class)
-                .forEach(clazz -> assertEquals(0, mongoTemplate.findAll(clazz).size()));
+        Stream.of(classes).forEach(clazz -> assertEquals(0, mongoTemplate.findAll(clazz).size()));
     }
 }
