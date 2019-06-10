@@ -137,22 +137,20 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             }
             Map<String, Object> body = authorizationEndpointResponse(user, client, authenticationRequest, scopes, responseType, state);
             ResponseMode responseMode = authenticationRequest.impliedResponseMode();
+            LOG.info(String.format("Returning implicit flow %s %s", ResponseMode.FORM_POST, redirectURI));
             if (responseMode.equals(ResponseMode.FORM_POST)) {
                 body.put("redirect_uri", redirectURI);
-                LOG.info(String.format("Returning implicit flow %s %s", ResponseMode.FORM_POST, redirectURI));
                 return new ModelAndView("form_post", body);
             }
             if (responseMode.equals(ResponseMode.QUERY)) {
                 UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectURI);
                 body.forEach(builder::queryParam);
-                LOG.info(String.format("Returning implicit flow %s %s", ResponseMode.QUERY, redirectURI));
                 return new ModelAndView(new RedirectView(builder.toUriString()));
             }
             if (responseMode.equals(ResponseMode.FRAGMENT)) {
                 UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectURI);
                 String fragment = body.entrySet().stream().map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue())).collect(Collectors.joining("&"));
                 builder.fragment(fragment);
-                LOG.info(String.format("Returning implicit flow %s %s", ResponseMode.FRAGMENT, redirectURI));
                 return new ModelAndView(new RedirectView(builder.toUriString()));
             }
             throw new IllegalArgumentException("Response mode " + responseMode + " not supported");
