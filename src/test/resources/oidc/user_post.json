@@ -1,0 +1,27 @@
+{
+  "id": "5cfdee78c3cbff47f2fa15ff",
+  "sub": "urn:collab:person:example.com:admin",
+  "unspecifiedNameId": "urn:collab:person:example.com:admin",
+  "authenticatingAuthority": "http://mock-idp",
+  "clientId": "playground_client",
+  "updatedAt": 1560145543,
+  "attributes": {
+    "schac_home_organization": "example.com",
+    "uids": [
+      "admin"
+    ],
+    "nickname": "John Doe",
+    "name": "John Doe",
+    "edumember_is_member_of": [
+      "urn:collab:org:surf.nl"
+    ],
+    "preferred_username": "John Doe",
+    "given_name": "John",
+    "family_name": "Doe",
+    "eduperson_principal_name": "j.doe@example.com",
+    "email": "j.doe@example.com"
+  },
+  "acrClaims": [
+    "urn:oasis:names:tc:SAML:2.0:ac:classes:Password"
+  ]
+}

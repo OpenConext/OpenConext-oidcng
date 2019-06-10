@@ -13,15 +13,17 @@ import java.util.Map;
 @NoArgsConstructor
 @Getter
 @Document(collection = "users")
-@EqualsAndHashCode(exclude = {"id", "updatedAt"})
+@EqualsAndHashCode
 public class User implements Serializable {
 
     @Id
+    @EqualsAndHashCode.Exclude
     private String id;
     private String sub;
     private String unspecifiedNameId;
     private String authenticatingAuthority;
     private String clientId;
+    @EqualsAndHashCode.Exclude
     private long updatedAt = System.currentTimeMillis() / 1000L;
     private Map<String, Object> attributes;
     private List<String> acrClaims;

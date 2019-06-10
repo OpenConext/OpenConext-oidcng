@@ -5,6 +5,7 @@ import oidc.model.User;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -40,6 +41,11 @@ public class UserRepositoryTest extends AbstractIntegrationTest {
         List<String> remainingSubs = subject.findAll().stream().map(User::getSub).sorted().collect(Collectors.toList());
         assertEquals(subs.subList(0, 2), remainingSubs);
 
+        res = subject.deleteBySubNotIn(new ArrayList<>());
+        assertEquals(2L, res.longValue());
+
+        remainingSubs = subject.findAll().stream().map(User::getSub).sorted().collect(Collectors.toList());
+        assertEquals(0, remainingSubs.size());
     }
 
 

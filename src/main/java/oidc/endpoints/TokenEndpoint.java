@@ -102,7 +102,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         }
 
         if (clientAuthentication != null &&
-                !secretsMatch(PlainClientSecret.class.cast(clientAuthentication), client)) {
+                !secretsMatch((PlainClientSecret) clientAuthentication, client)) {
             throw new BadCredentialsException("Invalid user / secret");
         }
         if (!client.getGrants().contains(authorizationGrant.getType().getValue())) {
