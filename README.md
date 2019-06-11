@@ -28,7 +28,7 @@ to bypass the redirect to EB.
 ### [Endpoints](#endpoint)
 
 Discovery Endpoint describing the OIDC supported options. 
-The content is from [https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/openid-configuration.json](https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/openid-configuration.json)
+The content is from [https://github.com/OpenConext/OpenConext-deploy/blob/master/roles/oidcng/templates/openid-configuration.json.j2](https://github.com/OpenConext/OpenConext-deploy/blob/master/roles/oidcng/templates/openid-configuration.json.j2)
 ```
 https://oidcng.test2.surfconext.nl/oidc/.well-known/openid-configuration
 ```
