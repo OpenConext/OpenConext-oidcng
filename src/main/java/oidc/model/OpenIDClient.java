@@ -69,9 +69,9 @@ public class OpenIDClient {
         this.signingCertificate = (String) metaDataFields.get("oidc:signingCertificate");
         this.signingCertificateUrl = (String) metaDataFields.get("oidc:signingCertificateUrl");
 
-        this.includeUnspecifiedNameID = metaDataFields.keySet().stream()
-                .filter(key -> nameIdFormats.contains(key))
-                .map(key -> metaDataFields.get(key).equals(NameIdFormat.UNSPECIFIED))
+        this.includeUnspecifiedNameID = nameIdFormats.stream()
+                .filter(id -> metaDataFields.containsKey(id))
+                .map(id -> metaDataFields.get(id).equals(NameIdFormat.UNSPECIFIED))
                 .findAny()
                 .isPresent();
     }
