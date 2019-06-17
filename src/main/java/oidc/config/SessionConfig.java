@@ -24,7 +24,7 @@ public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
     @Bean
     CookieSerializer cookieSerializer() {
         DefaultCookieSerializer defaultCookieSerializer = new DefaultCookieSerializer();
-        defaultCookieSerializer.setSameSite(null);
+        defaultCookieSerializer.setSameSite("None");
         return defaultCookieSerializer;
     }
 
