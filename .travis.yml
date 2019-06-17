@@ -1,7 +1,7 @@
 language: java
 jdk:
 - oraclejdk8
-
+dist: trusty
 env:
   - MONGODB=4.0.3
 
