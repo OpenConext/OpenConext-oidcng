@@ -99,7 +99,8 @@ public class SecurityConfiguration {
                             new SimpleKey()
                                     .setName("sp-signing-key")
                                     .setPrivateKey(privateKey)
-                                    .setPassphrase("sppassword")
+                                    //to prevent null-pointer in SamlKeyStoreProvider
+                                    .setPassphrase("")
                                     .setCertificate(certificate)
                     );
         }
