@@ -49,9 +49,10 @@ public class SamlProvisioningAuthenticationManagerTest implements SamlTest {
         assertEquals("270E4CB4-1C2A-4A96-9AD3-F28C39AD1110", user.getSub());
         assertEquals("urn:collab:person:example.com:admin", user.getUnspecifiedNameId());
         assertEquals("http://mock-idp", user.getAuthenticatingAuthority());
-
+        assertEquals(Collections.singletonList("http://test.surfconext.nl/assurance/loa2"), user.getAcrClaims());
         assertEquals("j.doe@example.com", user.getAttributes().get("email"));
         assertEquals(Collections.singleton("admin"), user.getAttributes().get("uids"));
+
 
         when(userRepository.findOptionalUserBySub(user.getSub())).thenReturn(Optional.of(user));
         when(userRepository.insert(any(User.class))).thenThrow(IllegalArgumentException.class);

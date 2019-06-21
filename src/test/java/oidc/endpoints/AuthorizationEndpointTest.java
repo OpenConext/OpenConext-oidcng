@@ -266,7 +266,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         JWTClaimsSet claimsSet = processToken(idToken, port);
         assertEquals("123456", claimsSet.getClaim("nonce"));
         assertEquals("john.doe@example.org", claimsSet.getClaim("email"));
-        assertEquals("loa1 loa2 loa3", claimsSet.getClaim("acr"));
+        assertEquals("http://test.surfconext.nl/assurance/loa1", claimsSet.getClaim("acr"));
 
     }
 }

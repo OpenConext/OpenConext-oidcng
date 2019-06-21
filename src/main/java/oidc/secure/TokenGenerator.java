@@ -91,7 +91,6 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private static char[] DEFAULT_CODEC = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
             .toCharArray();
-
     private Random random = new SecureRandom();
 
     private String issuer;
@@ -122,10 +121,16 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private SequenceRepository sequenceRepository;
 
+    private List<String> acrValuesSupported;
+
+    private String defaultAcrValue;
+
     @Autowired
     public TokenGenerator(@Value("${spring.security.saml2.service-provider.entity-id}") String issuer,
                           @Value("${secret_key_set_path}") Resource secretKeySetPath,
                           @Value("${associated_data}") String associatedData,
+                          @Value("${openid_configuration_path}") Resource configurationPath,
+                          @Value("${default_acr_value}") String defaultAcrValue,
                           ObjectMapper objectMapper,
                           SigningKeyRepository signingKeyRepository,
                           SequenceRepository sequenceRepository,
@@ -144,6 +149,10 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
         this.primaryKeysetHandle = CleartextKeysetHandle.read(JsonKeysetReader.withInputStream(secretKeySetPath.getInputStream()));
         this.associatedData = associatedData.getBytes(defaultCharset());
+
+        Map<String, Object> wellKnownConfiguration= objectMapper.readValue(configurationPath.getInputStream(), mapTypeReference);
+        this.acrValuesSupported = (List<String>) wellKnownConfiguration.get("acr_values_supported");
+        this.defaultAcrValue = defaultAcrValue;
 
     }
 
@@ -416,14 +425,14 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
                 }
             });
         }
-        /*
-         * https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest:
-         * If the client requests the acr Claim using both the acr_values request parameter and an individual acr Claim
-         * request for the ID Token listing specific requested values, the resulting behavior is unspecified.
-         */
         optionalUser.ifPresent(user -> {
-            if (!CollectionUtils.isEmpty(user.getAcrClaims())) {
-                builder.claim("acr", String.join(" ", user.getAcrClaims()));
+            List<String> validAcrValues = user.getAcrClaims().stream()
+                    .filter(acrClaim -> this.acrValuesSupported.contains(acrClaim))
+                    .collect(Collectors.toList());
+            if (CollectionUtils.isEmpty(validAcrValues)) {
+                builder.claim("acr", defaultAcrValue);
+            } else {
+                builder.claim("acr", String.join(" ", validAcrValues));
             }
         });
 

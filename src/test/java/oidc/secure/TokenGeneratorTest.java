@@ -21,8 +21,11 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -63,6 +66,28 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
 
         assertEquals(1, mongoTemplate.count(new Query(), SigningKey.class));
         assertEquals(1, mongoTemplate.count(new Query(), SymmetricKey.class));
+    }
+
+    @Test
+    public void invalidAcrValue() throws IOException, JOSEException, NoSuchAlgorithmException, NoSuchProviderException, ParseException {
+        User user = new User("sub", "unspecifiedNameId", "http://mockidp",
+                "clientId", getUserInfo(), Arrays.asList("http://test.surfconext.nl/assurance/loa3", "invalid_acr"));
+        OpenIDClient client = openIDClient("mock-sp");
+        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList());
+        SignedJWT jwt = SignedJWT.parse(idToken);
+        Object acr = jwt.getJWTClaimsSet().getClaim("acr");
+        assertEquals("http://test.surfconext.nl/assurance/loa3", acr);
+    }
+
+    @Test
+    public void defaultAcrValue() throws IOException, JOSEException, NoSuchAlgorithmException, NoSuchProviderException, ParseException {
+        User user = new User("sub", "unspecifiedNameId", "http://mockidp",
+                "clientId", getUserInfo(), Collections.emptyList());
+        OpenIDClient client = openIDClient("mock-sp");
+        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList());
+        SignedJWT jwt = SignedJWT.parse(idToken);
+        Object acr = jwt.getJWTClaimsSet().getClaim("acr");
+        assertEquals("http://test.surfconext.nl/assurance/loa1", acr);
     }
 
     private String doEncryptAndDecryptAccessToken() throws IOException {

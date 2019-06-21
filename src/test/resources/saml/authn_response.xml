@@ -76,7 +76,7 @@
         </saml:Conditions>
         <saml:AuthnStatement AuthnInstant="2019-04-21T08:13:43Z">
             <saml:AuthnContext>
-                <saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef>
+                <saml:AuthnContextClassRef>http://test.surfconext.nl/assurance/loa2</saml:AuthnContextClassRef>
                 <saml:AuthenticatingAuthority>http://mock-idp</saml:AuthenticatingAuthority>
                 <saml:AuthenticatingAuthority>http://mock-idp</saml:AuthenticatingAuthority>
             </saml:AuthnContext>

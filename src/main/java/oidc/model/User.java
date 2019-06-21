@@ -7,6 +7,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,8 +27,8 @@ public class User implements Serializable {
     private String clientId;
     @EqualsAndHashCode.Exclude
     private long updatedAt = System.currentTimeMillis() / 1000L;
-    private Map<String, Object> attributes;
-    private List<String> acrClaims;
+    private Map<String, Object> attributes = new HashMap<>();
+    private List<String> acrClaims = new ArrayList<>();
 
     public User(String sub, String unspecifiedNameId, String authenticatingAuthority, String clientId,
                 Map<String, Object> attributes, List<String> acrClaims) {

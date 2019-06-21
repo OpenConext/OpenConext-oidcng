@@ -152,12 +152,14 @@ This will return all the information about the user. This endpoint is for Relayi
 ### [client JWT](#client-jwt)
 The authorization endpoint also accepts signed JWT's from the RP. To verify the signature the signing certificate is required. This can be configured in Manage.
 
-For testing purposes a certificate can be generated:
+For testing purposes a keypair can be generated:
 ```
-openssl req -subj '/O=Organization, CN=Example/' -newkey rsa:2048 -new -x509 -days 3652 -nodes -out certificate.crt  -keyout key.pem
-cat certificate.crt |head -n -1 |tail -n +2 | tr -d '\n'
+openssl genrsa -out "oidc.key" 2048
+openssl req -new -key "oidc.key" -out "oidc.csr"
+openssl x509 -req -sha256 -days 1095 -in "oidc.csr" -signkey "oidc.key" -out "oidc.crt"
+cat oidc.crt |head -n -1 |tail -n +2 | tr -d '\n'
 ```
 On a Mac you can issue the same commands with `ghead` instead of `head` after you install `coreutils`:
 ```
-cat certificate.crt |ghead -n -1 |tail -n +2 | tr -d '\n'
+cat oidc.crt |ghead -n -1 |tail -n +2 | tr -d '\n'
 ```
