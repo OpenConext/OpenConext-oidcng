@@ -57,7 +57,7 @@ public class UserInfoEndpoint {
         User user = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessTokenValue);
         Map<String, Object> attributes = user.getAttributes();
         attributes.put("updated_at", user.getUpdatedAt());
+        attributes.put("sub", user.getSub());
         return attributes;
-
     }
 }

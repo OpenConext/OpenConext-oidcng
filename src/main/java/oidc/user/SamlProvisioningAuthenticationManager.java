@@ -85,16 +85,18 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
         }
 
         String clientId = samlAuthentication.getRelayState();
-        //See https://www.pivotaltracker.com/story/show/165527166
-        String eduPersonTargetedId = getAttributeValue("urn:mace:dir:attribute-def:eduPersonTargetedID", assertion);
-        String sub = StringUtils.hasText(eduPersonTargetedId) ? eduPersonTargetedId :
-                UUID.nameUUIDFromBytes((unspecifiedNameId + "_" + clientId).getBytes()).toString();
         //need to prevent NullPointer in HashMap merge
         Map<String, Object> attributes = userAttributes.stream()
                 .filter(ua -> !ua.customMapping)
                 .map(ua -> new Object[]{ua.oidc, ua.multiValue ? getAttributeValues(ua.saml, assertion) : getAttributeValue(ua.saml, assertion)})
                 .filter(oo -> oo[1] != null)
                 .collect(Collectors.toMap(oo -> (String) oo[0], oo -> oo[1]));
+
+        //See https://www.pivotaltracker.com/story/show/165527166
+        String eduPersonTargetedId = getAttributeValue("urn:mace:dir:attribute-def:eduPersonTargetedID", assertion);
+        String sub = StringUtils.hasText(eduPersonTargetedId) ? eduPersonTargetedId :
+                UUID.nameUUIDFromBytes((unspecifiedNameId + "_" + clientId).getBytes()).toString();
+        attributes.put("sub", sub);
 
         List<String> acrClaims = assertion.getAuthenticationStatements().stream()
                 .map(authenticationStatement -> authenticationContextClassReference(authenticationStatement.getAuthenticationContext()))
