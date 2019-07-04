@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-public class IntrospectEndpoint extends SecureEndpoint {
+public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
 
     private AccessTokenRepository accessTokenRepository;
     private OpenIDClientRepository openIDClientRepository;
@@ -96,7 +96,7 @@ public class IntrospectEndpoint extends SecureEndpoint {
         result.put("iss", issuer);
         result.put("token_type", "Bearer");
 
-        return result;
+        return sortMap(result);
     }
 
 }

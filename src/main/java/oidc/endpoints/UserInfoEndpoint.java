@@ -21,7 +21,7 @@ import java.time.Clock;
 import java.util.Map;
 
 @RestController
-public class UserInfoEndpoint {
+public class UserInfoEndpoint implements OrderedMap {
 
     private AccessTokenRepository accessTokenRepository;
     private TokenGenerator tokenGenerator;
@@ -58,6 +58,6 @@ public class UserInfoEndpoint {
         Map<String, Object> attributes = user.getAttributes();
         attributes.put("updated_at", user.getUpdatedAt());
         attributes.put("sub", user.getSub());
-        return attributes;
+        return sortMap(attributes);
     }
 }
