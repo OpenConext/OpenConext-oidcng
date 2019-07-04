@@ -76,13 +76,6 @@ public class IntrospectEndpoint extends SecureEndpoint {
         }
 
         Map<String, Object> result = new HashMap<>();
-        result.put("active", true);
-        result.put("scope", String.join(",", accessToken.getScopes()));
-        result.put("client_id", resourceServer.getClientId());
-        result.put("exp", accessToken.getExpiresIn().getTime() / 1000L);
-        result.put("sub", accessToken.getSub());
-        result.put("iss", issuer);
-        result.put("token_type", "Bearer");
 
         if (!accessToken.isClientCredentials()) {
             User user = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessTokenValue);
@@ -92,7 +85,17 @@ public class IntrospectEndpoint extends SecureEndpoint {
             }
             result.put("authenticating_authority", user.getAuthenticatingAuthority());
             result.put("sub", user.getSub());
+            result.putAll(user.getAttributes());
         }
+
+        result.put("active", true);
+        result.put("scope", String.join(",", accessToken.getScopes()));
+        result.put("client_id", resourceServer.getClientId());
+        result.put("exp", accessToken.getExpiresIn().getTime() / 1000L);
+        result.put("sub", accessToken.getSub());
+        result.put("iss", issuer);
+        result.put("token_type", "Bearer");
+
         return result;
     }
 

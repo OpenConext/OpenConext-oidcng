@@ -39,6 +39,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
         Map<String, Object> result = doIntrospection("mock-sp", "secret");
         assertEquals(true, result.get("active"));
         assertTrue(result.containsKey("unspecified_id"));
+        assertTrue(result.containsKey("email"));
     }
 
     @Test
@@ -46,6 +47,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
         Map<String, Object> result = doIntrospection("resource-server-playground-client", "secret");
         assertEquals(true, result.get("active"));
         assertFalse(result.containsKey("unspecified_id"));
+        assertTrue(result.containsKey("email"));
     }
 
     @Test
@@ -80,6 +82,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
         assertEquals(true, result.get("active"));
         assertEquals("openid,groups", result.get("scope"));
         assertEquals("mock-sp", result.get("sub"));
+        assertFalse(result.containsKey("email"));
     }
 
     @Test
