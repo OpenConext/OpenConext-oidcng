@@ -22,8 +22,10 @@ public class MongoHealthIndicator implements HealthIndicator {
 
     @Override
     public Health health() {
-        SimpleMongoDbFactory mongoDbFactory = (SimpleMongoDbFactory) mongoTemplate.getMongoDbFactory();
-        String collections = StreamSupport.stream(mongoTemplate.getDb().listCollectionNames().spliterator(), false).collect(Collectors.joining(", "));
+        String collections = StreamSupport.stream(mongoTemplate.getDb()
+                .listCollectionNames()
+                .spliterator(), false)
+                .collect(Collectors.joining(", "));
         return Health.up()
                 .withDetail("Collections", collections)
                 .build();

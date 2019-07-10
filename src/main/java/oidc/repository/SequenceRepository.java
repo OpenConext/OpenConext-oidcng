@@ -28,21 +28,22 @@ public class SequenceRepository {
     }
 
     public void updateSigningKeyId(String newKeyId) {
-        Sequence res = mongoTemplate.findAndModify(signingKeyBasicQuery, Update.update("value", newKeyId), options, Sequence.class);
-        if (res == null) {
-            mongoTemplate.save(new Sequence(SIGNING_KEY_ID, newKeyId));
-        }
+        doUpdateKeyId(newKeyId, signingKeyBasicQuery, SIGNING_KEY_ID);
     }
-    public String currentSigningKeyId() {
-        return getSequenceValue(signingKeyBasicQuery);
-    }
-
 
     public void updateSymmetricKeyId(String newKeyId) {
-        Sequence res = mongoTemplate.findAndModify(symmetricKeyBasicQuery, Update.update("value", newKeyId), options, Sequence.class);
+        doUpdateKeyId(newKeyId, symmetricKeyBasicQuery, SYMMETRIC_KEY_ID);
+    }
+
+    private void doUpdateKeyId(String newKeyId, BasicQuery signingKeyBasicQuery, String signingKeyId) {
+        Sequence res = mongoTemplate.findAndModify(signingKeyBasicQuery, Update.update("value", newKeyId), options, Sequence.class);
         if (res == null) {
-            mongoTemplate.save(new Sequence(SYMMETRIC_KEY_ID, newKeyId));
+            mongoTemplate.save(new Sequence(signingKeyId, newKeyId));
         }
+    }
+
+    public String currentSigningKeyId() {
+        return getSequenceValue(signingKeyBasicQuery);
     }
 
     public String currentSymmetricKeyId() {
