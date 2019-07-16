@@ -22,7 +22,7 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.nimbusds.oauth2.sdk.AuthorizationCode;
+
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
@@ -32,6 +32,7 @@ import com.nimbusds.openid.connect.sdk.claims.CodeHash;
 import com.nimbusds.openid.connect.sdk.claims.StateHash;
 import oidc.endpoints.MapTypeReference;
 import oidc.exceptions.InvalidSignatureException;
+import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
 import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
@@ -150,7 +151,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         this.primaryKeysetHandle = CleartextKeysetHandle.read(JsonKeysetReader.withInputStream(secretKeySetPath.getInputStream()));
         this.associatedData = associatedData.getBytes(defaultCharset());
 
-        Map<String, Object> wellKnownConfiguration= objectMapper.readValue(configurationPath.getInputStream(), mapTypeReference);
+        Map<String, Object> wellKnownConfiguration = objectMapper.readValue(configurationPath.getInputStream(), mapTypeReference);
         this.acrValuesSupported = (List<String>) wellKnownConfiguration.get("acr_values_supported");
         this.defaultAcrValue = defaultAcrValue;
 
@@ -332,8 +333,13 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         }
     }
 
-    public String generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, String nonce, List<String> idTokenClaims) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
-        Map<String, Object> additionalClaims = StringUtils.hasText(nonce) ? Collections.singletonMap("nonce", nonce) : Collections.emptyMap();
+    public String generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, String nonce, List<String> idTokenClaims,
+                                                  Optional<AuthorizationCode> authorizationCodeOptional) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
+        Map<String, Object> additionalClaims = new HashMap<>();
+        authorizationCodeOptional.ifPresent(authorizationCode -> additionalClaims.put("auth_time", authorizationCode.getAuthTime()));
+        if (StringUtils.hasText(nonce)){
+            additionalClaims.put("nonce", nonce);
+        }
         String signingKey = ensureLatestSigningKey();
         return idToken(client, user, additionalClaims, idTokenClaims, false, signingKey);
     }
@@ -344,6 +350,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
                                                           State state)
             throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> additionalClaims = new HashMap<>();
+        additionalClaims.put("auth_time", (int) Date.from(clock.instant()).getTime() / 1000);
         if (nonce != null) {
             additionalClaims.put("nonce", nonce.getValue());
         }
@@ -353,7 +360,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         }
         if (CodeHash.isRequiredInIDTokenClaims(responseType) && authorizationCode.isPresent()) {
             additionalClaims.put("c_hash",
-                    CodeHash.compute(new AuthorizationCode(authorizationCode.get()), signingAlg));
+                    CodeHash.compute(new com.nimbusds.oauth2.sdk.AuthorizationCode(authorizationCode.get()), signingAlg));
         }
         if (state != null && StringUtils.hasText(state.getValue())) {
             additionalClaims.put("s_hash", StateHash.compute(state, signingAlg));

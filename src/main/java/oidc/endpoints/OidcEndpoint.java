@@ -40,7 +40,8 @@ public interface OidcEndpoint {
 
     default Map<String, Object> tokenEndpointResponse(Optional<User> user, OpenIDClient client,
                                                       List<String> scopes, List<String> idTokenClaims,
-                                                      boolean clientCredentials, String nonce) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
+                                                      boolean clientCredentials, String nonce,
+                                                      Optional<AuthorizationCode> authorizationCodeOptional) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> map = new LinkedHashMap<>();
         TokenGenerator tokenGenerator = getTokenGenerator();
         String accessTokenValue = user.map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client)).orElse(tokenGenerator.generateAccessToken());
@@ -58,7 +59,7 @@ public interface OidcEndpoint {
         }
         map.put("expires_in", client.getAccessTokenValidity());
         if (isOpenIDRequest(scopes) && !clientCredentials) {
-            map.put("id_token", tokenGenerator.generateIDTokenForTokenEndpoint(user, client, nonce, idTokenClaims));
+            map.put("id_token", tokenGenerator.generateIDTokenForTokenEndpoint(user, client, nonce, idTokenClaims, authorizationCodeOptional));
         }
         return map;
     }

@@ -40,6 +40,8 @@ public class AuthorizationCode {
 
     private Date expiresIn;
 
+    private long authTime;
+
     public AuthorizationCode(String code, String sub, String clientId, List<String> scopes, String redirectUri,
                              String codeChallenge, String codeChallengeMethod, String nonce, List<String> idTokenClaims,
                              Date expiresIn) {
@@ -54,6 +56,7 @@ public class AuthorizationCode {
         this.idTokenClaims = idTokenClaims;
         this.expiresIn = expiresIn != null ? expiresIn :
                 Date.from(LocalDateTime.now().plusMinutes(10).atZone(ZoneId.systemDefault()).toInstant());
+        this.authTime = (long) Math.ceil(new Date().getTime() / 1000L) ;
     }
 
     @Transient

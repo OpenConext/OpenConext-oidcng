@@ -23,7 +23,6 @@ import java.security.NoSuchProviderException;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -73,7 +72,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         User user = new User("sub", "unspecifiedNameId", "http://mockidp",
                 "clientId", getUserInfo(), Arrays.asList("http://test.surfconext.nl/assurance/loa3", "invalid_acr"));
         OpenIDClient client = openIDClient("mock-sp");
-        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList());
+        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList(), Optional.empty());
         SignedJWT jwt = SignedJWT.parse(idToken);
         Object acr = jwt.getJWTClaimsSet().getClaim("acr");
         assertEquals("http://test.surfconext.nl/assurance/loa3", acr);
@@ -84,7 +83,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         User user = new User("sub", "unspecifiedNameId", "http://mockidp",
                 "clientId", getUserInfo(), Collections.emptyList());
         OpenIDClient client = openIDClient("mock-sp");
-        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList());
+        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList(), Optional.empty());
         SignedJWT jwt = SignedJWT.parse(idToken);
         Object acr = jwt.getJWTClaimsSet().getClaim("acr");
         assertEquals("http://test.surfconext.nl/assurance/loa1", acr);

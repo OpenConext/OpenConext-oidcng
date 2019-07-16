@@ -87,6 +87,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
         JWTClaimsSet claimsSet = processToken(idToken, port);
         assertEquals("nonce", claimsSet.getClaim("nonce"));
+        assertNotNull(claimsSet.getClaim("auth_time"));
     }
 
     @Test

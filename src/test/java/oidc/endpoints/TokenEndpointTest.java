@@ -291,7 +291,8 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
                 Optional.of(user(issuer)),
                 openIDClient("mock-sp"),
                 "nonce",
-                Collections.emptyList());
+                Collections.emptyList(),
+                Optional.empty());
         Map<String, Object> body = given()
                 .when()
                 .header("Content-type", "application/x-www-form-urlencoded")
