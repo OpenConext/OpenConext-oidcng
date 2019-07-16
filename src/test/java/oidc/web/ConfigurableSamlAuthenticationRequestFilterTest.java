@@ -18,7 +18,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.text.ParseException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static io.restassured.RestAssured.given;
@@ -45,10 +47,36 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
 
     @Test
     public void filterInternal() throws UnsupportedEncodingException, ParseException {
-        doFilterInternal(null, null, null, null, false);
+        doFilterInternal("mock-sp", null, null, null, false);
     }
 
-    private void doFilterInternal(String clientId, String prompt, String acrValue, String requestSignedJWT, boolean isForceAuth) throws UnsupportedEncodingException, ParseException {
+    @Test
+    public void filterInternalPromptNone() throws UnsupportedEncodingException, ParseException {
+        filterInternalInvalidPrompt("none", "interaction_required");
+    }
+
+    @Test
+    public void filterInternalPromptConsent() throws UnsupportedEncodingException, ParseException {
+        filterInternalInvalidPrompt("consent", "consent_required");
+    }
+
+    @Test
+    public void filterInternalPromptSelectAccount() throws UnsupportedEncodingException, ParseException {
+        filterInternalInvalidPrompt("select_account", "account_selection_required");
+    }
+
+    @Test
+    public void filterInternalPromptUnsupported() throws UnsupportedEncodingException, ParseException {
+        filterInternalInvalidPrompt("unsupported", "Unsupported prompt unsupported");
+    }
+
+    private void filterInternalInvalidPrompt(String prompt, String expectedMsg) throws UnsupportedEncodingException, ParseException {
+        Map map = doFilterInternal("mock-sp", prompt, null, null, false);
+        assertEquals(expectedMsg, map.get("message"));
+        assertEquals(400, map.get("status"));
+    }
+
+    private Map doFilterInternal(String clientId, String prompt, String acrValue, String requestSignedJWT, boolean isForceAuth) throws UnsupportedEncodingException, ParseException {
         RequestSpecification when = given().redirects().follow(false).when();
         if (StringUtils.hasText(clientId)) {
             when.queryParam("client_id", clientId);
@@ -59,16 +87,20 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
         if (StringUtils.hasText(acrValue)) {
             when.queryParam("acr_values", acrValue);
         }
+        when.queryParam("response_type", "code")
+                .queryParam("scope", "openid");
+
         if (StringUtils.hasText(requestSignedJWT)) {
-            when.queryParam("request", requestSignedJWT)
-                    .queryParam("response_type", "code")
-                    .queryParam("scope", "openid");
+            when.queryParam("request", requestSignedJWT);
         }
         Response response = when
                 .queryParam("redirect_uri", "http://localhost:8091/redirect")
                 .get("oidc/authorize");
 
         String location = response.getHeader("Location");
+        if (location == null) {
+            return response.getBody().as(Map.class);
+        }
         MultiValueMap<String, String> queryParams = UriComponentsBuilder.fromUriString(location).build().getQueryParams();
         String relayState = queryParams.getFirst("RelayState");
 
@@ -85,5 +117,6 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
             assertEquals(acrValues, loas);
         }
 
+        return Collections.emptyMap();
     }
 }

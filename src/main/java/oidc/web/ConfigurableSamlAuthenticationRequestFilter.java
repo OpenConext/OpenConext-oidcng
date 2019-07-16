@@ -1,8 +1,13 @@
 package oidc.web;
 
+import com.nimbusds.oauth2.sdk.AuthorizationRequest;
+import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
+import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.openid.connect.sdk.Prompt;
 import com.nimbusds.openid.connect.sdk.claims.ACR;
+import oidc.endpoints.AuthorizationEndpoint;
+import oidc.exceptions.UnsupportedPromptValueException;
 import oidc.manage.ServiceProviderTranslation;
 import oidc.model.OpenIDClient;
 import oidc.repository.OpenIDClientRepository;
@@ -50,14 +55,36 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
         return request.getParameter("client_id");
     }
 
-    protected AuthenticationRequest enhanceAuthenticationRequest(ServiceProviderService provider, HttpServletRequest request,
-                                                                 AuthenticationRequest authenticationRequest) throws IOException {
+    private String unsupportedPromptValue(String prompt) {
+        switch (prompt) {
+            case "none":
+                return "interaction_required";
+            case "consent":
+                return "consent_required";
+            case "select_account":
+                return "account_selection_required";
+            default:
+                return String.format("Unsupported prompt %s", prompt);
+        }
+    }
+
+    protected AuthenticationRequest enhanceAuthenticationRequest(ServiceProviderService provider,
+                                                                 HttpServletRequest request,
+                                                                 AuthenticationRequest authenticationRequest) {
         String clientId = getRelayState(provider, request);
         if (StringUtils.hasText(clientId)) {
             String entityId = ServiceProviderTranslation.translateClientId(clientId);
             authenticationRequest.setScoping(new Scoping(null, Collections.singletonList(entityId), 1));
         }
-        authenticationRequest.setForceAuth("login".equals(request.getParameter("prompt")));
+        String prompt = request.getParameter("prompt");
+        //We trigger an error is prompt is present and not equals 'login'
+        if (StringUtils.hasText(prompt) && !prompt.equals("login")) {
+            throw new UnsupportedPromptValueException(unsupportedPromptValue(prompt));
+        }
+        authenticationRequest.setForceAuth("login".equals(prompt));
+        if (!authenticationRequest.isForceAuth() && StringUtils.hasText(request.getParameter("max_age"))) {
+            authenticationRequest.setForceAuth(true);
+        }
         String acrValues = request.getParameter("acr_values");
         if (StringUtils.hasText(acrValues)) {
             List<ACR> acrList = Arrays.stream(acrValues.split(" ")).map(ACR::new).collect(Collectors.toList());
@@ -74,7 +101,7 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
                 List<ACR> acrValuesObjects = authRequest.getACRValues();
                 parseAcrValues(authenticationRequest, acrValuesObjects);
                 Prompt authRequestPrompt = authRequest.getPrompt();
-                if (authRequestPrompt != null && !authenticationRequest.isForceAuth()) {
+                if (authRequestPrompt != null && (!authenticationRequest.isForceAuth() || authRequest.getMaxAge() > -1)) {
                     authenticationRequest.setForceAuth(authRequestPrompt.toStringList().contains("login"));
                 }
             } catch (Exception e) {
@@ -89,6 +116,9 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             throws ServletException, IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (getRequestMatcher().matches(request) && (authentication == null || !authentication.isAuthenticated())) {
+
+            validateAuthorizationRequest(request);
+
             ServiceProviderService provider = getProvisioning().getHostedProvider();
             IdentityProviderMetadata idp = provider.getRemoteProviders().get(0);
             AuthenticationRequest authenticationRequest = provider.authenticationRequest(idp);
@@ -103,6 +133,22 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             );
         } else {
             filterChain.doFilter(request, response);
+        }
+    }
+
+    private void validateAuthorizationRequest(HttpServletRequest request) throws IOException {
+        try {
+            AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(ServletUtils.createHTTPRequest(request));
+            ClientID clientID = authorizationRequest.getClientID();
+            if (clientID != null) {
+                OpenIDClient openIDClient = openIDClientRepository.findByClientId(clientID.getValue());
+
+                AuthorizationEndpoint.validateScopes(authorizationRequest, openIDClient);
+                AuthorizationEndpoint.validateGrantType(authorizationRequest, openIDClient);
+                AuthorizationEndpoint.validateRedirectionURI(authorizationRequest, openIDClient);
+            }
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
         }
     }
 

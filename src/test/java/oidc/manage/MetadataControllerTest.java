@@ -54,7 +54,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
     @Test
     public void rollback() throws IOException {
         List<Map<String, Object>> serviceProviders = new ArrayList<>();
-        doPostConnections(serviceProviders, 500);
+        doPostConnections(serviceProviders, 400, true);
 
         List<String> clientIds = mongoTemplate.find(new Query(), OpenIDClient.class).stream().map(OpenIDClient::getClientId).collect(Collectors.toList());
         clientIds.sort(String::compareTo);
@@ -62,11 +62,11 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
     }
 
     private void postConnections(List<Map<String, Object>> serviceProviders) throws IOException {
-        doPostConnections(serviceProviders, 201);
+        doPostConnections(serviceProviders, 201, false);
     }
 
-    private void doPostConnections(List<Map<String, Object>> serviceProviders, int expectedStatusCode) {
-        String forceError = expectedStatusCode == 500 ? "?forceError=true" : "";
+    private void doPostConnections(List<Map<String, Object>> serviceProviders, int expectedStatusCode, boolean forceError) {
+        String queryString = forceError ? "?forceError=true" : "";
         given()
                 .when()
                 .header("Content-type", "application/json")
@@ -74,7 +74,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
                 .preemptive()
                 .basic("manage", "secret")
                 .body(serviceProviders)
-                .post("manage/connections" + forceError)
+                .post("manage/connections" + queryString)
                 .then()
                 .statusCode(expectedStatusCode);
     }

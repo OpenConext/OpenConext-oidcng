@@ -156,7 +156,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         userRepository.delete(user);
 
         Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes(),
-                authorizationCode.getIdTokenClaims(), false, authorizationCode.getNonce(), Optional.of(authorizationCode));
+                authorizationCode.getIdTokenClaims(), false, authorizationCode.getNonce(), Optional.of(authorizationCode.getAuthTime()));
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 
@@ -178,7 +178,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         Optional<User> optionalUser = refreshToken.isClientCredentials() ? Optional.empty() :
                 Optional.of(tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(refreshToken.getAccessTokenValue()));
         Map<String, Object> body = tokenEndpointResponse(optionalUser, client, refreshToken.getScopes(),
-                Collections.emptyList(), false, null, Optional.empty());
+                Collections.emptyList(), false, null, optionalUser.map(user -> user.getUpdatedAt()));
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 

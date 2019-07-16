@@ -88,8 +88,8 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     public void invalidToken() {
         Map<String, Object> body = doToken("nope");
 
-        assertEquals(body.get("status"), 404);
-        assertEquals(body.get("error"), "Not Found");
+        assertEquals(400, body.get("status"));
+        assertEquals(body.get("error"), "Bad request");
     }
 
     @Test
@@ -121,11 +121,13 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void refreshToken() throws ParseException, JOSEException, MalformedURLException, UnsupportedEncodingException {
+    public void refreshToken() throws ParseException, JOSEException, MalformedURLException, UnsupportedEncodingException, BadJOSEException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
 
-        doRefreshToken(body, "secret");
+        Map<String, Object> result = doRefreshToken(body, "secret");
+        JWTClaimsSet claimsSet = processToken((String) result.get("id_token"), port);
+        assertNotNull(claimsSet.getClaim("auth_time"));
     }
 
     @Test

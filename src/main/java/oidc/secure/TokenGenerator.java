@@ -334,9 +334,9 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     public String generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, String nonce, List<String> idTokenClaims,
-                                                  Optional<AuthorizationCode> authorizationCodeOptional) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
+                                                  Optional<Long> authorizationTime) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> additionalClaims = new HashMap<>();
-        authorizationCodeOptional.ifPresent(authorizationCode -> additionalClaims.put("auth_time", authorizationCode.getAuthTime()));
+        authorizationTime.ifPresent(authorizationCode -> additionalClaims.put("auth_time", authorizationTime));
         if (StringUtils.hasText(nonce)){
             additionalClaims.put("nonce", nonce);
         }

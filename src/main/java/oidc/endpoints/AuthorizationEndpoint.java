@@ -41,6 +41,7 @@ import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -59,6 +60,7 @@ import java.util.stream.Collectors;
 public class AuthorizationEndpoint implements OidcEndpoint {
 
     private static final Log LOG = LogFactory.getLog(AuthorizationEndpoint.class);
+    private static List<String> forFreeOpenIDScopes = Arrays.asList("profile", "email", "address", "phone");
 
     private TokenGenerator tokenGenerator;
     private AuthorizationCodeRepository authorizationCodeRepository;
@@ -66,7 +68,6 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     private UserRepository userRepository;
     private RefreshTokenRepository refreshTokenRepository;
     private OpenIDClientRepository openIDClientRepository;
-    private List<String> forFreeOpenIDScopes = Arrays.asList("profile", "email", "address", "phone");
 
     @Autowired
     public AuthorizationEndpoint(AuthorizationCodeRepository authorizationCodeRepository,
@@ -108,23 +109,11 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             authenticationRequest = oidcAuthenticationRequest;
         }
         State state = authenticationRequest.getState();
-        URI redirectionURI = authenticationRequest.getRedirectionURI();
+        String redirectURI = validateRedirectionURI(authenticationRequest, client);
 
-        String redirectURI = redirectionURI.toString();
-        redirectURI = URLDecoder.decode(redirectURI, "UTF-8");
-        validateRedirectionURI(redirectURI, client);
 
-        List<String> scopes = scope != null ? scope.toStringList() : Collections.emptyList();
-        validateScopes(scopes, client);
-
-        ResponseType responseType = authenticationRequest.getResponseType();
-        List<String> grants = client.getGrants();
-        if ((responseType.impliesImplicitFlow() || responseType.impliesHybridFlow()) && !grants.contains(GrantType.IMPLICIT.getValue())) {
-            throw new InvalidGrantException(String.format("Grant types %s does not allow for implicit / hybrid flow", grants));
-        }
-        if (responseType.impliesCodeFlow() && !grants.contains(GrantType.AUTHORIZATION_CODE.getValue())) {
-            throw new InvalidGrantException(String.format("Grant types %s does not allow for authorization code flow", grants));
-        }
+        List<String> scopes = validateScopes(authenticationRequest, client);
+        ResponseType responseType = validateGrantType(authenticationRequest, client);
 
         User user = samlAuthentication.getUser();
         if (responseType.impliesCodeFlow()) {
@@ -156,6 +145,18 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             throw new IllegalArgumentException("Response mode " + responseMode + " not supported");
         }
         throw new IllegalArgumentException("Not yet implemented response_type: " + responseType.toString());
+    }
+
+    public static ResponseType validateGrantType(AuthorizationRequest authorizationRequest, OpenIDClient client) {
+        ResponseType responseType = authorizationRequest.getResponseType();
+        List<String> grants = client.getGrants();
+        if ((responseType.impliesImplicitFlow() || responseType.impliesHybridFlow()) && !grants.contains(GrantType.IMPLICIT.getValue())) {
+            throw new InvalidGrantException(String.format("Grant types %s does not allow for implicit / hybrid flow", grants));
+        }
+        if (responseType.impliesCodeFlow() && !grants.contains(GrantType.AUTHORIZATION_CODE.getValue())) {
+            throw new InvalidGrantException(String.format("Grant types %s does not allow for authorization code flow", grants));
+        }
+        return responseType;
     }
 
     private Map<String, Object> authorizationEndpointResponse(User user, OpenIDClient client, AuthorizationRequest authorizationRequest,
@@ -194,13 +195,17 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     }
 
 
-    private void validateRedirectionURI(String redirectionURI, OpenIDClient client) {
+    public static String validateRedirectionURI(AuthorizationRequest authenticationRequest, OpenIDClient client) throws UnsupportedEncodingException {
+        String redirectURI = authenticationRequest.getRedirectionURI().toString();
+        redirectURI = URLDecoder.decode(redirectURI, "UTF-8");
+
         List<String> redirectUrls = client.getRedirectUrls();
-        if (CollectionUtils.isEmpty(redirectUrls) || !redirectUrls.contains(redirectionURI)) {
+        if (CollectionUtils.isEmpty(redirectUrls) || !redirectUrls.contains(redirectURI)) {
             throw new RedirectMismatchException(
                     String.format("Client %s with registered redirect URI's %s requested authorization with redirectURI %s",
-                            client.getClientId(), redirectUrls, redirectionURI));
+                            client.getClientId(), redirectUrls, redirectURI));
         }
+        return redirectURI;
     }
 
     private String authorizationRedirect(String redirectionURI, State state, String code) {
@@ -214,7 +219,9 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     }
 
 
-    private void validateScopes(List<String> requestedScopes, OpenIDClient client) {
+    public static List<String> validateScopes(AuthorizationRequest authorizationRequest, OpenIDClient client) {
+        Scope scope = authorizationRequest.getScope();
+        List<String> requestedScopes = scope != null ? scope.toStringList() : Collections.emptyList();
         List<String> scopes = client.getScopes();
         scopes.addAll(forFreeOpenIDScopes);
         if (!scopes.containsAll(requestedScopes)) {
@@ -223,7 +230,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                     String.format("Scope(s) %s are not allowed for %s. Allowed scopes: %s",
                             missingScopes, client.getClientId(), client.getScopes()));
         }
-
+        return requestedScopes;
     }
 
     @Override

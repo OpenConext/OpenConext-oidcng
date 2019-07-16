@@ -49,7 +49,7 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         LOG.error("Error has occurred: " + result);
 
         Throwable error = this.errorAttributes.getError(webRequest);
-        boolean status = result.containsKey("status") && !result.get("status").equals(999);
+        boolean status = result.containsKey("status") && !result.get("status").equals(999) && !result.get("status").equals(500);
         HttpStatus statusCode = status ? HttpStatus.resolve((Integer) result.get("status")) : BAD_REQUEST;
         if (error != null) {
             LOG.error("Exception in /error: ", error);
@@ -57,31 +57,10 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
             result.put("details", error.getMessage());
             ResponseStatus annotation = AnnotationUtils.getAnnotation(error.getClass(), ResponseStatus.class);
             statusCode = annotation != null ? annotation.value() : statusCode;
-
-            if (error instanceof DataAccessException) {
-                Arrays.asList("error", "message", "details").forEach(s -> result.put(s, "Not Found"));
-                result.put("status", 404);
-
-            }
         }
-        HttpHeaders headers = new HttpHeaders();
-        String redirectUri = request.getParameter("redirect_uri");
-        if ((statusCode.is3xxRedirection() || ((String) result.getOrDefault("path", "")).contains("authorize"))
-                && StringUtils.hasText(redirectUri)) {
-            String url = URLDecoder.decode(redirectUri, "UTF-8");
-            URI uri = UriComponentsBuilder.fromUriString(url)
-                    .queryParam("error", "invalid_request")
-                    .queryParam("error_description", error != null ? error.getMessage() : "unknown_exception")
-                    .queryParam("state", request.getParameter("state"))
-                    .build()
-                    .toUri();
-
-            LOG.info("Redirection after error to " + uri);
-
-            headers.setLocation(uri);
-            statusCode = HttpStatus.FOUND;
-        }
-        return new ResponseEntity<>(result, headers, statusCode);
+        result.put("error", "Bad request");
+        result.put("status", statusCode.value());
+        return new ResponseEntity<>(result, statusCode);
     }
 
 }

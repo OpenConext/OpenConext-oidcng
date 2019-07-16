@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -25,9 +26,8 @@ public class ErrorControllerTest {
                 .buildRequest(null);
         ResponseEntity responseEntity = subject.error(request);
 
-        assertEquals(responseEntity.getStatusCodeValue(), 302);
-        assertEquals(
-                responseEntity.getHeaders().getFirst("Location"),
-                "http://localhost:8080?error=invalid_request&error_description=invalid%20scope&state");
+        assertEquals(401, responseEntity.getStatusCodeValue());
+        Map<String, Object> body = (Map<String, Object>) responseEntity.getBody();
+        assertEquals("Bad request", body.get("error"));
     }
 }

@@ -13,6 +13,7 @@ import oidc.secure.SignedJWTTest;
 import org.junit.Test;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.w3c.dom.Document;
@@ -120,8 +121,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 .queryParams(queryParams)
                 .get("oidc/authorize")
                 .then()
-                .statusCode(302)
-                .header("Location", "http://localhost:8080?error=invalid_request&error_description=Missing%20%22client_id%22%20parameter&state")
+                .statusCode(HttpStatus.BAD_REQUEST.value())
                 .body(containsString("Missing \\\"client_id\\\" parameter"));
     }
 
@@ -139,9 +139,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 .queryParams(queryParams)
                 .get("oidc/authorize")
                 .then()
-                .statusCode(302)
-                .header("Location",
-                        "http://localhost:8080?error=invalid_request&error_description=Scope(s)%20[nope]%20are%20not%20allowed%20for%20mock-sp.%20Allowed%20scopes:%20[openid,%20groups,%20profile,%20email,%20address,%20phone]&state")
+                .statusCode(401)
                 .body(containsString("not allowed"));
     }
 
