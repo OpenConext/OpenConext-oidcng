@@ -45,6 +45,7 @@ import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class AuthorizationEndpointTest extends AbstractIntegrationTest implements SignedJWTTest {
 
@@ -53,6 +54,43 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         String code = doAuthorize();
         assertEquals(12, code.length());
     }
+
+    @Test
+    public void authorizeFormPost() throws IOException, ParserConfigurationException, SAXException, XPathExpressionException {
+        Response response = doAuthorize("mock-sp", "code", ResponseMode.FORM_POST.getValue(), null, null);
+        assertEquals(200, response.getStatusCode());
+
+        NodeList nodeList = getNodeListFromFormPost(response);
+        assertEquals("example", nodeList.item(0).getAttributes().getNamedItem("value").getNodeValue());
+
+        String code = nodeList.item(1).getAttributes().getNamedItem("value").getNodeValue();
+        assertEquals(12, code.length());
+
+        Map<String, Object> tokenResponse = doToken(code);
+        assertTrue(tokenResponse.containsKey("id_token"));
+        assertTrue(tokenResponse.containsKey("access_token"));
+        assertTrue(tokenResponse.containsKey("refresh_token"));
+    }
+
+    @Test
+    public void authorizeFragment() throws UnsupportedEncodingException {
+        Response response = doAuthorize("mock-sp", "code", ResponseMode.FRAGMENT.getValue(), null, null);
+        String url = response.getHeader("Location");
+        String fragment = url.substring(url.indexOf("#") + 1);
+
+        Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&"))
+                .map(s -> s.split("="))
+                .collect(Collectors.toMap(s -> s[0], s -> s[1]));
+        String code = fragmentParameters.get("code");
+
+        assertEquals(12, code.length());
+
+        Map<String, Object> tokenResponse = doToken(code);
+        assertTrue(tokenResponse.containsKey("id_token"));
+        assertTrue(tokenResponse.containsKey("access_token"));
+        assertTrue(tokenResponse.containsKey("refresh_token"));
+    }
+
 
     @Test
     public void oauth2NonOidcCodeFlow() throws UnsupportedEncodingException {
@@ -226,6 +264,16 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     @Test
     public void implicitFlowFormPost() throws IOException, BadJOSEException, ParseException, JOSEException, ParserConfigurationException, SAXException, XPathExpressionException {
         Response response = doAuthorize("mock-sp", "id_token token", ResponseMode.FORM_POST.getValue(), "nonce", null);
+        NodeList nodeList = getNodeListFromFormPost(response);
+        assertEquals("example", nodeList.item(0).getAttributes().getNamedItem("value").getNodeValue());
+
+        String idToken = nodeList.item(2).getAttributes().getNamedItem("value").getNodeValue();
+        JWTClaimsSet claimsSet = processToken(idToken, port);
+        assertEquals("nonce", claimsSet.getClaim("nonce"));
+        assertNotNull(claimsSet.getClaim("at_hash"));
+    }
+
+    private NodeList getNodeListFromFormPost(Response response) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
         Document doc = dBuilder.parse(new ByteArrayInputStream(response.asByteArray()));
@@ -234,13 +282,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         Node node = (Node) xPath.compile("//html/body/form").evaluate(doc, XPathConstants.NODE);
         assertEquals("http://localhost:8080", node.getAttributes().getNamedItem("action").getNodeValue());
 
-        NodeList nodeList = (NodeList) xPath.compile("//html/body/form/input").evaluate(doc, XPathConstants.NODESET);
-        assertEquals("example", nodeList.item(0).getAttributes().getNamedItem("value").getNodeValue());
-
-        String idToken = nodeList.item(2).getAttributes().getNamedItem("value").getNodeValue();
-        JWTClaimsSet claimsSet = processToken(idToken, port);
-        assertEquals("nonce", claimsSet.getClaim("nonce"));
-        assertNotNull(claimsSet.getClaim("at_hash"));
+        return (NodeList) xPath.compile("//html/body/form/input").evaluate(doc, XPathConstants.NODESET);
     }
 
     @Test

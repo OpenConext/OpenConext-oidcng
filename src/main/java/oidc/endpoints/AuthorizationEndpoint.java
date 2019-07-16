@@ -42,7 +42,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.security.NoSuchAlgorithmException;
@@ -50,6 +49,7 @@ import java.security.NoSuchProviderException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,16 +116,29 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         ResponseType responseType = validateGrantType(authenticationRequest, client);
 
         User user = samlAuthentication.getUser();
+        ResponseMode responseMode = authenticationRequest.impliedResponseMode();
+
         if (responseType.impliesCodeFlow()) {
             AuthorizationCode authorizationCode = createAndSaveAuthorizationCode(authenticationRequest, client, user);
-            return new ModelAndView(new RedirectView(authorizationRedirect(redirectURI, state, authorizationCode.getCode())));
+            LOG.info(String.format("Returning authorizationCode flow %s %s", ResponseMode.FORM_POST, redirectURI));
+            if (responseMode.equals(ResponseMode.FORM_POST)) {
+                Map<String, String> body = new HashMap<>();
+                body.put("redirect_uri", redirectURI);
+                body.put("code", authorizationCode.getCode());
+                if (state != null && StringUtils.hasText(state.getValue())) {
+                    body.put("state", state.getValue());
+                }
+                return new ModelAndView("form_post", body);
+            }
+            return new ModelAndView(new RedirectView(authorizationRedirect(redirectURI, state,
+                    authorizationCode.getCode(), responseMode.equals(ResponseMode.FRAGMENT))));
         } else if (responseType.impliesImplicitFlow() || responseType.impliesHybridFlow()) {
             if (responseType.impliesImplicitFlow()) {
                 //User information is encrypted in access token
                 userRepository.delete(user);
             }
             Map<String, Object> body = authorizationEndpointResponse(user, client, authenticationRequest, scopes, responseType, state);
-            ResponseMode responseMode = authenticationRequest.impliedResponseMode();
+
             LOG.info(String.format("Returning implicit flow %s %s", ResponseMode.FORM_POST, redirectURI));
             if (responseMode.equals(ResponseMode.FORM_POST)) {
                 body.put("redirect_uri", redirectURI);
@@ -183,7 +196,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         }
         result.put("expires_in", client.getAccessTokenValidity());
         if (state != null) {
-            result.put("state", state);
+            result.put("state", state.getValue());
         }
         return result;
     }
@@ -208,14 +221,22 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         return redirectURI;
     }
 
-    private String authorizationRedirect(String redirectionURI, State state, String code) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectionURI).queryParam("code", code);
-        if (state != null && StringUtils.hasText(state.getValue())) {
-            builder.queryParam("state", state.getValue());
+    private String authorizationRedirect(String redirectionURI, State state, String code, boolean isFragment) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectionURI);
+        boolean hasState = state != null && StringUtils.hasText(state.getValue());
+        if (isFragment) {
+            String fragment = "code=" + code;
+            if (hasState) {
+                fragment = fragment.concat("&state=" + state.getValue());
+            }
+            builder.fragment(fragment);
+        } else {
+            builder.queryParam("code", code);
+            if (hasState) {
+                builder.queryParam("state", state.getValue());
+            }
         }
-        String result = builder.toUriString();
-        LOG.info("Returning authorizationRedirect: " + result);
-        return result;
+        return builder.toUriString();
     }
 
 
