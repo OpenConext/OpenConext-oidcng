@@ -56,7 +56,7 @@ public class AuthorizationCode {
         this.idTokenClaims = idTokenClaims;
         this.expiresIn = expiresIn != null ? expiresIn :
                 Date.from(LocalDateTime.now().plusMinutes(10).atZone(ZoneId.systemDefault()).toInstant());
-        this.authTime = (long) Math.ceil(new Date().getTime() / 1000L) ;
+        this.authTime = System.currentTimeMillis() / 1000L;
     }
 
     @Transient

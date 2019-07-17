@@ -156,7 +156,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         userRepository.delete(user);
 
         Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes(),
-                authorizationCode.getIdTokenClaims(), false, authorizationCode.getNonce(), Optional.of(authorizationCode.getAuthTime()));
+                authorizationCode.getIdTokenClaims(), false, authorizationCode.getNonce(),
+                Optional.of(authorizationCode.getAuthTime()));
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 
