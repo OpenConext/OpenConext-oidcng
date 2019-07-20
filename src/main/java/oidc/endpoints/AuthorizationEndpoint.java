@@ -42,11 +42,13 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.cert.CertificateException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -209,7 +211,15 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
 
     public static String validateRedirectionURI(AuthorizationRequest authenticationRequest, OpenIDClient client) throws UnsupportedEncodingException {
-        String redirectURI = authenticationRequest.getRedirectionURI().toString();
+        URI redirectionURI = authenticationRequest.getRedirectionURI();
+        if (redirectionURI == null) {
+            return client.getRedirectUrls().stream().findFirst()
+                    .orElseThrow(() ->
+                            new IllegalArgumentException(String.format("Client %s must have at least one redirectURI configured to use the Authorization flow",
+                                    client.getClientId())));
+        }
+
+        String redirectURI = redirectionURI.toString();
         redirectURI = URLDecoder.decode(redirectURI, "UTF-8");
 
         List<String> redirectUrls = client.getRedirectUrls();
@@ -243,7 +253,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     public static List<String> validateScopes(AuthorizationRequest authorizationRequest, OpenIDClient client) {
         Scope scope = authorizationRequest.getScope();
         List<String> requestedScopes = scope != null ? scope.toStringList() : Collections.emptyList();
-        List<String> scopes = client.getScopes();
+        List<String> scopes = new ArrayList<>(client.getScopes());
         scopes.addAll(forFreeOpenIDScopes);
         if (!scopes.containsAll(requestedScopes)) {
             List<String> missingScopes = requestedScopes.stream().filter(s -> !scopes.contains(s)).collect(Collectors.toList());

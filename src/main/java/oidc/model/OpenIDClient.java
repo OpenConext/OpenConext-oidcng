@@ -45,6 +45,14 @@ public class OpenIDClient {
 
     private boolean includeUnspecifiedNameID;
 
+    public OpenIDClient(String clientId, List<String> redirectUrls, List<String> scopes, List<String> grants) {
+        this.clientId = clientId;
+        this.redirectUrls = redirectUrls;
+        this.scopes = scopes;
+        this.grants = grants;
+
+    }
+
     @SuppressWarnings("unchecked")
     public OpenIDClient(Map<String, Object> root) {
         Map<String, Object> data = (Map<String, Object>) root.get("data");
