@@ -79,7 +79,7 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         String responseMode = defaultValue(request, "response_mode", "code".equals(responseType) ? "query" : "fragment");
 
         String errorDescription = error != null ? error.getMessage() : "unknown_exception";
-        String state = defaultValue(request, "state", "");
+        String state = defaultValue(request, "state", null);
 
         UriComponentsBuilder uriComponentsBuilder = UriComponentsBuilder.fromUriString(url);
 
@@ -87,12 +87,18 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
             case "query": {
                 uriComponentsBuilder
                         .queryParam("error", "invalid_request")
-                        .queryParam("error_description", errorDescription)
-                        .queryParam("state", state);
+                        .queryParam("error_description", errorDescription);
+                if (StringUtils.hasText(state)) {
+                        uriComponentsBuilder.queryParam("state", state);
+                }
+
                 break;
             }
             case "fragment": {
-                String fragment = String.format("error=invalid_request&error_description=%s&state=%s", errorDescription, state);
+                String fragment = String.format("error=invalid_request&error_description=%s", errorDescription);
+                if (StringUtils.hasText(state)) {
+                    fragment = fragment.concat(String.format("&state=%s", state));
+                }
                 uriComponentsBuilder.fragment(fragment);
                 break;
             }
