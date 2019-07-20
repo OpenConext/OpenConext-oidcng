@@ -28,6 +28,6 @@ public class ErrorControllerTest {
 
         assertEquals(401, responseEntity.getStatusCodeValue());
         Map<String, Object> body = (Map<String, Object>) responseEntity.getBody();
-        assertEquals("Bad request", body.get("error"));
+        assertEquals("invalid_request", body.get("error"));
     }
 }

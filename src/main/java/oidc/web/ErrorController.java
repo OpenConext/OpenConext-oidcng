@@ -57,7 +57,7 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
             ResponseStatus annotation = AnnotationUtils.getAnnotation(error.getClass(), ResponseStatus.class);
             statusCode = annotation != null ? annotation.value() : statusCode;
         }
-        result.put("error", "Bad request");
+        result.put("error", "invalid_request");
         result.put("status", statusCode.value());
 
         //https://openid.net/specs/openid-connect-core-1_0.html#AuthError
