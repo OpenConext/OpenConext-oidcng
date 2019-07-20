@@ -43,6 +43,8 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
     private RequestCache requestCache = new HttpSessionRequestCache();
     private OpenIDClientRepository openIDClientRepository;
 
+    public static String REDIRECT_URI_VALID = "REDIRECT_URI_VALID";
+
     public ConfigurableSamlAuthenticationRequestFilter(SamlProviderProvisioning<ServiceProviderService> provisioning,
                                                        SamlRequestMatcher samlRequestMatcher,
                                                        OpenIDClientRepository openIDClientRepository) {
@@ -142,10 +144,12 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             ClientID clientID = authorizationRequest.getClientID();
             if (clientID != null) {
                 OpenIDClient openIDClient = openIDClientRepository.findByClientId(clientID.getValue());
+                AuthorizationEndpoint.validateRedirectionURI(authorizationRequest, openIDClient);
+
+                request.setAttribute(REDIRECT_URI_VALID, true);
 
                 AuthorizationEndpoint.validateScopes(authorizationRequest, openIDClient);
                 AuthorizationEndpoint.validateGrantType(authorizationRequest, openIDClient);
-                AuthorizationEndpoint.validateRedirectionURI(authorizationRequest, openIDClient);
             }
         } catch (ParseException e) {
             throw new RuntimeException(e);

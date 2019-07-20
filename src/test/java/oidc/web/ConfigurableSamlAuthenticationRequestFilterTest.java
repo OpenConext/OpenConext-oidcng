@@ -2,6 +2,7 @@ package oidc.web;
 
 import com.nimbusds.jwt.SignedJWT;
 import io.restassured.response.Response;
+import io.restassured.response.ResponseBody;
 import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
 import oidc.model.OpenIDClient;
@@ -14,14 +15,21 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPathExpressionException;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.text.ParseException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
@@ -34,7 +42,7 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
         OpenIDClient client = openIDClient("mock-sp");
         String keyID = getCertificateKeyID(client);
         String requestSignedJWT = signedJWT(client.getClientId(), keyID).serialize();
-        doFilterInternal("mock-sp", "login", null, requestSignedJWT, true);
+        doFilterInternal("mock-sp", "login", null, requestSignedJWT, true, "http://localhost:8091/redirect", "code", "query");
     }
 
     @Test
@@ -42,41 +50,61 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
         OpenIDClient client = openIDClient("mock-sp");
         String keyID = getCertificateKeyID(client);
         String requestSignedJWT = signedJWT(client.getClientId(), keyID).serialize();
-        doFilterInternal("mock-sp", null, "loa", requestSignedJWT, true);
+        doFilterInternal("mock-sp", null, "loa", requestSignedJWT, true, "http://localhost:8091/redirect", "code", "query");
     }
 
     @Test
-    public void filterInternal() throws UnsupportedEncodingException, ParseException {
-        doFilterInternal("mock-sp", null, null, null, false);
+    public void filterInternal() throws Exception {
+        doFilterInternal("mock-sp", null, null, null, false, "http://localhost:8091/redirect", "code", "query");
     }
 
     @Test
-    public void filterInternalPromptNone() throws UnsupportedEncodingException, ParseException {
-        filterInternalInvalidPrompt("none", "interaction_required");
+    public void filterInternalPromptNone() throws Exception {
+        filterInternalInvalidRequest("none", "interaction_required",
+                "http://localhost:8091/redirect", "code", "query", "mock-sp");
     }
 
     @Test
-    public void filterInternalPromptConsent() throws UnsupportedEncodingException, ParseException {
-        filterInternalInvalidPrompt("consent", "consent_required");
+    public void filterInternalPromptConsent() throws Exception {
+        filterInternalInvalidRequest("consent", "consent_required",
+                "http://localhost:8091/redirect", "code", "query", "mock-sp");
     }
 
     @Test
-    public void filterInternalPromptSelectAccount() throws UnsupportedEncodingException, ParseException {
-        filterInternalInvalidPrompt("select_account", "account_selection_required");
+    public void filterInternalPromptSelectAccount() throws Exception {
+        filterInternalInvalidRequest("select_account", "account_selection_required",
+                "http://localhost:8091/redirect", "code", "query", "mock-sp");
     }
 
     @Test
-    public void filterInternalPromptUnsupported() throws UnsupportedEncodingException, ParseException {
-        filterInternalInvalidPrompt("unsupported", "Unsupported prompt unsupported");
+    public void filterInternalPromptUnsupported() throws Exception {
+        filterInternalInvalidRequest("unsupported", "Unsupported prompt unsupported",
+                "http://localhost:8091/redirect", "code", "query", "mock-sp");
     }
 
-    private void filterInternalInvalidPrompt(String prompt, String expectedMsg) throws UnsupportedEncodingException, ParseException {
-        Map map = doFilterInternal("mock-sp", prompt, null, null, false);
-        assertEquals(expectedMsg, map.get("message"));
-        assertEquals(400, map.get("status"));
+    @Test
+    public void filterInternalInvalidGrantType() throws Exception {
+        filterInternalInvalidRequest(null, "Grant types [authorization_code] does not allow for implicit / hybrid flow",
+                "http://localhost:8091/redirect","token", "fragment", "mock-rp");
     }
 
-    private Map doFilterInternal(String clientId, String prompt, String acrValue, String requestSignedJWT, boolean isForceAuth) throws UnsupportedEncodingException, ParseException {
+    @Test
+    public void filterInternalInvalidGrantTypeFormPost() throws Exception {
+        filterInternalInvalidRequest(null, "Grant types [authorization_code] does not allow for implicit / hybrid flow",
+                "http://localhost:8091/redirect","token", "form_post", "mock-rp");
+    }
+
+    private void filterInternalInvalidRequest(String prompt, String expectedMsg, String redirectUri,
+                                              String responseType, String responseMode, String clientId) throws Exception {
+        Map map = doFilterInternal(clientId, prompt, null, null, false, redirectUri, responseType, responseMode);
+        assertEquals("invalid_request", map.get("error"));
+        assertEquals(expectedMsg, URLDecoder.decode(String.valueOf(map.get("error_description")), "UTF-8"));
+        assertEquals("example", map.get("state"));
+    }
+
+    private Map doFilterInternal(String clientId, String prompt, String acrValue, String requestSignedJWT,
+                                 boolean isForceAuth, String redirectUri, String responseType, String responseMode)
+            throws IOException, ParseException, ParserConfigurationException, SAXException, XPathExpressionException {
         RequestSpecification when = given().redirects().follow(false).when();
         if (StringUtils.hasText(clientId)) {
             when.queryParam("client_id", clientId);
@@ -87,21 +115,46 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
         if (StringUtils.hasText(acrValue)) {
             when.queryParam("acr_values", acrValue);
         }
-        when.queryParam("response_type", "code")
-                .queryParam("scope", "openid");
+        when.queryParam("response_type", responseType)
+                .queryParam("scope", "openid")
+                .queryParam("state", "example")
+                .queryParam("response_mode", responseMode);
 
         if (StringUtils.hasText(requestSignedJWT)) {
             when.queryParam("request", requestSignedJWT);
         }
         Response response = when
-                .queryParam("redirect_uri", "http://localhost:8091/redirect")
+                .queryParam("redirect_uri", redirectUri)
                 .get("oidc/authorize");
 
         String location = response.getHeader("Location");
         if (location == null) {
+            if ("form_post".equals(responseMode)) {
+                NodeList nodeList = getNodeListFromFormPost(response);
+                Map<String, String> form = new HashMap<>();
+                form.put("state",nodeList.item(0).getAttributes().getNamedItem("value").getNodeValue());
+                form.put("error",nodeList.item(1).getAttributes().getNamedItem("value").getNodeValue());
+                form.put("error_description",nodeList.item(2).getAttributes().getNamedItem("value").getNodeValue());
+                return form;
+            }
             return response.getBody().as(Map.class);
         }
+        if (location.contains("error")) {
+            if (responseMode.equals("query")) {
+                return UriComponentsBuilder.fromUriString(location).build().getQueryParams().toSingleValueMap();
+            }
+            if (responseMode.equals("fragment")) {
+                String fragment = UriComponentsBuilder.fromUriString(location).build().getFragment();
+
+                return fragmentToMap(fragment);
+            }
+            if (responseMode.equals("form_post")) {
+                ResponseBody body = response.getBody();
+            }
+
+        }
         MultiValueMap<String, String> queryParams = UriComponentsBuilder.fromUriString(location).build().getQueryParams();
+
         String relayState = queryParams.getFirst("RelayState");
 
         String decodedRelayState = StringUtils.hasText(relayState) ? URLDecoder.decode(relayState, "UTF-8") : null;

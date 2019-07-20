@@ -61,9 +61,9 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         assertEquals(200, response.getStatusCode());
 
         NodeList nodeList = getNodeListFromFormPost(response);
-        assertEquals("example", nodeList.item(0).getAttributes().getNamedItem("value").getNodeValue());
+        assertEquals("example", nodeList.item(1).getAttributes().getNamedItem("value").getNodeValue());
 
-        String code = nodeList.item(1).getAttributes().getNamedItem("value").getNodeValue();
+        String code = nodeList.item(0).getAttributes().getNamedItem("value").getNodeValue();
         assertEquals(12, code.length());
 
         Map<String, Object> tokenResponse = doToken(code);
@@ -78,9 +78,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
 
-        Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&"))
-                .map(s -> s.split("="))
-                .collect(Collectors.toMap(s -> s[0], s -> s[1]));
+        Map<String, String> fragmentParameters = fragmentToMap(fragment);
         String code = fragmentParameters.get("code");
 
         assertEquals(12, code.length());
@@ -135,7 +133,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 null, null, null, null, "groups", "example");
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
-        Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&")).map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
+        Map<String, String> fragmentParameters = fragmentToMap(fragment);
         assertFalse(fragmentParameters.containsKey("id_token"));
     }
 
@@ -207,7 +205,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 null, "nonce", null, Arrays.asList("email", "nickname"));
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
-        Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&")).map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
+        Map<String, String> fragmentParameters = fragmentToMap(fragment);
         JWTClaimsSet claimsSet = assertImplicitFlowResponse(fragmentParameters);
 
         assertEquals("john.doe@example.org", claimsSet.getClaim("email"));
@@ -219,7 +217,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         Response response = doAuthorize("mock-sp", "code id_token token", null, "nonce", null);
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
-        Map<String, String> fragmentParameters = Arrays.stream(fragment.split("&")).map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
+        Map<String, String> fragmentParameters = fragmentToMap(fragment);
         String code = fragmentParameters.get("code");
 
         AuthorizationCode authorizationCode = mongoTemplate.findOne(Query.query(Criteria.where("code").is(code)), AuthorizationCode.class);
@@ -265,24 +263,12 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void implicitFlowFormPost() throws IOException, BadJOSEException, ParseException, JOSEException, ParserConfigurationException, SAXException, XPathExpressionException {
         Response response = doAuthorize("mock-sp", "id_token token", ResponseMode.FORM_POST.getValue(), "nonce", null);
         NodeList nodeList = getNodeListFromFormPost(response);
-        assertEquals("example", nodeList.item(0).getAttributes().getNamedItem("value").getNodeValue());
+        assertEquals("example", nodeList.item(2).getAttributes().getNamedItem("value").getNodeValue());
 
-        String idToken = nodeList.item(2).getAttributes().getNamedItem("value").getNodeValue();
+        String idToken = nodeList.item(1).getAttributes().getNamedItem("value").getNodeValue();
         JWTClaimsSet claimsSet = processToken(idToken, port);
         assertEquals("nonce", claimsSet.getClaim("nonce"));
         assertNotNull(claimsSet.getClaim("at_hash"));
-    }
-
-    private NodeList getNodeListFromFormPost(Response response) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
-        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-        Document doc = dBuilder.parse(new ByteArrayInputStream(response.asByteArray()));
-        XPath xPath = XPathFactory.newInstance().newXPath();
-
-        Node node = (Node) xPath.compile("//html/body/form").evaluate(doc, XPathConstants.NODE);
-        assertEquals("http://localhost:8080", node.getAttributes().getNamedItem("action").getNodeValue());
-
-        return (NodeList) xPath.compile("//html/body/form/input").evaluate(doc, XPathConstants.NODESET);
     }
 
     @Test

@@ -24,7 +24,7 @@ public class ErrorControllerTest {
                 .get(new URI("http://localhost:8080/oidc/authorize?response_type=code&client_id=http@//mock-sp&scope=openid&redirect_uri=http://localhost:8080"))
                 .requestAttr("javax.servlet.error.exception", new InvalidScopeException("invalid scope"))
                 .buildRequest(null);
-        ResponseEntity responseEntity = subject.error(request);
+        ResponseEntity responseEntity = (ResponseEntity) subject.error(request);
 
         assertEquals(401, responseEntity.getStatusCodeValue());
         Map<String, Object> body = (Map<String, Object>) responseEntity.getBody();

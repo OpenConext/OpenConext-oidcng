@@ -47,7 +47,19 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -280,6 +292,23 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
                 .formParam("grant_type", grantType.getValue())
                 .post("oidc/token")
                 .as(Map.class);
+    }
+
+    protected NodeList getNodeListFromFormPost(Response response) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.parse(new ByteArrayInputStream(response.asByteArray()));
+        XPath xPath = XPathFactory.newInstance().newXPath();
+
+        Node node = (Node) xPath.compile("//html/body/form").evaluate(doc, XPathConstants.NODE);
+        assertNotNull(node.getAttributes().getNamedItem("action").getNodeValue());
+
+        return (NodeList) xPath.compile("//html/body/form/input").evaluate(doc, XPathConstants.NODESET);
+    }
+
+    protected Map<String, String> fragmentToMap(String fragment) {
+        return Arrays.stream(fragment.split("&")).map(s -> s.split("="))
+                .collect(Collectors.toMap(s -> s[0], s -> s[1]));
     }
 
     protected void expireAccessToken(String token) {

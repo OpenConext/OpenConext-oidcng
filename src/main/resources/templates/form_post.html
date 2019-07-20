@@ -2,10 +2,12 @@
 <head><title>Submit This Form</title></head>
 <body onload="javascript:document.forms[0].submit()" enctype="application/x-www-form-urlencoded">
 <form method="post" th:action="${redirect_uri}">
-    <input th:if="${state != null}" type="hidden" name="state" th:value="${state}"/>
     <input th:if="${access_token != null}" type="hidden" name="access_token" th:value="${access_token}"/>
     <input th:if="${code != null}" type="hidden" name="code" th:value="${code}"/>
     <input th:if="${id_token != null}" type="hidden" name="id_token" th:value="${id_token}"/>
+    <input th:if="${state != null}" type="hidden" name="state" th:value="${state}"/>
+    <input th:if="${error != null}" type="hidden" name="error" th:value="${error}"/>
+    <input th:if="${error_description != null}" type="hidden" name="error_description" th:value="${error_description}"/>
 </form>
 </body>
 </html>
