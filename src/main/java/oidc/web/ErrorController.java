@@ -98,10 +98,14 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
             }
             case "form_post": {
                 Map<String, String> body = new HashMap<>();
+                body.put("redirect_uri", url);
                 body.put("error", "invalid_request");
                 body.put("error_description", errorDescription);
                 body.put("state", state);
-                return new ModelAndView("form_post", body, statusCode);
+
+                LOG.info("Post form after error to " + url);
+
+                return new ModelAndView("form_post", body);
             }
             default://nope
         }
