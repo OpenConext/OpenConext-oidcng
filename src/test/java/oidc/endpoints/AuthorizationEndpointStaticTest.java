@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
@@ -107,8 +108,7 @@ public class AuthorizationEndpointStaticTest {
         String queryString = parameters.entrySet().stream()
                 .filter(p -> p.getValue() != null)
                 .map(p -> String.format("%s=%s", p.getKey(), p.getValue()))
-                .reduce((p1, p2) -> p1 + "&" + p2)
-                .orElse("");
+                .collect(Collectors.joining("&"));
         MockHttpServletRequest request = new MockHttpServletRequest(HttpMethod.GET.name(), "http://localhost");
         request.setQueryString(queryString);
         return AuthorizationRequest.parse(ServletUtils.createHTTPRequest(request));

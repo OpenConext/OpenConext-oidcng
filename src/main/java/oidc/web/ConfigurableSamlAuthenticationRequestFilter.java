@@ -43,7 +43,7 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
     private RequestCache requestCache = new HttpSessionRequestCache();
     private OpenIDClientRepository openIDClientRepository;
 
-    public static String REDIRECT_URI_VALID = "REDIRECT_URI_VALID";
+    static String REDIRECT_URI_VALID = "REDIRECT_URI_VALID";
 
     public ConfigurableSamlAuthenticationRequestFilter(SamlProviderProvisioning<ServiceProviderService> provisioning,
                                                        SamlRequestMatcher samlRequestMatcher,
@@ -70,9 +70,9 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
         }
     }
 
-    protected AuthenticationRequest enhanceAuthenticationRequest(ServiceProviderService provider,
-                                                                 HttpServletRequest request,
-                                                                 AuthenticationRequest authenticationRequest) {
+    private AuthenticationRequest enhanceAuthenticationRequest(ServiceProviderService provider,
+                                                               HttpServletRequest request,
+                                                               AuthenticationRequest authenticationRequest) {
         String clientId = getRelayState(provider, request);
         if (StringUtils.hasText(clientId)) {
             String entityId = ServiceProviderTranslation.translateClientId(clientId);
@@ -103,8 +103,14 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
                 List<ACR> acrValuesObjects = authRequest.getACRValues();
                 parseAcrValues(authenticationRequest, acrValuesObjects);
                 Prompt authRequestPrompt = authRequest.getPrompt();
-                if (authRequestPrompt != null && (!authenticationRequest.isForceAuth() || authRequest.getMaxAge() > -1)) {
-                    authenticationRequest.setForceAuth(authRequestPrompt.toStringList().contains("login"));
+                if (authRequestPrompt != null && !authRequestPrompt.toString().equals("login")) {
+                    throw new UnsupportedPromptValueException(unsupportedPromptValue(authRequestPrompt.toString()));
+                }
+                if (!authenticationRequest.isForceAuth() && authRequest.getMaxAge() > -1) {
+                    authenticationRequest.setForceAuth(true);
+                }
+                if (!authenticationRequest.isForceAuth() && authRequestPrompt != null) {
+                    authenticationRequest.setForceAuth(authRequestPrompt.toString().contains("login"));
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
