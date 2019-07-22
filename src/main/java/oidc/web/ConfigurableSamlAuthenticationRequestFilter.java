@@ -57,19 +57,6 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
         return request.getParameter("client_id");
     }
 
-    private String unsupportedPromptValue(String prompt) {
-        switch (prompt) {
-            case "none":
-                return "interaction_required";
-            case "consent":
-                return "consent_required";
-            case "select_account":
-                return "account_selection_required";
-            default:
-                return String.format("Unsupported prompt %s", prompt);
-        }
-    }
-
     private AuthenticationRequest enhanceAuthenticationRequest(ServiceProviderService provider,
                                                                HttpServletRequest request,
                                                                AuthenticationRequest authenticationRequest) {
@@ -78,11 +65,8 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             String entityId = ServiceProviderTranslation.translateClientId(clientId);
             authenticationRequest.setScoping(new Scoping(null, Collections.singletonList(entityId), 1));
         }
-        String prompt = request.getParameter("prompt");
-        //We trigger an error is prompt is present and not equals 'login'
-        if (StringUtils.hasText(prompt) && !prompt.equals("login")) {
-            throw new UnsupportedPromptValueException(unsupportedPromptValue(prompt));
-        }
+        String prompt = AuthorizationEndpoint.validatePrompt(request);
+
         authenticationRequest.setForceAuth("login".equals(prompt));
         if (!authenticationRequest.isForceAuth() && StringUtils.hasText(request.getParameter("max_age"))) {
             authenticationRequest.setForceAuth(true);
@@ -103,14 +87,12 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
                 List<ACR> acrValuesObjects = authRequest.getACRValues();
                 parseAcrValues(authenticationRequest, acrValuesObjects);
                 Prompt authRequestPrompt = authRequest.getPrompt();
-                if (authRequestPrompt != null && !authRequestPrompt.toString().equals("login")) {
-                    throw new UnsupportedPromptValueException(unsupportedPromptValue(authRequestPrompt.toString()));
-                }
+                prompt = AuthorizationEndpoint.validatePrompt(authRequestPrompt);
                 if (!authenticationRequest.isForceAuth() && authRequest.getMaxAge() > -1) {
                     authenticationRequest.setForceAuth(true);
                 }
-                if (!authenticationRequest.isForceAuth() && authRequestPrompt != null) {
-                    authenticationRequest.setForceAuth(authRequestPrompt.toString().contains("login"));
+                if (!authenticationRequest.isForceAuth() && prompt != null) {
+                    authenticationRequest.setForceAuth(prompt.contains("login"));
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);

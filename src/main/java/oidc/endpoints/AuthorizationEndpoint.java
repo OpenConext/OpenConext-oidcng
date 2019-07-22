@@ -11,9 +11,11 @@ import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.OIDCResponseTypeValue;
+import com.nimbusds.openid.connect.sdk.Prompt;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.InvalidScopeException;
 import oidc.exceptions.RedirectMismatchException;
+import oidc.exceptions.UnsupportedPromptValueException;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
@@ -40,6 +42,7 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -249,6 +252,35 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         return builder.toUriString();
     }
 
+    public static String validatePrompt(HttpServletRequest request) {
+        String prompt = request.getParameter("prompt");
+        //We trigger an error is prompt is present and not equals 'login'
+        if (StringUtils.hasText(prompt) && !prompt.equals("login")) {
+            throw new UnsupportedPromptValueException(unsupportedPromptValue(prompt));
+        }
+        return prompt;
+    }
+
+    public static String validatePrompt(Prompt prompt) {
+        //We trigger an error is prompt is present and not equals 'login'
+        if (prompt != null && !prompt.toString().contains("login")) {
+            throw new UnsupportedPromptValueException(unsupportedPromptValue(prompt.toString()));
+        }
+        return prompt != null ? prompt.toString() : null;
+    }
+
+    private static String unsupportedPromptValue(String prompt) {
+        switch (prompt) {
+            case "none":
+                return "interaction_required";
+            case "consent":
+                return "consent_required";
+            case "select_account":
+                return "account_selection_required";
+            default:
+                return String.format("Unsupported prompt %s", prompt);
+        }
+    }
 
     public static List<String> validateScopes(AuthorizationRequest authorizationRequest, OpenIDClient client) {
         Scope scope = authorizationRequest.getScope();
