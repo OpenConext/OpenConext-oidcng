@@ -1,5 +1,6 @@
 package oidc.web;
 
+import oidc.exceptions.BaseException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.boot.web.servlet.error.ErrorAttributes;
@@ -56,8 +57,9 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
             result.put("details", error.getMessage());
             ResponseStatus annotation = AnnotationUtils.getAnnotation(error.getClass(), ResponseStatus.class);
             statusCode = annotation != null ? annotation.value() : statusCode;
+
         }
-        result.put("error", "invalid_request");
+        result.put("error", errorCode(error));
         result.put("status", statusCode.value());
 
         //https://openid.net/specs/openid-connect-core-1_0.html#AuthError
@@ -67,18 +69,28 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         if (redirectUriValid != null && (boolean) redirectUriValid && (statusCode.is3xxRedirection() || ((String) result.getOrDefault("path", "")).contains("authorize"))
                 && StringUtils.hasText(redirectUri)) {
 
-            return redirectErrorResponse(request, result, error, statusCode, redirectUri);
+            return redirectErrorResponse(request, result, error, redirectUri);
         }
         return new ResponseEntity<>(result, statusCode);
     }
 
-    private Object redirectErrorResponse(HttpServletRequest request, Map<String, Object> result, Throwable error, HttpStatus statusCode, String redirectUri) throws UnsupportedEncodingException {
+    private String errorCode(Throwable error) {
+        return error == null ? "unknown_exception" : error instanceof BaseException ?
+                ((BaseException) error).getErrorCode() : error.getMessage();
+    }
+
+    private String errorMessage(Throwable error) {
+        return error == null ? "Unknown exception occurred" : error.getMessage();
+    }
+
+    private Object redirectErrorResponse(HttpServletRequest request, Map<String, Object> result, Throwable error, String redirectUri) throws UnsupportedEncodingException {
         String url = URLDecoder.decode(redirectUri, "UTF-8");
 
         String responseType = defaultValue(request, "response_type", "code");
         String responseMode = defaultValue(request, "response_mode", "code".equals(responseType) ? "query" : "fragment");
 
-        String errorDescription = error != null ? error.getMessage() : "unknown_exception";
+        String errorCode = errorCode(error);
+        String errorMessage = errorMessage(error);
         String state = defaultValue(request, "state", null);
 
         UriComponentsBuilder uriComponentsBuilder = UriComponentsBuilder.fromUriString(url);
@@ -86,16 +98,16 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         switch (responseMode) {
             case "query": {
                 uriComponentsBuilder
-                        .queryParam("error", "invalid_request")
-                        .queryParam("error_description", errorDescription);
+                        .queryParam("error", errorCode)
+                        .queryParam("error_description", errorMessage);
                 if (StringUtils.hasText(state)) {
-                        uriComponentsBuilder.queryParam("state", state);
+                    uriComponentsBuilder.queryParam("state", state);
                 }
 
                 break;
             }
             case "fragment": {
-                String fragment = String.format("error=invalid_request&error_description=%s", errorDescription);
+                String fragment = String.format("error=%s&error_description=%s", errorCode, errorMessage);
                 if (StringUtils.hasText(state)) {
                     fragment = fragment.concat(String.format("&state=%s", state));
                 }
@@ -105,10 +117,11 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
             case "form_post": {
                 Map<String, String> body = new HashMap<>();
                 body.put("redirect_uri", url);
-                body.put("error", "invalid_request");
-                body.put("error_description", errorDescription);
-                body.put("state", state);
-
+                body.put("error", errorCode);
+                body.put("error_description", errorMessage);
+                if (StringUtils.hasText(state)) {
+                    body.put("state", state);
+                }
                 LOG.info("Post form after error to " + url);
 
                 return new ModelAndView("form_post", body);
@@ -121,7 +134,7 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
 
         HttpHeaders headers = new HttpHeaders();
         headers.setLocation(uri);
-        statusCode = HttpStatus.FOUND;
+        HttpStatus statusCode = HttpStatus.FOUND;
         return new ResponseEntity<>(result, headers, statusCode);
     }
 

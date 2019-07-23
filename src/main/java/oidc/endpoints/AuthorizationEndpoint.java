@@ -252,11 +252,13 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         return builder.toUriString();
     }
 
+    private static final String unsupportedPromptMessage = "Unsupported Prompt value";
+
     public static String validatePrompt(HttpServletRequest request) {
         String prompt = request.getParameter("prompt");
         //We trigger an error is prompt is present and not equals 'login'
         if (StringUtils.hasText(prompt) && !prompt.equals("login")) {
-            throw new UnsupportedPromptValueException(unsupportedPromptValue(prompt));
+            throw new UnsupportedPromptValueException(unsupportedPromptValue(prompt), unsupportedPromptMessage);
         }
         return prompt;
     }
@@ -264,7 +266,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     public static String validatePrompt(Prompt prompt) {
         //We trigger an error is prompt is present and not equals 'login'
         if (prompt != null && !prompt.toString().contains("login")) {
-            throw new UnsupportedPromptValueException(unsupportedPromptValue(prompt.toString()));
+            throw new UnsupportedPromptValueException(unsupportedPromptValue(prompt.toString()), unsupportedPromptMessage);
         }
         return prompt != null ? prompt.toString() : null;
     }
@@ -278,7 +280,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             case "select_account":
                 return "account_selection_required";
             default:
-                return String.format("Unsupported prompt %s", prompt);
+                return "invalid_request";
         }
     }
 

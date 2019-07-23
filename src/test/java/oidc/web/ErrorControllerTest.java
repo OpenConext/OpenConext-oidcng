@@ -22,12 +22,12 @@ public class ErrorControllerTest {
     public void error() throws URISyntaxException, UnsupportedEncodingException {
         MockHttpServletRequest request = MockMvcRequestBuilders
                 .get(new URI("http://localhost:8080/oidc/authorize?response_type=code&client_id=http@//mock-sp&scope=openid&redirect_uri=http://localhost:8080"))
-                .requestAttr("javax.servlet.error.exception", new InvalidScopeException("invalid scope"))
+                .requestAttr("javax.servlet.error.exception", new InvalidScopeException("invalid_scope"))
                 .buildRequest(null);
         ResponseEntity responseEntity = (ResponseEntity) subject.error(request);
 
         assertEquals(401, responseEntity.getStatusCodeValue());
         Map<String, Object> body = (Map<String, Object>) responseEntity.getBody();
-        assertEquals("invalid_request", body.get("error"));
+        assertEquals("invalid_scope", body.get("error"));
     }
 }

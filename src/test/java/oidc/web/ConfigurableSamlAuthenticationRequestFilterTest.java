@@ -21,7 +21,6 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.text.ParseException;
 import java.util.Collections;
@@ -29,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
@@ -78,27 +76,26 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
 
     @Test
     public void filterInternalPromptUnsupported() throws Exception {
-        filterInternalInvalidRequest("unsupported", "Unsupported prompt unsupported",
+        filterInternalInvalidRequest("unsupported", "invalid_request",
                 "http://localhost:8091/redirect", "code", "query", "mock-sp");
     }
 
     @Test
     public void filterInternalInvalidGrantType() throws Exception {
-        filterInternalInvalidRequest(null, "Grant types [authorization_code] does not allow for implicit / hybrid flow",
-                "http://localhost:8091/redirect","token", "fragment", "mock-rp");
+        filterInternalInvalidRequest(null, "unauthorized_client",
+                "http://localhost:8091/redirect", "token", "fragment", "mock-rp");
     }
 
     @Test
     public void filterInternalInvalidGrantTypeFormPost() throws Exception {
-        filterInternalInvalidRequest(null, "Grant types [authorization_code] does not allow for implicit / hybrid flow",
-                "http://localhost:8091/redirect","token", "form_post", "mock-rp");
+        filterInternalInvalidRequest(null, "unauthorized_client",
+                "http://localhost:8091/redirect", "token", "form_post", "mock-rp");
     }
 
     private void filterInternalInvalidRequest(String prompt, String expectedMsg, String redirectUri,
                                               String responseType, String responseMode, String clientId) throws Exception {
         Map map = doFilterInternal(clientId, prompt, null, null, false, redirectUri, responseType, responseMode);
-        assertEquals("invalid_request", map.get("error"));
-        assertEquals(expectedMsg, URLDecoder.decode(String.valueOf(map.get("error_description")), "UTF-8"));
+        assertEquals(expectedMsg, map.get("error"));
         assertEquals("example", map.get("state"));
     }
 
@@ -132,9 +129,8 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
             if ("form_post".equals(responseMode)) {
                 NodeList nodeList = getNodeListFromFormPost(response);
                 Map<String, String> form = new HashMap<>();
-                form.put("state",nodeList.item(0).getAttributes().getNamedItem("value").getNodeValue());
-                form.put("error",nodeList.item(1).getAttributes().getNamedItem("value").getNodeValue());
-                form.put("error_description",nodeList.item(2).getAttributes().getNamedItem("value").getNodeValue());
+                form.put("state", nodeList.item(0).getAttributes().getNamedItem("value").getNodeValue());
+                form.put("error", nodeList.item(1).getAttributes().getNamedItem("value").getNodeValue());
                 return form;
             }
             return response.getBody().as(Map.class);
