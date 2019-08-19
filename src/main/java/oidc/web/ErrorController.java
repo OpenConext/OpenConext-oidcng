@@ -5,6 +5,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.boot.web.servlet.error.ErrorAttributes;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -58,6 +60,9 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
             ResponseStatus annotation = AnnotationUtils.getAnnotation(error.getClass(), ResponseStatus.class);
             statusCode = annotation != null ? annotation.value() : statusCode;
 
+            if (error instanceof EmptyResultDataAccessException && result.getOrDefault("path", "/oidc/token").toString().contains("token")) {
+                return new ResponseEntity<>(Collections.singletonMap("error", "invalid_request"), BAD_REQUEST);
+            }
         }
         result.put("error", errorCode(error));
         result.put("status", statusCode.value());

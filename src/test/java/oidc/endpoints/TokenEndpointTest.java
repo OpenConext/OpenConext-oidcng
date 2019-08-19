@@ -88,8 +88,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     public void invalidToken() {
         Map<String, Object> body = doToken("nope");
 
-        assertEquals(400, body.get("status"));
-        assertNotNull(body.get("error"));
+        assertEquals(body.get("error"), "invalid_request");
     }
 
     @Test
