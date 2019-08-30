@@ -30,6 +30,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,11 +116,6 @@ public interface OidcEndpoint {
 
 
     default void logout() {
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-        }
         SecurityContextHolder.getContext().setAuthentication(null);
         SecurityContextHolder.clearContext();
     }

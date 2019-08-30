@@ -37,17 +37,21 @@ public class FakeSamlAuthenticationFilter extends GenericFilterBean {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if ((authentication == null || !authentication.isAuthenticated()) && !(authentication instanceof DefaultSamlAuthentication)) {
-            User user = objectMapper.readValue(IOUtils.toString(new ClassPathResource("data/user.json").getInputStream(), Charset.defaultCharset()), User.class);
+            User user = getUser(objectMapper);
             userRepository.deleteAll();
             userRepository.insert(user);
 
-            OidcSamlAuthentication samlAuthentication = new OidcSamlAuthentication(getAssertion(), user);
+            OidcSamlAuthentication samlAuthentication = new OidcSamlAuthentication(getAssertion(), user, "http://localhost");
             SecurityContextHolder.getContext().setAuthentication(samlAuthentication);
         }
         chain.doFilter(request, response);
     }
 
-    private Assertion getAssertion() {
+    public static User getUser(ObjectMapper objectMapper) throws IOException {
+        return objectMapper.readValue(IOUtils.toString(new ClassPathResource("data/user.json").getInputStream(), Charset.defaultCharset()), User.class);
+    }
+
+    public static Assertion getAssertion() {
         Assertion assertion = new Assertion();
         Subject subject = new Subject();
 

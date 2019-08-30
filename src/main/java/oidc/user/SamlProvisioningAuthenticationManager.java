@@ -17,6 +17,7 @@ import org.springframework.security.saml.saml2.authentication.AuthenticationCont
 import org.springframework.security.saml.saml2.authentication.AuthenticationContextClassReference;
 import org.springframework.security.saml.saml2.authentication.AuthenticationStatement;
 import org.springframework.security.saml.spi.DefaultSamlAuthentication;
+import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -28,11 +29,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class SamlProvisioningAuthenticationManager implements AuthenticationManager {
 
     private static final Log LOG = LogFactory.getLog(SamlProvisioningAuthenticationManager.class);
+    private static final Pattern inResponseToPattern = Pattern.compile("InResponseTo=\"(.+?)\">", Pattern.DOTALL);
 
     private UserRepository userRepository;
     private List<UserAttribute> userAttributes;
@@ -64,8 +68,13 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
             LOG.info("Provisioning new user : " + user);
             userRepository.insert(user);
         }
+        Matcher matcher = inResponseToPattern.matcher(samlAuthentication.getResponseXml());
+        boolean match = matcher.find();
+        if (!match) {
+            throw new SessionAuthenticationException("Invalid Authn Statement. Missing InResponseTo");
+        }
         OidcSamlAuthentication oidcSamlAuthentication =
-                new OidcSamlAuthentication(samlAuthentication.getAssertion(), user);
+                new OidcSamlAuthentication(samlAuthentication.getAssertion(), user, matcher.group(1));
         SecurityContextHolder.getContext().setAuthentication(oidcSamlAuthentication);
         return oidcSamlAuthentication;
     }

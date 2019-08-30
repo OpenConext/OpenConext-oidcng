@@ -3,6 +3,7 @@ package oidc.secure;
 import oidc.AbstractIntegrationTest;
 import oidc.SeedUtils;
 import oidc.model.AccessToken;
+import oidc.model.AuthenticationRequest;
 import oidc.model.AuthorizationCode;
 import oidc.model.RefreshToken;
 import oidc.model.User;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
@@ -34,7 +36,7 @@ public class ResourceCleanerTest extends AbstractIntegrationTest implements Seed
 
     @Test
     public void clean() {
-        Class[] classes = {AccessToken.class, RefreshToken.class, AuthorizationCode.class, User.class};
+        Class[] classes = {AccessToken.class, RefreshToken.class, AuthorizationCode.class, User.class, AuthenticationRequest.class};
         Stream.of(classes).forEach(clazz -> mongoTemplate.remove(new Query(), clazz));
         Date expiresIn = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
         Stream.of(
@@ -43,7 +45,8 @@ public class ResourceCleanerTest extends AbstractIntegrationTest implements Seed
                 new AuthorizationCode("code", "sub", "clientId", emptyList(), "redirectUri",
                         "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), expiresIn),
                 new User("nope", "unspecifiedNameId", "authenticatingAuthority", "clientId",
-                        Collections.emptyMap(), Collections.emptyList())
+                        Collections.emptyMap(), Collections.emptyList()),
+                new AuthenticationRequest(UUID.randomUUID().toString(), expiresIn, "http://localhost/authorize")
         ).forEach(o -> mongoTemplate.insert(o));
 
         subject.clean();

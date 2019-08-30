@@ -1,6 +1,7 @@
 logging:
   level:
     root: INFO
+    oidc: DEBUG
     org.springframework.session: INFO
     org.springframework.web: INFO
     org.springframework.security: INFO
@@ -56,9 +57,9 @@ spring:
           - urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified
         providers:
           - alias: engine-test2
-            metadata: https://engine.test.surfconext.nl/authentication/idp/metadata
+            metadata: https://engine.test2.surfconext.nl/authentication/idp/metadata
             link-text: EngineBlock test
-            name-id: https://engine.test.surfconext.nl/authentication/idp/metadata
+            name-id: https://engine.test2.surfconext.nl/authentication/idp/metadata
             assertion-consumer-service-index: 0
 
 manage:

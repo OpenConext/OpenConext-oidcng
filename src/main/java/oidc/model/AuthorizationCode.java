@@ -42,6 +42,8 @@ public class AuthorizationCode {
 
     private long authTime;
 
+    private boolean alreadyUsed;
+
     public AuthorizationCode(String code, String sub, String clientId, List<String> scopes, String redirectUri,
                              String codeChallenge, String codeChallengeMethod, String nonce, List<String> idTokenClaims,
                              Date expiresIn) {
@@ -64,4 +66,7 @@ public class AuthorizationCode {
         return clock.instant().isAfter(expiresIn.toInstant());
     }
 
+    public void setAlreadyUsed(boolean alreadyUsed) {
+        this.alreadyUsed = alreadyUsed;
+    }
 }

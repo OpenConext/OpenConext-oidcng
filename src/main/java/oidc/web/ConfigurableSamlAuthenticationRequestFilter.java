@@ -7,9 +7,9 @@ import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.openid.connect.sdk.Prompt;
 import com.nimbusds.openid.connect.sdk.claims.ACR;
 import oidc.endpoints.AuthorizationEndpoint;
-import oidc.exceptions.UnsupportedPromptValueException;
 import oidc.manage.ServiceProviderTranslation;
 import oidc.model.OpenIDClient;
+import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.OpenIDClientRepository;
 import oidc.secure.JWTRequest;
 import org.springframework.security.core.Authentication;
@@ -23,8 +23,9 @@ import org.springframework.security.saml.saml2.authentication.AuthenticationRequ
 import org.springframework.security.saml.saml2.authentication.RequestedAuthenticationContext;
 import org.springframework.security.saml.saml2.authentication.Scoping;
 import org.springframework.security.saml.saml2.metadata.IdentityProviderMetadata;
-import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
-import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.PortResolverImpl;
+import org.springframework.security.web.savedrequest.DefaultSavedRequest;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -33,23 +34,30 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticationRequestFilter {
 
-    private RequestCache requestCache = new HttpSessionRequestCache();
+    private PortResolverImpl portResolver;
+    private AuthenticationRequestRepository authenticationRequestRepository;
     private OpenIDClientRepository openIDClientRepository;
 
     static String REDIRECT_URI_VALID = "REDIRECT_URI_VALID";
 
     public ConfigurableSamlAuthenticationRequestFilter(SamlProviderProvisioning<ServiceProviderService> provisioning,
                                                        SamlRequestMatcher samlRequestMatcher,
+                                                       AuthenticationRequestRepository authenticationRequestRepository,
                                                        OpenIDClientRepository openIDClientRepository) {
         super(provisioning, samlRequestMatcher);
         this.openIDClientRepository = openIDClientRepository;
+        this.authenticationRequestRepository = authenticationRequestRepository;
+        this.portResolver = new PortResolverImpl();
     }
 
     @Override
@@ -113,7 +121,7 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             IdentityProviderMetadata idp = provider.getRemoteProviders().get(0);
             AuthenticationRequest authenticationRequest = provider.authenticationRequest(idp);
             authenticationRequest = enhanceAuthenticationRequest(provider, request, authenticationRequest);
-            requestCache.saveRequest(request, response);
+            saveAuthenticationRequestUrl(request, authenticationRequest);
             sendAuthenticationRequest(
                     provider,
                     request,
@@ -124,6 +132,16 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
         } else {
             filterChain.doFilter(request, response);
         }
+    }
+
+    private void saveAuthenticationRequestUrl(HttpServletRequest request, AuthenticationRequest authenticationRequest) {
+        String id = authenticationRequest.getId();
+        LocalDateTime ldt = LocalDateTime.now().plusSeconds(60 * 15);
+        Date expiresIn = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
+        SavedRequest savedRequest = new DefaultSavedRequest(request, portResolver);
+        authenticationRequestRepository.insert(
+                new oidc.model.AuthenticationRequest(id, expiresIn, savedRequest.getRedirectUrl())
+        );
     }
 
     private void validateAuthorizationRequest(HttpServletRequest request) throws IOException {

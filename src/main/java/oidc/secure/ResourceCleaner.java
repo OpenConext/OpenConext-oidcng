@@ -2,10 +2,12 @@ package oidc.secure;
 
 
 import oidc.model.AccessToken;
+import oidc.model.AuthenticationRequest;
 import oidc.model.AuthorizationCode;
 import oidc.model.RefreshToken;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
+import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.RefreshTokenRepository;
 import oidc.repository.UserRepository;
@@ -29,6 +31,7 @@ public class ResourceCleaner {
     private RefreshTokenRepository refreshTokenRepository;
     private AuthorizationCodeRepository authorizationCodeRepository;
     private UserRepository userRepository;
+    private AuthenticationRequestRepository  authenticationRequestRepository;
     private boolean cronJobResponsible;
 
     @Autowired
@@ -36,11 +39,13 @@ public class ResourceCleaner {
                            RefreshTokenRepository refreshTokenRepository,
                            AuthorizationCodeRepository authorizationCodeRepository,
                            UserRepository userRepository,
+                           AuthenticationRequestRepository  authenticationRequestRepository,
                            @Value("${cron.node-cron-job-responsible}") boolean cronJobResponsible) {
         this.accessTokenRepository = accessTokenRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.userRepository = userRepository;
+        this.authenticationRequestRepository = authenticationRequestRepository;
         this.cronJobResponsible = cronJobResponsible;
     }
 
@@ -53,6 +58,7 @@ public class ResourceCleaner {
         info(AccessToken.class, accessTokenRepository.deleteByExpiresInBefore(now));
         info(RefreshToken.class, refreshTokenRepository.deleteByExpiresInBefore(now));
         info(AuthorizationCode.class, authorizationCodeRepository.deleteByExpiresInBefore(now));
+        info(AuthenticationRequest.class, authenticationRequestRepository.deleteByExpiresInBefore(now));
 
         List<String> subs = authorizationCodeRepository.findSub().stream().map(AuthorizationCode::getSub).collect(Collectors.toList());
         info(User.class, userRepository.deleteBySubNotIn(subs));

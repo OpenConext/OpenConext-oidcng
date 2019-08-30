@@ -61,7 +61,7 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
             statusCode = annotation != null ? annotation.value() : statusCode;
 
             if (error instanceof EmptyResultDataAccessException && result.getOrDefault("path", "/oidc/token").toString().contains("token")) {
-                return new ResponseEntity<>(Collections.singletonMap("error", "invalid_request"), BAD_REQUEST);
+                return new ResponseEntity<>(Collections.singletonMap("error", "invalid_grant"), BAD_REQUEST);
             }
         }
         result.put("error", errorCode(error));

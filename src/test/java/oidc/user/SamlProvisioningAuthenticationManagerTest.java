@@ -2,14 +2,19 @@ package oidc.user;
 
 import oidc.model.User;
 import oidc.repository.UserRepository;
+import org.apache.commons.io.IOUtils;
 import org.junit.Test;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.saml.saml2.authentication.Assertion;
 import org.springframework.security.saml.saml2.authentication.Response;
 import org.springframework.security.saml.spi.DefaultSamlAuthentication;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -32,9 +37,11 @@ public class SamlProvisioningAuthenticationManagerTest implements SamlTest {
     @Test
     public void authenticate() throws IOException {
         Response response = resolveFromXMLFile(Response.class, "saml/authn_response.xml");
+        String inResponseTo = response.getInResponseTo();
 
         Assertion assertion = response.getAssertions().get(0);
         DefaultSamlAuthentication samlAuthentication = new DefaultSamlAuthentication(true, assertion, null, null, "oidc_client");
+        samlAuthentication.setResponseXml(IOUtils.toString(new ClassPathResource("saml/authn_response.xml").getInputStream(), Charset.defaultCharset()));
         OidcSamlAuthentication authenticate = (OidcSamlAuthentication) subject.authenticate(samlAuthentication);
 
         assertEquals(User.class, authenticate.getDetails().getClass());
@@ -80,6 +87,5 @@ public class SamlProvisioningAuthenticationManagerTest implements SamlTest {
         assertNotEquals(sub, user.getSub());
         assertEquals(true, uuidPattern.matcher(user.getSub()).matches());
     }
-
 
 }

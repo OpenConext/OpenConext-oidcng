@@ -16,10 +16,12 @@ public class OidcSamlAuthentication implements Authentication {
 
     private String name;
     private User user;
+    private String authenticationRequestID;
 
-    public OidcSamlAuthentication(Assertion assertion, User user) {
+    public OidcSamlAuthentication(Assertion assertion, User user, String authenticationRequestID) {
         this.user = user;
         this.name = assertion.getSubject().getPrincipal().getValue();
+        this.authenticationRequestID = authenticationRequestID;
     }
 
     @Override
