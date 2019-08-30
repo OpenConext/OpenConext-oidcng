@@ -75,10 +75,15 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     @Test
     public void tokenTwice() throws UnsupportedEncodingException {
         String code = doAuthorize();
-        doToken(code);
+        String accessToken = (String) doToken(code).get("access_token");
+
+        assertEquals(1, mongoTemplate.find(Query.query(Criteria.where("innerValue").is(accessToken)), AccessToken.class).size());
+
         Map<String, Object> body = doToken(code);
         assertEquals(401, body.get("status"));
         assertEquals("Authorization code already used", body.get("message"));
+
+        assertEquals(0, mongoTemplate.find(Query.query(Criteria.where("innerValue").is(accessToken)), AccessToken.class).size());
     }
 
     @Test
