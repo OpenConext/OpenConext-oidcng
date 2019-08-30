@@ -123,7 +123,12 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, OpenIDClient client) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         String code = authorizationCodeGrant.getAuthorizationCode().getValue();
         AuthorizationCode authorizationCode = authorizationCodeRepository.findByCode(code);
-        authorizationCodeRepository.delete(authorizationCode);
+        if (authorizationCode.isAlreadyUsed()) {
+            accessTokenRepository.deleteByAuthorizationCodeId(authorizationCode.getId());
+            throw new UnauthorizedException("Authorization code already used");
+        }
+        authorizationCode.setAlreadyUsed(true);
+        authorizationCodeRepository.save(authorizationCode);
 
         if (!authorizationCode.getClientId().equals(client.getClientId())) {
             throw new BadCredentialsException("Client is not authorized for the authorization code");
@@ -157,7 +162,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
         Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes(),
                 authorizationCode.getIdTokenClaims(), false, authorizationCode.getNonce(),
-                Optional.of(authorizationCode.getAuthTime()));
+                Optional.of(authorizationCode.getAuthTime()), Optional.of(authorizationCode.getId()));
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 
@@ -179,14 +184,14 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         Optional<User> optionalUser = refreshToken.isClientCredentials() ? Optional.empty() :
                 Optional.of(tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(refreshToken.getAccessTokenValue()));
         Map<String, Object> body = tokenEndpointResponse(optionalUser, client, refreshToken.getScopes(),
-                Collections.emptyList(), false, null, optionalUser.map(user -> user.getUpdatedAt()));
+                Collections.emptyList(), false, null, optionalUser.map(user -> user.getUpdatedAt()), Optional.empty());
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 
 
     private ResponseEntity handleClientCredentialsGrant(OpenIDClient client) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes(),
-                Collections.emptyList(), true, null, Optional.empty());
+                Collections.emptyList(), true, null, Optional.empty(), Optional.empty());
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 

@@ -36,7 +36,10 @@ public class AccessToken {
 
     private boolean clientCredentials;
 
-    public AccessToken(String value, String sub, String clientId, List<String> scopes, String signingKeyId, Date expiresIn, boolean clientCredentials) {
+    private String authorizationCodeId;
+
+    public AccessToken(String value, String sub, String clientId, List<String> scopes, String signingKeyId,
+                       Date expiresIn, boolean clientCredentials, String authorizationCodeId) {
         this.innerValue = value;
         this.value = UUID.nameUUIDFromBytes(value.getBytes(Charset.defaultCharset())).toString();
         this.sub = sub;
@@ -46,6 +49,7 @@ public class AccessToken {
         this.expiresIn = expiresIn != null ? expiresIn :
                 Date.from(LocalDateTime.now().plusSeconds(3600).atZone(ZoneId.systemDefault()).toInstant());
         this.clientCredentials = clientCredentials;
+        this.authorizationCodeId = authorizationCodeId;
     }
 
     @Transient

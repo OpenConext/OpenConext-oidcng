@@ -9,11 +9,11 @@ import static java.util.Collections.singletonList;
 public interface SeedUtils {
 
     default AccessToken accessToken(String value, Date expiresIn) {
-        return new AccessToken(value, "sub", "clientId", singletonList("openid"), "K0000001", expiresIn, false);
+        return new AccessToken(value, "sub", "clientId", singletonList("openid"), "K0000001", expiresIn, false, null);
     }
 
     default AccessToken accessToken(String value, String signingKey) {
-        return new AccessToken(value, "sub", "clientId", singletonList("openid"), signingKey, new Date(), false);
+        return new AccessToken(value, "sub", "clientId", singletonList("openid"), signingKey, new Date(), false, null);
     }
 
 }

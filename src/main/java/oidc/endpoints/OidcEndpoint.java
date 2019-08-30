@@ -42,14 +42,15 @@ public interface OidcEndpoint {
     default Map<String, Object> tokenEndpointResponse(Optional<User> user, OpenIDClient client,
                                                       List<String> scopes, List<String> idTokenClaims,
                                                       boolean clientCredentials, String nonce,
-                                                      Optional<Long> authorizationTime) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
+                                                      Optional<Long> authorizationTime,
+                                                      Optional<String> authorizationCodeId) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> map = new LinkedHashMap<>();
         TokenGenerator tokenGenerator = getTokenGenerator();
         String accessTokenValue = user.map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client)).orElse(tokenGenerator.generateAccessToken());
         String sub = user.map(User::getSub).orElse(client.getClientId());
 
         getAccessTokenRepository().insert(new AccessToken(accessTokenValue, sub, client.getClientId(), scopes,
-                getTokenGenerator().getCurrentSigningKeyId(), accessTokenValidity(client), !user.isPresent()));
+                getTokenGenerator().getCurrentSigningKeyId(), accessTokenValidity(client), !user.isPresent(), authorizationCodeId.orElse(null)));
         map.put("access_token", accessTokenValue);
         map.put("token_type", "Bearer");
         if (client.getGrants().contains(GrantType.REFRESH_TOKEN.getValue())) {

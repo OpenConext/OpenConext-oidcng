@@ -183,7 +183,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         String value = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client);
         if (responseType.contains(ResponseType.Value.TOKEN.getValue()) || !isOpenIDRequest(authorizationRequest)) {
             getAccessTokenRepository().insert(new AccessToken(value, user.getSub(), client.getClientId(), scopes,
-                    tokenGenerator.getCurrentSigningKeyId(), accessTokenValidity(client), false));
+                    tokenGenerator.getCurrentSigningKeyId(), accessTokenValidity(client), false, null));
             result.put("access_token", value);
             result.put("token_type", "Bearer");
         }

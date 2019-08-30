@@ -25,6 +25,8 @@ public interface AccessTokenRepository extends MongoRepository<AccessToken, Stri
 
     Long deleteByExpiresInBefore(Date expiryDate);
 
+    Long deleteByAuthorizationCodeId(String authorizationCodeId);
+
     //Do not use
     Optional<AccessToken> findAccessTokenByValue(String value);
 }

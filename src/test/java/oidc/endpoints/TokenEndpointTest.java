@@ -73,6 +73,15 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
+    public void tokenTwice() throws UnsupportedEncodingException {
+        String code = doAuthorize();
+        doToken(code);
+        Map<String, Object> body = doToken(code);
+        assertEquals(401, body.get("status"));
+        assertEquals("Authorization code already used", body.get("message"));
+    }
+
+    @Test
     public void oauth2NonOidcFlow() throws UnsupportedEncodingException {
         String code = doAuthorizeWithScopes("mock-sp", "code", "code", "groups");
         Map<String, Object> body = doToken(code);
