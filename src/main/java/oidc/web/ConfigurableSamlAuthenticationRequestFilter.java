@@ -76,6 +76,12 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
         String prompt = AuthorizationEndpoint.validatePrompt(request);
 
         authenticationRequest.setForceAuth("login".equals(prompt));
+
+        /**
+         * Based on the ongoing discussion with the certification committee
+         * authenticationRequest.setPassive("none".equals(prompt)); 
+         */
+
         if (!authenticationRequest.isForceAuth() && StringUtils.hasText(request.getParameter("max_age"))) {
             authenticationRequest.setForceAuth(true);
         }
