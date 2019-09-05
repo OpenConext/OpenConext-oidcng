@@ -79,7 +79,7 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
 
         /**
          * Based on the ongoing discussion with the certification committee
-         * authenticationRequest.setPassive("none".equals(prompt)); 
+         * authenticationRequest.setPassive("none".equals(prompt));
          */
 
         if (!authenticationRequest.isForceAuth() && StringUtils.hasText(request.getParameter("max_age"))) {
