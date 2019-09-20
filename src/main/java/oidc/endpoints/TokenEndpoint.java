@@ -133,6 +133,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         if (!authorizationCode.getClientId().equals(client.getClientId())) {
             throw new BadCredentialsException("Client is not authorized for the authorization code");
         }
+        //TODO use time constant comparison
         if (authorizationCodeGrant.getRedirectionURI() != null &&
                 !authorizationCodeGrant.getRedirectionURI().toString().equals(authorizationCode.getRedirectUri())) {
             throw new RedirectMismatchException("Redirects do not match");
