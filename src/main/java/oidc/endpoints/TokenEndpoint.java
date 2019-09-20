@@ -151,6 +151,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
             CodeChallengeMethod codeChallengeMethod = CodeChallengeMethod.parse(authorizationCode.getCodeChallengeMethod());
             CodeChallenge computed = CodeChallenge.compute(codeChallengeMethod, codeVerifier);
 
+            //TODO use time constant comparison
             if (!codeChallenge.equals(computed.getValue())) {
                 LOG.error(String.format("CodeVerifier %s with method %s does not match codeChallenge %s. Expected codeChallenge is %s",
                         codeVerifier.getValue(), codeChallengeMethod, codeChallenge, computed.getValue()));

@@ -29,11 +29,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.saml.SamlRequestMatcher;
+import org.springframework.security.saml.SamlValidator;
 import org.springframework.security.saml.provider.SamlServerConfiguration;
 import org.springframework.security.saml.provider.provisioning.SamlProviderProvisioning;
 import org.springframework.security.saml.provider.service.ServiceProviderService;
 import org.springframework.security.saml.provider.service.authentication.SamlAuthenticationResponseFilter;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderServerBeanConfiguration;
+import org.springframework.security.saml.spi.DefaultValidator;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 
 import javax.servlet.Filter;
@@ -71,6 +73,15 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     @Bean
     public Filter spSelectIdentityProviderFilter() {
         return (request, response, chain) -> chain.doFilter(request, response);
+    }
+
+    @Override
+    @Bean
+    public SamlValidator samlValidator() {
+        DefaultValidator defaultValidator = (DefaultValidator) super.samlValidator();
+        //IdP determines session expiration not we
+        defaultValidator.setMaxAuthenticationAgeMillis(1000 * 60 * 60 * 24 * 30);
+        return defaultValidator;
     }
 
     @Override
