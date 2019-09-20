@@ -80,7 +80,8 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     public SamlValidator samlValidator() {
         DefaultValidator defaultValidator = (DefaultValidator) super.samlValidator();
         //IdP determines session expiration not we
-        defaultValidator.setMaxAuthenticationAgeMillis(1000 * 60 * 60 * 24 * 30);
+        defaultValidator.setMaxAuthenticationAgeMillis(1000 * 60 * 60 * 24 * 365);
+        defaultValidator.setResponseSkewTimeMillis(1000 * 60 * 10);
         return defaultValidator;
     }
 
