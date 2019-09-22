@@ -6,6 +6,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.net.URI;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -44,18 +45,21 @@ public class AuthorizationCode {
 
     private boolean alreadyUsed;
 
-    public AuthorizationCode(String code, String sub, String clientId, List<String> scopes, String redirectUri,
+    private boolean redirectURIProvided;
+
+    public AuthorizationCode(String code, String sub, String clientId, List<String> scopes, URI redirectUri,
                              String codeChallenge, String codeChallengeMethod, String nonce, List<String> idTokenClaims,
-                             Date expiresIn) {
+                             boolean redirectURIProvided, Date expiresIn) {
         this.code = code;
         this.sub = sub;
         this.clientId = clientId;
         this.scopes = scopes;
-        this.redirectUri = redirectUri;
+        this.redirectUri = redirectUri != null ? redirectUri.toString() : null;
         this.codeChallenge = codeChallenge;
         this.codeChallengeMethod = codeChallengeMethod;
         this.nonce = nonce;
         this.idTokenClaims = idTokenClaims;
+        this.redirectURIProvided = redirectURIProvided;
         this.expiresIn = expiresIn != null ? expiresIn :
                 Date.from(LocalDateTime.now().plusMinutes(10).atZone(ZoneId.systemDefault()).toInstant());
         this.authTime = System.currentTimeMillis() / 1000L;

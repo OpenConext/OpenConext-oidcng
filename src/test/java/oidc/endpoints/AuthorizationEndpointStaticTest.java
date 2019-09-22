@@ -8,12 +8,14 @@ import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.InvalidScopeException;
 import oidc.exceptions.RedirectMismatchException;
 import oidc.model.OpenIDClient;
+import oidc.model.ProvidedRedirectURI;
 import org.junit.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -91,9 +93,9 @@ public class AuthorizationEndpointStaticTest {
         AuthorizationRequest authorizationRequest = authorizationRequest(
                 new FluentMap().p("client_id", "http://oidc-rp").p("response_type", "code").p("redirect_uri", requestRedirectUri));
         OpenIDClient client = openIDClient(clientRedirectUri, "open_id", "authorization_code");
-        String redirectUri = AuthorizationEndpoint.validateRedirectionURI(authorizationRequest, client);
+        ProvidedRedirectURI redirectUri = AuthorizationEndpoint.validateRedirectionURI(authorizationRequest, client);
 
-        assertEquals(redirectUri, requestRedirectUri != null ? requestRedirectUri : clientRedirectUri) ;
+        assertEquals(redirectUri.getRedirectURI(), requestRedirectUri != null ? requestRedirectUri : clientRedirectUri) ;
     }
 
     private OpenIDClient openIDClient(String redirectUrl, String scope, String grant) {

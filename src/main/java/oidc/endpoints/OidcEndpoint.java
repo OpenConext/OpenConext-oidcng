@@ -23,6 +23,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.time.LocalDateTime;
@@ -67,7 +68,7 @@ public interface OidcEndpoint {
     }
 
     default AuthorizationCode constructAuthorizationCode(AuthorizationRequest authorizationRequest, OpenIDClient client, User user) {
-        String redirectionURI = authorizationRequest.getRedirectionURI().toString();
+        URI redirectionURI = authorizationRequest.getRedirectionURI();
         Scope scope = authorizationRequest.getScope();
         List<String> scopes = scope != null ? scope.toStringList() : Collections.emptyList();
         //Optional code challenges for PKCE
@@ -80,7 +81,8 @@ public interface OidcEndpoint {
         String code = getTokenGenerator().generateAuthorizationCode();
         Nonce nonce = authorizationRequest instanceof AuthenticationRequest ? AuthenticationRequest.class.cast(authorizationRequest).getNonce() : null;
         return new AuthorizationCode(
-                code, user.getSub(),
+                code,
+                user.getSub(),
                 client.getClientId(),
                 scopes,
                 redirectionURI,
@@ -88,6 +90,7 @@ public interface OidcEndpoint {
                 codeChallengeMethodValue,
                 nonce != null ? nonce.getValue() : null,
                 idTokenClaims,
+                redirectionURI != null,
                 tokenValidity(10 * 60));
     }
 

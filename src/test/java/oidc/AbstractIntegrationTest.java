@@ -96,6 +96,7 @@ import static org.junit.Assert.assertTrue;
                 "cron.node-cron-job-responsible=false"
         })
 @ActiveProfiles("dev")
+@SuppressWarnings("unchecked")
 public abstract class AbstractIntegrationTest implements TestUtils, MapTypeReference {
 
     @LocalServerPort
@@ -134,7 +135,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
                 .orElseThrow(IllegalArgumentException::new);
     }
 
-    protected String doAuthorize() throws UnsupportedEncodingException {
+    protected String doAuthorize() throws IOException {
         Response response = doAuthorize("mock-sp", "code", null, null, null);
         assertEquals(302, response.getStatusCode());
 
@@ -192,34 +193,34 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         return builder.build().getQueryParams().getFirst("code");
     }
 
-    protected Response doAuthorize(String clientId, String responseType, String responseMode, String nonce, String codeChallenge) throws UnsupportedEncodingException {
+    protected Response doAuthorize(String clientId, String responseType, String responseMode, String nonce, String codeChallenge) throws IOException {
         return doAuthorizeWithClaims(clientId, responseType, responseMode, nonce, codeChallenge, Collections.emptyList());
     }
 
     protected Response doAuthorizeWithClaims(String clientId, String responseType, String responseMode, String nonce, String codeChallenge,
-                                             List<String> claims) {
+                                             List<String> claims) throws IOException {
         return doAuthorizeWithClaimsAndScopes(clientId, responseType, responseMode, nonce, codeChallenge, claims, "openid profile", "example");
     }
 
-    protected String doAuthorizeWithScopes(String clientId, String responseType, String responseMode, String scopes) throws UnsupportedEncodingException {
+    protected String doAuthorizeWithScopes(String clientId, String responseType, String responseMode, String scopes) throws IOException {
         return getCode(doAuthorizeWithClaimsAndScopes(clientId, responseType, responseMode, null, null, null, scopes, "example"));
     }
 
     protected Response doAuthorizeWithClaimsAndScopes(String clientId, String responseType, String responseMode,
                                                       String nonce, String codeChallenge, List<String> claims,
-                                                      String scopes, String state) {
+                                                      String scopes, String state) throws IOException {
         return doAuthorizeWithClaimsAndScopesAndCodeChallengeMethod(clientId, responseType, responseMode, nonce, codeChallenge, claims, scopes, state, CodeChallengeMethod.PLAIN.getValue());
     }
 
     protected Response doAuthorizeWithClaimsAndScopesAndCodeChallengeMethod(String clientId, String responseType,
                                                                             String responseMode, String nonce,
                                                                             String codeChallenge, List<String> claims,
-                                                                            String scopes, String state, String codeChallengeMethod) {
+                                                                            String scopes, String state, String codeChallengeMethod) throws IOException {
         return doAuthorizeQueryParameters(clientId, responseType, responseMode, nonce, codeChallenge, claims, scopes, state, codeChallengeMethod, null, null);
     }
 
     protected Response doAuthorizeWithJWTRequest(String clientId, String responseType, String responseMode,
-                                                 SignedJWT signedJWT, String requestURL) {
+                                                 SignedJWT signedJWT, String requestURL) throws IOException {
         return doAuthorizeQueryParameters(clientId, responseType, responseMode, "nonce", null,
                 null, "openid", "state", null, signedJWT, requestURL);
     }
@@ -227,12 +228,14 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
     protected Response doAuthorizeQueryParameters(String clientId, String responseType, String responseMode,
                                                   String nonce, String codeChallenge, List<String> claims,
                                                   String scopes, String state, String codeChallengeMethod,
-                                                  SignedJWT signedJWT, String requestURL) {
+                                                  SignedJWT signedJWT, String requestURL) throws IOException {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", scopes);
         queryParams.put("response_type", responseType);
         queryParams.put("client_id", clientId);
-        queryParams.put("redirect_uri", "http%3A%2F%2Flocalhost%3A8080");
+        if (StringUtils.hasText(clientId)) {
+            queryParams.put("redirect_uri", openIDClient(clientId).getRedirectUrls().get(0));
+        }
         queryParams.put("state", state);
         if (StringUtils.hasText(responseMode)) {
             queryParams.put("response_mode", responseMode);
@@ -264,15 +267,15 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         return response;
     }
 
-    protected Map<String, Object> doToken(String code) {
+    protected Map<String, Object> doToken(String code) throws IOException {
         return doToken(code, "mock-sp", "secret", GrantType.AUTHORIZATION_CODE);
     }
 
-    protected Map<String, Object> doToken(String code, String clientId, String secret, GrantType grantType) {
+    protected Map<String, Object> doToken(String code, String clientId, String secret, GrantType grantType) throws IOException {
         return doToken(code, clientId, secret, grantType, null);
     }
 
-    protected Map<String, Object> doToken(String code, String clientId, String secret, GrantType grantType, String codeVerifier) {
+    protected Map<String, Object> doToken(String code, String clientId, String secret, GrantType grantType, String codeVerifier) throws IOException {
         RequestSpecification header = given()
                 .when()
                 .header("Content-type", "application/x-www-form-urlencoded");
@@ -281,6 +284,9 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         }
         if (StringUtils.hasText(clientId) && StringUtils.isEmpty(secret)) {
             header = header.formParam("client_id", clientId);
+        }
+        if (StringUtils.hasText(clientId)) {
+            header = header.formParam("redirect_uri", openIDClient(clientId).getRedirectUrls().get(0));
         }
         if (StringUtils.hasText(codeVerifier)) {
             header = header.formParam("code_verifier", codeVerifier);

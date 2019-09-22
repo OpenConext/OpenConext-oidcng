@@ -52,7 +52,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     String issuer;
 
     @Test
-    public void token() throws MalformedURLException, ParseException, JOSEException, BadJOSEException, UnsupportedEncodingException {
+    public void token() throws IOException, ParseException, JOSEException, BadJOSEException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
 
@@ -73,7 +73,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void tokenTwice() throws UnsupportedEncodingException {
+    public void tokenTwice() throws IOException {
         String code = doAuthorize();
         String accessToken = (String) doToken(code).get("access_token");
 
@@ -87,7 +87,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void oauth2NonOidcFlow() throws UnsupportedEncodingException {
+    public void oauth2NonOidcFlow() throws IOException {
         String code = doAuthorizeWithScopes("mock-sp", "code", "code", "groups");
         Map<String, Object> body = doToken(code);
 
@@ -99,14 +99,14 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void invalidToken() {
+    public void invalidToken() throws IOException {
         Map<String, Object> body = doToken("nope");
 
         assertEquals("invalid_grant", body.get("error"));
     }
 
     @Test
-    public void tokenWithClaims() throws MalformedURLException, ParseException, JOSEException, BadJOSEException, UnsupportedEncodingException {
+    public void tokenWithClaims() throws IOException, ParseException, JOSEException, BadJOSEException {
         Response response = doAuthorizeWithClaims("mock-sp", "code", null, null, null, Arrays.asList("email", "nickname"));
         String code = getCode(response);
         Map<String, Object> body = doToken(code);
@@ -119,22 +119,23 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void clientCredentials() throws ParseException {
+    public void clientCredentials() throws ParseException, IOException {
         Map<String, Object> body = doToken(null, "mock-sp", "secret", GrantType.CLIENT_CREDENTIALS);
         assertEquals(false, body.containsKey("id_token"));
         assertEquals(true, uuidPattern.matcher((String) body.get("access_token")).matches());
     }
 
     @Test
-    public void authorizationCodeExpired() throws UnsupportedEncodingException {
+    public void authorizationCodeExpired() throws IOException {
         String code = doAuthorize();
         expireAuthorizationCode(code);
         Map<String, Object> body = doToken(code);
         assertEquals("Authorization code expired", body.get("message"));
     }
 
+
     @Test
-    public void refreshToken() throws ParseException, JOSEException, MalformedURLException, UnsupportedEncodingException, BadJOSEException {
+    public void refreshToken() throws ParseException, JOSEException, IOException, BadJOSEException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
 
@@ -144,7 +145,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void refreshTokenExpired() throws ParseException, JOSEException, MalformedURLException, UnsupportedEncodingException {
+    public void refreshTokenExpired() throws ParseException, JOSEException, IOException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
         String refreshToken = (String) body.get("refresh_token");
@@ -155,7 +156,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void refreshTokenForPublicClient() throws ParseException, JOSEException, MalformedURLException, UnsupportedEncodingException {
+    public void refreshTokenForPublicClient() throws ParseException, JOSEException, IOException {
         String codeChallenge = StringUtils.leftPad("token", 45, "*");
         Response response = doAuthorize("mock-sp", "code", null, "nonce",
                 codeChallenge);
@@ -168,7 +169,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void deviceCodeNotSupported() throws ParseException, JOSEException, MalformedURLException, UnsupportedEncodingException {
+    public void deviceCodeNotSupported() throws ParseException, JOSEException, IOException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
 
@@ -214,21 +215,21 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
 
 
     @Test
-    public void clientCredentialsInvalidGrant() throws ParseException {
+    public void clientCredentialsInvalidGrant() throws ParseException, IOException {
         Map<String, Object> body = doToken(null, "mock-rp", "secret", GrantType.CLIENT_CREDENTIALS);
 
         assertEquals("Invalid grant: client_credentials", body.get("message"));
     }
 
     @Test
-    public void invalidSecret() {
+    public void invalidSecret() throws IOException {
         Map<String, Object> body = doToken(null, "mock-sp", "nope", GrantType.CLIENT_CREDENTIALS);
 
         assertEquals("Invalid user / secret", body.get("details"));
     }
 
     @Test
-    public void nonPublicClient() throws UnsupportedEncodingException {
+    public void nonPublicClient() throws IOException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code, "mock-rp", null, GrantType.AUTHORIZATION_CODE,
                 StringUtils.leftPad("token", 45, "*"));
@@ -237,7 +238,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void clientMismatch() throws UnsupportedEncodingException {
+    public void clientMismatch() throws IOException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code, "mock-rp", "secret", GrantType.AUTHORIZATION_CODE, null);
 
@@ -245,7 +246,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void codeChallengeMissing() throws UnsupportedEncodingException {
+    public void codeChallengeMissing() throws IOException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code, "mock-sp", null, GrantType.AUTHORIZATION_CODE);
 
@@ -253,7 +254,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void codeChallengeInvalid() throws UnsupportedEncodingException {
+    public void codeChallengeInvalid() throws IOException {
         Response response = doAuthorize("mock-sp", "code", null, null,
                 StringUtils.leftPad("token", 45, "-"));
         String code = getCode(response);
@@ -263,7 +264,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void codeChallengeNotInAuthorisationCode() throws UnsupportedEncodingException {
+    public void codeChallengeNotInAuthorisationCode() throws IOException {
         Response response = doAuthorize("mock-sp", "code", null, null, null);
         String code = getCode(response);
         Map<String, Object> body = doToken(code, "mock-sp", null, GrantType.AUTHORIZATION_CODE,
@@ -272,7 +273,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void codeChallengeFlow() {
+    public void codeChallengeFlow() throws IOException {
         String verifier = "12345678901234567890123456789012345678901234567890";
         CodeChallenge codeChallenge = CodeChallenge.compute(CodeChallengeMethod.S256, new CodeVerifier(verifier));
 
@@ -284,7 +285,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void redirectMismatch() throws UnsupportedEncodingException {
+    public void redirectMismatch() throws IOException {
         String code = doAuthorize();
         Map<String, Object> body = given()
                 .when()

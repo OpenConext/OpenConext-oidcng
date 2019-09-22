@@ -39,7 +39,7 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
     public void filterInternalWithForcedAuth() throws Exception {
         OpenIDClient client = openIDClient("mock-sp");
         String keyID = getCertificateKeyID(client);
-        String requestSignedJWT = signedJWT(client.getClientId(), keyID).serialize();
+        String requestSignedJWT = signedJWT(client.getClientId(), keyID, client.getRedirectUrls().get(0)).serialize();
         doFilterInternal("mock-sp", "login", null, requestSignedJWT, true, "http://localhost:8091/redirect", "code", "query");
     }
 
@@ -47,7 +47,7 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
     public void filterInternalWithLoa() throws Exception {
         OpenIDClient client = openIDClient("mock-sp");
         String keyID = getCertificateKeyID(client);
-        String requestSignedJWT = signedJWT(client.getClientId(), keyID).serialize();
+        String requestSignedJWT = signedJWT(client.getClientId(), keyID, client.getRedirectUrls().get(0)).serialize();
         doFilterInternal("mock-sp", null, "loa", requestSignedJWT, true, "http://localhost:8091/redirect", "code", "query");
     }
 

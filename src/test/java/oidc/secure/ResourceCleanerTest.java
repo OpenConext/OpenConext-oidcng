@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.mongodb.core.query.Query;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
@@ -35,15 +37,15 @@ public class ResourceCleanerTest extends AbstractIntegrationTest implements Seed
     private ResourceCleaner subject;
 
     @Test
-    public void clean() {
+    public void clean() throws URISyntaxException {
         Class[] classes = {AccessToken.class, RefreshToken.class, AuthorizationCode.class, User.class, AuthenticationRequest.class};
         Stream.of(classes).forEach(clazz -> mongoTemplate.remove(new Query(), clazz));
         Date expiresIn = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
         Stream.of(
                 accessToken("value", expiresIn),
                 new RefreshToken("value", "sub", "clientId", singletonList("openid"), expiresIn, "value", false),
-                new AuthorizationCode("code", "sub", "clientId", emptyList(), "redirectUri",
-                        "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), expiresIn),
+                new AuthorizationCode("code", "sub", "clientId", emptyList(), new URI("http://redirectURI"),
+                        "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), true, expiresIn),
                 new User("nope", "unspecifiedNameId", "authenticatingAuthority", "clientId",
                         Collections.emptyMap(), Collections.emptyList()),
                 new AuthenticationRequest(UUID.randomUUID().toString(), expiresIn, "http://localhost/authorize")

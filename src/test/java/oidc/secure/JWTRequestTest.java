@@ -75,7 +75,7 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
         OpenIDClient client = getClient();
         String keyID = getCertificateKeyID(client);
 
-        SignedJWT signedJWT = signedJWT(client.getClientId(), keyID);
+        SignedJWT signedJWT = signedJWT(client.getClientId(), keyID, client.getRedirectUrls().get(0));
         stubFor(get(urlPathMatching("/request")).willReturn(aResponse()
                 .withHeader("Content-Type", "application/json")
                 .withBody(signedJWT.serialize())));
@@ -135,7 +135,7 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
     @Test(expected = UnsupportedJWTException.class)
     public void plainJWT() throws Exception {
         OpenIDClient client = getClient();
-        signedJWT(client.getClientId(), "keyID");
+        signedJWT(client.getClientId(), "keyID", client.getRedirectUrls().get(0));
         PlainJWT jwt = new PlainJWT(new JWTClaimsSet.Builder().jwtID(UUID.randomUUID().toString()).build());
         AuthenticationRequest authenticationRequest = new AuthenticationRequest.Builder(ResponseType.getDefault(),
                 new Scope("openid"), new ClientID(client.getClientId()), new URI("http://localhost:8080"))
@@ -148,7 +148,7 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
         OpenIDClient client = getClient();
         setCertificateFields(client, getStrippedCertificate(), null, null);
         String keyID = getCertificateKeyID(client);
-        SignedJWT signedJWT = signedJWT(client.getClientId(), keyID);
+        SignedJWT signedJWT = signedJWT(client.getClientId(), keyID, client.getRedirectUrls().get(0));
         ClaimsRequest claimsRequest = new ClaimsRequest();
         claimsRequest.addIDTokenClaim("email");
         AuthenticationRequest authenticationRequest = new AuthenticationRequest(
@@ -182,7 +182,7 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
     }
 
     private void doParse(OpenIDClient client, String keyID) throws Exception {
-        SignedJWT signedJWT = signedJWT(client.getClientId(), keyID);
+        SignedJWT signedJWT = signedJWT(client.getClientId(), keyID, client.getRedirectUrls().get(0));
         AuthenticationRequest authenticationRequest = new AuthenticationRequest.Builder(
                 ResponseType.getDefault(),
                 new Scope("openid"),

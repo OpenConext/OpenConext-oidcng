@@ -19,6 +19,7 @@ import oidc.exceptions.UnsupportedPromptValueException;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
+import oidc.model.ProvidedRedirectURI;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
@@ -114,7 +115,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             authenticationRequest = oidcAuthenticationRequest;
         }
         State state = authenticationRequest.getState();
-        String redirectURI = validateRedirectionURI(authenticationRequest, client);
+        String redirectURI = validateRedirectionURI(authenticationRequest, client).getRedirectURI();
 
 
         List<String> scopes = validateScopes(authenticationRequest, client);
@@ -213,17 +214,16 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     }
 
 
-    public static String validateRedirectionURI(AuthorizationRequest authenticationRequest, OpenIDClient client) throws UnsupportedEncodingException {
+    public static ProvidedRedirectURI validateRedirectionURI(AuthorizationRequest authenticationRequest, OpenIDClient client) throws UnsupportedEncodingException {
         URI redirectionURI = authenticationRequest.getRedirectionURI();
         if (redirectionURI == null) {
-            return client.getRedirectUrls().stream().findFirst()
+            return client.getRedirectUrls().stream().findFirst().map(s -> new ProvidedRedirectURI(s, false))
                     .orElseThrow(() ->
                             new IllegalArgumentException(String.format("Client %s must have at least one redirectURI configured to use the Authorization flow",
                                     client.getClientId())));
         }
 
-        String redirectURI = redirectionURI.toString();
-        redirectURI = URLDecoder.decode(redirectURI, "UTF-8");
+        String redirectURI = URLDecoder.decode(redirectionURI.toString(), "UTF-8");
 
         List<String> redirectUrls = client.getRedirectUrls();
         if (CollectionUtils.isEmpty(redirectUrls) || !redirectUrls.contains(redirectURI)) {
@@ -231,7 +231,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                     String.format("Client %s with registered redirect URI's %s requested authorization with redirectURI %s",
                             client.getClientId(), redirectUrls, redirectURI));
         }
-        return redirectURI;
+        return new ProvidedRedirectURI(redirectURI, true);
     }
 
     private String authorizationRedirect(String redirectionURI, State state, String code, boolean isFragment) {

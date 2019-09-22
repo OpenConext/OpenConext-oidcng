@@ -8,6 +8,7 @@ import com.nimbusds.oauth2.sdk.ResponseMode;
 import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import oidc.model.AuthorizationCode;
+import oidc.model.OpenIDClient;
 import oidc.model.User;
 import oidc.secure.SignedJWTTest;
 import org.junit.Test;
@@ -50,7 +51,7 @@ import static org.junit.Assert.assertTrue;
 public class AuthorizationEndpointTest extends AbstractIntegrationTest implements SignedJWTTest {
 
     @Test
-    public void authorize() throws UnsupportedEncodingException {
+    public void authorize() throws IOException {
         String code = doAuthorize();
         assertEquals(12, code.length());
     }
@@ -73,7 +74,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void authorizeFragment() throws UnsupportedEncodingException {
+    public void authorizeFragment() throws IOException {
         Response response = doAuthorize("mock-sp", "code", ResponseMode.FRAGMENT.getValue(), null, null);
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
@@ -91,7 +92,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
 
     @Test
-    public void oauth2NonOidcCodeFlow() throws UnsupportedEncodingException {
+    public void oauth2NonOidcCodeFlow() throws IOException {
         String code = doAuthorizeWithScopes("mock-sp", "code", "code", "groups");
         assertEquals(12, code.length());
         Map<String, Object> tokenResponse = doToken(code);
@@ -99,7 +100,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void authorizeWithNoImplicitGrant() {
+    public void authorizeWithNoImplicitGrant() throws IOException {
         Response response = doAuthorizeWithClaimsAndScopes("mock-rp", "token", "fragment", "nonce", null, Collections.emptyList(), "groups", "state");
         Map<String, Object> result = response.as(mapTypeRef);
         assertEquals("Grant types [authorization_code] does not allow for implicit / hybrid flow", result.get("message"));
@@ -107,7 +108,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void authorizeWithNoAuthorizationCodeGrant() {
+    public void authorizeWithNoAuthorizationCodeGrant() throws IOException {
         Response response = doAuthorizeWithClaimsAndScopes("resource-server-playground-client", "code", "code", "nonce", null, Collections.emptyList(), "openid", "state");
         Map<String, Object> result = response.as(mapTypeRef);
         assertEquals("Grant types [client_credentials] does not allow for authorization code flow", result.get("message"));
@@ -115,7 +116,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void authorizeCodeFlowWithNonce() throws UnsupportedEncodingException, MalformedURLException, BadJOSEException, ParseException, JOSEException {
+    public void authorizeCodeFlowWithNonce() throws IOException, BadJOSEException, ParseException, JOSEException {
         Response response = doAuthorize("mock-sp", "code", "code", "nonce", null);
         String code = getCode(response);
 
@@ -128,7 +129,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void oauth2NonOidcImplicitFlow() throws UnsupportedEncodingException {
+    public void oauth2NonOidcImplicitFlow() throws IOException {
         Response response = doAuthorizeWithClaimsAndScopes("mock-sp", "token",
                 null, null, null, null, "groups", "example");
         String url = response.getHeader("Location");
@@ -138,7 +139,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void noScopeNoState() throws UnsupportedEncodingException {
+    public void noScopeNoState() throws IOException {
         String code = getCode(doAuthorizeWithClaimsAndScopes("mock-sp", "code",
                 null, null, null, null, null, null));
         assertEquals(12, code.length());
@@ -200,7 +201,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void implicitFlowFragment() throws MalformedURLException, BadJOSEException, ParseException, JOSEException, UnsupportedEncodingException {
+    public void implicitFlowFragment() throws IOException, BadJOSEException, ParseException, JOSEException {
         Response response = doAuthorizeWithClaims("mock-sp", "id_token token",
                 null, "nonce", null, Arrays.asList("email", "nickname"));
         String url = response.getHeader("Location");
@@ -213,7 +214,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void hybridFlowFragment() throws MalformedURLException, BadJOSEException, ParseException, JOSEException, UnsupportedEncodingException {
+    public void hybridFlowFragment() throws IOException, BadJOSEException, ParseException, JOSEException {
         Response response = doAuthorize("mock-sp", "code id_token token", null, "nonce", null);
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
@@ -244,7 +245,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void implicitFlowQuery() throws MalformedURLException, BadJOSEException, ParseException, JOSEException, UnsupportedEncodingException {
+    public void implicitFlowQuery() throws IOException, BadJOSEException, ParseException, JOSEException {
         Response response = doAuthorize("mock-sp", "id_token token", ResponseMode.QUERY.getValue(), "nonce", null);
         String url = response.getHeader("Location");
         Map<String, String> queryParameters = UriComponentsBuilder.fromUriString(url).build().getQueryParams().toSingleValueMap();
@@ -273,10 +274,11 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void signedJwtAuthorization() throws Exception {
+        OpenIDClient client = openIDClient("mock-sp");
         String cert = readFile("keys/certificate.crt");
         String keyID = getCertificateKeyIDFromCertificate(cert);
 
-        SignedJWT signedJWT = signedJWT("mock-sp", keyID);
+        SignedJWT signedJWT = signedJWT(client.getClientId(), keyID, client.getRedirectUrls().get(0));
         Response response = doAuthorizeWithJWTRequest("mock-sp", "code", null, signedJWT, null);
 
         String location = response.getHeader("Location");

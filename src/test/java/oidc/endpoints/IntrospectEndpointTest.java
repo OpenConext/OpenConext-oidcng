@@ -9,6 +9,7 @@ import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -35,7 +36,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void introspection() throws UnsupportedEncodingException {
+    public void introspection() throws IOException {
         Map<String, Object> result = doIntrospection("mock-sp", "secret");
         assertEquals(true, result.get("active"));
         assertTrue(result.containsKey("unspecified_id"));
@@ -43,7 +44,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void introspectionWithDefaultRP() throws UnsupportedEncodingException {
+    public void introspectionWithDefaultRP() throws IOException {
         Map<String, Object> result = doIntrospection("resource-server-playground-client", "secret");
         assertEquals(true, result.get("active"));
         assertFalse(result.containsKey("unspecified_id"));
@@ -51,7 +52,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void introspectionWithKeyRollover() throws UnsupportedEncodingException, NoSuchProviderException, NoSuchAlgorithmException {
+    public void introspectionWithKeyRollover() throws IOException, NoSuchProviderException, NoSuchAlgorithmException {
         tokenGenerator.rolloverSigningKeys();
 
         String accessToken = getAccessToken();
@@ -64,7 +65,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
 
 
     @Test
-    public void introspectionNotAllowedResourceServer() throws UnsupportedEncodingException {
+    public void introspectionNotAllowedResourceServer() throws IOException {
         Response response = doAuthorize("mock-rp", "code", null, null, null);
         String code = getCode(response);
         Map<String, Object> results = doToken(code, "mock-rp", "secret", GrantType.AUTHORIZATION_CODE);
@@ -75,7 +76,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void introspectionClientCredentials() {
+    public void introspectionClientCredentials() throws IOException {
         Map<String, Object> body = doToken(null, "mock-sp", "secret", GrantType.CLIENT_CREDENTIALS);
         String accessToken = (String) body.get("access_token");
         Map<String, Object> result = callIntrospection("mock-sp", accessToken, "secret");
@@ -86,7 +87,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void introspectionWithExpiredAccessToken() throws UnsupportedEncodingException {
+    public void introspectionWithExpiredAccessToken() throws IOException {
         String accessToken = getAccessToken();
         expireAccessToken(accessToken);
         Map<String, Object> result = callIntrospection("mock-sp", accessToken, "secret");
@@ -94,7 +95,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void introspectionBadCredentials() throws UnsupportedEncodingException {
+    public void introspectionBadCredentials() throws IOException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
         Map<String, Object> result = given()
@@ -107,23 +108,23 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void introspectionNoResourceServer() throws UnsupportedEncodingException {
+    public void introspectionNoResourceServer() throws IOException {
         Map<String, Object> result = doIntrospection("mock-rp", "secret");
         assertEquals("Requires ResourceServer", result.get("details"));
     }
 
     @Test
-    public void introspectionWrongSecret() throws UnsupportedEncodingException {
+    public void introspectionWrongSecret() throws IOException {
         Map<String, Object> result = doIntrospection("mock-sp", "nope");
         assertEquals("Invalid user / secret", result.get("details"));
     }
 
-    private Map<String, Object> doIntrospection(String clientId, String secret) throws UnsupportedEncodingException {
+    private Map<String, Object> doIntrospection(String clientId, String secret) throws IOException {
         String accessToken = getAccessToken();
         return callIntrospection(clientId, accessToken, secret);
     }
 
-    private String getAccessToken() throws UnsupportedEncodingException {
+    private String getAccessToken() throws IOException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
         return (String) body.get("access_token");

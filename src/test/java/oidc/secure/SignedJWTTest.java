@@ -56,7 +56,7 @@ public interface SignedJWTTest {
         return (RSAPrivateKey) KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(decodedKey));
     }
 
-    default SignedJWT signedJWT(String clientId, String keyID) throws Exception {
+    default SignedJWT signedJWT(String clientId, String keyID, String redirectURI) throws Exception {
         ClaimsRequest claimsRequest = new ClaimsRequest();
         claimsRequest.addIDTokenClaim("email");
 
@@ -69,7 +69,7 @@ public interface SignedJWTTest {
                 .issueTime(Date.from(instant))
                 .subject(clientId)
                 .notBeforeTime(new Date(System.currentTimeMillis()))
-                .claim("redirect_uri", "http://localhost:8080")
+                .claim("redirect_uri", redirectURI)
                 .claim("scope", "openid groups")
                 .claim("nonce", "123456")
                 .claim("state", "new")

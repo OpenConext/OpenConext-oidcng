@@ -42,6 +42,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.time.Clock;
@@ -133,10 +134,17 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         if (!authorizationCode.getClientId().equals(client.getClientId())) {
             throw new BadCredentialsException("Client is not authorized for the authorization code");
         }
-        //TODO use time constant comparison
+
         if (authorizationCodeGrant.getRedirectionURI() != null &&
                 !authorizationCodeGrant.getRedirectionURI().toString().equals(authorizationCode.getRedirectUri())) {
             throw new RedirectMismatchException("Redirects do not match");
+        }
+        if (authorizationCodeGrant.getRedirectionURI() != null &&
+                !authorizationCodeGrant.getRedirectionURI().toString().equals(authorizationCode.getRedirectUri())) {
+            throw new RedirectMismatchException("Redirects do not match");
+        }
+        if (authorizationCode.isRedirectURIProvided() && authorizationCodeGrant.getRedirectionURI() == null) {
+            throw new RedirectMismatchException("Redirect URI is mandatory if specified in code request");
         }
         if (authorizationCode.isExpired(Clock.systemDefaultZone())) {
             throw new UnauthorizedException("Authorization code expired");
@@ -151,8 +159,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
             CodeChallengeMethod codeChallengeMethod = CodeChallengeMethod.parse(authorizationCode.getCodeChallengeMethod());
             CodeChallenge computed = CodeChallenge.compute(codeChallengeMethod, codeVerifier);
 
-            //TODO use time constant comparison
-            if (!codeChallenge.equals(computed.getValue())) {
+            //Constant time comparison
+            if (!MessageDigest.isEqual(codeChallenge.getBytes(), computed.getValue().getBytes())) {
                 LOG.error(String.format("CodeVerifier %s with method %s does not match codeChallenge %s. Expected codeChallenge is %s",
                         codeVerifier.getValue(), codeChallengeMethod, codeChallenge, computed.getValue()));
                 throw new CodeVerifierMissingException("code_verifier does not match code_challenge");

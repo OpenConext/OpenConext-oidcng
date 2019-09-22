@@ -6,6 +6,7 @@ import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
@@ -15,18 +16,18 @@ import static org.junit.Assert.assertEquals;
 public class UserInfoEndpointTest extends AbstractIntegrationTest {
 
     @Test
-    public void getUserInfo() throws UnsupportedEncodingException {
+    public void getUserInfo() throws IOException {
         userInfo("GET");
         userInfoWithAuthorizationHeader();
     }
 
     @Test
-    public void postUserInfo() throws UnsupportedEncodingException {
+    public void postUserInfo() throws IOException {
         userInfo("POST");
     }
 
     @Test
-    public void userInfoExpired() throws UnsupportedEncodingException {
+    public void userInfoExpired() throws IOException {
         String token = getAccessToken();
         expireAccessToken(token);
 
@@ -40,7 +41,7 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void userInfoClientCredentials() throws UnsupportedEncodingException {
+    public void userInfoClientCredentials() throws IOException {
         String token = getClientCredentialsAccessToken();
 
         Map<String, Object> body = given()
@@ -52,7 +53,7 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
         assertEquals("UserEndpoint not allowed for Client Credentials", body.get("message"));
     }
 
-    private void userInfo(String method) throws UnsupportedEncodingException {
+    private void userInfo(String method) throws IOException {
         String accessToken = getAccessToken();
         RequestSpecification header = given()
                 .when()
@@ -65,7 +66,7 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
         assertResponse(response);
     }
 
-    private void userInfoWithAuthorizationHeader() throws UnsupportedEncodingException {
+    private void userInfoWithAuthorizationHeader() throws IOException {
         String accessToken = getAccessToken();
         Response response = given()
                 .when()
@@ -75,13 +76,13 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
         assertResponse(response);
     }
 
-    private String getAccessToken() throws UnsupportedEncodingException {
+    private String getAccessToken() throws IOException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
         return (String) body.get("access_token");
     }
 
-    private String getClientCredentialsAccessToken() throws UnsupportedEncodingException {
+    private String getClientCredentialsAccessToken() throws IOException {
         Map<String, Object> body = doToken(null, "mock-sp", "secret", GrantType.CLIENT_CREDENTIALS);
         return (String) body.get("access_token");
     }

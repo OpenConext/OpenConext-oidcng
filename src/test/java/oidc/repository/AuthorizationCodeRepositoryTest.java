@@ -6,6 +6,8 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
@@ -23,10 +25,10 @@ public class AuthorizationCodeRepositoryTest extends AbstractIntegrationTest {
     private AuthorizationCodeRepository subject;
 
     @Test
-    public void findByCode() {
+    public void findByCode() throws URISyntaxException {
         String code = UUID.randomUUID().toString();
-        subject.insert(new AuthorizationCode(code, "sub", "clientId", emptyList(), "redirectUri",
-                "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), new Date()));
+        subject.insert(new AuthorizationCode(code, "sub", "clientId", emptyList(), new URI("http://redirectURI"),
+                "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), true, new Date()));
         assertEquals(code, subject.findByCode(code).getCode());
     }
 
@@ -36,10 +38,10 @@ public class AuthorizationCodeRepositoryTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void deleteByExpiresInBefore() {
+    public void deleteByExpiresInBefore() throws URISyntaxException {
         Date expiresIn = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
-        subject.insert(new AuthorizationCode("code", "sub", "clientId", emptyList(), "redirectUri",
-                "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), expiresIn));
+        subject.insert(new AuthorizationCode("code", "sub", "clientId", emptyList(), new URI("http://redirectURI"),
+                "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), true, expiresIn));
         long count = subject.deleteByExpiresInBefore(new Date());
 
         assertEquals(1L, count);
@@ -48,8 +50,15 @@ public class AuthorizationCodeRepositoryTest extends AbstractIntegrationTest {
     @Test
     public void findSub() {
         IntStream.range(0, 3).forEach(i ->
-                subject.insert(new AuthorizationCode(UUID.randomUUID().toString(), "sub" + i, "clientId", emptyList(), "redirectUri",
-                        "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), new Date())));
+        {
+            try {
+                subject.insert(new AuthorizationCode(UUID.randomUUID().toString(), "sub" + i, "clientId", emptyList(),
+                        new URI("http://redirectURI"),
+                        "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), true, new Date()));
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
+        });
         List<String> subs = subject.findSub().stream().map(AuthorizationCode::getSub).collect(Collectors.toList());
 
         assertEquals(3, subs.size());
