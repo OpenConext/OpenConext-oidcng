@@ -301,6 +301,21 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
+    public void missingRedirect() throws IOException {
+        String code = doAuthorize();
+        Map<String, Object> body = given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .auth().preemptive()
+                .basic("mock-sp", "secret")
+                .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
+                .formParam("code", code)
+                .post("oidc/token")
+                .as(mapTypeRef);
+        assertEquals("Redirect URI is mandatory if specified in code request", body.get("message"));
+    }
+
+    @Test
     public void unsupportedClientAuthentication() throws JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException {
         String code = doAuthorize();
         String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(

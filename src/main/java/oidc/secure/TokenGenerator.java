@@ -92,6 +92,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private static char[] DEFAULT_CODEC = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
             .toCharArray();
+
     private Random random = new SecureRandom();
 
     private String issuer;
@@ -263,7 +264,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         random.nextBytes(verifierBytes);
         char[] chars = new char[verifierBytes.length];
         for (int i = 0; i < verifierBytes.length; i++) {
-            chars[i] = DEFAULT_CODEC[((verifierBytes[i] & 0xFF) % DEFAULT_CODEC.length)];
+            chars[i] = DEFAULT_CODEC[random.nextInt(DEFAULT_CODEC.length)];
         }
         return new String(chars);
     }

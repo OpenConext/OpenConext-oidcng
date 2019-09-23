@@ -139,13 +139,11 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                 !authorizationCodeGrant.getRedirectionURI().toString().equals(authorizationCode.getRedirectUri())) {
             throw new RedirectMismatchException("Redirects do not match");
         }
-        if (authorizationCodeGrant.getRedirectionURI() != null &&
-                !authorizationCodeGrant.getRedirectionURI().toString().equals(authorizationCode.getRedirectUri())) {
-            throw new RedirectMismatchException("Redirects do not match");
-        }
+
         if (authorizationCode.isRedirectURIProvided() && authorizationCodeGrant.getRedirectionURI() == null) {
             throw new RedirectMismatchException("Redirect URI is mandatory if specified in code request");
         }
+
         if (authorizationCode.isExpired(Clock.systemDefaultZone())) {
             throw new UnauthorizedException("Authorization code expired");
         }

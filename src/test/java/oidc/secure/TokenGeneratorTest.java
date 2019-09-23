@@ -89,6 +89,12 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         assertEquals("http://test.surfconext.nl/assurance/loa1", acr);
     }
 
+    @Test
+    public void generateAuthorizationCode() {
+        String authorizationCode = tokenGenerator.generateAuthorizationCode();
+        assertEquals(12, authorizationCode.length());
+    }
+
     private String doEncryptAndDecryptAccessToken() throws IOException {
         User user = new User("sub", "unspecifiedNameId", "http://mockidp",
                 "clientId", getUserInfo(), Collections.emptyList());
