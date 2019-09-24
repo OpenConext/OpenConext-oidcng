@@ -123,6 +123,7 @@ public class SecurityConfiguration {
         }
 
         private String[] generateKeys() throws NoSuchAlgorithmException {
+            LOG.info("Generating public / private key pair for SAML trusted proxy");
             Base64.Encoder encoder = Base64.getEncoder();
             KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
             kpg.initialize(2048);
