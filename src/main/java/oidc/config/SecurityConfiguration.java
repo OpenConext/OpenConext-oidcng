@@ -42,6 +42,10 @@ import org.springframework.security.saml.provider.service.config.SamlServiceProv
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 import static org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityDsl.serviceProvider;
 
@@ -91,9 +95,17 @@ public class SecurityConfiguration {
             }
         }
 
-        private RotatingKeys getKeys() throws IOException {
-            String privateKey = read(this.privateKeyPath);
-            String certificate = read(this.certificatePath);
+        private RotatingKeys getKeys() throws IOException, NoSuchAlgorithmException {
+            String privateKey;
+            String certificate;
+            if (this.privateKeyPath.exists() && this.certificatePath.exists()) {
+                privateKey = read(this.privateKeyPath);
+                certificate = read(this.certificatePath);
+            } else {
+                String[] keys = generateKeys();
+                privateKey = keys[0];
+                certificate = keys[1];
+            }
             return new RotatingKeys()
                     .setActive(
                             new SimpleKey()
@@ -109,6 +121,24 @@ public class SecurityConfiguration {
             LOG.info("Reading resource: " + resource.getFilename());
             return IOUtils.toString(resource.getInputStream(), Charset.defaultCharset());
         }
+
+        private String[] generateKeys() throws NoSuchAlgorithmException {
+            Base64.Encoder encoder = Base64.getEncoder();
+            KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+            kpg.initialize(2048);
+            KeyPair kp = kpg.generateKeyPair();
+
+            String privateKey = "-----BEGIN RSA PRIVATE KEY-----\n";
+            privateKey += encoder.encodeToString(kp.getPrivate().getEncoded());
+            privateKey += "\n-----END RSA PRIVATE KEY-----\n";
+
+            String publicKey = "-----BEGIN RSA PUBLIC KEY-----\n";
+            publicKey += encoder.encodeToString(kp.getPublic().getEncoded());
+            publicKey += "\n-----END RSA PUBLIC KEY-----\n";
+
+            return new String[]{privateKey, publicKey};
+        }
+
     }
 
 
