@@ -57,6 +57,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
     private static final Log LOG = LogFactory.getLog(TokenEndpoint.class);
 
+    private ConcurrentAuthorizationCodeRepository concurrentAuthorizationCodeRepository;
     private AuthorizationCodeRepository authorizationCodeRepository;
     private AccessTokenRepository accessTokenRepository;
     private RefreshTokenRepository refreshTokenRepository;
@@ -67,12 +68,14 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
     public TokenEndpoint(OpenIDClientRepository openIDClientRepository,
                          AuthorizationCodeRepository authorizationCodeRepository,
+                         ConcurrentAuthorizationCodeRepository concurrentAuthorizationCodeRepository,
                          AccessTokenRepository accessTokenRepository,
                          RefreshTokenRepository refreshTokenRepository,
                          UserRepository userRepository,
                          TokenGenerator tokenGenerator) {
         this.openIDClientRepository = openIDClientRepository;
         this.authorizationCodeRepository = authorizationCodeRepository;
+        this.concurrentAuthorizationCodeRepository = concurrentAuthorizationCodeRepository;
         this.accessTokenRepository = accessTokenRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;
@@ -123,13 +126,21 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
     private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, OpenIDClient client) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         String code = authorizationCodeGrant.getAuthorizationCode().getValue();
-        AuthorizationCode authorizationCode = authorizationCodeRepository.findByCode(code);
-        if (authorizationCode.isAlreadyUsed()) {
-            accessTokenRepository.deleteByAuthorizationCodeId(authorizationCode.getId());
+        AuthorizationCode authorizationCode = concurrentAuthorizationCodeRepository.findByCodeNotAlreadyUsedAndMarkAsUsed(code);
+
+        if (authorizationCode == null) {
+            /*
+             * Now it become's tricky. Did we get an 'null' because the code was bogus or because it was already
+             * used? To both satisfy the - highly theoretical - risk of the audit race condition and the OIDC certification
+             * demand of deleting access_token issued with the re-used authorization code we need to query again.
+             *
+             * If they code was bogus this will result in a 404 exception by the authorizationCodeRepository#findByCode
+             * and if we find something then we know there was a re-use issue.
+             */
+            AuthorizationCode byCode = authorizationCodeRepository.findByCode(code);
+            accessTokenRepository.deleteByAuthorizationCodeId(byCode.getId());
             throw new UnauthorizedException("Authorization code already used");
         }
-        authorizationCode.setAlreadyUsed(true);
-        authorizationCodeRepository.save(authorizationCode);
 
         if (!authorizationCode.getClientId().equals(client.getClientId())) {
             throw new BadCredentialsException("Client is not authorized for the authorization code");
@@ -192,7 +203,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         Optional<User> optionalUser = refreshToken.isClientCredentials() ? Optional.empty() :
                 Optional.of(tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(refreshToken.getAccessTokenValue()));
         Map<String, Object> body = tokenEndpointResponse(optionalUser, client, refreshToken.getScopes(),
-                Collections.emptyList(), false, null, optionalUser.map(user -> user.getUpdatedAt()), Optional.empty());
+                Collections.emptyList(), false, null, optionalUser.map(User::getUpdatedAt), Optional.empty());
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 

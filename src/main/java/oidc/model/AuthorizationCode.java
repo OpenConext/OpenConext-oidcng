@@ -62,6 +62,7 @@ public class AuthorizationCode {
         this.redirectURIProvided = redirectURIProvided;
         this.expiresIn = expiresIn != null ? expiresIn :
                 Date.from(LocalDateTime.now().plusMinutes(10).atZone(ZoneId.systemDefault()).toInstant());
+        this.alreadyUsed = false;
         this.authTime = System.currentTimeMillis() / 1000L;
     }
 
