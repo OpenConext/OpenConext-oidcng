@@ -2,7 +2,7 @@ package oidc;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.restassured.mapper.TypeRef;
+import io.restassured.common.mapper.TypeRef;
 import org.apache.commons.io.IOUtils;
 import org.springframework.core.io.ClassPathResource;
 

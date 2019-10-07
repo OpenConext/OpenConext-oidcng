@@ -91,6 +91,7 @@ public class OpenIDClient {
     }
 
     @Transient
+    //Backward compatibility with older versions of Manage where all metadata values wer Strings
     private boolean parseBoolean(Object val) {
         if (val instanceof Boolean) {
             return (boolean) val;
