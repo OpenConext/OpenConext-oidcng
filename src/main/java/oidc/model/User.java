@@ -3,6 +3,7 @@ package oidc.model;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -16,6 +17,7 @@ import java.util.Map;
 @Getter
 @Document(collection = "users")
 @EqualsAndHashCode
+@ToString
 public class User implements Serializable {
 
     @Id
@@ -44,12 +46,4 @@ public class User implements Serializable {
         this.id = id;
     }
 
-    @Override
-    public String toString() {
-        return "User{" +
-                "sub='" + sub + '\'' +
-                ", unspecifiedNameId='" + unspecifiedNameId + '\'' +
-                ", clientId='" + clientId + '\'' +
-                '}';
-    }
 }
