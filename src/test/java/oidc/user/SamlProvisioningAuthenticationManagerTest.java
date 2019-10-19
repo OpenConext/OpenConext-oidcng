@@ -58,8 +58,8 @@ public class SamlProvisioningAuthenticationManagerTest implements SamlTest {
         assertEquals("http://mock-idp", user.getAuthenticatingAuthority());
         assertEquals(Collections.singletonList("http://test.surfconext.nl/assurance/loa2"), user.getAcrClaims());
         assertEquals("j.doe@example.com", user.getAttributes().get("email"));
+        assertEquals("bd25cbfc-df67-46b3-bb2b-5913342c667f", user.getAttributes().get("eduid"));
         assertEquals(Collections.singleton("admin"), user.getAttributes().get("uids"));
-
 
         when(userRepository.findOptionalUserBySub(user.getSub())).thenReturn(Optional.of(user));
         when(userRepository.insert(any(User.class))).thenThrow(IllegalArgumentException.class);
