@@ -56,7 +56,7 @@ spring:
           - urn:oasis:names:tc:SAML:2.0:nameid-format:persistent
           - urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified
         providers:
-          - alias: engine-test2
+          - alias: engine-test
             metadata: https://engine.test.surfconext.nl/authentication/idp/metadata
             link-text: EngineBlock test
             name-id: https://engine.test.surfconext.nl/authentication/idp/metadata

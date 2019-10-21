@@ -75,12 +75,6 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
     }
 
     @Test
-    public void filterInternalPromptUnsupported() throws Exception {
-        filterInternalInvalidRequest("unsupported", "invalid_request",
-                "http://localhost:8091/redirect", "code", "query", "mock-sp");
-    }
-
-    @Test
     public void filterInternalInvalidGrantType() throws Exception {
         filterInternalInvalidRequest(null, "unauthorized_client",
                 "http://localhost:8091/redirect", "token", "fragment", "mock-rp");
