@@ -85,6 +85,7 @@ import static java.nio.charset.Charset.defaultCharset;
 import static java.util.stream.Collectors.toMap;
 
 @Component
+@SuppressWarnings("unchecked")
 public class TokenGenerator implements MapTypeReference, ApplicationListener<ApplicationStartedEvent> {
 
     public static final JWSAlgorithm signingAlg = JWSAlgorithm.RS256;
@@ -311,7 +312,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         }
     }
 
-    private User doDecryptAccessTokenWithEmbeddedUserInfo(String accessToken) throws ParseException, JOSEException, GeneralSecurityException, IOException {
+    private User doDecryptAccessTokenWithEmbeddedUserInfo(String accessToken) throws ParseException, JOSEException, IOException {
         SignedJWT signedJWT = SignedJWT.parse(accessToken);
         Map<String, Object> claims = verifyClaims(signedJWT);
         String encryptedClaims = (String) claims.get("claims");
@@ -370,7 +371,8 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         return idToken(client, Optional.of(user), additionalClaims, claims, false, signingKey);
     }
 
-    public List<JWK> getAllPublicKeys() {
+    public List<JWK> getAllPublicKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
+        this.ensureLatestSigningKey();
         return new ArrayList<>(this.publicKeys);
     }
 
@@ -455,14 +457,14 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     private String ensureLatestSigningKey() throws NoSuchProviderException, NoSuchAlgorithmException {
-        if (sequenceRepository.currentSigningKeyId().equals(this.currentSigningKeyId)) {
+        if (!sequenceRepository.currentSigningKeyId().equals(this.currentSigningKeyId)) {
             this.initializeSigningKeys();
         }
         return this.currentSigningKeyId;
     }
 
-    private String ensureLatestSymmetricKey() throws NoSuchAlgorithmException {
-        if (sequenceRepository.currentSymmetricKeyId().equals(this.currentSymmetricKeyId)) {
+    private String ensureLatestSymmetricKey() {
+        if (!sequenceRepository.currentSymmetricKeyId().equals(this.currentSymmetricKeyId)) {
             this.initializeSymmetricKeys();
         }
         return this.currentSymmetricKeyId;

@@ -31,6 +31,7 @@ import static org.junit.Assert.assertEquals;
                 "mongodb_db=oidc_test",
                 "cron.node-cron-job-responsible=true"
         })
+@SuppressWarnings("unchecked")
 public class ResourceCleanerTest extends AbstractIntegrationTest implements SeedUtils {
 
     @Autowired

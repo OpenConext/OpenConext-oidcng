@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.Map;
 
 @RestController
@@ -33,8 +35,8 @@ public class JwkKeysEndpoint implements MapTypeReference {
         this.objectMapper = objectMapper;
     }
 
-    @GetMapping(value = {"/oidc/certs"}, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public String publishClientJwk() {
+    @GetMapping(value = {"/oidc/certs"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String publishClientJwk() throws NoSuchProviderException, NoSuchAlgorithmException {
         return new JWKSet(tokenGenerator.getAllPublicKeys()).toJSONObject().toString();
     }
 
