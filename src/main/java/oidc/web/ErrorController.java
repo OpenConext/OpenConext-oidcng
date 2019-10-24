@@ -48,8 +48,6 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         ServletWebRequest webRequest = new ServletWebRequest(request);
         Map<String, Object> result = this.errorAttributes.getErrorAttributes(webRequest, false);
 
-        LOG.error("Error has occurred: " + result);
-
         Throwable error = this.errorAttributes.getError(webRequest);
         boolean status = result.containsKey("status") && !result.get("status").equals(999) && !result.get("status").equals(500);
         HttpStatus statusCode = status ? HttpStatus.resolve((Integer) result.get("status")) : BAD_REQUEST;
@@ -63,6 +61,8 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
             if (error instanceof EmptyResultDataAccessException && result.getOrDefault("path", "/oidc/token").toString().contains("token")) {
                 return new ResponseEntity<>(Collections.singletonMap("error", "invalid_grant"), BAD_REQUEST);
             }
+
+            LOG.error("Error has occurred", error);
         }
         result.put("error", errorCode(error));
         result.put("status", statusCode.value());
