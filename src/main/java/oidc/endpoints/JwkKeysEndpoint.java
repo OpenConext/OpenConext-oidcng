@@ -36,7 +36,7 @@ public class JwkKeysEndpoint implements MapTypeReference {
     }
 
     @GetMapping(value = {"/oidc/certs"}, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String publishClientJwk() throws NoSuchProviderException, NoSuchAlgorithmException {
+    public String publishClientJwk() {
         return new JWKSet(tokenGenerator.getAllPublicKeys()).toJSONObject().toString();
     }
 

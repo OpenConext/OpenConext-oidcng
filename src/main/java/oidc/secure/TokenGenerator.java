@@ -22,7 +22,6 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
@@ -32,7 +31,6 @@ import com.nimbusds.openid.connect.sdk.claims.CodeHash;
 import com.nimbusds.openid.connect.sdk.claims.StateHash;
 import oidc.endpoints.MapTypeReference;
 import oidc.exceptions.InvalidSignatureException;
-import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
 import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
@@ -162,15 +160,11 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     @Override
     public void onApplicationEvent(ApplicationStartedEvent event) {
         //we need to run this after any possible mongo migrations
-        try {
-            initializeSymmetricKeys();
-            initializeSigningKeys();
-        } catch (NoSuchProviderException | NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
+        initializeSymmetricKeys();
+        initializeSigningKeys();
     }
 
-    private void initializeSigningKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
+    private void initializeSigningKeys() {
         List<RSAKey> rsaKeys = this.signingKeyRepository.findAllByOrderByCreatedDesc().stream()
                 .filter(signingKey -> StringUtils.hasText(signingKey.getSymmetricKeyId()))
                 .map(this::parseEncryptedRsaKey)
@@ -198,7 +192,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private void initializeSymmetricKeys() {
         List<KeysetHandle> keysetHandles = this.symmetricKeyRepository.findAllByOrderByCreatedDesc().stream()
-                .map(symmetricKey -> this.parseKeysetHandle(symmetricKey))
+                .map(this::parseKeysetHandle)
                 .collect(Collectors.toList());
 
         if (keysetHandles.isEmpty()) {
@@ -272,8 +266,8 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     public String generateAccessTokenWithEmbeddedUserInfo(User user, OpenIDClient client) {
         try {
-            String signingKey = ensureLatestSigningKey();
-            return doGenerateAccessTokenWithEmbeddedUser(user, client, signingKey);
+            ensureLatestSigningKey();
+            return doGenerateAccessTokenWithEmbeddedUser(user, client, this.currentSigningKeyId);
         } catch (Exception e) {
             //anti pattern but too many exceptions to catch without any surviving option
             throw e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
@@ -294,7 +288,8 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private String encryptAead(String s) {
         try {
-            KeysetHandle keysetHandle = this.safeGet(this.ensureLatestSymmetricKey(), this.keysetHandleMap);
+            this.ensureLatestSymmetricKey();
+            KeysetHandle keysetHandle = this.safeGet(this.currentSymmetricKeyId, this.keysetHandleMap, this::initializeSymmetricKeys);
             Aead aead = AeadFactory.getPrimitive(keysetHandle);
             byte[] src = aead.encrypt(s.getBytes(defaultCharset()), associatedData);
             return Base64.getEncoder().encodeToString(src);
@@ -325,8 +320,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private String decryptAead(String s, String symmetricKeyId) {
         try {
-            this.ensureLatestSymmetricKey();
-            KeysetHandle keysetHandle = safeGet(symmetricKeyId, this.keysetHandleMap);
+            KeysetHandle keysetHandle = safeGet(symmetricKeyId, this.keysetHandleMap, this::ensureLatestSymmetricKey);
             Aead aead = AeadFactory.getPrimitive(keysetHandle);
             byte[] decoded = Base64.getDecoder().decode(s);
             return new String(aead.decrypt(decoded, associatedData));
@@ -339,11 +333,11 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
                                                   Optional<Long> authorizationTime) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> additionalClaims = new HashMap<>();
         authorizationTime.ifPresent(time -> additionalClaims.put("auth_time", time));
-        if (StringUtils.hasText(nonce)){
+        if (StringUtils.hasText(nonce)) {
             additionalClaims.put("nonce", nonce);
         }
-        String signingKey = ensureLatestSigningKey();
-        return idToken(client, user, additionalClaims, idTokenClaims, false, signingKey);
+        ensureLatestSigningKey();
+        return idToken(client, user, additionalClaims, idTokenClaims, false, this.currentSigningKeyId);
     }
 
     public String generateIDTokenForAuthorizationEndpoint(User user, OpenIDClient client, Nonce nonce,
@@ -367,17 +361,22 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         if (state != null && StringUtils.hasText(state.getValue())) {
             additionalClaims.put("s_hash", StateHash.compute(state, signingAlg));
         }
-        String signingKey = ensureLatestSigningKey();
-        return idToken(client, Optional.of(user), additionalClaims, claims, false, signingKey);
+        ensureLatestSigningKey();
+        return idToken(client, Optional.of(user), additionalClaims, claims, false, this.currentSigningKeyId);
     }
 
-    public List<JWK> getAllPublicKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
+    public List<JWK> getAllPublicKeys() {
         this.ensureLatestSigningKey();
         return new ArrayList<>(this.publicKeys);
     }
 
-    private RSAKey generateRsaKey(String keyID) throws NoSuchAlgorithmException, NoSuchProviderException {
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA", "BC");
+    private RSAKey generateRsaKey(String keyID) {
+        KeyPairGenerator kpg;
+        try {
+            kpg = KeyPairGenerator.getInstance("RSA", "BC");
+        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+            throw new RuntimeException(e);
+        }
         kpg.initialize(2048);
         KeyPair keyPair = kpg.generateKeyPair();
         RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
@@ -390,7 +389,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
                 .build();
     }
 
-    private SigningKey generateEncryptedRsaKey() throws NoSuchProviderException, NoSuchAlgorithmException {
+    private SigningKey generateEncryptedRsaKey() {
         String keyId = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS").format(new Date());
         this.sequenceRepository.updateSigningKeyId(keyId);
         RSAKey rsaKey = generateRsaKey(String.format("key_%s", keyId));
@@ -400,7 +399,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private Map<String, Object> verifyClaims(SignedJWT signedJWT) throws ParseException, JOSEException {
         String keyID = signedJWT.getHeader().getKeyID();
-        JWSVerifier verifier = this.safeGet(keyID, verifiers);
+        JWSVerifier verifier = this.safeGet(keyID, this.verifiers, this::initializeSigningKeys);
         if (!signedJWT.verify(verifier)) {
             throw new InvalidSignatureException("Tampered JWT");
         }
@@ -451,23 +450,21 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         JWTClaimsSet claimsSet = builder.build();
         JWSHeader header = new JWSHeader.Builder(signingAlg).type(JOSEObjectType.JWT).keyID(signingKey).build();
         SignedJWT signedJWT = new SignedJWT(header, claimsSet);
-        JWSSigner jswsSigner = this.safeGet(signingKey, signers);
+        JWSSigner jswsSigner = this.safeGet(signingKey, this.signers, () -> initializeSigningKeys());
         signedJWT.sign(jswsSigner);
         return signedJWT.serialize();
     }
 
-    private String ensureLatestSigningKey() throws NoSuchProviderException, NoSuchAlgorithmException {
+    private void ensureLatestSigningKey() {
         if (!sequenceRepository.currentSigningKeyId().equals(this.currentSigningKeyId)) {
             this.initializeSigningKeys();
         }
-        return this.currentSigningKeyId;
     }
 
-    private String ensureLatestSymmetricKey() {
+    private void ensureLatestSymmetricKey() {
         if (!sequenceRepository.currentSymmetricKeyId().equals(this.currentSymmetricKeyId)) {
             this.initializeSymmetricKeys();
         }
-        return this.currentSymmetricKeyId;
     }
 
     private RSASSASigner createRSASigner(RSAKey k) {
@@ -486,10 +483,14 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         }
     }
 
-    private <T> T safeGet(String k, Map<String, T> map) {
+    private <T> T safeGet(String k, Map<String, T> map, Runnable runnable) {
         T t = map.get(k);
         if (t == null) {
-            throw new IllegalArgumentException(String.format("Map with keys %s does not contain key %s", map.keySet(), k));
+            runnable.run();
+            t = map.get(k);
+            if (t == null) {
+                throw new IllegalArgumentException(String.format("Map with keys %s does not contain key %s", map.keySet(), k));
+            }
         }
         return t;
     }
