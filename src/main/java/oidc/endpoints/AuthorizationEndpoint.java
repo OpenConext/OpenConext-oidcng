@@ -18,6 +18,7 @@ import oidc.exceptions.RedirectMismatchException;
 import oidc.exceptions.UnsupportedPromptValueException;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
+import oidc.model.EncryptedTokenValue;
 import oidc.model.OpenIDClient;
 import oidc.model.ProvidedRedirectURI;
 import oidc.model.User;
@@ -181,11 +182,12 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     private Map<String, Object> authorizationEndpointResponse(User user, OpenIDClient client, AuthorizationRequest authorizationRequest,
                                                               List<String> scopes, ResponseType responseType, State state) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> result = new LinkedHashMap<>();
-        String value = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client);
+        EncryptedTokenValue encryptedAccessToken = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client);
+        String accessTokenValue = encryptedAccessToken.getValue();
         if (responseType.contains(ResponseType.Value.TOKEN.getValue()) || !isOpenIDRequest(authorizationRequest)) {
-            getAccessTokenRepository().insert(new AccessToken(value, user.getSub(), client.getClientId(), scopes,
-                    tokenGenerator.getCurrentSigningKeyId(), accessTokenValidity(client), false, null));
-            result.put("access_token", value);
+            getAccessTokenRepository().insert(new AccessToken(accessTokenValue, user.getSub(), client.getClientId(), scopes,
+                    encryptedAccessToken.getKeyId(), accessTokenValidity(client), false, null));
+            result.put("access_token", accessTokenValue);
             result.put("token_type", "Bearer");
         }
         if (responseType.contains(ResponseType.Value.CODE.getValue())) {
@@ -196,7 +198,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             AuthenticationRequest authenticationRequest = (AuthenticationRequest) authorizationRequest;
             List<String> claims = getClaims(authorizationRequest);
             String idToken = getTokenGenerator().generateIDTokenForAuthorizationEndpoint(
-                    user, client, authenticationRequest.getNonce(), responseType, value, claims,
+                    user, client, authenticationRequest.getNonce(), responseType, accessTokenValue, claims,
                     Optional.ofNullable((String) result.get("code")), state);
             result.put("id_token", idToken);
         }

@@ -3,6 +3,7 @@ package oidc.secure;
 import oidc.model.AccessToken;
 import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
+import oidc.repository.SequenceRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,13 +24,16 @@ public class KeyRollover {
     private TokenGenerator tokenGenerator;
     private MongoTemplate mongoTemplate;
     private boolean cronJobResponsible;
+    private SequenceRepository sequenceRepository;
 
     public KeyRollover(TokenGenerator tokenGenerator,
                        MongoTemplate mongoTemplate,
-                       @Value("${cron.node-cron-job-responsible}") boolean cronJobResponsible) {
+                       @Value("${cron.node-cron-job-responsible}") boolean cronJobResponsible,
+                       SequenceRepository sequenceRepository) {
         this.tokenGenerator = tokenGenerator;
         this.mongoTemplate = mongoTemplate;
         this.cronJobResponsible = cronJobResponsible;
+        this.sequenceRepository =sequenceRepository;
     }
 
     @Scheduled(cron = "${cron.key-rollover-expression}")
@@ -64,7 +68,7 @@ public class KeyRollover {
 
     private void cleanUpSigningKeys() {
         List<String> signingKeyValues = mongoTemplate.findDistinct("signingKeyId", AccessToken.class, String.class);
-        signingKeyValues.add(tokenGenerator.getCurrentSigningKeyId());
+        signingKeyValues.add(String.format("key_%s", sequenceRepository.currentSigningKeyId()));
 
         Query query = Query.query(Criteria.where("keyId").not().in(signingKeyValues));
         List<SigningKey> signingKeys = mongoTemplate.findAllAndRemove(query, SigningKey.class);
@@ -75,7 +79,7 @@ public class KeyRollover {
 
     private void cleanUpSymmetricKeys() {
         List<String> symmetricKeyValues = mongoTemplate.findDistinct("symmetricKeyId", SigningKey.class, String.class);
-        symmetricKeyValues.add(tokenGenerator.getCurrentSymmetricKeyId());
+        symmetricKeyValues.add(sequenceRepository.currentSymmetricKeyId());
 
         Query query = Query.query(Criteria.where("keyId").not().in(symmetricKeyValues));
         List<SymmetricKey> symmetricKeys = mongoTemplate.findAllAndRemove(query, SymmetricKey.class);

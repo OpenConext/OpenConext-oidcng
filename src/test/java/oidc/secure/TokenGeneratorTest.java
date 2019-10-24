@@ -6,6 +6,7 @@ import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import oidc.AbstractIntegrationTest;
 import oidc.exceptions.InvalidSignatureException;
+import oidc.model.EncryptedTokenValue;
 import oidc.model.OpenIDClient;
 import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
@@ -102,7 +103,8 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         String clientId = "mock-sp";
         OpenIDClient client = mongoTemplate.find(Query.query(Criteria.where("clientId").is(clientId)), OpenIDClient.class).get(0);
 
-        String accessToken = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client);
+        EncryptedTokenValue encryptedAccessToken = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client);
+        String accessToken = encryptedAccessToken.getValue();
         User convertedUser = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessToken);
 
         assertEquals(user, convertedUser);

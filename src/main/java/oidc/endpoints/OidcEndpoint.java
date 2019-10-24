@@ -11,6 +11,7 @@ import com.nimbusds.openid.connect.sdk.ClaimsRequest;
 import com.nimbusds.openid.connect.sdk.Nonce;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
+import oidc.model.EncryptedTokenValue;
 import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
 import oidc.model.User;
@@ -18,11 +19,7 @@ import oidc.repository.AccessTokenRepository;
 import oidc.repository.RefreshTokenRepository;
 import oidc.secure.TokenGenerator;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -31,7 +28,6 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,11 +43,12 @@ public interface OidcEndpoint {
                                                       Optional<String> authorizationCodeId) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> map = new LinkedHashMap<>();
         TokenGenerator tokenGenerator = getTokenGenerator();
-        String accessTokenValue = user.map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client)).orElse(tokenGenerator.generateAccessToken());
+        EncryptedTokenValue encryptedAccessToken = user.map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client)).orElse(tokenGenerator.generateAccessToken());
+        String accessTokenValue = encryptedAccessToken.getValue();
         String sub = user.map(User::getSub).orElse(client.getClientId());
 
         getAccessTokenRepository().insert(new AccessToken(accessTokenValue, sub, client.getClientId(), scopes,
-                getTokenGenerator().getCurrentSigningKeyId(), accessTokenValidity(client), !user.isPresent(), authorizationCodeId.orElse(null)));
+                encryptedAccessToken.getKeyId(), accessTokenValidity(client), !user.isPresent(), authorizationCodeId.orElse(null)));
         map.put("access_token", accessTokenValue);
         map.put("token_type", "Bearer");
         if (client.getGrants().contains(GrantType.REFRESH_TOKEN.getValue())) {

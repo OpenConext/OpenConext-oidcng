@@ -31,6 +31,7 @@ import oidc.model.RefreshToken;
 import oidc.model.Sequence;
 import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
+import oidc.repository.SequenceRepository;
 import oidc.secure.TokenGenerator;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -107,6 +108,9 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
 
     @Autowired
     protected TokenGenerator tokenGenerator;
+
+    @Autowired
+    protected SequenceRepository sequenceRepository;
 
     private List<OpenIDClient> openIDClients;
 
