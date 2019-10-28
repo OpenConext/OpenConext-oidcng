@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import oidc.model.User;
 import oidc.user.OidcSamlAuthentication;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.jackson2.CoreJackson2Module;
@@ -22,9 +23,10 @@ import java.util.List;
 public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
 
     @Bean
-    CookieSerializer cookieSerializer() {
+    CookieSerializer cookieSerializer(@Value("${secure_cookie}") boolean secureCookie) {
         DefaultCookieSerializer defaultCookieSerializer = new DefaultCookieSerializer();
         defaultCookieSerializer.setSameSite("None");
+        defaultCookieSerializer.setUseSecureCookie(secureCookie);
         return defaultCookieSerializer;
     }
 
