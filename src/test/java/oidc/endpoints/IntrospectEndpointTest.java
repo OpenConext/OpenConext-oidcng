@@ -47,6 +47,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     public void introspectionWithDefaultRP() throws IOException {
         Map<String, Object> result = doIntrospection("resource-server-playground-client", "secret");
         assertEquals(true, result.get("active"));
+        assertEquals("mock-sp", result.get("client_id"));
         assertFalse(result.containsKey("unspecified_id"));
         assertTrue(result.containsKey("email"));
     }
