@@ -164,7 +164,7 @@ On a Mac you can issue the same commands with `ghead` instead of `head` after yo
 cat oidc.crt |ghead -n -1 |tail -n +2 | tr -d '\n'
 ```
 ### [Key rollover](#key-rollover)
-The OpenID Connect Provider had administrator endpoints to rollover both the signing keys as the symmetric keys. The signing keys are used to
+The OpenID Connect Provider has administrator endpoints to rollover both the signing keys as the symmetric keys. The signing keys are used to
 sign and verify the JWT tokens. The symmetric keys are used to encrypt and decrypt the user claims in the access_token.
 
 To rollover the signing key and clean up unreferenced signing keys:
