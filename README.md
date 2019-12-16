@@ -10,7 +10,7 @@ OpenID Connect - SAML proxy
 
 - Java 8
 - Maven 3.x
-- MongoDB 3.4.x
+- MongoDB 4.0.x
 
 ## [Building and running](#building-and-running)
 
