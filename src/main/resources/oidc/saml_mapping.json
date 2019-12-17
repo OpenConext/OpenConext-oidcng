@@ -84,5 +84,20 @@
     "saml": "urn:mace:dir:attribute-def:uid",
     "oidc": "uids",
     "multiValue": true
+  },
+  {
+    "saml": "urn:mace:dir:attribute-def:eduPersonOrcid",
+    "oidc": "eduperson_orcid",
+    "multiValue": false
+  },
+  {
+    "saml": "urn:mace:surf.nl:attribute-def:eckid",
+    "oidc": "eckid",
+    "multiValue": false
+  },
+  {
+    "saml": "urn:mace:surf.nl:attribute-def:surf-crm-id",
+    "oidc": "surf-crm-id",
+    "multiValue": false
   }
 ]
