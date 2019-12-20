@@ -6,7 +6,7 @@ import oidc.model.User;
 import oidc.repository.UserRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -41,10 +41,9 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
     private UserRepository userRepository;
     private List<UserAttribute> userAttributes;
 
-    public SamlProvisioningAuthenticationManager(UserRepository userRepository, ObjectMapper objectMapper) throws IOException {
+    public SamlProvisioningAuthenticationManager(UserRepository userRepository, ObjectMapper objectMapper, Resource oidcSamlMapping) throws IOException {
         this.userRepository = userRepository;
-        this.userAttributes = objectMapper.readValue(
-                new ClassPathResource("oidc/saml_mapping.json").getInputStream(),
+        this.userAttributes = objectMapper.readValue(oidcSamlMapping.getInputStream(),
                 new TypeReference<List<UserAttribute>>() {
                 });
     }

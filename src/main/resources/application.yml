@@ -25,6 +25,7 @@ info:
     version: "@project.version@"
 
 mongodb_db: oidc_test
+oidc_saml_mapping__path: classpath:/oidc/saml_mapping.json
 openid_configuration_path: classpath:/openid-configuration.json
 secret_key_set_path: classpath:/secret_keyset.json
 associated_data: 4CEFFA8B-90DD-4737-8B04-6DA51C5B29AE

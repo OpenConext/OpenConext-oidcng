@@ -25,8 +25,10 @@ import oidc.secure.LoggingStrictHttpFirewall;
 import oidc.user.SamlProvisioningAuthenticationManager;
 import oidc.web.ConcurrentSavedRequestAwareAuthenticationSuccessHandler;
 import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.Resource;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.saml.SamlRequestMatcher;
 import org.springframework.security.saml.SamlValidator;
@@ -51,17 +53,20 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     private AuthenticationRequestRepository authenticationRequestRepository;
     private OpenIDClientRepository openIDClientRepository;
     private ObjectMapper objectMapper;
+    private Resource oidcSamlMapping;
 
     public BeanConfig(AppConfig config,
                       UserRepository userRepository,
                       AuthenticationRequestRepository authenticationRequestRepository,
                       OpenIDClientRepository openIDClientRepository,
-                      ObjectMapper objectMapper) {
+                      ObjectMapper objectMapper,
+                      @Value("${oidc_saml_mapping__path}") Resource oidcSamlMapping) {
         this.appConfiguration = config;
         this.userRepository = userRepository;
         this.openIDClientRepository = openIDClientRepository;
         this.authenticationRequestRepository = authenticationRequestRepository;
         this.objectMapper = objectMapper;
+        this.oidcSamlMapping = oidcSamlMapping;
     }
 
     @Override
@@ -96,7 +101,7 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
 
     @Bean
     public SamlProvisioningAuthenticationManager samlProvisioningAuthenticationManager() throws IOException {
-        return new SamlProvisioningAuthenticationManager(this.userRepository, this.objectMapper);
+        return new SamlProvisioningAuthenticationManager(this.userRepository, this.objectMapper, oidcSamlMapping);
     }
 
     @Bean

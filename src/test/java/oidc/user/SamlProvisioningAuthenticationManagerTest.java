@@ -13,8 +13,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -29,7 +27,10 @@ import static org.mockito.Mockito.when;
 public class SamlProvisioningAuthenticationManagerTest implements SamlTest {
 
     private UserRepository userRepository = mock(UserRepository.class);
-    private SamlProvisioningAuthenticationManager subject = new SamlProvisioningAuthenticationManager(userRepository, objectMapper);
+    private SamlProvisioningAuthenticationManager subject = new SamlProvisioningAuthenticationManager(
+            userRepository,
+            objectMapper,
+            new ClassPathResource("oidc/saml_mapping.json"));
 
     public SamlProvisioningAuthenticationManagerTest() throws IOException {
     }
