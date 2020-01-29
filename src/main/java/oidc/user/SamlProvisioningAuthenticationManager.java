@@ -100,6 +100,8 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
                 .filter(oo -> oo[1] != null)
                 .collect(Collectors.toMap(oo -> (String) oo[0], oo -> oo[1]));
 
+        this.addDerivedAttributes(attributes);
+
         //See https://www.pivotaltracker.com/story/show/165527166
         String eduPersonTargetedId = getAttributeValue("urn:mace:dir:attribute-def:eduPersonTargetedID", assertion);
         String sub = StringUtils.hasText(eduPersonTargetedId) ? eduPersonTargetedId :
@@ -113,6 +115,12 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
                 .collect(Collectors.toList());
 
         return new User(sub, unspecifiedNameId, authenticatingAuthority.get(), clientId, attributes, acrClaims);
+    }
+
+    private void addDerivedAttributes(Map<String, Object> attributes) {
+        if (attributes.containsKey("email")) {
+            attributes.put("email_verified", true);
+        }
     }
 
     private Optional<String> authenticationContextClassReference(AuthenticationContext authenticationContext) {
