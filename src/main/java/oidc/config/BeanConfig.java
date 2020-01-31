@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.OpenIDClientRepository;
 import oidc.repository.UserRepository;
+import oidc.secure.CustomValidator;
 import oidc.secure.LoggingStrictHttpFirewall;
 import oidc.user.SamlProvisioningAuthenticationManager;
 import oidc.web.ConcurrentSavedRequestAwareAuthenticationSuccessHandler;
@@ -38,10 +39,14 @@ import org.springframework.security.saml.provider.service.ServiceProviderService
 import org.springframework.security.saml.provider.service.authentication.SamlAuthenticationResponseFilter;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderServerBeanConfiguration;
 import org.springframework.security.saml.spi.DefaultValidator;
+import org.springframework.security.saml.spi.SpringSecuritySaml;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
+import org.springframework.util.ReflectionUtils;
 
 import javax.servlet.Filter;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 @Configuration
 @EnableScheduling
@@ -83,11 +88,20 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
     @Override
     @Bean
     public SamlValidator samlValidator() {
-        DefaultValidator defaultValidator = (DefaultValidator) super.samlValidator();
         //IdP determines session expiration not we
-        defaultValidator.setMaxAuthenticationAgeMillis(1000 * 60 * 60 * 24 * 365);
-        defaultValidator.setResponseSkewTimeMillis(1000 * 60 * 10);
-        return defaultValidator;
+        DefaultValidator defaultValidator = (DefaultValidator) super.samlValidator();
+        Field field;
+        try {
+            field = defaultValidator.getClass().getDeclaredField("implementation");
+        } catch (NoSuchFieldException e) {
+            throw new IllegalArgumentException(e);
+        }
+        //Hack, but the DefaultValidator is not easy to extend
+        ReflectionUtils.makeAccessible(field);
+        SpringSecuritySaml springSecuritySaml = (SpringSecuritySaml) ReflectionUtils.getField(field, defaultValidator);
+        CustomValidator customValidator = new CustomValidator(springSecuritySaml);
+        customValidator.setResponseSkewTimeMillis(1000 * 60 * 10);
+        return customValidator;
     }
 
     @Override
