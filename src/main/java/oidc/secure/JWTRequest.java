@@ -119,6 +119,7 @@ public class JWTRequest {
                 claims.containsKey("login_hint") ? (String) claims.get("login_hint") : authenticationRequest.getLoginHint(),
                 claims.containsKey("acr_values") ? Arrays.asList(((String) claims.get("acr_values")).split(" ")).stream().map(ACR::new).collect(Collectors.toList()) : authenticationRequest.getACRValues(),
                 claims.containsKey("claims") ? ClaimsRequest.parse((String) claims.get("claims")) : authenticationRequest.getClaims(),
+                authenticationRequest.getPurpose(),
                 authenticationRequest.getRequestObject(),
                 authenticationRequest.getRequestURI(),
                 claims.containsKey("code_challenge") ? CodeChallenge.parse((String) claims.get("code_challenge")) : authenticationRequest.getCodeChallenge(),

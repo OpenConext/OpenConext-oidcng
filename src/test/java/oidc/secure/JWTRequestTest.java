@@ -169,6 +169,7 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
                 "hint",
                 Collections.singletonList(new ACR("loa")),
                 claimsRequest,
+                "purpose",
                 signedJWT,
                 null,
                 CodeChallenge.compute(CodeChallengeMethod.S256, new CodeVerifier()),
