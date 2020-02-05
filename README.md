@@ -27,7 +27,7 @@ to bypass the redirect to EB.
 
 ### [Endpoints](#endpoint)
 
-Discovery Endpoint describing the OIDC supported options. 
+Discovery Endpoint describing the OIDC supported options.
 The content is from [https://github.com/OpenConext/OpenConext-deploy/blob/master/roles/oidcng/templates/openid-configuration.json.j2](https://github.com/OpenConext/OpenConext-deploy/blob/master/roles/oidcng/templates/openid-configuration.json.j2)
 ```
 https://oidcng.test2.surfconext.nl/oidc/.well-known/openid-configuration
@@ -37,7 +37,7 @@ The output is used in ansible to create the file [https://github.com/OpenConext/
 ```
 https://oidcng.test2.surfconext.nl/oidc/generate-secret-key-set
 ```
-The public certificate that RP's can use to validate the signed JWT. This endpoint is also configured in the `.well-known/openid-configuration` endpoint. 
+The public certificate that RP's can use to validate the signed JWT. This endpoint is also configured in the `.well-known/openid-configuration` endpoint.
 ```
 https://oidcng.test2.surfconext.nl/oidc/certs
 ```
@@ -57,7 +57,7 @@ curl -i  "http://localhost:8080/oidc/authorize?response_type=code&client_id=mock
 This will output the following:
 
 ```bash
-HTTP/1.1 302 
+HTTP/1.1 302
 X-Content-Type-Options: nosniff
 X-XSS-Protection: 1; mode=block
 Cache-Control: no-cache, no-store, max-age=0, must-revalidate
@@ -147,6 +147,40 @@ This will return all the information about the user. This endpoint is for Relayi
     "edu_person_affiliation"
   ],
   "updated_at": 1557919511
+}
+```
+### [cUrl OAuth2](#curl-oauth2-testing)
+The OIDC protocol also support the OAuth2 flows like client_credentials:
+```
+curl -u playground_client:secret -H 'Content-Type: application/x-www-form-urlencoded' -X POST -d 'grant_type=client_credentials' http://localhost:8080/oidc/token | jq
+```
+And the subsequent output:
+```json
+{
+  "access_token": "653c02ec-ad9e-4ae1-bb57-717ac907040c",
+  "token_type": "Bearer",
+  "refresh_token": "6e41e499-be8c-4be3-bc40-aa5279b0029a",
+  "expires_in": 3600
+}
+```
+Save the access_token in a variable:
+```
+export access_token=653c02ec-ad9e-4ae1-bb57-717ac907040c
+```
+And the call to the introspect endpoint:
+```
+curl -u resource-server-playground-client:secret -H "Content-Type: application/x-www-form-urlencoded" -X POST "http://localhost:8080/oidc/introspect?token=${access_token}" | jq .
+```
+And the output - note that there is no user-info, because no authentication has taken place because of the nature of client_credentials:
+```json
+{
+  "active": true,
+  "client_id": "playground_client",
+  "exp": 1580917538,
+  "iss": "https://org.openconext.oidc.ng",
+  "scope": "openid,groups",
+  "sub": "playground_client",
+  "token_type": "Bearer"
 }
 ```
 ### [client JWT](#client-jwt)
