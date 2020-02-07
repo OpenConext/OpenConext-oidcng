@@ -64,7 +64,7 @@ public class SecurityConfiguration {
         private String idpAlias;
         private String idpMetaDataUrl;
         private String idpNameId;
-        private Resource idpCertificatePath;
+        private Resource idpCertificateUrl;
         private Environment environment;
         private AppConfig appConfiguration;
         private ObjectMapper objectMapper;
@@ -82,7 +82,7 @@ public class SecurityConfiguration {
                             @Value("${idp.alias}") String idpAlias,
                             @Value("${idp.metadata_url}") String idpMetaDataUrl,
                             @Value("${idp.name_id}") String idpNameId,
-                            @Value("${idp.certificate_path}") Resource idpCertificatePath) {
+                            @Value("${idp.certificate_url}") Resource idpCertificateUrl) {
             super("oidc", beanConfig);
             this.appConfiguration = appConfig;
             this.environment = environment;
@@ -93,7 +93,7 @@ public class SecurityConfiguration {
             this.idpAlias = idpAlias;
             this.idpMetaDataUrl = idpMetaDataUrl;
             this.idpNameId = idpNameId;
-            this.idpCertificatePath = idpCertificatePath;
+            this.idpCertificateUrl = idpCertificateUrl;
         }
 
         @Override
@@ -105,7 +105,7 @@ public class SecurityConfiguration {
                     .setNameId(idpNameId)
                     .setMetadataTrustCheck(true)
                     .setAlias(idpAlias)
-                    .setVerificationKeys(Collections.singletonList(strip(read(idpCertificatePath))))
+                    .setVerificationKeys(Collections.singletonList(strip(read(idpCertificateUrl))))
                     .setMetadata(idpMetaDataUrl);
 
             SamlServiceProviderSecurityDsl samlServiceProviderSecurityDsl = http.apply(serviceProvider());

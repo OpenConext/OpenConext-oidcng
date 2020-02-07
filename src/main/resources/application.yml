@@ -38,7 +38,7 @@ idp:
   alias: engine-test
   metadata_url: https://engine.test2.surfconext.nl/authentication/idp/metadata
   name_id: https://engine.test2.surfconext.nl/authentication/idp/metadata
-  certificate_path: https://engine.test2.surfconext.nl/authentication/idp/certificate
+  certificate_url: https://engine.test2.surfconext.nl/authentication/idp/certificate
 
 spring:
   data:
