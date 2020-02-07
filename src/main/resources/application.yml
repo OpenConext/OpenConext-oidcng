@@ -34,6 +34,12 @@ certificate_path: classpath:/id_rsa.pub
 default_acr_value: http://test.surfconext.nl/assurance/loa1
 secure_cookie: false
 
+idp:
+  alias: engine-test
+  metadata_url: https://engine.test2.surfconext.nl/authentication/idp/metadata
+  name_id: https://engine.test2.surfconext.nl/authentication/idp/metadata
+  certificate_path: https://engine.test2.surfconext.nl/authentication/idp/certificate
+
 spring:
   data:
     mongodb:
@@ -57,12 +63,6 @@ spring:
         name-ids:
           - urn:oasis:names:tc:SAML:2.0:nameid-format:persistent
           - urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified
-        providers:
-          - alias: engine-test
-            metadata: https://engine.test.surfconext.nl/authentication/idp/metadata
-            link-text: EngineBlock test
-            name-id: https://engine.test.surfconext.nl/authentication/idp/metadata
-            assertion-consumer-service-index: 0
 
 manage:
   user: manage

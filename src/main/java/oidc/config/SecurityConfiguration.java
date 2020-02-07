@@ -38,7 +38,9 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.saml.key.SimpleKey;
 import org.springframework.security.saml.provider.config.RotatingKeys;
+import org.springframework.security.saml.provider.service.config.ExternalIdentityProviderConfiguration;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityConfiguration;
+import org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityDsl;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -46,6 +48,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.Collections;
 
 import static org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityDsl.serviceProvider;
 
@@ -58,6 +61,10 @@ public class SecurityConfiguration {
     @Order(1)
     public static class SamlSecurity extends SamlServiceProviderSecurityConfiguration {
 
+        private String idpAlias;
+        private String idpMetaDataUrl;
+        private String idpNameId;
+        private Resource idpCertificatePath;
         private Environment environment;
         private AppConfig appConfiguration;
         private ObjectMapper objectMapper;
@@ -71,7 +78,11 @@ public class SecurityConfiguration {
                             ObjectMapper objectMapper,
                             UserRepository userRepository,
                             @Value("${private_key_path}") Resource privateKeyPath,
-                            @Value("${certificate_path}") Resource certificatePath) {
+                            @Value("${certificate_path}") Resource certificatePath,
+                            @Value("${idp.alias}") String idpAlias,
+                            @Value("${idp.metadata_url}") String idpMetaDataUrl,
+                            @Value("${idp.name_id}") String idpNameId,
+                            @Value("${idp.certificate_path}") Resource idpCertificatePath) {
             super("oidc", beanConfig);
             this.appConfiguration = appConfig;
             this.environment = environment;
@@ -79,15 +90,29 @@ public class SecurityConfiguration {
             this.userRepository = userRepository;
             this.privateKeyPath = privateKeyPath;
             this.certificatePath = certificatePath;
+            this.idpAlias = idpAlias;
+            this.idpMetaDataUrl = idpMetaDataUrl;
+            this.idpNameId = idpNameId;
+            this.idpCertificatePath = idpCertificatePath;
         }
 
         @Override
         protected void configure(HttpSecurity http) throws Exception {
             super.configure(http);
             http.cors().configurationSource(new OidcCorsConfigurationSource()).configure(http);
-            http.apply(serviceProvider())
+            ExternalIdentityProviderConfiguration idp = new ExternalIdentityProviderConfiguration();
+            idp.setAssertionConsumerServiceIndex(0)
+                    .setNameId(idpNameId)
+                    .setMetadataTrustCheck(true)
+                    .setAlias(idpAlias)
+                    .setVerificationKeys(Collections.singletonList(strip(read(idpCertificatePath))))
+                    .setMetadata(idpMetaDataUrl);
+
+            SamlServiceProviderSecurityDsl samlServiceProviderSecurityDsl = http.apply(serviceProvider());
+            samlServiceProviderSecurityDsl
                     .configure(appConfiguration)
-                    .rotatingKeys(getKeys());
+                    .rotatingKeys(getKeys())
+                    .identityProvider(idp);
 
             if (environment.acceptsProfiles(Profiles.of("dev"))) {
                 http.addFilterBefore(new FakeSamlAuthenticationFilter(userRepository, objectMapper),
@@ -120,6 +145,13 @@ public class SecurityConfiguration {
         private String read(Resource resource) throws IOException {
             LOG.info("Reading resource: " + resource.getFilename());
             return IOUtils.toString(resource.getInputStream(), Charset.defaultCharset());
+        }
+
+        private String strip(String certificate) {
+            return certificate
+                    .replaceAll("-----BEGIN CERTIFICATE-----", "")
+                    .replaceAll("-----END CERTIFICATE-----", "")
+                    .replaceAll("[\n\t\r ]", "");
         }
 
         private String[] generateKeys() throws NoSuchAlgorithmException {
