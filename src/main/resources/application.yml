@@ -36,8 +36,8 @@ secure_cookie: false
 
 idp:
   alias: engine-test
-#  metadata_url: https://engine.test2.surfconext.nl/authentication/idp/metadata
-  metadata_url: https://engine.test2.surfconext.nl/authentication/proxy/idps-metadata
+  # In order to support WAYF scoping with login_hint we need all the IdP's including EB
+  metadata_urls: https://engine.test2.surfconext.nl/authentication/proxy/idps-metadata, https://engine.test2.surfconext.nl/authentication/idp/metadata
   name_id: https://engine.test2.surfconext.nl/authentication/idp/metadata
   certificate_url: https://engine.test2.surfconext.nl/authentication/idp/certificate
 

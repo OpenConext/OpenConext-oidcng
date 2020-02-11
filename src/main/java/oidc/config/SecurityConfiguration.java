@@ -49,6 +49,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.stream.Stream;
 
 import static org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityDsl.serviceProvider;
 
@@ -62,7 +63,7 @@ public class SecurityConfiguration {
     public static class SamlSecurity extends SamlServiceProviderSecurityConfiguration {
 
         private String idpAlias;
-        private String idpMetaDataUrl;
+        private String idpMetaDataUrls;
         private String idpNameId;
         private Resource idpCertificateUrl;
         private Environment environment;
@@ -80,7 +81,7 @@ public class SecurityConfiguration {
                             @Value("${private_key_path}") Resource privateKeyPath,
                             @Value("${certificate_path}") Resource certificatePath,
                             @Value("${idp.alias}") String idpAlias,
-                            @Value("${idp.metadata_url}") String idpMetaDataUrl,
+                            @Value("${idp.metadata_urls}") String idpMetaDataUrls,
                             @Value("${idp.name_id}") String idpNameId,
                             @Value("${idp.certificate_url}") Resource idpCertificateUrl) {
             super("oidc", beanConfig);
@@ -91,7 +92,7 @@ public class SecurityConfiguration {
             this.privateKeyPath = privateKeyPath;
             this.certificatePath = certificatePath;
             this.idpAlias = idpAlias;
-            this.idpMetaDataUrl = idpMetaDataUrl;
+            this.idpMetaDataUrls = idpMetaDataUrls;
             this.idpNameId = idpNameId;
             this.idpCertificateUrl = idpCertificateUrl;
         }
@@ -100,19 +101,20 @@ public class SecurityConfiguration {
         protected void configure(HttpSecurity http) throws Exception {
             super.configure(http);
             http.cors().configurationSource(new OidcCorsConfigurationSource()).configure(http);
-            ExternalIdentityProviderConfiguration idp = new ExternalIdentityProviderConfiguration();
-            idp.setAssertionConsumerServiceIndex(0)
-                    .setNameId(idpNameId)
-                    .setMetadataTrustCheck(true)
-                    .setAlias(idpAlias)
-                    .setVerificationKeys(Collections.singletonList(strip(read(idpCertificateUrl))))
-                    .setMetadata(idpMetaDataUrl);
-
             SamlServiceProviderSecurityDsl samlServiceProviderSecurityDsl = http.apply(serviceProvider());
             samlServiceProviderSecurityDsl
                     .configure(appConfiguration)
-                    .rotatingKeys(getKeys())
-                    .identityProvider(idp);
+                    .rotatingKeys(getKeys());
+            Stream.of(this.idpMetaDataUrls.split(",")).map(String::trim).forEach(idpMetaDataUrl -> {
+                ExternalIdentityProviderConfiguration idp = new ExternalIdentityProviderConfiguration();
+                idp.setAssertionConsumerServiceIndex(0)
+                        .setNameId(idpNameId)
+                        .setMetadataTrustCheck(true)
+                        .setAlias(idpAlias)
+                        .setVerificationKeys(Collections.singletonList(strip(read(idpCertificateUrl))))
+                        .setMetadata(idpMetaDataUrl);
+                samlServiceProviderSecurityDsl.identityProvider(idp);
+            });
 
             if (environment.acceptsProfiles(Profiles.of("dev"))) {
                 http.addFilterBefore(new FakeSamlAuthenticationFilter(userRepository, objectMapper),
@@ -142,9 +144,13 @@ public class SecurityConfiguration {
                     );
         }
 
-        private String read(Resource resource) throws IOException {
+        private String read(Resource resource) {
             LOG.info("Reading resource: " + resource.getFilename());
-            return IOUtils.toString(resource.getInputStream(), Charset.defaultCharset());
+            try {
+                return IOUtils.toString(resource.getInputStream(), Charset.defaultCharset());
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e);
+            }
         }
 
         private String strip(String certificate) {

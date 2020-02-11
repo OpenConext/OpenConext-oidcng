@@ -129,14 +129,9 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             authenticationRequest = enhanceAuthenticationRequest(provider, request, authenticationRequest);
             saveAuthenticationRequestUrl(request, authenticationRequest);
 
-            //TODO - based on prompt? This is according spec an enum with no room for a IdP hash
-            if (false) {
-                String scopedSSOLocation = authenticationRequest.getDestination().getLocation()
-                        //hash for mock-idp
-                        .concat("/234353ee1e96b88f9fa5f488a235982b");
-                scopedSSOLocation = "https://engine.test2.surfconext.nl/authentication/idp/single-sign-on/234353ee1e96b88f9fa5f488a235982b";
-                authenticationRequest.getDestination().setLocation(scopedSSOLocation);
-            }
+            String loginHint = request.getParameter("login_hint");
+            String scopedSSOLocation = this.scopedSSOLocation(loginHint, authenticationRequest.getDestination().getLocation());
+            authenticationRequest.getDestination().setLocation(scopedSSOLocation);
 
             sendAuthenticationRequest(
                     provider,
@@ -148,6 +143,16 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
         } else {
             filterChain.doFilter(request, response);
         }
+    }
+
+    /*
+     * We use the metadata with all proxy SSO location hashes. In this metadata the default - e.g. engine - is
+     * not present. Luckily Spring Security has a bug / feature that is takes the first SingleSignOnService
+     * element is finds. This is however the wrong one (with a hash) if we don't use the loginHint
+     */
+    protected String scopedSSOLocation(String loginHint, String ssoLocation) {
+        String replacementPart = StringUtils.hasText(loginHint) ? "/" + loginHint : "";
+        return ssoLocation.replaceAll("idp/single-sign-on(.*)", "idp/single-sign-on" + replacementPart);
     }
 
     private void saveAuthenticationRequestUrl(HttpServletRequest request, AuthenticationRequest authenticationRequest) {
