@@ -128,6 +128,16 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             AuthenticationRequest authenticationRequest = provider.authenticationRequest(idp);
             authenticationRequest = enhanceAuthenticationRequest(provider, request, authenticationRequest);
             saveAuthenticationRequestUrl(request, authenticationRequest);
+
+            //TODO - based on prompt? This is according spec an enum with no room for a IdP hash
+            if (false) {
+                String scopedSSOLocation = authenticationRequest.getDestination().getLocation()
+                        //hash for mock-idp
+                        .concat("/234353ee1e96b88f9fa5f488a235982b");
+                scopedSSOLocation = "https://engine.test2.surfconext.nl/authentication/idp/single-sign-on/234353ee1e96b88f9fa5f488a235982b";
+                authenticationRequest.getDestination().setLocation(scopedSSOLocation);
+            }
+
             sendAuthenticationRequest(
                     provider,
                     request,
