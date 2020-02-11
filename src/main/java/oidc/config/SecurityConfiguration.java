@@ -49,6 +49,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityDsl.serviceProvider;
@@ -63,7 +64,7 @@ public class SecurityConfiguration {
     public static class SamlSecurity extends SamlServiceProviderSecurityConfiguration {
 
         private String idpAlias;
-        private String idpMetaDataUrls;
+        private String[] idpMetaDataUrls;
         private String idpNameId;
         private Resource idpCertificateUrl;
         private Environment environment;
@@ -81,7 +82,7 @@ public class SecurityConfiguration {
                             @Value("${private_key_path}") Resource privateKeyPath,
                             @Value("${certificate_path}") Resource certificatePath,
                             @Value("${idp.alias}") String idpAlias,
-                            @Value("${idp.metadata_urls}") String idpMetaDataUrls,
+                            @Value("${idp.metadata_urls}") String[] idpMetaDataUrls,
                             @Value("${idp.name_id}") String idpNameId,
                             @Value("${idp.certificate_url}") Resource idpCertificateUrl) {
             super("oidc", beanConfig);
@@ -105,7 +106,7 @@ public class SecurityConfiguration {
             samlServiceProviderSecurityDsl
                     .configure(appConfiguration)
                     .rotatingKeys(getKeys());
-            Stream.of(this.idpMetaDataUrls.split(",")).map(String::trim).forEach(idpMetaDataUrl -> {
+            Stream.of(this.idpMetaDataUrls).map(String::trim).forEach(idpMetaDataUrl -> {
                 ExternalIdentityProviderConfiguration idp = new ExternalIdentityProviderConfiguration();
                 idp.setAssertionConsumerServiceIndex(0)
                         .setNameId(idpNameId)
