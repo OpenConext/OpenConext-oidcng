@@ -135,7 +135,6 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
             }
             if (responseMode.equals("fragment")) {
                 String fragment = UriComponentsBuilder.fromUriString(location).build().getFragment();
-
                 return fragmentToMap(fragment);
             }
             if (responseMode.equals("form_post")) {

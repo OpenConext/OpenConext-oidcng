@@ -34,15 +34,22 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticationRequestFilter {
+public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticationRequestFilter implements URLCoding{
 
     private PortResolverImpl portResolver;
     private AuthenticationRequestRepository authenticationRequestRepository;
@@ -71,7 +78,7 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
         String clientId = getRelayState(provider, request);
         if (StringUtils.hasText(clientId)) {
             String entityId = ServiceProviderTranslation.translateClientId(clientId);
-            authenticationRequest.setScoping(new Scoping(null, Collections.singletonList(entityId), 1));
+            authenticationRequest.setScoping(new Scoping(new ArrayList<>(), Collections.singletonList(entityId), 1));
         }
         String prompt = AuthorizationEndpoint.validatePrompt(request);
 
@@ -81,7 +88,6 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
          * Based on the ongoing discussion with the certification committee
          * authenticationRequest.setPassive("none".equals(prompt));
          */
-
         if (!authenticationRequest.isForceAuth() && StringUtils.hasText(request.getParameter("max_age"))) {
             authenticationRequest.setForceAuth(true);
         }
@@ -112,7 +118,27 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
                 throw new RuntimeException(e);
             }
         }
+        String loginHint = request.getParameter("login_hint");
+        if (StringUtils.hasText(loginHint)) {
+            Scoping scoping = authenticationRequest.getScoping();
+            if (scoping == null) {
+                authenticationRequest.setScoping(new Scoping(new ArrayList<>(), Collections.emptyList(), 0));
+            }
+            List<String> idpList = authenticationRequest.getScoping().getIdpList();
+            loginHint = decode(loginHint);
+            Stream.of(loginHint.split(",")).map(String::trim).filter(this::isValidURI).forEach(idpEntityId -> idpList.add(idpEntityId.trim()));
+        }
         return authenticationRequest;
+    }
+
+    private boolean isValidURI(String uri) {
+        try {
+            new URI(uri);
+            return true;
+        } catch (URISyntaxException e) {
+            return false;
+        }
+
     }
 
     @Override
@@ -129,10 +155,6 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             authenticationRequest = enhanceAuthenticationRequest(provider, request, authenticationRequest);
             saveAuthenticationRequestUrl(request, authenticationRequest);
 
-            String loginHint = request.getParameter("login_hint");
-            String scopedSSOLocation = this.scopedSSOLocation(loginHint, authenticationRequest.getDestination().getLocation());
-            authenticationRequest.getDestination().setLocation(scopedSSOLocation);
-
             sendAuthenticationRequest(
                     provider,
                     request,
@@ -143,16 +165,6 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
         } else {
             filterChain.doFilter(request, response);
         }
-    }
-
-    /*
-     * We use the metadata with all proxy SSO location hashes. In this metadata the default - e.g. engine - is
-     * not present. Luckily Spring Security has a bug / feature that is takes the first SingleSignOnService
-     * element is finds. This is however the wrong one (with a hash) if we don't use the loginHint
-     */
-    protected String scopedSSOLocation(String loginHint, String ssoLocation) {
-        String replacementPart = StringUtils.hasText(loginHint) ? "/" + loginHint : "";
-        return ssoLocation.replaceAll("idp/single-sign-on(.*)", "idp/single-sign-on" + replacementPart);
     }
 
     private void saveAuthenticationRequestUrl(HttpServletRequest request, AuthenticationRequest authenticationRequest) {

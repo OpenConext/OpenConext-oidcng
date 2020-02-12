@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
-public class AuthorizationEndpointStaticTest {
+public class AuthorizationEndpointUnitTest {
 
     @Test
     public void validateGrantType() throws IOException, ParseException {
