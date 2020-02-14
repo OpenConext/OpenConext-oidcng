@@ -39,7 +39,7 @@ idp:
   # comma separated string of metadata url's
   metadata_urls: https://engine.test2.surfconext.nl/authentication/idp/metadata
   name_id: https://engine.test2.surfconext.nl/authentication/idp/metadata
-  certificate_url: https://engine.test2.surfconext.nl/authentication/idp/certificate
+  metadata_signing_certificate_path: classpath:/metadata-signing-certificate.pem
 
 spring:
   data:

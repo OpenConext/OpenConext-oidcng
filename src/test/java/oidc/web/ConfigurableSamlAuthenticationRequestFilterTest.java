@@ -2,7 +2,6 @@ package oidc.web;
 
 import com.nimbusds.jwt.SignedJWT;
 import io.restassured.response.Response;
-import io.restassured.response.ResponseBody;
 import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
 import oidc.model.OpenIDClient;
@@ -23,7 +22,6 @@ import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.text.ParseException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +38,7 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
         OpenIDClient client = openIDClient("mock-sp");
         String keyID = getCertificateKeyID(client);
         String requestSignedJWT = signedJWT(client.getClientId(), keyID, client.getRedirectUrls().get(0)).serialize();
-        doFilterInternal("mock-sp", "login", null, requestSignedJWT, true, "http://localhost:8091/redirect", "code", "query");
+        doFilterInternal("mock-sp", "login", null, requestSignedJWT, true, "http://localhost:8091/redirect", "code", "query", null);
     }
 
     @Test
@@ -48,12 +46,12 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
         OpenIDClient client = openIDClient("mock-sp");
         String keyID = getCertificateKeyID(client);
         String requestSignedJWT = signedJWT(client.getClientId(), keyID, client.getRedirectUrls().get(0)).serialize();
-        doFilterInternal("mock-sp", null, "loa", requestSignedJWT, true, "http://localhost:8091/redirect", "code", "query");
+        doFilterInternal("mock-sp", null, "loa", requestSignedJWT, true, "http://localhost:8091/redirect", "code", "query", null);
     }
 
     @Test
     public void filterInternal() throws Exception {
-        doFilterInternal("mock-sp", null, null, null, false, "http://localhost:8091/redirect", "code", "query");
+        doFilterInternal("mock-sp", null, null, null, false, "http://localhost:8091/redirect", "code", "query", null);
     }
 
     @Test
@@ -86,15 +84,22 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
                 "http://localhost:8091/redirect", "token", "form_post", "mock-rp");
     }
 
+    @Test
+    public void filterInternalWithLoginHint() throws XPathExpressionException, ParserConfigurationException, SAXException, ParseException, IOException {
+        AuthenticationRequest authenticationRequest = (AuthenticationRequest) doFilterInternal("mock-sp", null, null, null,
+                false, "http://localhost:8091/redirect", "code", "query", "entityID1, entityID2");
+        assertEquals(2, authenticationRequest.getScoping().getIdpList().size());
+    }
+
     private void filterInternalInvalidRequest(String prompt, String expectedMsg, String redirectUri,
                                               String responseType, String responseMode, String clientId) throws Exception {
-        Map map = doFilterInternal(clientId, prompt, null, null, false, redirectUri, responseType, responseMode);
+        Map map = (Map) doFilterInternal(clientId, prompt, null, null, false, redirectUri, responseType, responseMode, null);
         assertEquals(expectedMsg, map.get("error"));
         assertEquals("example", map.get("state"));
     }
 
-    private Map doFilterInternal(String clientId, String prompt, String acrValue, String requestSignedJWT,
-                                 boolean isForceAuth, String redirectUri, String responseType, String responseMode)
+    private Object doFilterInternal(String clientId, String prompt, String acrValue, String requestSignedJWT,
+                                    boolean isForceAuth, String redirectUri, String responseType, String responseMode, String loginHint)
             throws IOException, ParseException, ParserConfigurationException, SAXException, XPathExpressionException {
         RequestSpecification when = given().redirects().follow(false).when();
         if (StringUtils.hasText(clientId)) {
@@ -105,6 +110,9 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
         }
         if (StringUtils.hasText(acrValue)) {
             when.queryParam("acr_values", acrValue);
+        }
+        if (StringUtils.hasText(loginHint)) {
+            when.queryParam("login_hint", loginHint);
         }
         when.queryParam("response_type", responseType)
                 .queryParam("scope", "openid")
@@ -138,7 +146,7 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
                 return fragmentToMap(fragment);
             }
             if (responseMode.equals("form_post")) {
-                ResponseBody body = response.getBody();
+                return response.getBody().as(Map.class);
             }
 
         }
@@ -159,6 +167,6 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
             assertEquals(acrValues, loas);
         }
 
-        return Collections.emptyMap();
+        return authenticationRequest;
     }
 }
