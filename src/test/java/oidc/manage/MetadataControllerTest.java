@@ -52,7 +52,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void rollback() throws IOException {
+    public void rollback() {
         List<Map<String, Object>> serviceProviders = new ArrayList<>();
         doPostConnections(serviceProviders, 400, true);
 
