@@ -5,12 +5,12 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.2.4.RELEASE</version>
+        <version>2.2.5.RELEASE</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>org.openconext</groupId>
     <artifactId>oidcng</artifactId>
-    <version>1.0.8</version>
+    <version>1.0.9-SNAPSHOT</version>
     <name>oidcng</name>
 
     <properties>
@@ -21,7 +21,7 @@
             <dependency>
                 <groupId>org.springframework.session</groupId>
                 <artifactId>spring-session-bom</artifactId>
-                <version>Bean-RELEASE</version>
+                <version>Corn-SR2</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
