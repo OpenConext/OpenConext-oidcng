@@ -15,13 +15,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathExpressionException;
-import java.io.IOException;
 import java.net.URLDecoder;
-import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +33,9 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
         OpenIDClient client = openIDClient("mock-sp");
         String keyID = getCertificateKeyID(client);
         String requestSignedJWT = signedJWT(client.getClientId(), keyID, client.getRedirectUrls().get(0)).serialize();
-        doFilterInternal("mock-sp", "login", null, requestSignedJWT, true, "http://localhost:8091/redirect", "code", "query", null);
+        AuthenticationRequest authenticationRequest
+                = (AuthenticationRequest) doFilterInternal("mock-sp", "login", null, requestSignedJWT, true, "http://localhost:8091/redirect", "code", "query", null, true);
+        assertEquals(true, authenticationRequest.isForceAuth());
     }
 
     @Test
@@ -46,61 +43,65 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
         OpenIDClient client = openIDClient("mock-sp");
         String keyID = getCertificateKeyID(client);
         String requestSignedJWT = signedJWT(client.getClientId(), keyID, client.getRedirectUrls().get(0)).serialize();
-        doFilterInternal("mock-sp", null, "loa", requestSignedJWT, true, "http://localhost:8091/redirect", "code", "query", null);
+        AuthenticationRequest authenticationRequest
+                = (AuthenticationRequest) doFilterInternal("mock-sp", null, "loa", requestSignedJWT, true, "http://localhost:8091/redirect", "code", "query", null, true);
+        assertEquals("loa1,loa2,loa3", authenticationRequest.getAuthenticationContextClassReferences().stream().map(cr -> cr.getValue()).collect(Collectors.joining(",")));
     }
 
     @Test
     public void filterInternal() throws Exception {
-        doFilterInternal("mock-sp", null, null, null, false, "http://localhost:8091/redirect", "code", "query", null);
+        AuthenticationRequest authenticationRequest
+                = (AuthenticationRequest) doFilterInternal("mock-sp", null, "loa", null, false, "http://localhost:8091/redirect", "code", "query", null, true);
+        assertEquals("loa", authenticationRequest.getAuthenticationContextClassReferences().stream().map(cr -> cr.getValue()).collect(Collectors.joining(",")));
     }
 
     @Test
-    public void filterInternalPromptNone() throws Exception {
+    public void filterInternalWithLoginHint() throws Exception {
+        AuthenticationRequest authenticationRequest = (AuthenticationRequest) doFilterInternal("mock-sp", null, null, null,
+                false, "http://localhost:8091/redirect", "code", "query", "entityID1, entityID2", true);
+        assertEquals(2, authenticationRequest.getScoping().getIdpList().size());
+    }
+
+    @Test
+    public void filterInternalPromptNoneError() throws Exception {
         filterInternalInvalidRequest("none", "interaction_required",
                 "http://localhost:8091/redirect", "code", "query", "mock-sp");
     }
 
     @Test
-    public void filterInternalPromptConsent() throws Exception {
+    public void filterInternalPromptConsentError() throws Exception {
         filterInternalInvalidRequest("consent", "consent_required",
                 "http://localhost:8091/redirect", "code", "query", "mock-sp");
     }
 
     @Test
-    public void filterInternalPromptSelectAccount() throws Exception {
+    public void filterInternalPromptSelectAccountError() throws Exception {
         filterInternalInvalidRequest("select_account", "account_selection_required",
                 "http://localhost:8091/redirect", "code", "query", "mock-sp");
     }
 
     @Test
-    public void filterInternalInvalidGrantType() throws Exception {
+    public void filterInternalInvalidGrantTypeError() throws Exception {
         filterInternalInvalidRequest(null, "unauthorized_client",
                 "http://localhost:8091/redirect", "token", "fragment", "mock-rp");
     }
 
     @Test
-    public void filterInternalInvalidGrantTypeFormPost() throws Exception {
+    public void filterInternalInvalidGrantTypeFormPostError() throws Exception {
         filterInternalInvalidRequest(null, "unauthorized_client",
                 "http://localhost:8091/redirect", "token", "form_post", "mock-rp");
     }
 
-    @Test
-    public void filterInternalWithLoginHint() throws XPathExpressionException, ParserConfigurationException, SAXException, ParseException, IOException {
-        AuthenticationRequest authenticationRequest = (AuthenticationRequest) doFilterInternal("mock-sp", null, null, null,
-                false, "http://localhost:8091/redirect", "code", "query", "entityID1, entityID2");
-        assertEquals(2, authenticationRequest.getScoping().getIdpList().size());
-    }
-
     private void filterInternalInvalidRequest(String prompt, String expectedMsg, String redirectUri,
                                               String responseType, String responseMode, String clientId) throws Exception {
-        Map map = (Map) doFilterInternal(clientId, prompt, null, null, false, redirectUri, responseType, responseMode, null);
+        Map map = (Map) doFilterInternal(clientId, prompt, null, null, false, redirectUri, responseType, responseMode, null, false);
         assertEquals(expectedMsg, map.get("error"));
         assertEquals("example", map.get("state"));
     }
 
     private Object doFilterInternal(String clientId, String prompt, String acrValue, String requestSignedJWT,
-                                    boolean isForceAuth, String redirectUri, String responseType, String responseMode, String loginHint)
-            throws IOException, ParseException, ParserConfigurationException, SAXException, XPathExpressionException {
+                                    boolean isForceAuth, String redirectUri, String responseType, String responseMode, String loginHint, boolean expectsAuthorizationCode)
+            throws Exception {
         RequestSpecification when = given().redirects().follow(false).when();
         if (StringUtils.hasText(clientId)) {
             when.queryParam("client_id", clientId);
@@ -133,22 +134,33 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
                 Map<String, String> form = new HashMap<>();
                 form.put("state", nodeList.item(0).getAttributes().getNamedItem("value").getNodeValue());
                 form.put("error", nodeList.item(1).getAttributes().getNamedItem("value").getNodeValue());
+                if (expectsAuthorizationCode) {
+                    throw new IllegalArgumentException("Expected AuthorizationCode, got " + form);
+                }
                 return form;
             }
-            return response.getBody().as(Map.class);
+            Map res = response.getBody().as(Map.class);
+            if (expectsAuthorizationCode) {
+                throw new IllegalArgumentException("Expected AuthorizationCode, got " + res);
+            }
+            return res;
         }
         if (location.contains("error")) {
+            Map res = null;
             if (responseMode.equals("query")) {
-                return UriComponentsBuilder.fromUriString(location).build().getQueryParams().toSingleValueMap();
+                res = UriComponentsBuilder.fromUriString(location).build().getQueryParams().toSingleValueMap();
             }
             if (responseMode.equals("fragment")) {
                 String fragment = UriComponentsBuilder.fromUriString(location).build().getFragment();
-                return fragmentToMap(fragment);
+                res = fragmentToMap(fragment);
             }
             if (responseMode.equals("form_post")) {
-                return response.getBody().as(Map.class);
+                res = response.getBody().as(Map.class);
             }
-
+            if (expectsAuthorizationCode) {
+                throw new IllegalArgumentException("Expected AuthorizationCode, got " + res);
+            }
+            return res;
         }
         MultiValueMap<String, String> queryParams = UriComponentsBuilder.fromUriString(location).build().getQueryParams();
 
