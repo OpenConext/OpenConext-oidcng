@@ -18,6 +18,7 @@
 package oidc.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import oidc.crypto.KeyGenerator;
 import oidc.repository.UserRepository;
 import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
 import oidc.web.FakeSamlAuthenticationFilter;
@@ -123,14 +124,15 @@ public class SecurityConfiguration {
             }
         }
 
-        private RotatingKeys getKeys() throws IOException, NoSuchAlgorithmException {
+        private RotatingKeys getKeys() throws Exception {
             String privateKey;
             String certificate;
             if (this.privateKeyPath.exists() && this.certificatePath.exists()) {
                 privateKey = read(this.privateKeyPath);
                 certificate = read(this.certificatePath);
             } else {
-                String[] keys = generateKeys();
+                LOG.info("Generating public / private key pair for SAML trusted proxy");
+                String[] keys = new KeyGenerator().generateKeys();
                 privateKey = keys[0];
                 certificate = keys[1];
             }
@@ -159,24 +161,6 @@ public class SecurityConfiguration {
                     .replaceAll("-----BEGIN CERTIFICATE-----", "")
                     .replaceAll("-----END CERTIFICATE-----", "")
                     .replaceAll("[\n\t\r ]", "");
-        }
-
-        private String[] generateKeys() throws NoSuchAlgorithmException {
-            LOG.info("Generating public / private key pair for SAML trusted proxy");
-            Base64.Encoder encoder = Base64.getEncoder();
-            KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-            kpg.initialize(2048);
-            KeyPair kp = kpg.generateKeyPair();
-
-            String privateKey = "-----BEGIN RSA PRIVATE KEY-----\n";
-            privateKey += encoder.encodeToString(kp.getPrivate().getEncoded());
-            privateKey += "\n-----END RSA PRIVATE KEY-----\n";
-
-            String publicKey = "-----BEGIN RSA PUBLIC KEY-----\n";
-            publicKey += encoder.encodeToString(kp.getPublic().getEncoded());
-            publicKey += "\n-----END RSA PUBLIC KEY-----\n";
-
-            return new String[]{privateKey, publicKey};
         }
 
     }
