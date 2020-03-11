@@ -52,17 +52,19 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         boolean status = result.containsKey("status") && !result.get("status").equals(999) && !result.get("status").equals(500);
         HttpStatus statusCode = status ? HttpStatus.resolve((Integer) result.get("status")) : BAD_REQUEST;
         if (error != null) {
-            LOG.error("Exception in /error: ", error);
+            String message = error.getMessage();
+            // Not be considered an error that we want to report
+            if (!"AccessToken not found".equals(message)) {
+                LOG.error("Error has occurred", error);
+            }
 
-            result.put("details", error.getMessage());
+            result.put("details",message);
             ResponseStatus annotation = AnnotationUtils.getAnnotation(error.getClass(), ResponseStatus.class);
             statusCode = annotation != null ? annotation.value() : statusCode;
 
             if (error instanceof EmptyResultDataAccessException && result.getOrDefault("path", "/oidc/token").toString().contains("token")) {
                 return new ResponseEntity<>(Collections.singletonMap("error", "invalid_grant"), BAD_REQUEST);
             }
-
-            LOG.error("Error has occurred", error);
         }
         result.put("error", errorCode(error));
         result.put("status", statusCode.value());

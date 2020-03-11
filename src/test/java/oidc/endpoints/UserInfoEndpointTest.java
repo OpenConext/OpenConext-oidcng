@@ -1,13 +1,17 @@
 package oidc.endpoints;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.nimbusds.oauth2.sdk.GrantType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
+import oidc.web.ErrorController;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
@@ -42,6 +46,12 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
 
     @Test
     public void userInfoClientCredentials() throws IOException {
+        Logger errorLogger = (Logger) LoggerFactory.getLogger(ErrorController.class);
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+        listAppender.start();
+
+        errorLogger.addAppender(listAppender);
+
         String token = getClientCredentialsAccessToken();
 
         Map<String, Object> body = given()
@@ -51,7 +61,32 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
                 .post("oidc/userinfo")
                 .as(mapTypeRef);
         assertEquals("UserEndpoint not allowed for Client Credentials", body.get("message"));
+
+        assertEquals(1, listAppender.list.size());
     }
+
+    @Test
+    public void userInfoAccessTokenNotFound() {
+        Logger errorLogger = (Logger) LoggerFactory.getLogger(ErrorController.class);
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+        listAppender.start();
+
+        errorLogger.addAppender(listAppender);
+
+        Response response = given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .queryParams("access_token", "bogus").get("oidc/userinfo");
+
+        int status = response.statusCode();
+        assertEquals(400, status);
+
+        Map map = response.body().as(Map.class);
+        assertEquals("AccessToken not found", map.get("error"));
+
+        assertEquals(0, listAppender.list.size());
+    }
+
 
     private void userInfo(String method) throws IOException {
         String accessToken = getAccessToken();
