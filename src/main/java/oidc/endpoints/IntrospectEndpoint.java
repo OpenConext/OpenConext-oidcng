@@ -15,6 +15,7 @@ import oidc.repository.OpenIDClientRepository;
 import oidc.secure.TokenGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,6 +26,7 @@ import java.time.Clock;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
@@ -45,7 +47,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
     }
 
     @PostMapping(value = {"oidc/introspect"}, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
-    public Map<String, Object> introspect(HttpServletRequest request) throws ParseException, IOException {
+    public ResponseEntity<Map<String, Object>> introspect(HttpServletRequest request) throws ParseException, IOException {
         HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
         TokenIntrospectionRequest tokenIntrospectionRequest = TokenIntrospectionRequest.parse(httpRequest);
         ClientAuthentication clientAuthentication = tokenIntrospectionRequest.getClientAuthentication();
@@ -64,9 +66,13 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
             throw new BadCredentialsException("Requires ResourceServer");
         }
 
-        AccessToken accessToken = accessTokenRepository.findByValue(accessTokenValue);
+        Optional<AccessToken> optionalAccessToken = accessTokenRepository.findOptionalAccessTokenByValue(accessTokenValue);
+        if (!optionalAccessToken.isPresent()) {
+            return ResponseEntity.ok(Collections.singletonMap("active", false));
+        }
+        AccessToken accessToken = optionalAccessToken.get();
         if (accessToken.isExpired(Clock.systemDefaultZone())) {
-            return Collections.singletonMap("active", false);
+            return ResponseEntity.ok(Collections.singletonMap("active", false));
         }
         OpenIDClient openIDClient = openIDClientRepository.findByClientId(accessToken.getClientId());
         if (!openIDClient.getAllowedResourceServers().contains(resourceServer.getClientId())) {
@@ -96,7 +102,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
         result.put("iss", issuer);
         result.put("token_type", "Bearer");
 
-        return sortMap(result);
+        return ResponseEntity.ok(sortMap(result));
     }
 
 }

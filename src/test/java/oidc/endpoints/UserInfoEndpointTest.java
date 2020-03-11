@@ -41,7 +41,8 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
                 .formParam("access_token", token)
                 .post("oidc/userinfo")
                 .as(mapTypeRef);
-        assertEquals("Access token expired", body.get("message"));
+        assertEquals("invalid_token", body.get("error"));
+        assertEquals("Access Token expired", body.get("error_description"));
     }
 
     @Test
@@ -79,10 +80,11 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
                 .queryParams("access_token", "bogus").get("oidc/userinfo");
 
         int status = response.statusCode();
-        assertEquals(400, status);
+        assertEquals(401, status);
 
         Map map = response.body().as(Map.class);
-        assertEquals("AccessToken not found", map.get("error"));
+        assertEquals("invalid_token", map.get("error"));
+        assertEquals("Access Token not found", map.get("error_description"));
 
         assertEquals(0, listAppender.list.size());
     }

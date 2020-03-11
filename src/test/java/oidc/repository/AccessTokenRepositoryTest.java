@@ -20,11 +20,6 @@ public class AccessTokenRepositoryTest extends AbstractIntegrationTest implement
     @Autowired
     private AccessTokenRepository accessTokenRepository;
 
-    @Test(expected = EmptyResultDataAccessException.class)
-    public void findByValue() {
-        accessTokenRepository.findByValue("nope");
-    }
-
     @Test
     public void findByValueOptional() {
         assertEquals(false, accessTokenRepository.findOptionalAccessTokenByValue("nope").isPresent());
@@ -35,7 +30,7 @@ public class AccessTokenRepositoryTest extends AbstractIntegrationTest implement
         String value = RandomStringUtils.random(3200, true, true);
         accessTokenRepository.insert(accessToken(value, new Date()));
 
-        AccessToken accessToken = accessTokenRepository.findByValue(value);
+        AccessToken accessToken = accessTokenRepository.findOptionalAccessTokenByValue(value).get();
         assertEquals(value, ReflectionTestUtils.getField(accessToken, "innerValue"));
 
         assertEquals(true, accessTokenRepository.findOptionalAccessTokenByValue(value).isPresent());

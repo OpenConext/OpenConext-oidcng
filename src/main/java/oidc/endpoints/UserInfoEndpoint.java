@@ -5,12 +5,13 @@ import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.openid.connect.sdk.UserInfoRequest;
 import oidc.exceptions.InvalidGrantException;
-import oidc.exceptions.UnauthorizedException;
 import oidc.model.AccessToken;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.secure.TokenGenerator;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,7 +19,10 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.Clock;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 public class UserInfoEndpoint implements OrderedMap {
@@ -32,24 +36,28 @@ public class UserInfoEndpoint implements OrderedMap {
     }
 
     @GetMapping("oidc/userinfo")
-    public Map<String, Object> getUserInfo(HttpServletRequest request) throws IOException, ParseException {
+    public ResponseEntity<Map<String, Object>> getUserInfo(HttpServletRequest request) throws IOException, ParseException {
         return userInfo(request);
     }
 
     @PostMapping(value = {"oidc/userinfo"}, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
-    public Map<String, Object> postUserInfo(HttpServletRequest request) throws ParseException, IOException {
+    public ResponseEntity<Map<String, Object>> postUserInfo(HttpServletRequest request) throws ParseException, IOException {
         return userInfo(request);
     }
 
-    private Map<String, Object> userInfo(HttpServletRequest request) throws ParseException, IOException {
+    private ResponseEntity<Map<String, Object>> userInfo(HttpServletRequest request) throws ParseException, IOException {
         HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
         UserInfoRequest userInfoRequest = UserInfoRequest.parse(httpRequest);
 
         String accessTokenValue = userInfoRequest.getAccessToken().getValue();
-        AccessToken accessToken = accessTokenRepository.findByValue(accessTokenValue);
 
+        Optional<AccessToken> optionalAccessToken = accessTokenRepository.findOptionalAccessTokenByValue(accessTokenValue);
+        if (!optionalAccessToken.isPresent()) {
+            return errorResponse("Access Token not found");
+        }
+        AccessToken accessToken = optionalAccessToken.get();
         if (accessToken.isExpired(Clock.systemDefaultZone())) {
-            throw new UnauthorizedException("Access token expired");
+            return errorResponse("Access Token expired");
         }
         if (accessToken.isClientCredentials()) {
             throw new InvalidGrantException("UserEndpoint not allowed for Client Credentials");
@@ -58,6 +66,13 @@ public class UserInfoEndpoint implements OrderedMap {
         Map<String, Object> attributes = user.getAttributes();
         attributes.put("updated_at", user.getUpdatedAt());
         attributes.put("sub", user.getSub());
-        return sortMap(attributes);
+        return ResponseEntity.ok(sortMap(attributes));
+    }
+
+    private ResponseEntity<Map<String, Object>> errorResponse(String errorDescription) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("error", "invalid_token");
+        body.put("error_description", errorDescription);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
     }
 }
