@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.text.ParseException;
 import java.util.Map;
 
 @RestController
@@ -36,7 +37,7 @@ public class JwkKeysEndpoint implements MapTypeReference {
     }
 
     @GetMapping(value = {"/oidc/certs"}, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String publishClientJwk() {
+    public String publishClientJwk() throws GeneralSecurityException, ParseException, IOException {
         return new JWKSet(tokenGenerator.getAllPublicKeys()).toJSONObject().toString();
     }
 

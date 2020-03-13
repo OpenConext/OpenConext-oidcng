@@ -9,6 +9,8 @@ import oidc.secure.TokenGenerator;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.text.ParseException;
@@ -25,7 +27,7 @@ public class JwkKeysEndpointTest extends AbstractIntegrationTest {
     private String issuer;
 
     @Test
-    public void publishClientJwk() throws ParseException, JsonProcessingException, NoSuchProviderException, NoSuchAlgorithmException {
+    public void publishClientJwk() throws ParseException, IOException, GeneralSecurityException {
         resetAndCreateSigningKeys(3);
 
         Map<String, Object> res = getMapFromEndpoint("oidc/certs");

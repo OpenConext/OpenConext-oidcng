@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.Map;
@@ -53,7 +54,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void introspectionWithKeyRollover() throws IOException, NoSuchProviderException, NoSuchAlgorithmException {
+    public void introspectionWithKeyRollover() throws IOException, GeneralSecurityException, java.text.ParseException {
         tokenGenerator.rolloverSigningKeys();
 
         String accessToken = getAccessToken();

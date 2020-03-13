@@ -18,6 +18,7 @@
 package oidc.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import oidc.crypto.KeyGenerator;
 import oidc.repository.UserRepository;
 import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
@@ -45,12 +46,7 @@ import org.springframework.security.saml.provider.service.config.SamlServiceProv
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.Collections;
-import java.util.List;
 import java.util.stream.Stream;
 
 import static org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityDsl.serviceProvider;
@@ -147,13 +143,10 @@ public class SecurityConfiguration {
                     );
         }
 
-        private String read(Resource resource) {
+        @SneakyThrows
+        private String read(Resource resource)  {
             LOG.info("Reading resource: " + resource.getFilename());
-            try {
-                return IOUtils.toString(resource.getInputStream(), Charset.defaultCharset());
-            } catch (IOException e) {
-                throw new IllegalArgumentException(e);
-            }
+            return IOUtils.toString(resource.getInputStream(), Charset.defaultCharset());
         }
 
         private String strip(String certificate) {

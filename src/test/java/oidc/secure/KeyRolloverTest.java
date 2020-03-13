@@ -9,8 +9,11 @@ import org.junit.Test;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.query.Query;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -22,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 public class KeyRolloverTest extends AbstractIntegrationTest implements SeedUtils {
 
     @Test
-    public void rolloverSigningKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
+    public void rolloverSigningKeys() throws GeneralSecurityException, ParseException, IOException {
         resetAndCreateSigningKeys(3);
         final List<String> signingKeys = mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().collect(toList());
         assertEquals(3, signingKeys.size());
@@ -48,7 +51,7 @@ public class KeyRolloverTest extends AbstractIntegrationTest implements SeedUtil
     }
 
     @Test
-    public void rolloverSymmetricKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
+    public void rolloverSymmetricKeys() throws GeneralSecurityException, IOException {
         resetAndCreateSymmetricKeys(3);
         List<SymmetricKey> symmetricKeys = mongoTemplate.findAll(SymmetricKey.class);
         assertEquals(3, symmetricKeys.size());

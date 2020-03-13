@@ -65,6 +65,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.text.ParseException;
@@ -146,7 +147,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         return getCode(response);
     }
 
-    protected void resetAndCreateSigningKeys(int numberOfSigningKeys) throws NoSuchProviderException, NoSuchAlgorithmException {
+    protected void resetAndCreateSigningKeys(int numberOfSigningKeys) throws GeneralSecurityException, ParseException, IOException {
         mongoTemplate.dropCollection(Sequence.class);
         mongoTemplate.dropCollection(SigningKey.class);
         for (int i = 1; i < numberOfSigningKeys + 1; i++) {
@@ -159,7 +160,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         return "key_" + new SimpleDateFormat("yyyy_MM_dd").format(new Date());
     }
 
-    protected void resetAndCreateSymmetricKeys(int numberOfSymmetricKeys) throws NoSuchProviderException, NoSuchAlgorithmException {
+    protected void resetAndCreateSymmetricKeys(int numberOfSymmetricKeys) throws GeneralSecurityException, IOException {
         mongoTemplate.dropCollection(SymmetricKey.class);
         for (int i = 1; i < numberOfSymmetricKeys + 1; i++) {
             SymmetricKey symmetricKey = tokenGenerator.rolloverSymmetricKeys();

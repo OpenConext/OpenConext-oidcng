@@ -19,6 +19,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.text.ParseException;
@@ -51,7 +52,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void rolloverSigningKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
+    public void rolloverSigningKeys() throws GeneralSecurityException, ParseException, IOException {
         resetAndCreateSigningKeys(3);
         SigningKey signingKey = signingKeyRepository.findAllByOrderByCreatedDesc().get(0);
         assertTrue(signingKey.getKeyId().startsWith(currentSigningKeyIdPrefix()));

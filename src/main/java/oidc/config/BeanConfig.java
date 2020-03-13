@@ -18,6 +18,7 @@
 package oidc.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.OpenIDClientRepository;
 import oidc.repository.UserRepository;
@@ -46,7 +47,6 @@ import org.springframework.util.ReflectionUtils;
 import javax.servlet.Filter;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 
 @Configuration
 @EnableScheduling
@@ -87,15 +87,11 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
 
     @Override
     @Bean
+    @SneakyThrows
     public SamlValidator samlValidator() {
         //IdP determines session expiration not we
         DefaultValidator defaultValidator = (DefaultValidator) super.samlValidator();
-        Field field;
-        try {
-            field = defaultValidator.getClass().getDeclaredField("implementation");
-        } catch (NoSuchFieldException e) {
-            throw new IllegalArgumentException(e);
-        }
+        Field field = defaultValidator.getClass().getDeclaredField("implementation");
         //Hack, but the DefaultValidator is not easy to extend
         ReflectionUtils.makeAccessible(field);
         SpringSecuritySaml springSecuritySaml = (SpringSecuritySaml) ReflectionUtils.getField(field, defaultValidator);
@@ -125,16 +121,12 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
 
     @Override
     @Bean
+    @SneakyThrows
     public Filter spAuthenticationResponseFilter() {
         SamlAuthenticationResponseFilter filter =
                 (SamlAuthenticationResponseFilter) super.spAuthenticationResponseFilter();
-        try {
-            filter.setAuthenticationManager(this.samlProvisioningAuthenticationManager());
-            filter.setAuthenticationSuccessHandler(new ConcurrentSavedRequestAwareAuthenticationSuccessHandler(this.authenticationRequestRepository));
-        } catch (IOException e) {
-            //super has no throw clause
-            throw new RuntimeException(e);
-        }
+        filter.setAuthenticationManager(this.samlProvisioningAuthenticationManager());
+        filter.setAuthenticationSuccessHandler(new ConcurrentSavedRequestAwareAuthenticationSuccessHandler(this.authenticationRequestRepository));
         return filter;
 
     }

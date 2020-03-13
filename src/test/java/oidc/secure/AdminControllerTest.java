@@ -7,8 +7,11 @@ import oidc.model.SymmetricKey;
 import org.junit.Test;
 import org.springframework.data.mongodb.core.query.Query;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.text.ParseException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -20,7 +23,7 @@ import static org.junit.Assert.assertNotEquals;
 public class AdminControllerTest extends AbstractIntegrationTest {
 
     @Test
-    public void rolloverSigningKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
+    public void rolloverSigningKeys() throws GeneralSecurityException, ParseException, IOException {
         resetAndCreateSigningKeys(1);
         List<String> keys = mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().collect(toList());
         assertEquals(1, keys.size());
@@ -41,7 +44,7 @@ public class AdminControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void rolloverSymmetricKeys() throws NoSuchProviderException, NoSuchAlgorithmException {
+    public void rolloverSymmetricKeys() throws GeneralSecurityException, IOException {
         resetAndCreateSymmetricKeys(1);
 
         doRollover(201, "manage", "secret", "force-symmetric-key-rollover");
