@@ -96,6 +96,12 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
+    public void introspectionWithDeletedAccessToken() throws IOException {
+        Map<String, Object> result = callIntrospection("mock-sp", "bogus", "secret");
+        assertEquals(false, result.get("active"));
+    }
+
+    @Test
     public void introspectionBadCredentials() throws IOException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);

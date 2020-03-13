@@ -74,11 +74,13 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
         if (accessToken.isExpired(Clock.systemDefaultZone())) {
             return ResponseEntity.ok(Collections.singletonMap("active", false));
         }
-        OpenIDClient openIDClient = openIDClientRepository.findByClientId(accessToken.getClientId());
-        if (!openIDClient.getAllowedResourceServers().contains(resourceServer.getClientId())) {
-            throw new UnauthorizedException(
-                    String.format("RP %s is not allowed to use the API of resource server %s. Allowed resource servers are %s",
-                            accessToken.getClientId(), resourceServer.getClientId(), openIDClient.getAllowedResourceServers()));
+        if (!accessToken.isClientCredentials()) {
+            OpenIDClient openIDClient = openIDClientRepository.findByClientId(accessToken.getClientId());
+            if (!openIDClient.getAllowedResourceServers().contains(resourceServer.getClientId())) {
+                throw new UnauthorizedException(
+                        String.format("RP %s is not allowed to use the API of resource server %s. Allowed resource servers are %s",
+                                accessToken.getClientId(), resourceServer.getClientId(), openIDClient.getAllowedResourceServers()));
+            }
         }
 
         Map<String, Object> result = new HashMap<>();
