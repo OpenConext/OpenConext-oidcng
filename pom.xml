@@ -10,7 +10,7 @@
     </parent>
     <groupId>org.openconext</groupId>
     <artifactId>oidcng</artifactId>
-    <version>1.0.11-SNAPSHOT</version>
+    <version>1.0.11</version>
     <name>oidcng</name>
 
     <properties>
