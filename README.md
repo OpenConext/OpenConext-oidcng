@@ -209,3 +209,7 @@ To rollover the symmetric key and clean up unreferenced symmetric keys:
 ```
 curl -u manage:secret "http://localhost:8080/manage/force-symmetric-key-rollover"
 ```
+## [SAML metadata](#saml-metadata)
+
+The metadata is generated on the fly and is displayed on http://localhost:8080/saml/metadata
+
