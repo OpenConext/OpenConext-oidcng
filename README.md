@@ -46,7 +46,7 @@ https://oidcng.test2.surfconext.nl/oidc/certs
 
 When you have the oidcng server running locally with the `dev` profile you can use cUrl to test the different endpoints.
 
-Note that this only works because of the `dev` profile where there is pre-authenticated user provided by the `FakeSamlAuthenticationFilter`.
+Note that this only works because of the `dev` profile where there is pre-authenticated user provided by the `FakeSamlAuthenticationFilter`. You will also need to have the original `secret_keyset.json` in place to make this work.
 
 First obtain an authorization code:
 
