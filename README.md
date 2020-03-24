@@ -213,3 +213,7 @@ curl -u manage:secret "http://localhost:8080/manage/force-symmetric-key-rollover
 
 The metadata is generated on the fly and is displayed on http://localhost:8080/saml/metadata
 
+## [Trusted Proxy](#trusted-proxy)
+
+OpenConext-OIDC is a proxy for SP's that want to use OpenConnect ID instead of SAML to provide their Service to the federation members. 
+Therefore the WAYF and ARP must be scoped for the requesting SP (and not this OIDC SP). This works if the OIDC-proxy is configured with the `coin:trusted_proxy` and `redirect.sign` settings in Manage.
