@@ -43,7 +43,9 @@ public interface OidcEndpoint {
                                                       Optional<String> authorizationCodeId) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> map = new LinkedHashMap<>();
         TokenGenerator tokenGenerator = getTokenGenerator();
-        EncryptedTokenValue encryptedAccessToken = user.map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client)).orElse(tokenGenerator.generateAccessToken());
+        EncryptedTokenValue encryptedAccessToken = user
+                .map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client))
+                .orElse(tokenGenerator.generateAccessToken(client));
         String accessTokenValue = encryptedAccessToken.getValue();
         String sub = user.map(User::getSub).orElse(client.getClientId());
 

@@ -3,6 +3,7 @@ package oidc.endpoints;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
@@ -122,7 +123,12 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     public void clientCredentials() throws ParseException, IOException {
         Map<String, Object> body = doToken(null, "mock-sp", "secret", GrantType.CLIENT_CREDENTIALS);
         assertEquals(false, body.containsKey("id_token"));
-        assertEquals(true, uuidPattern.matcher((String) body.get("access_token")).matches());
+        String accessToken = (String) body.get("access_token");
+        SignedJWT signedJWT = SignedJWT.parse(accessToken);
+        JWTClaimsSet jwtClaimsSet = signedJWT.getJWTClaimsSet();
+
+        assertEquals("https://org.openconext.oidc.ng", jwtClaimsSet.getIssuer());
+        assertEquals("mock-sp", jwtClaimsSet.getSubject());
     }
 
     @Test

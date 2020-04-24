@@ -1,6 +1,5 @@
 package oidc.secure;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.crypto.tink.Aead;
 import com.google.crypto.tink.CleartextKeysetHandle;
@@ -238,8 +237,11 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         return KeysetHandle.read(JsonKeysetReader.withBytes(decoded), AeadFactory.getPrimitive(primaryKeysetHandle));
     }
 
-    public EncryptedTokenValue generateAccessToken() {
-        return new EncryptedTokenValue(UUID.randomUUID().toString(), null);
+    @SneakyThrows
+    public EncryptedTokenValue generateAccessToken(OpenIDClient client) {
+        String currentSigningKeyId = ensureLatestSigningKey();
+        String accessToken = idToken(client, Optional.empty(), Collections.emptyMap(), Collections.emptyList(), false, currentSigningKeyId);
+        return new EncryptedTokenValue(accessToken, currentSigningKeyId);
     }
 
     public String generateRefreshToken() {
@@ -257,7 +259,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     @SneakyThrows
-    public EncryptedTokenValue generateAccessTokenWithEmbeddedUserInfo(User user, OpenIDClient client)  {
+    public EncryptedTokenValue generateAccessTokenWithEmbeddedUserInfo(User user, OpenIDClient client) {
         String currentSigningKeyId = this.ensureLatestSigningKey();
         return new EncryptedTokenValue(doGenerateAccessTokenWithEmbeddedUser(user, client, currentSigningKeyId), currentSigningKeyId);
     }
@@ -308,7 +310,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     @SneakyThrows
     public String generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, String nonce, List<String> idTokenClaims,
-                                                  Optional<Long> authorizationTime)  {
+                                                  Optional<Long> authorizationTime) {
         Map<String, Object> additionalClaims = new HashMap<>();
         authorizationTime.ifPresent(time -> additionalClaims.put("auth_time", time));
         if (StringUtils.hasText(nonce)) {
@@ -322,7 +324,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     public String generateIDTokenForAuthorizationEndpoint(User user, OpenIDClient client, Nonce nonce,
                                                           ResponseType responseType, String accessToken,
                                                           List<String> claims, Optional<String> authorizationCode,
-                                                          State state){
+                                                          State state) {
         Map<String, Object> additionalClaims = new HashMap<>();
         additionalClaims.put("auth_time", System.currentTimeMillis() / 1000L);
         if (nonce != null) {
