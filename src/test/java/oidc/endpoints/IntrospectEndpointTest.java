@@ -83,7 +83,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
         String accessToken = (String) body.get("access_token");
         Map<String, Object> result = callIntrospection("mock-sp", accessToken, "secret");
         assertEquals(true, result.get("active"));
-        assertEquals("openid,groups", result.get("scope"));
+        assertEquals("openid groups", result.get("scope"));
         assertEquals("mock-sp", result.get("sub"));
         assertFalse(result.containsKey("email"));
     }

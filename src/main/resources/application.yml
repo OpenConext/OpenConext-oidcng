@@ -37,10 +37,10 @@ secure_cookie: false
 idp:
   alias: engine-test
   # comma separated string of metadata url's
-  metadata_urls: https://engine.test.surfconext.nl/authentication/idp/metadata
-  name_id: https://engine.test.surfconext.nl/authentication/idp/metadata
-  metadata_signing_certificate_path: classpath:/metadata-signing-certificate.pem
-#  metadata_signing_certificate_path: classpath:/engine.test2.surfconext.nl.pem
+  metadata_urls: https://engine.test2.surfconext.nl/authentication/idp/metadata
+  name_id: https://engine.test2.surfconext.nl/authentication/idp/metadata
+#  metadata_signing_certificate_path: classpath:/metadata-signing-certificate.pem
+  metadata_signing_certificate_path: classpath:/engine.test2.surfconext.nl.pem
 
 spring:
   data:

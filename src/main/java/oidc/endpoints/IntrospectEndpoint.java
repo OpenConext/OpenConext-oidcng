@@ -97,7 +97,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
         }
 
         result.put("active", true);
-        result.put("scope", String.join(",", accessToken.getScopes()));
+        result.put("scope", String.join(" ", accessToken.getScopes()));
         result.put("client_id", accessToken.getClientId());
         result.put("exp", accessToken.getExpiresIn().getTime() / 1000L);
         result.put("sub", accessToken.getSub());
