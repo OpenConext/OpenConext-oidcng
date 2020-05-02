@@ -8,6 +8,7 @@ import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.RefreshTokenGrant;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
+import com.nimbusds.oauth2.sdk.auth.ClientSecretJWT;
 import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
@@ -32,6 +33,7 @@ import oidc.repository.UserRepository;
 import oidc.secure.TokenGenerator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -64,6 +66,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     private UserRepository userRepository;
     private OpenIDClientRepository openIDClientRepository;
     private TokenGenerator tokenGenerator;
+    private String tokenEndpoint;
 
 
     public TokenEndpoint(OpenIDClientRepository openIDClientRepository,
@@ -72,7 +75,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                          AccessTokenRepository accessTokenRepository,
                          RefreshTokenRepository refreshTokenRepository,
                          UserRepository userRepository,
-                         TokenGenerator tokenGenerator) {
+                         TokenGenerator tokenGenerator,
+                         @Value("${oidc_token_endpoint}") String tokenEndpoint) {
         this.openIDClientRepository = openIDClientRepository;
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.concurrentAuthorizationCodeRepository = concurrentAuthorizationCodeRepository;
@@ -80,16 +84,17 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;
         this.tokenGenerator = tokenGenerator;
+        this.tokenEndpoint = tokenEndpoint;
     }
 
     @PostMapping(value = "oidc/token", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
-    public ResponseEntity token(HttpServletRequest request) throws IOException, ParseException, JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
+    public ResponseEntity token(HttpServletRequest request) throws IOException, ParseException, JOSEException, NoSuchProviderException, NoSuchAlgorithmException, java.text.ParseException {
         HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
         TokenRequest tokenRequest = TokenRequest.parse(httpRequest);
 
         ClientAuthentication clientAuthentication = tokenRequest.getClientAuthentication();
         if (clientAuthentication != null &&
-                !(clientAuthentication instanceof PlainClientSecret)) {
+                !(clientAuthentication instanceof PlainClientSecret || clientAuthentication instanceof ClientSecretJWT)) {
             throw new ClientAuthenticationNotSupported(
                     String.format("Unsupported '%s' findByClientId authentication in token endpoint", clientAuthentication.getClass()));
         }
@@ -104,10 +109,13 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         if (clientAuthentication == null && !client.isPublicClient()) {
             throw new BadCredentialsException("Non-public client requires authentication");
         }
-
-        if (clientAuthentication != null &&
-                !secretsMatch((PlainClientSecret) clientAuthentication, client)) {
-            throw new BadCredentialsException("Invalid user / secret");
+        if (clientAuthentication != null) {
+            if (clientAuthentication instanceof PlainClientSecret && !secretsMatch((PlainClientSecret) clientAuthentication, client)) {
+                throw new BadCredentialsException("Invalid user / secret");
+            } else if (clientAuthentication instanceof ClientSecretJWT &&
+                    !verifySignature((ClientSecretJWT) clientAuthentication, client, this.tokenEndpoint)) {
+                throw new BadCredentialsException("Invalid user / signature");
+            }
         }
         if (!client.getGrants().contains(authorizationGrant.getType().getValue())) {
             throw new InvalidGrantException("Invalid grant: " + authorizationGrant.getType().getValue());

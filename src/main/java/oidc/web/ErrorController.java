@@ -1,5 +1,6 @@
 package oidc.web;
 
+import com.nimbusds.jose.JOSEException;
 import oidc.exceptions.BaseException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -58,11 +59,13 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
                 LOG.error("Error has occurred", error);
             }
 
-            result.put("details",message);
+            result.put("error_description",message);
             ResponseStatus annotation = AnnotationUtils.getAnnotation(error.getClass(), ResponseStatus.class);
             statusCode = annotation != null ? annotation.value() : statusCode;
 
-            if (error instanceof EmptyResultDataAccessException && result.getOrDefault("path", "/oidc/token").toString().contains("token")) {
+            if (error instanceof JOSEException ||
+                    (error instanceof EmptyResultDataAccessException &&
+                            result.getOrDefault("path", "/oidc/token").toString().contains("token"))) {
                 return new ResponseEntity<>(Collections.singletonMap("error", "invalid_grant"), BAD_REQUEST);
             }
         }

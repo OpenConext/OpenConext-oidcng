@@ -20,6 +20,7 @@
         "name:en": "OpenConext Mock SP",
         "name:nl": "OpenConext Mock SP",
         "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
+        "clientSecretJWT": "very-long-long-long-long-long-secret",
         "redirectUrls": [
           "http://localhost:8091/redirect",
           "http://localhost:8080"
@@ -145,6 +146,37 @@
         "isResourceServer": "1",
         "isPublicClient": "1",
         "oidc:signingCertificateUrl": "http://localhost:8081/oidc/api/certs"
+      }
+    }
+  },
+  {
+    "id": "13",
+    "version": 0,
+    "type": "oidc10_rp",
+    "data": {
+      "entityid": "rp-jwt-authentication",
+      "eid": 9,
+      "state": "testaccepted",
+      "allowedall": true,
+      "allowedResourceServers": [],
+      "metaDataFields": {
+        "name:en": "RP JWT authentication",
+        "clientSecretJWT": "very-long-long-long-long-long-secret",
+        "redirectUrls": [
+          "http://localhost:8091/redirect",
+          "http://localhost:8080"
+        ],
+        "scopes": [
+          "openid",
+          "groups"
+        ],
+        "grants": [
+          "authorization_code"
+        ],
+        "isResourceServer": "0",
+        "isPublicClient": true,
+        "NameIDFormats:0": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified",
+        "NameIDFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
       }
     }
   }

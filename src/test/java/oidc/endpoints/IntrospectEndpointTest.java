@@ -74,7 +74,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
 
         results = callIntrospection("resource-server-playground-client", (String) results.get("access_token"), "secret");
         assertEquals("RP mock-rp is not allowed to use the API of resource server resource-server-playground-client. Allowed resource servers are []",
-                results.get("details"));
+                results.get("error_description"));
     }
 
     @Test
@@ -112,19 +112,19 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
                 .formParam("token", body.get("access_token"))
                 .post("oidc/introspect")
                 .as(mapTypeRef);
-        assertEquals("Invalid user / secret", result.get("details"));
+        assertEquals("Invalid user / secret", result.get("error_description"));
     }
 
     @Test
     public void introspectionNoResourceServer() throws IOException {
         Map<String, Object> result = doIntrospection("mock-rp", "secret");
-        assertEquals("Requires ResourceServer", result.get("details"));
+        assertEquals("Requires ResourceServer", result.get("error_description"));
     }
 
     @Test
     public void introspectionWrongSecret() throws IOException {
         Map<String, Object> result = doIntrospection("mock-sp", "nope");
-        assertEquals("Invalid user / secret", result.get("details"));
+        assertEquals("Invalid user / secret", result.get("error_description"));
     }
 
     private Map<String, Object> doIntrospection(String clientId, String secret) throws IOException {

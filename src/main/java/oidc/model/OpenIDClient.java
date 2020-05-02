@@ -29,6 +29,7 @@ public class OpenIDClient {
     private String clientId;
     private String name;
     private String secret;
+    private String clientSecretJWT;
     private List<String> redirectUrls;
     private List<String> scopes;
     private List<String> grants;
@@ -50,7 +51,6 @@ public class OpenIDClient {
         this.redirectUrls = redirectUrls;
         this.scopes = scopes;
         this.grants = grants;
-
     }
 
     @SuppressWarnings("unchecked")
@@ -63,6 +63,7 @@ public class OpenIDClient {
 
         this.name = (String) metaDataFields.get("name:en");
         this.secret = (String) metaDataFields.get("secret");
+        this.clientSecretJWT = (String) metaDataFields.get("clientSecretJWT");
         this.redirectUrls = (List) metaDataFields.get("redirectUrls");
         this.scopes = (List) metaDataFields.getOrDefault("scopes", "oidc");
         this.grants = (List) metaDataFields.getOrDefault("grants", "authorization_code");
@@ -91,7 +92,7 @@ public class OpenIDClient {
     }
 
     @Transient
-    //Backward compatibility with older versions of Manage where all metadata values wer Strings
+    //Backward compatibility with older versions of Manage where all metadata values where Strings
     private boolean parseBoolean(Object val) {
         if (val instanceof Boolean) {
             return (boolean) val;

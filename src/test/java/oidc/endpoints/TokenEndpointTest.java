@@ -1,10 +1,19 @@
 package oidc.endpoints;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
+import com.nimbusds.oauth2.sdk.assertions.jwt.JWTAssertionDetails;
+import com.nimbusds.oauth2.sdk.assertions.jwt.JWTAssertionFactory;
+import com.nimbusds.oauth2.sdk.auth.ClientSecretJWT;
+import com.nimbusds.oauth2.sdk.auth.Secret;
+import com.nimbusds.oauth2.sdk.id.Audience;
+import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.id.Issuer;
+import com.nimbusds.oauth2.sdk.id.Subject;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
@@ -24,13 +33,12 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
+import java.net.URI;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,8 +57,8 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     private TokenGenerator tokenGenerator;
 
     @Autowired
-    private @Value("${spring.security.saml2.service-provider.entity-id}")
-    String issuer;
+    @Value("${spring.security.saml2.service-provider.entity-id}")
+    private String issuer;
 
     @Test
     public void token() throws IOException, ParseException, JOSEException, BadJOSEException {
@@ -231,7 +239,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     public void invalidSecret() throws IOException {
         Map<String, Object> body = doToken(null, "mock-sp", "nope", GrantType.CLIENT_CREDENTIALS);
 
-        assertEquals("Invalid user / secret", body.get("details"));
+        assertEquals("Invalid user / secret", body.get("error_description"));
     }
 
     @Test
@@ -240,7 +248,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
         Map<String, Object> body = doToken(code, "mock-rp", null, GrantType.AUTHORIZATION_CODE,
                 StringUtils.leftPad("token", 45, "*"));
 
-        assertEquals("Non-public client requires authentication", body.get("details"));
+        assertEquals("Non-public client requires authentication", body.get("error_description"));
     }
 
     @Test
@@ -248,7 +256,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code, "mock-rp", "secret", GrantType.AUTHORIZATION_CODE, null);
 
-        assertEquals("Client is not authorized for the authorization code", body.get("details"));
+        assertEquals("Client is not authorized for the authorization code", body.get("error_description"));
     }
 
     @Test
@@ -322,7 +330,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void unsupportedClientAuthentication() throws JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException {
+    public void unsupportedClientAuthentication() throws IOException {
         String code = doAuthorize();
         String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(
                 Optional.of(user(issuer)),
@@ -343,9 +351,84 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
                 body.get("message"));
     }
 
+    @Test
+    public void clientSecretJwtAuthentication() throws IOException, JOSEException {
+        Map<String, Object> body = doClientSecretJwtAuthorization("very-long-long-long-long-long-secret");
+        assertTrue(body.containsKey("id_token"));
+        assertTrue(body.containsKey("access_token"));
+    }
+
+    @Test
+    public void clientWrongSecretJwtAuthentication() throws IOException, JOSEException {
+        Map<String, Object> body = doClientSecretJwtAuthorization("very-long-long-long-long-long-secret-but-invalid");
+        assertEquals(403, body.get("status"));
+        assertEquals("Invalid user / signature", body.get("error"));
+    }
+
+    @Test
+    public void clientSecretJwtAuthorizationInvalidAudience() throws IOException, JOSEException {
+        ClientSecretJWT clientSecretJWT = clientSecretJWT(
+                "rp-jwt-authentication", "http://nope",
+                "very-long-long-long-long-long-secret",
+                new Date(new Date().getTime() + 5 * 60 * 1000L)
+        );
+        Map<String, Object> res = doClientSecretJwtAuthorization(clientSecretJWT);
+        assertEquals(400, res.get("status"));
+        assertEquals("invalid_grant", res.get("error"));
+        assertEquals("Invalid audience", res.get("error_description"));
+    }
+
+    @Test
+    public void clientSecretJwtAuthorizationExpired() throws IOException, JOSEException {
+        ClientSecretJWT clientSecretJWT = clientSecretJWT(
+                "rp-jwt-authentication", "http://localhost:8080/oidc/token",
+                "very-long-long-long-long-long-secret",
+                new Date(new Date().getTime() - 5 * 60 * 1000L)
+        );
+        Map<String, Object> res = doClientSecretJwtAuthorization(clientSecretJWT);
+        assertEquals(400, res.get("status"));
+        assertEquals("invalid_grant", res.get("error"));
+        assertEquals("Expired claims", res.get("error_description"));
+    }
+
+    private Map<String, Object> doClientSecretJwtAuthorization(String secret) throws IOException, JOSEException {
+        ClientSecretJWT clientSecretJWT = new ClientSecretJWT(
+                new ClientID("rp-jwt-authentication"),
+                URI.create("http://localhost:8080/oidc/token"),
+                JWSAlgorithm.HS256,
+                new Secret(secret));
+
+        return doClientSecretJwtAuthorization(clientSecretJWT);
+    }
+
+    private Map<String, Object> doClientSecretJwtAuthorization(ClientSecretJWT clientSecretJWT) throws IOException, JOSEException {
+        Response response = doAuthorize("rp-jwt-authentication", "code", null, null, null);
+        String code = getCode(response);
+
+        return given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .formParam("client_assertion_type", CLIENT_ASSERTION_TYPE)
+                .formParam("client_assertion", clientSecretJWT.getClientAssertion().serialize())
+                .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
+                .formParam("code", code)
+                .formParam("redirect_uri", "http://localhost:8091/redirect")
+                .post("oidc/token")
+                .as(mapTypeRef);
+    }
+
     private User user(String issuer) {
         User user = new User();
         ReflectionTestUtils.setField(user, "sub", issuer);
         return user;
+    }
+
+    private ClientSecretJWT clientSecretJWT(String issuer, String tokenEndPoint, String secret, Date expiration) throws JOSEException {
+        //Issuer and subject in client JWT assertion must designate the same client identifier
+        JWTAssertionDetails jwtAssertionDetails = new JWTAssertionDetails(
+                new Issuer(issuer), new Subject(issuer), Audience.create(tokenEndPoint), expiration,
+                null, null, null, null);
+        SignedJWT signedJWT = JWTAssertionFactory.create(jwtAssertionDetails, JWSAlgorithm.HS256, new Secret(secret));
+        return new ClientSecretJWT(signedJWT);
     }
 }
