@@ -46,7 +46,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.Assert.assertEquals;
 
-public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTest {
+public class JWTRequestTest implements MapTypeReference, SignedJWTTest {
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(8089);
@@ -211,10 +211,6 @@ public class JWTRequestTest implements TestUtils, MapTypeReference, SignedJWTTes
                 .filter(c -> c.getClientId().equals("mock-sp"))
                 .findAny()
                 .orElseThrow(IllegalArgumentException::new);
-    }
-
-    private String getStrippedCertificate() {
-        return readFile("keys/certificate.crt").replaceAll("\\Q-----BEGIN CERTIFICATE-----\\E|\\Q-----END CERTIFICATE-----\\E|\n", "");
     }
 
 }

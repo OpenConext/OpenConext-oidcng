@@ -9,6 +9,8 @@ import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.assertions.jwt.JWTAssertionDetails;
 import com.nimbusds.oauth2.sdk.assertions.jwt.JWTAssertionFactory;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretJWT;
+import com.nimbusds.oauth2.sdk.auth.JWTAuthentication;
+import com.nimbusds.oauth2.sdk.auth.PrivateKeyJWT;
 import com.nimbusds.oauth2.sdk.auth.Secret;
 import com.nimbusds.oauth2.sdk.id.Audience;
 import com.nimbusds.oauth2.sdk.id.ClientID;
@@ -23,6 +25,7 @@ import oidc.AbstractIntegrationTest;
 import oidc.model.AccessToken;
 import oidc.model.RefreshToken;
 import oidc.model.User;
+import oidc.secure.SignedJWTTest;
 import oidc.secure.TokenGenerator;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
@@ -35,13 +38,14 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static com.nimbusds.oauth2.sdk.auth.JWTAuthentication.CLIENT_ASSERTION_TYPE;
 import static io.restassured.RestAssured.given;
@@ -51,7 +55,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("unchecked")
-public class TokenEndpointTest extends AbstractIntegrationTest {
+public class TokenEndpointTest extends AbstractIntegrationTest implements SignedJWTTest {
 
     @Autowired
     private TokenGenerator tokenGenerator;
@@ -330,25 +334,16 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void unsupportedClientAuthentication() throws IOException {
-        String code = doAuthorize();
-        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(
-                Optional.of(user(issuer)),
-                openIDClient("mock-sp"),
-                "nonce",
-                Collections.emptyList(),
-                Optional.empty());
-        Map<String, Object> body = given()
-                .when()
-                .header("Content-type", "application/x-www-form-urlencoded")
-                .formParam("client_assertion_type", CLIENT_ASSERTION_TYPE)
-                .formParam("client_assertion", idToken)
-                .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
-                .formParam("code", code)
-                .post("oidc/token")
-                .as(mapTypeRef);
-        assertEquals("Unsupported 'class com.nimbusds.oauth2.sdk.auth.PrivateKeyJWT' findByClientId authentication in token endpoint",
-                body.get("message"));
+    public void privateKeyJwtAuthentication() throws IOException, JOSEException, InvalidKeySpecException, NoSuchAlgorithmException {
+        PrivateKeyJWT privateKeyJWT = new PrivateKeyJWT(
+                new ClientID("rp-jwt-authentication"),
+                URI.create("http://localhost:8080/oidc/token"),
+                JWSAlgorithm.RS256,
+                privateKey(),
+                "key-id", null);
+        Map<String, Object> body = doJwtAuthenticationAuthorization(privateKeyJWT);
+        assertTrue(body.containsKey("id_token"));
+        assertTrue(body.containsKey("access_token"));
     }
 
     @Test
@@ -372,7 +367,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
                 "very-long-long-long-long-long-secret",
                 new Date(new Date().getTime() + 5 * 60 * 1000L)
         );
-        Map<String, Object> res = doClientSecretJwtAuthorization(clientSecretJWT);
+        Map<String, Object> res = doJwtAuthenticationAuthorization(clientSecretJWT);
         assertEquals(400, res.get("status"));
         assertEquals("invalid_grant", res.get("error"));
         assertEquals("Invalid audience", res.get("error_description"));
@@ -385,7 +380,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
                 "very-long-long-long-long-long-secret",
                 new Date(new Date().getTime() - 5 * 60 * 1000L)
         );
-        Map<String, Object> res = doClientSecretJwtAuthorization(clientSecretJWT);
+        Map<String, Object> res = doJwtAuthenticationAuthorization(clientSecretJWT);
         assertEquals(400, res.get("status"));
         assertEquals("invalid_grant", res.get("error"));
         assertEquals("Expired claims", res.get("error_description"));
@@ -398,10 +393,10 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
                 JWSAlgorithm.HS256,
                 new Secret(secret));
 
-        return doClientSecretJwtAuthorization(clientSecretJWT);
+        return doJwtAuthenticationAuthorization(clientSecretJWT);
     }
 
-    private Map<String, Object> doClientSecretJwtAuthorization(ClientSecretJWT clientSecretJWT) throws IOException, JOSEException {
+    private Map<String, Object> doJwtAuthenticationAuthorization(JWTAuthentication jwtAuthentication) throws IOException, JOSEException {
         Response response = doAuthorize("rp-jwt-authentication", "code", null, null, null);
         String code = getCode(response);
 
@@ -409,7 +404,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest {
                 .when()
                 .header("Content-type", "application/x-www-form-urlencoded")
                 .formParam("client_assertion_type", CLIENT_ASSERTION_TYPE)
-                .formParam("client_assertion", clientSecretJWT.getClientAssertion().serialize())
+                .formParam("client_assertion", jwtAuthentication.getClientAssertion().serialize())
                 .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
                 .formParam("code", code)
                 .formParam("redirect_uri", "http://localhost:8091/redirect")

@@ -7,6 +7,7 @@ import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.openid.connect.sdk.ClaimsRequest;
+import oidc.TestUtils;
 import oidc.model.OpenIDClient;
 import org.apache.commons.io.IOUtils;
 import org.springframework.core.io.ClassPathResource;
@@ -30,7 +31,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
 
-public interface SignedJWTTest {
+public interface SignedJWTTest extends TestUtils {
 
     default void setCertificateFields(OpenIDClient client, String signingCertificate, String signingCertificateUrl, String discoveryUrl) {
         ReflectionTestUtils.setField(client, "signingCertificate", signingCertificate);
@@ -84,5 +85,9 @@ public interface SignedJWTTest {
         return signedJWT;
     }
 
+    default String getStrippedCertificate() {
+        return readFile("keys/certificate.crt")
+                .replaceAll("\\Q-----BEGIN CERTIFICATE-----\\E|\\Q-----END CERTIFICATE-----\\E|\n", "");
+    }
 
 }

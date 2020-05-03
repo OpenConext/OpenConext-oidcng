@@ -50,9 +50,6 @@ public class JWTRequest {
 
     public static AuthenticationRequest parse(AuthenticationRequest authenticationRequest, OpenIDClient openIDClient)
             throws CertificateException, JOSEException, IOException, BadJOSEException, ParseException, com.nimbusds.oauth2.sdk.ParseException, URISyntaxException {
-        if (!openIDClient.certificateSpecified()) {
-            throw new UnsupportedJWTException(String.format("RP %s does not have a certificate, url or discovery url. ", openIDClient.getClientId()));
-        }
         JWT jwt = authenticationRequest.getRequestObject();
         if (jwt == null) {
             String requestURL = authenticationRequest.getRequestURI().toString();
@@ -62,6 +59,17 @@ public class JWTRequest {
             throw new UnsupportedJWTException("JWT is not a SignedJWT, but " + jwt.getClass().getName());
         }
         SignedJWT signedJWT = (SignedJWT) jwt;
+        String signingCertificate = getSigningCertificate(openIDClient);
+        JWTClaimsSet claimsSet = claimsSet(jwkSet(signingCertificate), signedJWT);
+
+        return mergeAuthenticationRequest(authenticationRequest, claimsSet.getClaims());
+    }
+
+    public static String getSigningCertificate(OpenIDClient openIDClient) throws IOException, ParseException {
+        if (!openIDClient.certificateSpecified()) {
+            throw new UnsupportedJWTException(String.format("RP %s does not have a certificate, url or discovery url. ", openIDClient.getClientId()));
+        }
+
         String signingCertificate;
         if (StringUtils.hasText(openIDClient.getSigningCertificateUrl())) {
             signingCertificate = read(openIDClient.getSigningCertificateUrl());
@@ -72,9 +80,7 @@ public class JWTRequest {
             String jwksUri = (String) JSONObjectUtils.parse(discovery).get("jwks_uri");
             signingCertificate = read(jwksUri);
         }
-        JWTClaimsSet claimsSet = claimsSet(jwkSet(signingCertificate), signedJWT);
-
-        return mergeAuthenticationRequest(authenticationRequest, claimsSet.getClaims());
+        return signingCertificate;
     }
 
     private static String read(String url) throws IOException {
@@ -82,14 +88,20 @@ public class JWTRequest {
     }
 
     private static JWKSet jwkSet(String signingCertificate) throws CertificateException, JOSEException, ParseException {
+        return new JWKSet(rsaKey(signingCertificate));
+    }
+
+    public static RSAKey rsaKey(String signingCertificate) throws ParseException, JOSEException, CertificateException {
         if (signingCertificate.trim().startsWith("{") && signingCertificate.contains("keys")) {
-            return JWKSet.parse(signingCertificate);
+            return RSAKey.parse(signingCertificate);
         }
         if (!signingCertificate.contains("BEGIN CERTIFICATE")) {
             signingCertificate = "-----BEGIN CERTIFICATE-----\n" + signingCertificate + "\n-----END CERTIFICATE-----";
         }
-        X509Certificate cert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(signingCertificate.getBytes()));
-        return new JWKSet(RSAKey.parse(cert));
+        X509Certificate cert = (X509Certificate) CertificateFactory.getInstance("X.509")
+                .generateCertificate(new ByteArrayInputStream(signingCertificate.getBytes()));
+        return RSAKey.parse(cert);
+
     }
 
     @SuppressWarnings("unchecked")

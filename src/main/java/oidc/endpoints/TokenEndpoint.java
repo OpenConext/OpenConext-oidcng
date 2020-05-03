@@ -9,7 +9,9 @@ import com.nimbusds.oauth2.sdk.RefreshTokenGrant;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretJWT;
+import com.nimbusds.oauth2.sdk.auth.JWTAuthentication;
 import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
+import com.nimbusds.oauth2.sdk.auth.PrivateKeyJWT;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
@@ -47,6 +49,7 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.cert.CertificateException;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.Map;
@@ -88,13 +91,14 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     }
 
     @PostMapping(value = "oidc/token", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
-    public ResponseEntity token(HttpServletRequest request) throws IOException, ParseException, JOSEException, NoSuchProviderException, NoSuchAlgorithmException, java.text.ParseException {
+    public ResponseEntity token(HttpServletRequest request) throws IOException, ParseException, JOSEException, NoSuchProviderException, NoSuchAlgorithmException, java.text.ParseException, CertificateException {
         HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
         TokenRequest tokenRequest = TokenRequest.parse(httpRequest);
 
         ClientAuthentication clientAuthentication = tokenRequest.getClientAuthentication();
         if (clientAuthentication != null &&
-                !(clientAuthentication instanceof PlainClientSecret || clientAuthentication instanceof ClientSecretJWT)) {
+                !(clientAuthentication instanceof PlainClientSecret ||
+                        clientAuthentication instanceof JWTAuthentication)) {
             throw new ClientAuthenticationNotSupported(
                     String.format("Unsupported '%s' findByClientId authentication in token endpoint", clientAuthentication.getClass()));
         }
@@ -110,10 +114,11 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
             throw new BadCredentialsException("Non-public client requires authentication");
         }
         if (clientAuthentication != null) {
-            if (clientAuthentication instanceof PlainClientSecret && !secretsMatch((PlainClientSecret) clientAuthentication, client)) {
+            if (clientAuthentication instanceof PlainClientSecret &&
+                    !secretsMatch((PlainClientSecret) clientAuthentication, client)) {
                 throw new BadCredentialsException("Invalid user / secret");
-            } else if (clientAuthentication instanceof ClientSecretJWT &&
-                    !verifySignature((ClientSecretJWT) clientAuthentication, client, this.tokenEndpoint)) {
+            } else if (clientAuthentication instanceof JWTAuthentication &&
+                    !verifySignature((JWTAuthentication) clientAuthentication, client, this.tokenEndpoint)) {
                 throw new BadCredentialsException("Invalid user / signature");
             }
         }
