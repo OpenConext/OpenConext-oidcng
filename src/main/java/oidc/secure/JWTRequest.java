@@ -88,13 +88,13 @@ public class JWTRequest {
     }
 
     private static JWKSet jwkSet(String signingCertificate) throws CertificateException, JOSEException, ParseException {
+        if (signingCertificate.trim().startsWith("{") && signingCertificate.contains("keys")) {
+            return JWKSet.parse(signingCertificate);
+        }
         return new JWKSet(rsaKey(signingCertificate));
     }
 
     public static RSAKey rsaKey(String signingCertificate) throws ParseException, JOSEException, CertificateException {
-        if (signingCertificate.trim().startsWith("{") && signingCertificate.contains("keys")) {
-            return RSAKey.parse(signingCertificate);
-        }
         if (!signingCertificate.contains("BEGIN CERTIFICATE")) {
             signingCertificate = "-----BEGIN CERTIFICATE-----\n" + signingCertificate + "\n-----END CERTIFICATE-----";
         }
