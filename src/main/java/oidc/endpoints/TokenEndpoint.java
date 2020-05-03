@@ -1,6 +1,11 @@
 package oidc.endpoints;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant;
 import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.ClientCredentialsGrant;
@@ -20,6 +25,7 @@ import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import oidc.exceptions.ClientAuthenticationNotSupported;
 import oidc.exceptions.CodeVerifierMissingException;
 import oidc.exceptions.InvalidGrantException;
+import oidc.exceptions.JWTAuthorizationGrantsException;
 import oidc.exceptions.RedirectMismatchException;
 import oidc.exceptions.UnauthorizedException;
 import oidc.model.AccessToken;
@@ -32,6 +38,7 @@ import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.OpenIDClientRepository;
 import oidc.repository.RefreshTokenRepository;
 import oidc.repository.UserRepository;
+import oidc.secure.JWTRequest;
 import oidc.secure.TokenGenerator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -52,6 +59,7 @@ import java.security.NoSuchProviderException;
 import java.security.cert.CertificateException;
 import java.time.Clock;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
@@ -134,6 +142,37 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
             return handleRefreshCodeGrant((RefreshTokenGrant) authorizationGrant, client);
         }
         throw new IllegalArgumentException("Not supported - yet - authorizationGrant " + authorizationGrant.getType().getValue());
+
+    }
+
+    boolean verifySignature(JWTAuthentication jwtAuthentication, OpenIDClient openIDClient, String tokenEndpoint)
+            throws JOSEException, java.text.ParseException, CertificateException, IOException {
+        JWSVerifier verifier = jwsVerifier(jwtAuthentication, openIDClient);
+        SignedJWT clientAssertion = jwtAuthentication.getClientAssertion();
+        JWTClaimsSet claimsSet = clientAssertion.getJWTClaimsSet();
+        //https://tools.ietf.org/html/draft-ietf-oauth-jwt-bearer-10
+        if (!openIDClient.getClientId().equals(claimsSet.getIssuer())) {
+            throw new JWTAuthorizationGrantsException("Invalid issuer");
+        }
+        if (!openIDClient.getClientId().equals(claimsSet.getSubject())) {
+            throw new JWTAuthorizationGrantsException("Invalid subject");
+        }
+        if (!claimsSet.getAudience().contains(tokenEndpoint)) {
+            throw new JWTAuthorizationGrantsException("Invalid audience");
+        }
+        if (new Date().after(claimsSet.getExpirationTime())) {
+            throw new JWTAuthorizationGrantsException("Expired claims");
+        }
+        return clientAssertion.verify(verifier);
+    }
+
+    private JWSVerifier jwsVerifier(JWTAuthentication jwtAuthentication, OpenIDClient openIDClient)
+            throws JOSEException, IOException, java.text.ParseException, CertificateException {
+        if (jwtAuthentication instanceof ClientSecretJWT) {
+            return new MACVerifier(openIDClient.getClientSecretJWT());
+        }
+        String signingCertificate = JWTRequest.getSigningCertificate(openIDClient);
+        return new RSASSAVerifier(JWTRequest.rsaKey(signingCertificate));
 
     }
 

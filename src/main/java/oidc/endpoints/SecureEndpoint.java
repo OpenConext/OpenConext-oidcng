@@ -30,36 +30,4 @@ public class SecureEndpoint {
         return passwordEncoder.matches(clientSecret.getClientSecret().getValue(), openIDClient.getSecret());
     }
 
-    boolean verifySignature(JWTAuthentication jwtAuthentication, OpenIDClient openIDClient, String tokenEndpoint)
-            throws JOSEException, ParseException, CertificateException, IOException {
-        JWSVerifier verifier = jwsVerifier(jwtAuthentication, openIDClient);
-        SignedJWT clientAssertion = jwtAuthentication.getClientAssertion();
-        JWTClaimsSet claimsSet = clientAssertion.getJWTClaimsSet();
-        //https://tools.ietf.org/html/draft-ietf-oauth-jwt-bearer-10
-        if (!openIDClient.getClientId().equals(claimsSet.getIssuer())) {
-            throw new JWTAuthorizationGrantsException("Invalid issuer");
-        }
-        if (!openIDClient.getClientId().equals(claimsSet.getSubject())) {
-            throw new JWTAuthorizationGrantsException("Invalid subject");
-        }
-        if (!claimsSet.getAudience().contains(tokenEndpoint)) {
-            throw new JWTAuthorizationGrantsException("Invalid audience");
-        }
-        if (new Date().after(claimsSet.getExpirationTime())) {
-            throw new JWTAuthorizationGrantsException("Expired claims");
-        }
-        return clientAssertion.verify(verifier);
-    }
-
-    private JWSVerifier jwsVerifier(JWTAuthentication jwtAuthentication, OpenIDClient openIDClient)
-            throws JOSEException, IOException, ParseException, CertificateException {
-        boolean isClientSecret = jwtAuthentication instanceof ClientSecretJWT;
-        if (isClientSecret) {
-            return new MACVerifier(openIDClient.getClientSecretJWT());
-        }
-        String signingCertificate = JWTRequest.getSigningCertificate(openIDClient);
-        return new RSASSAVerifier(JWTRequest.rsaKey(signingCertificate));
-
-    }
-
 }
