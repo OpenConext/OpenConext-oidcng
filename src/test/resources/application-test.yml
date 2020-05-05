@@ -1,0 +1,8 @@
+cron:
+  node-cron-job-responsible: false
+idp:
+  alias: engine-test
+  # For the integration tests in travis to pass it is necessary to have a public available metadata
+  metadata_signing_certificate_path: classpath:/metadata-signing-certificate.pem
+  metadata_urls: https://engine.test.surfconext.nl/authentication/idp/metadata
+  name_id: https://engine.test.surfconext.nl/authentication/idp/metadata
