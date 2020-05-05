@@ -7,6 +7,7 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jose.proc.JWSKeySelector;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
+import com.nimbusds.jose.proc.SingleKeyJWSKeySelector;
 import com.nimbusds.jose.util.JSONObjectUtils;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -59,22 +60,50 @@ public class JWTRequest {
             throw new UnsupportedJWTException("JWT is not a SignedJWT, but " + jwt.getClass().getName());
         }
         SignedJWT signedJWT = (SignedJWT) jwt;
-        String signingCertificate = getSigningCertificate(openIDClient);
-        JWTClaimsSet claimsSet = claimsSet(jwkSet(signingCertificate), signedJWT);
+
+        JWTClaimsSet claimsSet = claimsSet(openIDClient, signedJWT);
 
         return mergeAuthenticationRequest(authenticationRequest, claimsSet.getClaims());
     }
 
-    public static String getSigningCertificate(OpenIDClient openIDClient) throws IOException, ParseException {
+    @SuppressWarnings("unchecked")
+    public static JWTClaimsSet claimsSet(OpenIDClient openIDClient, SignedJWT signedJWT) throws BadJOSEException, JOSEException, IOException, ParseException, CertificateException {
+        String signingCertificate = getSigningCertificate(openIDClient);
+        JWKSet jwkSet;
+        JWSKeySelector keySelector;
+        if (signingCertificate.trim().startsWith("{") && signingCertificate.contains("keys")) {
+            jwkSet = JWKSet.parse(signingCertificate);
+            keySelector = new JWSVerificationKeySelector(signedJWT.getHeader().getAlgorithm(), new ImmutableJWKSet(jwkSet));
+        } else {
+            RSAKey key = rsaKey(signingCertificate);
+            keySelector = new SingleKeyJWSKeySelector(signedJWT.getHeader().getAlgorithm(), key.toPublicKey());
+        }
+        DefaultJWTProcessor jwtProcessor = new DefaultJWTProcessor();
+        jwtProcessor.setJWSKeySelector(keySelector);
+        // the process method of the DefaultJWTProcessor also verifies the signature
+        return jwtProcessor.process(signedJWT, null);
+    }
+
+    private static RSAKey rsaKey(String signingCertificate) throws JOSEException, CertificateException {
+        if (!signingCertificate.contains("BEGIN CERTIFICATE")) {
+            signingCertificate = "-----BEGIN CERTIFICATE-----\n" + signingCertificate + "\n-----END CERTIFICATE-----";
+        }
+        X509Certificate cert = (X509Certificate) CertificateFactory.getInstance("X.509")
+                .generateCertificate(new ByteArrayInputStream(signingCertificate.getBytes()));
+        return RSAKey.parse(cert);
+
+    }
+
+    private static String getSigningCertificate(OpenIDClient openIDClient) throws IOException, ParseException {
         if (!openIDClient.certificateSpecified()) {
             throw new UnsupportedJWTException(String.format("RP %s does not have a certificate, url or discovery url. ", openIDClient.getClientId()));
         }
 
         String signingCertificate;
-        if (StringUtils.hasText(openIDClient.getSigningCertificateUrl())) {
-            signingCertificate = read(openIDClient.getSigningCertificateUrl());
-        } else if (StringUtils.hasText(openIDClient.getSigningCertificate())) {
+        if (StringUtils.hasText(openIDClient.getSigningCertificate())) {
             signingCertificate = openIDClient.getSigningCertificate();
+        } else if (StringUtils.hasText(openIDClient.getSigningCertificateUrl())) {
+            signingCertificate = read(openIDClient.getSigningCertificateUrl());
         } else {
             String discovery = read(openIDClient.getDiscoveryUrl());
             String jwksUri = (String) JSONObjectUtils.parse(discovery).get("jwks_uri");
@@ -87,30 +116,6 @@ public class JWTRequest {
         return IOUtils.toString(new URL(url).openStream(), defaultCharset());
     }
 
-    private static JWKSet jwkSet(String signingCertificate) throws CertificateException, JOSEException, ParseException {
-        if (signingCertificate.trim().startsWith("{") && signingCertificate.contains("keys")) {
-            return JWKSet.parse(signingCertificate);
-        }
-        return new JWKSet(rsaKey(signingCertificate));
-    }
-
-    public static RSAKey rsaKey(String signingCertificate) throws ParseException, JOSEException, CertificateException {
-        if (!signingCertificate.contains("BEGIN CERTIFICATE")) {
-            signingCertificate = "-----BEGIN CERTIFICATE-----\n" + signingCertificate + "\n-----END CERTIFICATE-----";
-        }
-        X509Certificate cert = (X509Certificate) CertificateFactory.getInstance("X.509")
-                .generateCertificate(new ByteArrayInputStream(signingCertificate.getBytes()));
-        return RSAKey.parse(cert);
-
-    }
-
-    @SuppressWarnings("unchecked")
-    private static JWTClaimsSet claimsSet(JWKSet jwkSet, SignedJWT signedJWT) throws BadJOSEException, JOSEException {
-        ConfigurableJWTProcessor jwtProcessor = new DefaultJWTProcessor();
-        JWSKeySelector keySelector = new JWSVerificationKeySelector(signedJWT.getHeader().getAlgorithm(), new ImmutableJWKSet(jwkSet));
-        jwtProcessor.setJWSKeySelector(keySelector);
-        return jwtProcessor.process(signedJWT, null);
-    }
 
     private static AuthenticationRequest mergeAuthenticationRequest(AuthenticationRequest authenticationRequest, Map<String, Object> claims) throws com.nimbusds.oauth2.sdk.ParseException, URISyntaxException {
         return new AuthenticationRequest(
@@ -132,6 +137,7 @@ public class JWTRequest {
                 claims.containsKey("acr_values") ? Arrays.asList(((String) claims.get("acr_values")).split(" ")).stream().map(ACR::new).collect(Collectors.toList()) : authenticationRequest.getACRValues(),
                 claims.containsKey("claims") ? ClaimsRequest.parse((String) claims.get("claims")) : authenticationRequest.getClaims(),
                 authenticationRequest.getPurpose(),
+                null,
                 authenticationRequest.getRequestObject(),
                 authenticationRequest.getRequestURI(),
                 claims.containsKey("code_challenge") ? CodeChallenge.parse((String) claims.get("code_challenge")) : authenticationRequest.getCodeChallenge(),

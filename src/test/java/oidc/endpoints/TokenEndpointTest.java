@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.text.ParseException;
 import java.util.Arrays;
@@ -334,13 +335,13 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
     }
 
     @Test
-    public void privateKeyJwtAuthentication() throws IOException, JOSEException, InvalidKeySpecException, NoSuchAlgorithmException {
+    public void privateKeyJwtAuthentication() throws IOException, JOSEException, InvalidKeySpecException, NoSuchAlgorithmException, CertificateException {
         PrivateKeyJWT privateKeyJWT = new PrivateKeyJWT(
                 new ClientID("rp-jwt-authentication"),
                 URI.create("http://localhost:8080/oidc/token"),
                 JWSAlgorithm.RS256,
                 privateKey(),
-                "key-id", null);
+                "does-not-matter", null);
         Map<String, Object> body = doJwtAuthenticationAuthorization(privateKeyJWT);
         assertTrue(body.containsKey("id_token"));
         assertTrue(body.containsKey("access_token"));

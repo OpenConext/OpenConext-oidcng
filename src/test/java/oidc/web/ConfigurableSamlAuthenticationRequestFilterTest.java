@@ -8,9 +8,11 @@ import oidc.model.OpenIDClient;
 import oidc.secure.SignedJWTTest;
 import oidc.user.SamlTest;
 import org.junit.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.saml.saml2.authentication.AuthenticationContextClassReference;
 import org.springframework.security.saml.saml2.authentication.AuthenticationRequest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -25,7 +27,7 @@ import java.util.stream.Collectors;
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 
-@ActiveProfiles(profiles = {"prod"}, inheritProfiles = false)
+@ActiveProfiles(profiles = {"test"}, inheritProfiles = false)
 public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractIntegrationTest implements SamlTest, SignedJWTTest {
 
     @Test

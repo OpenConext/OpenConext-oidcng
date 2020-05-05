@@ -127,6 +127,7 @@
         "name:en": "Playground Client",
         "name:nl": "Playground Client",
         "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
+        "clientSecretJWT": "very-long-long-long-long-long-secret",
         "scopes": [
           "openid",
           "groups"

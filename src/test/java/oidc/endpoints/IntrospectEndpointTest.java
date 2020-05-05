@@ -3,19 +3,15 @@ package oidc.endpoints;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.TokenIntrospectionRequest;
-import com.nimbusds.oauth2.sdk.http.CommonContentTypes;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.Map;
 
 import static com.nimbusds.oauth2.sdk.http.HTTPRequest.Method.POST;
@@ -30,7 +26,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     //https://bitbucket.org/connect2id/oauth-2.0-sdk-with-openid-connect-extensions/issues/265
     public void introspectContract() throws MalformedURLException, ParseException {
         HTTPRequest request = new HTTPRequest(POST, new URL("http://localhost:8080/introspect"));
-        request.setContentType(CommonContentTypes.APPLICATION_URLENCODED);
+        request.setContentType("application/x-www-form-urlencoded");
         request.setQuery("token=123456");
         //https://tools.ietf.org/html/rfc7662 is vague about the authorization requirements, but apparently this is ok
         TokenIntrospectionRequest.parse(request);

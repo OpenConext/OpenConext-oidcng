@@ -170,6 +170,7 @@ public class JWTRequestTest implements MapTypeReference, SignedJWTTest {
                 Collections.singletonList(new ACR("loa")),
                 claimsRequest,
                 "purpose",
+                null,
                 signedJWT,
                 null,
                 CodeChallenge.compute(CodeChallengeMethod.S256, new CodeVerifier()),
