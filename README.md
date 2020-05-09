@@ -46,7 +46,7 @@ https://oidcng.test2.surfconext.nl/oidc/certs
 
 When you have the oidcng server running locally with the `dev` profile you can use cUrl to test the different endpoints.
 
-Note that this only works because of the `dev` profile where there is pre-authenticated user provided by the `FakeSamlAuthenticationFilter`.
+Note that this only works because of the `dev` profile where there is pre-authenticated user provided by the `FakeSamlAuthenticationFilter`. You will also need to have the original `secret_keyset.json` in place to make this work.
 
 First obtain an authorization code:
 
@@ -209,3 +209,11 @@ To rollover the symmetric key and clean up unreferenced symmetric keys:
 ```
 curl -u manage:secret "http://localhost:8080/manage/force-symmetric-key-rollover"
 ```
+## [SAML metadata](#saml-metadata)
+
+The metadata is generated on the fly and is displayed on http://localhost:8080/saml/metadata
+
+## [Trusted Proxy](#trusted-proxy)
+
+OpenConext-OIDC is a proxy for SP's that want to use OpenConnect ID instead of SAML to provide their Service to the federation members. 
+Therefore the WAYF and ARP must be scoped for the requesting SP (and not this OIDC SP). This works if the OIDC-proxy is configured with the `coin:trusted_proxy` and `redirect.sign` settings in Manage.
