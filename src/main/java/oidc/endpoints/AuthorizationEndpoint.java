@@ -22,10 +22,12 @@ import oidc.model.EncryptedTokenValue;
 import oidc.model.OpenIDClient;
 import oidc.model.ProvidedRedirectURI;
 import oidc.model.User;
+import oidc.model.UserConsent;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.OpenIDClientRepository;
 import oidc.repository.RefreshTokenRepository;
+import oidc.repository.UserConsentRepository;
 import oidc.repository.UserRepository;
 import oidc.secure.JWTRequest;
 import oidc.secure.TokenGenerator;
@@ -33,12 +35,15 @@ import oidc.user.OidcSamlAuthentication;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
@@ -73,6 +78,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     private AuthorizationCodeRepository authorizationCodeRepository;
     private AccessTokenRepository accessTokenRepository;
     private UserRepository userRepository;
+    private UserConsentRepository userConsentRepository;
     private RefreshTokenRepository refreshTokenRepository;
     private OpenIDClientRepository openIDClientRepository;
 
@@ -81,12 +87,14 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                                  AccessTokenRepository accessTokenRepository,
                                  RefreshTokenRepository refreshTokenRepository,
                                  UserRepository userRepository,
+                                 UserConsentRepository userConsentRepository,
                                  OpenIDClientRepository openIDClientRepository,
                                  TokenGenerator tokenGenerator) {
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.accessTokenRepository = accessTokenRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;
+        this.userConsentRepository = userConsentRepository;
         this.openIDClientRepository = openIDClientRepository;
         this.tokenGenerator = tokenGenerator;
     }
@@ -95,10 +103,31 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     public ModelAndView authorize(@RequestParam MultiValueMap<String, String> parameters,
                                   Authentication authentication) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
         LOG.info(String.format("/oidc/authorize %s %s", authentication.getDetails(), parameters));
-        //We do not provide SSO as does EB not - up to the identity provider
-        logout();
 
+        return doAuthorization(parameters, (OidcSamlAuthentication) authentication, true);
+    }
+
+    @PostMapping(value = "/oidc/consent", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ModelAndView consent(@RequestParam Map<String, String> body,
+                                Authentication authentication) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
+        LOG.info(String.format("/oidc/consent %s %s", authentication.getDetails(), body));
         OidcSamlAuthentication samlAuthentication = (OidcSamlAuthentication) authentication;
+
+        User user = samlAuthentication.getUser();
+        UserConsent userConsent = userConsentRepository.findUserConsentBySub(user.getSub())
+                .map(uc -> uc.updateHash(user)).orElse(new UserConsent(user));
+
+        userConsentRepository.save(userConsent);
+
+        LinkedMultiValueMap parameters = new LinkedMultiValueMap();
+        parameters.setAll(body);
+        return this.doAuthorization(parameters, (OidcSamlAuthentication) authentication, false);
+    }
+
+
+    private ModelAndView doAuthorization(MultiValueMap<String, String> parameters,
+                                         OidcSamlAuthentication samlAuthentication,
+                                         boolean consentRequired) throws ParseException, CertificateException, JOSEException, IOException, BadJOSEException, java.text.ParseException, URISyntaxException, NoSuchProviderException, NoSuchAlgorithmException {
         AuthorizationRequest authenticationRequest = AuthorizationRequest.parse(parameters);
 
         Scope scope = authenticationRequest.getScope();
@@ -118,11 +147,24 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         State state = authenticationRequest.getState();
         String redirectURI = validateRedirectionURI(authenticationRequest, client).getRedirectURI();
 
-
         List<String> scopes = validateScopes(authenticationRequest, client);
         ResponseType responseType = validateGrantType(authenticationRequest, client);
 
         User user = samlAuthentication.getUser();
+
+        if (consentRequired && client.isConsentRequired()) {
+            Optional<UserConsent> userConsentOptional = this.userConsentRepository.findUserConsentBySub(user.getSub());
+            boolean userConsentRequired = userConsentOptional.map(userConsent -> userConsent.getHash() != user.hashCode())
+                    .orElse(true);
+
+            if (userConsentRequired) {
+                return doConsent(parameters, client, scopes, user);
+            }
+        } else {
+            //We do not provide SSO as does EB not - up to the identity provider
+            logout();
+        }
+
         ResponseMode responseMode = authenticationRequest.impliedResponseMode();
 
         if (responseType.impliesCodeFlow()) {
@@ -165,6 +207,25 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             throw new IllegalArgumentException("Response mode " + responseMode + " not supported");
         }
         throw new IllegalArgumentException("Not yet implemented response_type: " + responseType.toString());
+    }
+
+    private ModelAndView doConsent(MultiValueMap<String, String> parameters, OpenIDClient client, List<String> scopes, User user) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("parameters", parameters.entrySet().stream().collect(Collectors.toMap(
+                entry -> entry.getKey(),
+                entry -> entry.getValue().get(0)
+        )));
+        body.put("scopes", scopes);
+        body.put("client", client.getName());
+        List<String> allowedResourceServers = client.getAllowedResourceServers();
+        List<OpenIDClient> resourceServers = this.openIDClientRepository.findByClientIdIn(allowedResourceServers);
+        Map<String, String> audiences = allowedResourceServers.stream().collect(Collectors.toMap(
+                name -> name,
+                name -> resourceServers.stream().filter(rs -> rs.getClientId().equals(name)).findFirst().map(OpenIDClient::getName).orElse(name)
+        ));
+        body.put("audiences", audiences);
+        body.put("claims", user.getAttributes());
+        return new ModelAndView("consent", body);
     }
 
     public static ResponseType validateGrantType(AuthorizationRequest authorizationRequest, OpenIDClient client) {

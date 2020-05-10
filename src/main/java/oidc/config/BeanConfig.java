@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.OpenIDClientRepository;
+import oidc.repository.UserConsentRepository;
 import oidc.repository.UserRepository;
 import oidc.secure.CustomValidator;
 import oidc.secure.LoggingStrictHttpFirewall;

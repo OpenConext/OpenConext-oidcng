@@ -1,6 +1,7 @@
 package oidc.user;
 
 import oidc.model.User;
+import oidc.repository.UserConsentRepository;
 import oidc.repository.UserRepository;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.when;
 public class SamlProvisioningAuthenticationManagerTest implements SamlTest {
 
     private UserRepository userRepository = mock(UserRepository.class);
+
     private SamlProvisioningAuthenticationManager subject = new SamlProvisioningAuthenticationManager(
             userRepository,
             objectMapper,

@@ -40,7 +40,7 @@ public interface OidcEndpoint {
                                                       List<String> scopes, List<String> idTokenClaims,
                                                       boolean clientCredentials, String nonce,
                                                       Optional<Long> authorizationTime,
-                                                      Optional<String> authorizationCodeId) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
+                                                      Optional<String> authorizationCodeId) {
         Map<String, Object> map = new LinkedHashMap<>();
         TokenGenerator tokenGenerator = getTokenGenerator();
         EncryptedTokenValue encryptedAccessToken = user

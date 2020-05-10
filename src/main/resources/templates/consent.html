@@ -1,0 +1,42 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Consent</title>
+    <style>
+        body {
+            background-color: linen;
+        }
+
+        button {
+            color: maroon;
+            margin-left: 40px;
+        }
+    </style>
+</head>
+<body>
+<form method="post" action="/oidc/consent">
+    CONSENT - TODO
+    <input th:each="parameter : ${parameters}" type="hidden" th:name="${parameter.key}" th:value="${parameter.value}"/>
+    <p>Client:</p>
+    <span th:text="${client}"/>
+
+    <p>Scopes</p>
+    <ul>
+        <li th:each="scope : ${scopes}" th:text="${scope}"/>
+    </ul>
+
+    <p>Audiences</p>
+    <ul>
+        <li th:each="audience : ${audiences}" th:text="${audience.key} + '-' + ${audience.value}"/>
+    </ul>
+
+    <p>Claims</p>
+    <ul>
+        <li th:each="claim : ${claims}" th:text="${claim.key} + '-' + ${claim.value}"/>
+    </ul>
+    <div class="actions">
+        <button name="yes" value="yes" type="submit">Yes</button>
+        <button name="no" value="no" type="submit">No</button>
+    </div>
+</form>
+</body>
+</html>

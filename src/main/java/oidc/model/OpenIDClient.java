@@ -6,10 +6,12 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.saml.saml2.metadata.NameIdFormat;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -45,6 +47,7 @@ public class OpenIDClient {
     private String signingCertificateUrl;
 
     private boolean includeUnspecifiedNameID;
+    private boolean consentRequired;
 
     public OpenIDClient(String clientId, List<String> redirectUrls, List<String> scopes, List<String> grants) {
         this.clientId = clientId;
@@ -83,6 +86,7 @@ public class OpenIDClient {
                 .map(id -> metaDataFields.get(id).equals(NameIdFormat.UNSPECIFIED))
                 .findAny()
                 .isPresent();
+        this.consentRequired = parseBoolean(metaDataFields.get("oidc:consentRequired"));
     }
 
     @Transient
@@ -102,4 +106,5 @@ public class OpenIDClient {
         }
         return false;
     }
+
 }

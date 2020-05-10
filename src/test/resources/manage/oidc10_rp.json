@@ -146,7 +146,8 @@
         "refreshTokenValidity": 3600,
         "isResourceServer": "1",
         "isPublicClient": "1",
-        "oidc:signingCertificateUrl": "http://localhost:8081/oidc/api/certs"
+        "oidc:signingCertificateUrl": "http://localhost:8081/oidc/api/certs",
+        "oidc:consentRequired": true
       }
     }
   },

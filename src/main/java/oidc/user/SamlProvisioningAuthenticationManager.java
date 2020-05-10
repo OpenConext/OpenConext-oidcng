@@ -3,6 +3,8 @@ package oidc.user;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import oidc.model.User;
+import oidc.model.UserConsent;
+import oidc.repository.UserConsentRepository;
 import oidc.repository.UserRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -41,7 +43,9 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
     private UserRepository userRepository;
     private List<UserAttribute> userAttributes;
 
-    public SamlProvisioningAuthenticationManager(UserRepository userRepository, ObjectMapper objectMapper, Resource oidcSamlMapping) throws IOException {
+    public SamlProvisioningAuthenticationManager(UserRepository userRepository,
+                                                 ObjectMapper objectMapper,
+                                                 Resource oidcSamlMapping) throws IOException {
         this.userRepository = userRepository;
         this.userAttributes = objectMapper.readValue(oidcSamlMapping.getInputStream(),
                 new TypeReference<List<UserAttribute>>() {

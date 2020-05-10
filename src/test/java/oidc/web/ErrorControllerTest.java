@@ -19,6 +19,7 @@ public class ErrorControllerTest {
     private ErrorController subject = new ErrorController(new DefaultErrorAttributes(true));
 
     @Test
+    @SuppressWarnings("unchecked")
     public void error() throws URISyntaxException, UnsupportedEncodingException {
         MockHttpServletRequest request = MockMvcRequestBuilders
                 .get(new URI("http://localhost:8080/oidc/authorize?response_type=code&client_id=http@//mock-sp&scope=openid&redirect_uri=http://localhost:8080"))

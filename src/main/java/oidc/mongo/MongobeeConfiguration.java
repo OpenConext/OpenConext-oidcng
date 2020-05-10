@@ -12,6 +12,7 @@ import oidc.model.RefreshToken;
 import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
 import oidc.model.User;
+import oidc.model.UserConsent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -104,6 +105,18 @@ public class MongobeeConfiguration {
         Stream.of(AccessToken.class, RefreshToken.class, AuthorizationCode.class, User.class)
                 .forEach(clazz -> mongoTemplate.remove(new Query(), clazz));
     }
+
+    @ChangeSet(order = "006", id = "createUserConsentIndex", author = "Okke Harsta")
+    public void createUserConsent(MongoTemplate mongoTemplate) {
+        mongoTemplate.dropCollection(UserConsent.class);
+
+        Map<Class<? extends Object>, List<String>> indexInfo = new HashMap<>();
+
+        indexInfo.put(UserConsent.class, singletonList("sub"));
+
+        ensureCollectionsAndIndexes(mongoTemplate, indexInfo);
+    }
+
 
     private void ensureCollectionsAndIndexes(MongoTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {
         indexInfo.forEach((collection, fields) -> {
