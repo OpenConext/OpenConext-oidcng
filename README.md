@@ -32,11 +32,18 @@ The content is from [https://github.com/OpenConext/OpenConext-deploy/blob/master
 ```
 https://oidcng.test2.surfconext.nl/oidc/.well-known/openid-configuration
 ```
-Generate a Secret Key Set for encryption / decryption of the user claims in the access token.
+Generate a Master Secret Key Set. This master key encrypts both the JWT signing keys as the symmetric keys that are used to encrypt/decrypt the claims in the access_token
 The output is used in ansible to create the file [https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/secret_keyset.json](https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/secret_keyset.json)
 ```
 https://oidcng.test2.surfconext.nl/oidc/generate-secret-key-set
 ```
+If you have started the application before adding the new keyset, you have to remove the existing signing and symmetric keys from the mongo database. Run these two commands on the mongo prompt: 
+```
+db.symmetric_keys.remove({})
+db.signing_keys.remove({})
+```
+You can also use this Java binary to generate a keyset to use before starting oidcng [https://build.openconext.org/repository/public/releases/org/openconext/crypto/1.0.0/crypto-1.0.0-shaded.jar](https://build.openconext.org/repository/public/releases/org/openconext/crypto/1.0.0/crypto-1.0.0-shaded.jar)
+
 The public certificate that RP's can use to validate the signed JWT. This endpoint is also configured in the `.well-known/openid-configuration` endpoint.
 ```
 https://oidcng.test2.surfconext.nl/oidc/certs
