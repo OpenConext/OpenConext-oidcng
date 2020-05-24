@@ -2,6 +2,7 @@ package oidc.endpoints;
 
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.TokenIntrospectionRequest;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import io.restassured.response.Response;
@@ -12,6 +13,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 import static com.nimbusds.oauth2.sdk.http.HTTPRequest.Method.POST;
@@ -79,9 +82,15 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
         String accessToken = (String) body.get("access_token");
         Map<String, Object> result = callIntrospection("mock-sp", accessToken, "secret");
         assertEquals(true, result.get("active"));
-        assertEquals("openid groups", result.get("scope"));
+        assertEquals(scopeToSortedList("openid groups"), scopeToSortedList((String) result.get("scope")));
         assertEquals("mock-sp", result.get("sub"));
         assertFalse(result.containsKey("email"));
+    }
+
+    private List<String> scopeToSortedList(String scope) {
+        List<String> strings = Scope.parse(scope).toStringList();
+        strings.sort(Comparator.comparing(String::toString));
+        return strings;
     }
 
     @Test

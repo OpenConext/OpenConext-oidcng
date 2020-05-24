@@ -33,6 +33,7 @@ import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
+import oidc.model.Scope;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
@@ -63,6 +64,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
@@ -263,7 +265,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
 
     private ResponseEntity handleClientCredentialsGrant(OpenIDClient client) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
-        Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes(),
+        Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes().stream().map(Scope::getName).collect(Collectors.toList()),
                 Collections.emptyList(), true, null, Optional.empty(), Optional.empty());
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }

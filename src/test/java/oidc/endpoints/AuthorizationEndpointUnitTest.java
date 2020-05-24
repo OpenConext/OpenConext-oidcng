@@ -101,7 +101,7 @@ public class AuthorizationEndpointUnitTest {
     private OpenIDClient openIDClient(String redirectUrl, String scope, String grant) {
         return new OpenIDClient("https://mock-rp",
                 StringUtils.hasText(redirectUrl) ? singletonList(redirectUrl) : new ArrayList<>(),
-                singletonList(scope),
+                singletonList(new oidc.model.Scope(scope)),
                 singletonList(grant));
     }
 

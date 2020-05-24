@@ -16,6 +16,7 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 @Configuration
@@ -38,6 +39,7 @@ public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
                 super.setupModule(context);
                 context.setMixInAnnotations(OidcSamlAuthentication.class, OidcSamlAuthenticationMixin.class);
                 context.setMixInAnnotations(HashSet.class, HashSetMixin.class);
+                context.setMixInAnnotations(LinkedHashMap.class, LinkedHashMapMixin.class);
                 context.setMixInAnnotations(User.class, UserMixin.class);
             }
         };
@@ -52,6 +54,9 @@ public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
     }
 
     private static class HashSetMixin {
+    }
+
+    private static class LinkedHashMapMixin {
     }
 
     private static class UserMixin {

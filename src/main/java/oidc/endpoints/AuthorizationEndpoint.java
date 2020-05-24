@@ -58,7 +58,6 @@ import java.net.URLDecoder;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.cert.CertificateException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -67,6 +66,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 @Controller
 public class AuthorizationEndpoint implements OidcEndpoint {
@@ -215,7 +216,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 entry -> entry.getKey(),
                 entry -> entry.getValue().get(0)
         )));
-        body.put("scopes", scopes);
+
+        body.put("scopes", client.getScopes().stream().filter(scope -> scopes.contains(scope.getName())).collect(toList()));
         body.put("client", client.getName());
         List<String> allowedResourceServers = client.getAllowedResourceServers();
         List<OpenIDClient> resourceServers = this.openIDClientRepository.findByClientIdIn(allowedResourceServers);
@@ -350,10 +352,10 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     public static List<String> validateScopes(AuthorizationRequest authorizationRequest, OpenIDClient client) {
         Scope scope = authorizationRequest.getScope();
         List<String> requestedScopes = scope != null ? scope.toStringList() : Collections.emptyList();
-        List<String> scopes = new ArrayList<>(client.getScopes());
+        List<String> scopes = client.getScopes().stream().map(oidc.model.Scope::getName).collect(toList());
         scopes.addAll(forFreeOpenIDScopes);
         if (!scopes.containsAll(requestedScopes)) {
-            List<String> missingScopes = requestedScopes.stream().filter(s -> !scopes.contains(s)).collect(Collectors.toList());
+            List<String> missingScopes = requestedScopes.stream().filter(s -> !scopes.contains(s)).collect(toList());
             throw new InvalidScopeException(
                     String.format("Scope(s) %s are not allowed for %s. Allowed scopes: %s",
                             missingScopes, client.getClientId(), client.getScopes()));

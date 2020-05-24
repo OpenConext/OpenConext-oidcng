@@ -21,12 +21,12 @@
 
     <p>Scopes</p>
     <ul>
-        <li th:each="scope : ${scopes}" th:text="${scope}"/>
+        <li th:each="scope : ${scopes}" th:text="${scope.name} + ' - ' + ${scope.descriptions}"/>
     </ul>
 
     <p>Audiences</p>
     <ul>
-        <li th:each="audience : ${audiences}" th:text="${audience.key} + '-' + ${audience.value}"/>
+        <li th:each="audience : ${audiences}" th:text="${audience.key} + '  -  ' + ${audience.value}"/>
     </ul>
 
     <p>Claims</p>

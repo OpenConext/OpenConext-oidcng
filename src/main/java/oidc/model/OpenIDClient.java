@@ -33,7 +33,7 @@ public class OpenIDClient {
     private String secret;
     private String clientSecretJWT;
     private List<String> redirectUrls;
-    private List<String> scopes;
+    private List<Scope> scopes;
     private List<String> grants;
     private List<String> allowedResourceServers;
     private boolean resourceServer;
@@ -49,7 +49,7 @@ public class OpenIDClient {
     private boolean includeUnspecifiedNameID;
     private boolean consentRequired;
 
-    public OpenIDClient(String clientId, List<String> redirectUrls, List<String> scopes, List<String> grants) {
+    public OpenIDClient(String clientId, List<String> redirectUrls, List<Scope> scopes, List<String> grants) {
         this.clientId = clientId;
         this.redirectUrls = redirectUrls;
         this.scopes = scopes;
@@ -68,8 +68,11 @@ public class OpenIDClient {
         this.secret = (String) metaDataFields.get("secret");
         this.clientSecretJWT = (String) metaDataFields.get("clientSecretJWT");
         this.redirectUrls = (List) metaDataFields.get("redirectUrls");
-        this.scopes = (List) metaDataFields.getOrDefault("scopes", "oidc");
-        this.grants = (List) metaDataFields.getOrDefault("grants", "authorization_code");
+        this.scopes = (List<Scope>) ((List) metaDataFields.getOrDefault("scopes", Collections.singletonList("oidc"))).stream()
+                .map(val -> val instanceof String ? new Scope((String) val) : new Scope((Map<String, Object>) val))
+                .collect(Collectors.toList());
+
+        this.grants = (List) metaDataFields.getOrDefault("grants", Collections.singletonList("authorization_code"));
         this.allowedResourceServers = ((List<Map<String, String>>) data.getOrDefault("allowedResourceServers", new ArrayList<>()))
                 .stream().map(e -> e.get("name")).collect(Collectors.toList());
         this.resourceServer = parseBoolean(metaDataFields.get("isResourceServer"));
@@ -80,13 +83,13 @@ public class OpenIDClient {
         this.discoveryUrl = (String) metaDataFields.get("discoveryurl");
         this.signingCertificate = (String) metaDataFields.get("oidc:signingCertificate");
         this.signingCertificateUrl = (String) metaDataFields.get("oidc:signingCertificateUrl");
+        this.consentRequired = parseBoolean(metaDataFields.get("oidc:consentRequired"));
 
         this.includeUnspecifiedNameID = nameIdFormats.stream()
                 .filter(id -> metaDataFields.containsKey(id))
                 .map(id -> metaDataFields.get(id).equals(NameIdFormat.UNSPECIFIED))
                 .findAny()
                 .isPresent();
-        this.consentRequired = parseBoolean(metaDataFields.get("oidc:consentRequired"));
     }
 
     @Transient
