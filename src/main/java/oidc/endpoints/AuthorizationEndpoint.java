@@ -218,22 +218,25 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
     public static ProvidedRedirectURI validateRedirectionURI(AuthorizationRequest authenticationRequest, OpenIDClient client) throws UnsupportedEncodingException {
         URI redirectionURI = authenticationRequest.getRedirectionURI();
+        List<String> registeredRedirectUrls = client.getRedirectUrls();
         if (redirectionURI == null) {
-            return client.getRedirectUrls().stream().findFirst().map(s -> new ProvidedRedirectURI(s, false))
+            return registeredRedirectUrls.stream().findFirst().map(s -> new ProvidedRedirectURI(s, false))
                     .orElseThrow(() ->
                             new IllegalArgumentException(String.format("Client %s must have at least one redirectURI configured to use the Authorization flow",
                                     client.getClientId())));
         }
 
         String redirectURI = URLDecoder.decode(redirectionURI.toString(), "UTF-8");
-
-        List<String> redirectUrls = client.getRedirectUrls();
-        if (CollectionUtils.isEmpty(redirectUrls) || !redirectUrls.contains(redirectURI)) {
+        Optional<ProvidedRedirectURI> optionalProvidedRedirectURI = registeredRedirectUrls.stream()
+                .map(url -> new ProvidedRedirectURI(url, true))
+                .filter(providedRedirectURI -> providedRedirectURI.equalsIgnorePort(redirectURI))
+                .findFirst();
+        if (!optionalProvidedRedirectURI.isPresent()) {
             throw new RedirectMismatchException(
                     String.format("Client %s with registered redirect URI's %s requested authorization with redirectURI %s",
-                            client.getClientId(), redirectUrls, redirectURI));
+                            client.getClientId(), registeredRedirectUrls, redirectURI));
         }
-        return new ProvidedRedirectURI(redirectURI, true);
+        return optionalProvidedRedirectURI.get();
     }
 
     private String authorizationRedirect(String redirectionURI, State state, String code, boolean isFragment) {

@@ -298,4 +298,6 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         assertEquals("http://test.surfconext.nl/assurance/loa1", claimsSet.getClaim("acr"));
 
     }
+
+
 }
