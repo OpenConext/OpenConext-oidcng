@@ -66,7 +66,7 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
                       AuthenticationRequestRepository authenticationRequestRepository,
                       OpenIDClientRepository openIDClientRepository,
                       ObjectMapper objectMapper,
-                      @Value("${oidc_saml_mapping__path}") Resource oidcSamlMapping) {
+                      @Value("${oidc_saml_mapping_path}") Resource oidcSamlMapping) {
         this.appConfiguration = config;
         this.userRepository = userRepository;
         this.openIDClientRepository = openIDClientRepository;
