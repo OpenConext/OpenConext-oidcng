@@ -67,8 +67,13 @@ spring:
           - urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified
 
 manage:
-  user: manage
+  user: oidcng
   password: secret
+
+eduid:
+  user: oidcng
+  password: secret
+  uri: https://eduid.test2.surfconext.nl/myconext/api/attribute-manipulation
 
 management:
   endpoints:

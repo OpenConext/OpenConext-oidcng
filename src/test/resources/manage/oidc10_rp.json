@@ -110,6 +110,7 @@
       "state": "testaccepted",
       "allowedall": true,
       "metaDataFields": {
+        "coin:institution_guid" :"ad93daef-0911-e511-80d0-005056956c1a",
         "name:en": "ResourceServer",
         "name:nl": "ResourceServer",
         "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",

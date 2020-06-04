@@ -1,6 +1,7 @@
 package oidc;
 
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
@@ -34,6 +35,7 @@ import oidc.model.SymmetricKey;
 import oidc.repository.SequenceRepository;
 import oidc.secure.TokenGenerator;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -77,6 +79,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -90,7 +96,8 @@ import static org.junit.Assert.assertTrue;
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
-                "cron.node-cron-job-responsible=false"
+                "cron.node-cron-job-responsible=false",
+                "eduid.uri=http://localhost:8099/attribute-manipulation"
         })
 @ActiveProfiles("dev")
 @SuppressWarnings("unchecked")

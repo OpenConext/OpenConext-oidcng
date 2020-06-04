@@ -162,11 +162,8 @@ public class SecurityConfiguration {
     @Configuration
     public static class AppSecurity extends WebSecurityConfigurerAdapter {
 
-        @Value("${manage.user}")
-        private String user;
-
-        @Value("${manage.password}")
-        private String password;
+        private @Value("${manage.user}") String user;
+        private @Value("${manage.password}") String password;
 
         @Override
         protected void configure(HttpSecurity http) throws Exception {

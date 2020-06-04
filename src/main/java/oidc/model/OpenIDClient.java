@@ -29,6 +29,7 @@ public class OpenIDClient {
     @Id
     private String id;
     private String clientId;
+    private String institutionGuid;
     private String name;
     private String secret;
     private String clientSecretJWT;
@@ -64,6 +65,7 @@ public class OpenIDClient {
 
         Map<String, Object> metaDataFields = (Map<String, Object>) data.get("metaDataFields");
 
+        this.institutionGuid = (String) metaDataFields.get("coin:institution_guid");
         this.name = (String) metaDataFields.get("name:en");
         this.secret = (String) metaDataFields.get("secret");
         this.clientSecretJWT = (String) metaDataFields.get("clientSecretJWT");

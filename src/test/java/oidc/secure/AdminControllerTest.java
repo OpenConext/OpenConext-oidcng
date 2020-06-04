@@ -5,6 +5,7 @@ import oidc.model.AccessToken;
 import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.query.Query;
 
 import java.io.IOException;
@@ -22,6 +23,9 @@ import static org.junit.Assert.assertNotEquals;
 
 public class AdminControllerTest extends AbstractIntegrationTest {
 
+    private @Value("${manage.user}") String user;
+    private @Value("${manage.password}") String password;
+
     @Test
     public void rolloverSigningKeys() throws GeneralSecurityException, ParseException, IOException {
         resetAndCreateSigningKeys(1);
@@ -30,7 +34,7 @@ public class AdminControllerTest extends AbstractIntegrationTest {
 
         mongoTemplate.findAllAndRemove(new Query(), AccessToken.class);
 
-        doRollover(201, "manage", "secret", "force-signing-key-rollover");
+        doRollover(201, user, password, "force-signing-key-rollover");
 
         List<String> newKeys = mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().collect(toList());
         assertEquals(1, newKeys.size());
@@ -47,7 +51,7 @@ public class AdminControllerTest extends AbstractIntegrationTest {
     public void rolloverSymmetricKeys() throws GeneralSecurityException, IOException {
         resetAndCreateSymmetricKeys(1);
 
-        doRollover(201, "manage", "secret", "force-symmetric-key-rollover");
+        doRollover(201, user, password, "force-symmetric-key-rollover");
 
         assertEquals(1, mongoTemplate.count(new Query(), SymmetricKey.class));
 

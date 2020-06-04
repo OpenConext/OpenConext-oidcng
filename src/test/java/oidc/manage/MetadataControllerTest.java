@@ -3,6 +3,7 @@ package oidc.manage;
 import oidc.AbstractIntegrationTest;
 import oidc.model.OpenIDClient;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.test.context.ActiveProfiles;
@@ -21,6 +22,9 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("unchecked")
 @ActiveProfiles(value = "nope", inheritProfiles = false)
 public class MetadataControllerTest extends AbstractIntegrationTest {
+
+    private @Value("${manage.user}") String user;
+    private @Value("${manage.password}") String password;
 
     @Test
     public void connections() throws IOException {
@@ -75,7 +79,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
                 .header("Content-type", "application/json")
                 .auth()
                 .preemptive()
-                .basic("manage", "secret")
+                .basic(user, password)
                 .body(serviceProviders)
                 .post("manage/connections" + queryString)
                 .then()

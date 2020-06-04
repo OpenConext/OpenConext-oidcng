@@ -6,6 +6,7 @@ import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
+import oidc.eduid.AttributePseudonymisation;
 import oidc.exceptions.UnauthorizedException;
 import oidc.model.AccessToken;
 import oidc.model.OpenIDClient;
@@ -31,18 +32,21 @@ import java.util.Optional;
 @RestController
 public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
 
-    private AccessTokenRepository accessTokenRepository;
-    private OpenIDClientRepository openIDClientRepository;
-    private String issuer;
-    private TokenGenerator tokenGenerator;
+    private final AccessTokenRepository accessTokenRepository;
+    private final OpenIDClientRepository openIDClientRepository;
+    private final String issuer;
+    private final TokenGenerator tokenGenerator;
+    private final AttributePseudonymisation attributePseudonymisation;
 
     public IntrospectEndpoint(AccessTokenRepository accessTokenRepository,
                               OpenIDClientRepository openIDClientRepository,
                               TokenGenerator tokenGenerator,
+                              AttributePseudonymisation attributePseudonymisation,
                               @Value("${spring.security.saml2.service-provider.entity-id}") String issuer) {
         this.accessTokenRepository = accessTokenRepository;
         this.openIDClientRepository = openIDClientRepository;
         this.tokenGenerator = tokenGenerator;
+        this.attributePseudonymisation = attributePseudonymisation;
         this.issuer = issuer;
     }
 
@@ -74,18 +78,17 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
         if (accessToken.isExpired(Clock.systemDefaultZone())) {
             return ResponseEntity.ok(Collections.singletonMap("active", false));
         }
-        if (!accessToken.isClientCredentials()) {
+        Map<String, Object> result = new HashMap<>();
+
+        boolean isUserAccessToken = !accessToken.isClientCredentials();
+
+        if (isUserAccessToken) {
             OpenIDClient openIDClient = openIDClientRepository.findByClientId(accessToken.getClientId());
             if (!openIDClient.getAllowedResourceServers().contains(resourceServer.getClientId())) {
                 throw new UnauthorizedException(
                         String.format("RP %s is not allowed to use the API of resource server %s. Allowed resource servers are %s",
                                 accessToken.getClientId(), resourceServer.getClientId(), openIDClient.getAllowedResourceServers()));
             }
-        }
-
-        Map<String, Object> result = new HashMap<>();
-
-        if (!accessToken.isClientCredentials()) {
             User user = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessTokenValue);
             result.put("updated_at", user.getUpdatedAt());
             if (resourceServer.isIncludeUnspecifiedNameID()) {
@@ -94,8 +97,9 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
             result.put("authenticating_authority", user.getAuthenticatingAuthority());
             result.put("sub", user.getSub());
             result.putAll(user.getAttributes());
+            result = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, result);
         }
-
+        //The following claims can not be overridden by the
         result.put("active", true);
         result.put("scope", String.join(" ", accessToken.getScopes()));
         result.put("client_id", accessToken.getClientId());
