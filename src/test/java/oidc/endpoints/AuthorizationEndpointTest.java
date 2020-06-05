@@ -4,12 +4,14 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ResponseMode;
 import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
 import oidc.model.User;
+import oidc.model.UserConsent;
 import oidc.secure.SignedJWTTest;
 import org.junit.Test;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -17,21 +19,12 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.text.ParseException;
 import java.util.Arrays;
@@ -39,7 +32,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.core.StringContains.containsString;
@@ -297,6 +291,47 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         assertEquals("john.doe@example.org", claimsSet.getClaim("email"));
         assertEquals("http://test.surfconext.nl/assurance/loa1", claimsSet.getClaim("acr"));
 
+    }
+
+    @Test
+    public void consent() throws IOException {
+        doConsent();
+
+        //consent only once
+        Response response = doAuthorize("playground_client", "code", ResponseMode.QUERY.getValue(), "nonce", null);
+        String code = getCode(response);
+        Map<String, Object> body = doToken(code, "playground_client", "secret", GrantType.AUTHORIZATION_CODE);
+
+        assertTrue(body.containsKey("access_token"));
+
+        //consent again if hash changes
+        UserConsent userConsent = mongoTemplate.findAll(UserConsent.class).get(0).updateHash(new User("nope", "unspecifiedNameId", "authenticatingAuthority", "clientId",
+                Collections.emptyMap(), Collections.emptyList()));
+        mongoTemplate.save(userConsent);
+        doConsent();
+    }
+
+    private void doConsent() throws IOException {
+        Response response = doAuthorize("playground_client", "code", ResponseMode.QUERY.getValue(), "nonce", null);
+        String html = response.getBody().asString();
+        assertTrue(html.contains("<form method=\"post\" action=\"/oidc/consent\">"));
+
+        Map<String, String> formParams = new HashMap<>();
+        Matcher matcher = Pattern.compile("<input type=\"hidden\" name=\"(.+?)\"/>").matcher(html);
+        while (matcher.find()) {
+            String group = matcher.group(1);
+            formParams.put(group.substring(0, group.indexOf("\"")), group.substring(group.lastIndexOf("\"") + 1));
+        }
+
+        response = given().redirects().follow(false)
+                .when()
+                .formParams(formParams)
+                .post("oidc/consent");
+        assertEquals(302, response.getStatusCode());
+
+        String code = getCode(response);
+        Map<String, Object> body = doToken(code, "playground_client", "secret", GrantType.AUTHORIZATION_CODE);
+        assertTrue(body.containsKey("access_token"));
     }
 
 

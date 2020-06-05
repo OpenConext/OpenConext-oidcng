@@ -30,7 +30,6 @@ import com.nimbusds.openid.connect.sdk.claims.CodeHash;
 import com.nimbusds.openid.connect.sdk.claims.StateHash;
 import lombok.SneakyThrows;
 import oidc.endpoints.MapTypeReference;
-import oidc.exceptions.InvalidSignatureException;
 import oidc.model.EncryptedTokenValue;
 import oidc.model.OpenIDClient;
 import oidc.model.SigningKey;
@@ -377,7 +376,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         this.ensureLatestSigningKey();
         JWSVerifier verifier = this.safeGet(keyID, this.verifiers);
         if (!signedJWT.verify(verifier)) {
-            throw new InvalidSignatureException("Tampered JWT");
+            throw new JOSEException("Tampered JWT");
         }
         return signedJWT.getJWTClaimsSet().getClaims();
     }

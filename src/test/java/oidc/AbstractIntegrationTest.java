@@ -32,6 +32,7 @@ import oidc.model.RefreshToken;
 import oidc.model.Sequence;
 import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
+import oidc.model.UserConsent;
 import oidc.repository.SequenceRepository;
 import oidc.secure.TokenGenerator;
 import org.junit.Before;
@@ -124,7 +125,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
                 .remove(new Query())
                 .insert(openIDClients())
                 .execute();
-        Arrays.asList(SigningKey.class, SymmetricKey.class, AccessToken.class, AuthorizationCode.class)
+        Arrays.asList(UserConsent.class, SigningKey.class, SymmetricKey.class, AccessToken.class, AuthorizationCode.class)
                 .forEach(clazz -> mongoTemplate.remove(new Query(), clazz));
     }
 

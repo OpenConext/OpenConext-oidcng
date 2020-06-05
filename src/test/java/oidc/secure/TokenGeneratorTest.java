@@ -5,7 +5,7 @@ import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import oidc.AbstractIntegrationTest;
-import oidc.exceptions.InvalidSignatureException;
+
 import oidc.model.EncryptedTokenValue;
 import oidc.model.OpenIDClient;
 import oidc.model.SigningKey;
@@ -41,7 +41,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         doEncryptAndDecryptAccessToken();
     }
 
-    @Test(expected = InvalidSignatureException.class)
+    @Test(expected = JOSEException.class)
     public void encryptAndDecryptAccessTokenTampered() throws IOException, ParseException, JOSEException {
         String accessToken = doEncryptAndDecryptAccessToken();
 

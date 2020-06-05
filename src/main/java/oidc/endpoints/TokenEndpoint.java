@@ -1,9 +1,7 @@
 package oidc.endpoints;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.MACVerifier;
-import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -17,13 +15,11 @@ import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretJWT;
 import com.nimbusds.oauth2.sdk.auth.JWTAuthentication;
 import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
-import com.nimbusds.oauth2.sdk.auth.PrivateKeyJWT;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
-import oidc.exceptions.ClientAuthenticationNotSupported;
 import oidc.exceptions.CodeVerifierMissingException;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.JWTAuthorizationGrantsException;
@@ -110,7 +106,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         if (clientAuthentication != null &&
                 !(clientAuthentication instanceof PlainClientSecret ||
                         clientAuthentication instanceof JWTAuthentication)) {
-            throw new ClientAuthenticationNotSupported(
+            throw new IllegalArgumentException(
                     String.format("Unsupported '%s' findByClientId authentication in token endpoint", clientAuthentication.getClass()));
         }
         AuthorizationGrant authorizationGrant = tokenRequest.getAuthorizationGrant();
