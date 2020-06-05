@@ -3,8 +3,6 @@ package oidc.user;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import oidc.model.User;
-import oidc.model.UserConsent;
-import oidc.repository.UserConsentRepository;
 import oidc.repository.UserRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

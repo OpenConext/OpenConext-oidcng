@@ -6,10 +6,12 @@ import oidc.model.AuthenticationRequest;
 import oidc.model.AuthorizationCode;
 import oidc.model.RefreshToken;
 import oidc.model.User;
+import oidc.model.UserConsent;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.RefreshTokenRepository;
+import oidc.repository.UserConsentRepository;
 import oidc.repository.UserRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -18,6 +20,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,21 +36,27 @@ public class ResourceCleaner {
     private RefreshTokenRepository refreshTokenRepository;
     private AuthorizationCodeRepository authorizationCodeRepository;
     private UserRepository userRepository;
+    private UserConsentRepository userConsentRepository;
     private AuthenticationRequestRepository  authenticationRequestRepository;
     private boolean cronJobResponsible;
+    private long consentExpiryDurationDays;
 
     @Autowired
     public ResourceCleaner(AccessTokenRepository accessTokenRepository,
                            RefreshTokenRepository refreshTokenRepository,
                            AuthorizationCodeRepository authorizationCodeRepository,
                            UserRepository userRepository,
+                           UserConsentRepository userConsentRepository,
                            AuthenticationRequestRepository  authenticationRequestRepository,
+                           @Value("${cron.consent-expiry-duration-days}") long consentExpiryDurationDays,
                            @Value("${cron.node-cron-job-responsible}") boolean cronJobResponsible) {
         this.accessTokenRepository = accessTokenRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.userRepository = userRepository;
         this.authenticationRequestRepository = authenticationRequestRepository;
+        this.consentExpiryDurationDays =consentExpiryDurationDays;
+        this.userConsentRepository = userConsentRepository;
         this.cronJobResponsible = cronJobResponsible;
     }
 
@@ -62,6 +73,9 @@ public class ResourceCleaner {
 
         List<String> subs = authorizationCodeRepository.findSub().stream().map(AuthorizationCode::getSub).collect(Collectors.toList());
         info(User.class, userRepository.deleteBySubNotIn(subs));
+
+        Date userConsentExpiryDate = Date.from(now.toInstant().minus(consentExpiryDurationDays, ChronoUnit.DAYS).atZone(ZoneId.systemDefault()).toInstant());
+        info(UserConsent.class, userConsentRepository.deleteByLastAccessedBefore(userConsentExpiryDate));
     }
 
     private void info(Class clazz, long count) {

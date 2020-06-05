@@ -12,6 +12,7 @@ cron:
   node-cron-job-responsible: true
   token-cleaner-expression: "0 0/15 * * * *"
   key-rollover-expression: "0 0/15 * * * *"
+  consent-expiry-duration-days: 90
 
 server:
   max-http-header-size: 10000000

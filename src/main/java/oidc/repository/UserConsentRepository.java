@@ -14,4 +14,6 @@ import java.util.UUID;
 public interface UserConsentRepository extends MongoRepository<UserConsent, String> {
 
     Optional<UserConsent> findUserConsentBySub(String sub);
+
+    Long deleteByLastAccessedBefore(Date expiryDate);
 }
