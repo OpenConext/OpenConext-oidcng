@@ -22,12 +22,15 @@ public class UserConsent {
 
     private String sub;
 
+    private List<String> scopes;
+
     private int hash;
 
     private Date lastAccessed;
 
-    public UserConsent(User user) {
+    public UserConsent(User user, List<String> scopes) {
         this.sub = user.getSub();
+        this.scopes = scopes;
         this.hash = user.hashCode();
         this.lastAccessed = new Date();
     }
@@ -36,9 +39,15 @@ public class UserConsent {
         return hash;
     }
 
-    public UserConsent updateHash(User user) {
+    public List<String> getScopes() {
+        return scopes;
+    }
+
+    public UserConsent updateHash(User user, List<String> scopes) {
         this.hash = user.hashCode();
         this.lastAccessed = new Date();
+        this.scopes = scopes;
         return this;
     }
+
 }

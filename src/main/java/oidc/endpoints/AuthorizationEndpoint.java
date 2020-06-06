@@ -117,9 +117,11 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         LOG.info(String.format("/oidc/consent %s %s", authentication.getDetails(), body));
         OidcSamlAuthentication samlAuthentication = (OidcSamlAuthentication) authentication;
 
+        List<String> scopes = Arrays.asList(body.get("scope").split(" "));
+
         User user = samlAuthentication.getUser();
         UserConsent userConsent = userConsentRepository.findUserConsentBySub(user.getSub())
-                .map(uc -> uc.updateHash(user)).orElse(new UserConsent(user));
+                .map(uc -> uc.updateHash(user, scopes)).orElse(new UserConsent(user, scopes));
 
         userConsentRepository.save(userConsent);
 
@@ -157,7 +159,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         if (consentRequired && client.isConsentRequired()) {
             Optional<UserConsent> userConsentOptional = this.userConsentRepository.findUserConsentBySub(user.getSub());
-            boolean userConsentRequired = userConsentOptional.map(userConsent -> userConsent.getHash() != user.hashCode())
+            boolean userConsentRequired = userConsentOptional
+                    .map(userConsent -> userConsent.getHash() != user.hashCode() || !userConsent.getScopes().containsAll(scopes))
                     .orElse(true);
 
             if (userConsentRequired) {

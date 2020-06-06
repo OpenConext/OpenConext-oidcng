@@ -130,15 +130,20 @@ public class MongobeeConfiguration {
     }
 
     private void ensureCollectionsAndIndexes(MongoTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {
+        ensureCollectionsAndIndexes(mongoTemplate, indexInfo, true);
+    }
+
+    private void ensureCollectionsAndIndexes(MongoTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo, boolean unique) {
         indexInfo.forEach((collection, fields) -> {
             if (!mongoTemplate.collectionExists(collection)) {
                 mongoTemplate.createCollection(collection);
             }
             fields.forEach(field -> {
                 IndexOperations indexOperations = mongoTemplate.indexOps(collection);
-                indexOperations.ensureIndex(new Index(field, Sort.Direction.ASC).named(String.format("%s_unique", field)).unique());
+                Index index = new Index(field, Sort.Direction.ASC).named(String.format("%s_unique", field));
+                index = unique ? index.unique() : index;
+                indexOperations.ensureIndex(index);
             });
         });
     }
-
 }

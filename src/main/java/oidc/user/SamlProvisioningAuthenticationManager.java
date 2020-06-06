@@ -104,7 +104,6 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
 
         this.addDerivedAttributes(attributes);
 
-        //See https://www.pivotaltracker.com/story/show/165527166
         String eduPersonTargetedId = getAttributeValue("urn:mace:dir:attribute-def:eduPersonTargetedID", assertion);
         String sub = StringUtils.hasText(eduPersonTargetedId) ? eduPersonTargetedId :
                 UUID.nameUUIDFromBytes((unspecifiedNameId + "_" + clientId).getBytes()).toString();

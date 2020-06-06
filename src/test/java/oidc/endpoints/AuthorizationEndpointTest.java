@@ -296,17 +296,15 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     @Test
     public void consent() throws IOException {
         doConsent();
-
         //consent only once
-        Response response = doAuthorize("playground_client", "code", ResponseMode.QUERY.getValue(), "nonce", null);
-        String code = getCode(response);
+        String code = doAuthorizeWithScopes("playground_client", "code", ResponseMode.QUERY.getValue(), "openid profile");
         Map<String, Object> body = doToken(code, "playground_client", "secret", GrantType.AUTHORIZATION_CODE);
 
         assertTrue(body.containsKey("access_token"));
 
         //consent again if hash changes
         UserConsent userConsent = mongoTemplate.findAll(UserConsent.class).get(0).updateHash(new User("nope", "unspecifiedNameId", "authenticatingAuthority", "clientId",
-                Collections.emptyMap(), Collections.emptyList()));
+                Collections.emptyMap(), Collections.emptyList()), Collections.singletonList("openid"));
         mongoTemplate.save(userConsent);
         doConsent();
     }

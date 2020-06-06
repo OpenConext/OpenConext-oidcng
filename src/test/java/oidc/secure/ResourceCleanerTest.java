@@ -19,6 +19,7 @@ import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.UUID;
@@ -63,7 +64,7 @@ public class ResourceCleanerTest extends AbstractIntegrationTest implements Seed
 
     private UserConsent userConsent() {
         UserConsent userConsent = new UserConsent(new User("sub", "unspecifiedNameId", "http://mockidp",
-                "clientId", Collections.emptyMap(), Collections.emptyList()));
+                "clientId", Collections.emptyMap(), Collections.emptyList()), Arrays.asList("openid", "profile"));
         Date lastAccessed = Date.from(new Date().toInstant().minus(365 * 10, ChronoUnit.DAYS).atZone(ZoneId.systemDefault()).toInstant());
         ReflectionTestUtils.setField(userConsent, "lastAccessed", lastAccessed);
         return userConsent;
