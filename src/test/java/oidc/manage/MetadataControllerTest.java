@@ -1,6 +1,7 @@
 package oidc.manage;
 
 import oidc.AbstractIntegrationTest;
+import oidc.model.IdentityProvider;
 import oidc.model.OpenIDClient;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,11 +31,14 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
     public void connections() throws IOException {
         mongoTemplate.remove(new Query(), OpenIDClient.class);
 
-        List<Map<String, Object>> relyingParties = relyingParties();
-        postConnections(relyingParties);
-        assertEquals(5L, mongoTemplate.count(new Query(), OpenIDClient.class));
+        List<Map<String, Object>> connections = relyingParties();
+        connections.addAll(samlIdentityProviders());
 
-        List<Map<String, Object>> serviceProviders = relyingParties;
+        postConnections(connections);
+        assertEquals(5L, mongoTemplate.count(new Query(), OpenIDClient.class));
+        assertEquals(2L, mongoTemplate.count(new Query(), IdentityProvider.class));
+
+        List<Map<String, Object>> serviceProviders = connections;
         Map<String, Object> mockSp = serviceProviders.get(0);
         assertEquals(true, new OpenIDClient(mockSp).isIncludeUnspecifiedNameID());
 

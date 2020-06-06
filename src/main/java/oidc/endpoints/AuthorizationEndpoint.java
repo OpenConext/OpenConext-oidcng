@@ -25,6 +25,7 @@ import oidc.model.User;
 import oidc.model.UserConsent;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
+import oidc.repository.IdentityProviderRepository;
 import oidc.repository.OpenIDClientRepository;
 import oidc.repository.RefreshTokenRepository;
 import oidc.repository.UserConsentRepository;
@@ -38,7 +39,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
@@ -73,15 +73,16 @@ import static java.util.stream.Collectors.toList;
 public class AuthorizationEndpoint implements OidcEndpoint {
 
     private static final Log LOG = LogFactory.getLog(AuthorizationEndpoint.class);
-    private static List<String> forFreeOpenIDScopes = Arrays.asList("profile", "email", "address", "phone");
+    private static final List<String> forFreeOpenIDScopes = Arrays.asList("profile", "email", "address", "phone");
 
-    private TokenGenerator tokenGenerator;
-    private AuthorizationCodeRepository authorizationCodeRepository;
-    private AccessTokenRepository accessTokenRepository;
-    private UserRepository userRepository;
-    private UserConsentRepository userConsentRepository;
-    private RefreshTokenRepository refreshTokenRepository;
-    private OpenIDClientRepository openIDClientRepository;
+    private final TokenGenerator tokenGenerator;
+    private final AuthorizationCodeRepository authorizationCodeRepository;
+    private final AccessTokenRepository accessTokenRepository;
+    private final UserRepository userRepository;
+    private final UserConsentRepository userConsentRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final OpenIDClientRepository openIDClientRepository;
+    private final IdentityProviderRepository identityProviderRepository;
 
     @Autowired
     public AuthorizationEndpoint(AuthorizationCodeRepository authorizationCodeRepository,
@@ -90,6 +91,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                                  UserRepository userRepository,
                                  UserConsentRepository userConsentRepository,
                                  OpenIDClientRepository openIDClientRepository,
+                                 IdentityProviderRepository identityProviderRepository,
                                  TokenGenerator tokenGenerator) {
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.accessTokenRepository = accessTokenRepository;
@@ -97,6 +99,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         this.userRepository = userRepository;
         this.userConsentRepository = userConsentRepository;
         this.openIDClientRepository = openIDClientRepository;
+        this.identityProviderRepository = identityProviderRepository;
         this.tokenGenerator = tokenGenerator;
     }
 
@@ -124,7 +127,6 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         parameters.setAll(body);
         return this.doAuthorization(parameters, (OidcSamlAuthentication) authentication, false);
     }
-
 
     private ModelAndView doAuthorization(MultiValueMap<String, String> parameters,
                                          OidcSamlAuthentication samlAuthentication,
@@ -216,7 +218,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 entry -> entry.getKey(),
                 entry -> entry.getValue().get(0)
         )));
-
+        body.put("identityProvider", identityProviderRepository.findByEntityId(user.getAuthenticatingAuthority()));
         body.put("scopes", client.getScopes().stream().filter(scope -> scopes.contains(scope.getName())).collect(toList()));
         body.put("client", client.getName());
         List<String> allowedResourceServers = client.getAllowedResourceServers();

@@ -31,6 +31,7 @@ public class OpenIDClient {
     private String clientId;
     private String institutionGuid;
     private String name;
+    private String nameNl;
     private String secret;
     private String clientSecretJWT;
     private List<String> redirectUrls;
@@ -67,6 +68,7 @@ public class OpenIDClient {
 
         this.institutionGuid = (String) metaDataFields.get("coin:institution_guid");
         this.name = (String) metaDataFields.get("name:en");
+        this.nameNl = (String) metaDataFields.get("name:nl");
         this.secret = (String) metaDataFields.get("secret");
         this.clientSecretJWT = (String) metaDataFields.get("clientSecretJWT");
         this.redirectUrls = (List) metaDataFields.get("redirectUrls");

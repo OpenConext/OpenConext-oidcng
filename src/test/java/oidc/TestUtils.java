@@ -35,6 +35,11 @@ public interface TestUtils {
                 });
     }
 
+    default List<Map<String, Object>> samlIdentityProviders() throws IOException {
+        return objectMapper.readValue(new ClassPathResource("manage/saml20_idp.json").getInputStream(),
+                new TypeReference<List<Map<String, Object>>>() {
+                });
+    }
 
     class ObjectMapperWrapper {
         private static ObjectMapper init() {

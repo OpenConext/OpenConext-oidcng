@@ -27,6 +27,7 @@ import io.restassured.specification.RequestSpecification;
 import oidc.endpoints.MapTypeReference;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
+import oidc.model.IdentityProvider;
 import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
 import oidc.model.Sequence;
@@ -117,6 +118,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
     protected SequenceRepository sequenceRepository;
 
     private List<OpenIDClient> openIDClients;
+    private List<IdentityProvider> identityProviders;
 
     @Before
     public void before() throws IOException {
@@ -124,6 +126,10 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, OpenIDClient.class)
                 .remove(new Query())
                 .insert(openIDClients())
+                .execute();
+        mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, IdentityProvider.class)
+                .remove(new Query())
+                .insert(identityProviders())
                 .execute();
         Arrays.asList(UserConsent.class, SigningKey.class, SymmetricKey.class, AccessToken.class, AuthorizationCode.class)
                 .forEach(clazz -> mongoTemplate.remove(new Query(), clazz));
@@ -141,6 +147,13 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
                 .filter(openIDClient -> openIDClient.getClientId().equals(clientId))
                 .findAny()
                 .orElseThrow(IllegalArgumentException::new);
+    }
+
+    protected List<IdentityProvider> identityProviders() throws IOException {
+        if (CollectionUtils.isEmpty(this.identityProviders)) {
+            this.identityProviders = samlIdentityProviders().stream().map(IdentityProvider::new).collect(Collectors.toList());
+        }
+        return this.identityProviders;
     }
 
     protected String doAuthorize() throws IOException {

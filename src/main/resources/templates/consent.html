@@ -16,6 +16,8 @@
 <form method="post" action="/oidc/consent">
     CONSENT - TODO
     <input th:each="parameter : ${parameters}" type="hidden" th:name="${parameter.key}" th:value="${parameter.value}"/>
+    <p>IdentityProvider:</p>
+    <span th:text="${identityProvider.name}"/>
     <p>Client:</p>
     <span th:text="${client}"/>
 

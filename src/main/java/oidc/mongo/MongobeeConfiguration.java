@@ -7,6 +7,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
+import oidc.model.IdentityProvider;
 import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
 import oidc.model.SigningKey;
@@ -117,6 +118,16 @@ public class MongobeeConfiguration {
         ensureCollectionsAndIndexes(mongoTemplate, indexInfo);
     }
 
+    @ChangeSet(order = "007", id = "createIdentityProviders", author = "Okke Harsta")
+    public void createIdentityProviders(MongoTemplate mongoTemplate) {
+        mongoTemplate.dropCollection(IdentityProvider.class);
+
+        Map<Class<? extends Object>, List<String>> indexInfo = new HashMap<>();
+
+        indexInfo.put(IdentityProvider.class, singletonList("entityId"));
+
+        ensureCollectionsAndIndexes(mongoTemplate, indexInfo);
+    }
 
     private void ensureCollectionsAndIndexes(MongoTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {
         indexInfo.forEach((collection, fields) -> {

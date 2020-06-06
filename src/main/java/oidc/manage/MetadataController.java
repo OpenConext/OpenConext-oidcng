@@ -1,5 +1,6 @@
 package oidc.manage;
 
+import oidc.model.IdentityProvider;
 import oidc.model.OpenIDClient;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,11 +38,22 @@ public class MetadataController {
         String name = authentication.getName();
         LOG.info("Starting to provision OIDC clients from push: " + name);
 
-        List<OpenIDClient> newClients = connections.stream().map(OpenIDClient::new).collect(Collectors.toList());
+        List<OpenIDClient> newClients = connections.stream()
+                .filter(connection -> connection.get("type").equals("oidc10_rp"))
+                .map(OpenIDClient::new).collect(Collectors.toList());
 
         mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, OpenIDClient.class)
                 .remove(new Query())
                 .insert(newClients)
+                .execute();
+
+        List<IdentityProvider> identityProviders = connections.stream()
+                .filter(connection -> connection.get("type").equals("saml20_idp"))
+                .map(IdentityProvider::new).collect(Collectors.toList());
+
+        mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, IdentityProvider.class)
+                .remove(new Query())
+                .insert(identityProviders)
                 .execute();
 
         if (forceError) {

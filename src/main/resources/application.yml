@@ -18,6 +18,9 @@ server:
   max-http-header-size: 10000000
   tomcat:
     max-http-post-size: 10000000
+    max-http-form-post-size: 10000000
+    max-swallow-size: 10000000
+
 
 # used by the git plugin
 info:
