@@ -1,6 +1,7 @@
 package oidc.model;
 
 import lombok.NoArgsConstructor;
+import oidc.crypto.KeyGenerator;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -22,15 +23,18 @@ public class UserConsent {
 
     private String sub;
 
+    private String clientName;
+
     private List<String> scopes;
 
     private int hash;
 
     private Date lastAccessed;
 
-    public UserConsent(User user, List<String> scopes) {
+    public UserConsent(User user, List<String> scopes, OpenIDClient openIDClient) {
         this.sub = user.getSub();
         this.scopes = scopes;
+        this.clientName = openIDClient.getName();
         this.hash = user.hashCode();
         this.lastAccessed = new Date();
     }

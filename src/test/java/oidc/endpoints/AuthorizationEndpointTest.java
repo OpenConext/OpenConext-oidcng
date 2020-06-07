@@ -307,6 +307,9 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 Collections.emptyMap(), Collections.emptyList()), Collections.singletonList("openid"));
         mongoTemplate.save(userConsent);
         doConsent();
+
+        userConsent = mongoTemplate.findAll(UserConsent.class).get(0);
+        assertEquals("[openid, profile]", userConsent.getScopes().toString());
     }
 
     private void doConsent() throws IOException {

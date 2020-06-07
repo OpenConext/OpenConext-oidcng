@@ -1,5 +1,6 @@
 package oidc.crypto;
 
+import lombok.SneakyThrows;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -9,12 +10,14 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.io.StringWriter;
 import java.io.Writer;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
 import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -25,14 +28,15 @@ import java.util.Date;
 
 public class KeyGenerator {
 
-    private final BouncyCastleProvider bcProvider;
+    private static final BouncyCastleProvider bcProvider = new BouncyCastleProvider();
 
-    public KeyGenerator() {
-        this.bcProvider = new BouncyCastleProvider();
+    static {
         Security.addProvider(bcProvider);
     }
 
-    public String[] generateKeys() throws Exception {
+    private KeyGenerator() {}
+
+    public static String[] generateKeys() throws Exception {
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA", "BC");
         kpg.initialize(2048);
         KeyPair kp = kpg.generateKeyPair();
@@ -50,7 +54,7 @@ public class KeyGenerator {
     }
 
 
-    private String certificate(KeyPair keyPair) throws OperatorCreationException, CertificateException, CertIOException {
+    public static String certificate(KeyPair keyPair) throws OperatorCreationException, CertificateException, CertIOException {
         X500Name dnName = new X500Name("CN=test,O=Test Certificate");
         ContentSigner contentSigner = new JcaContentSignerBuilder("SHA256WithRSA").build(keyPair.getPrivate());
 
@@ -71,6 +75,11 @@ public class KeyGenerator {
         result += Base64.getEncoder().encodeToString(certificate.getEncoded());
         result += "\n-----END CERTIFICATE-----\n";
         return result;
+    }
+
+    @SneakyThrows
+    public static String oneWayHash(String s) {
+        return new String(Hex.encode(MessageDigest.getInstance("SHA-256").digest(s.getBytes())));
     }
 
 }

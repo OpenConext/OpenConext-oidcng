@@ -108,7 +108,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                                   Authentication authentication) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
         LOG.info(String.format("/oidc/authorize %s %s", authentication.getDetails(), parameters));
 
-        return doAuthorization(parameters, (OidcSamlAuthentication) authentication, true);
+        return doAuthorization(parameters, (OidcSamlAuthentication) authentication, true, false);
     }
 
     @PostMapping(value = "/oidc/consent", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -117,22 +117,15 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         LOG.info(String.format("/oidc/consent %s %s", authentication.getDetails(), body));
         OidcSamlAuthentication samlAuthentication = (OidcSamlAuthentication) authentication;
 
-        List<String> scopes = Arrays.asList(body.get("scope").split(" "));
-
-        User user = samlAuthentication.getUser();
-        UserConsent userConsent = userConsentRepository.findUserConsentBySub(user.getSub())
-                .map(uc -> uc.updateHash(user, scopes)).orElse(new UserConsent(user, scopes));
-
-        userConsentRepository.save(userConsent);
-
         LinkedMultiValueMap parameters = new LinkedMultiValueMap();
         parameters.setAll(body);
-        return this.doAuthorization(parameters, (OidcSamlAuthentication) authentication, false);
+        return this.doAuthorization(parameters, (OidcSamlAuthentication) authentication, false, true);
     }
 
     private ModelAndView doAuthorization(MultiValueMap<String, String> parameters,
                                          OidcSamlAuthentication samlAuthentication,
-                                         boolean consentRequired) throws ParseException, CertificateException, JOSEException, IOException, BadJOSEException, java.text.ParseException, URISyntaxException, NoSuchProviderException, NoSuchAlgorithmException {
+                                         boolean consentRequired,
+                                         boolean createConsent) throws ParseException, CertificateException, JOSEException, IOException, BadJOSEException, java.text.ParseException, URISyntaxException, NoSuchProviderException, NoSuchAlgorithmException {
         AuthorizationRequest authenticationRequest = AuthorizationRequest.parse(parameters);
 
         Scope scope = authenticationRequest.getScope();
@@ -169,6 +162,9 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         } else {
             //We do not provide SSO as does EB not - up to the identity provider
             logout();
+        }
+        if (createConsent) {
+            createConsent(scopes, user, client);
         }
 
         ResponseMode responseMode = authenticationRequest.impliedResponseMode();
@@ -213,6 +209,13 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             throw new IllegalArgumentException("Response mode " + responseMode + " not supported");
         }
         throw new IllegalArgumentException("Not yet implemented response_type: " + responseType.toString());
+    }
+
+    private void createConsent(List<String> scopes, User user, OpenIDClient openIDClient) {
+        UserConsent userConsent = userConsentRepository.findUserConsentBySub(user.getSub())
+                .map(uc -> uc.updateHash(user, scopes)).orElse(new UserConsent(user, scopes, openIDClient));
+
+        userConsentRepository.save(userConsent);
     }
 
     private ModelAndView doConsent(MultiValueMap<String, String> parameters, OpenIDClient client, List<String> scopes, User user) {

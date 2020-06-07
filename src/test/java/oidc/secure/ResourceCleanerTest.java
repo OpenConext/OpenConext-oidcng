@@ -5,6 +5,7 @@ import oidc.SeedUtils;
 import oidc.model.AccessToken;
 import oidc.model.AuthenticationRequest;
 import oidc.model.AuthorizationCode;
+import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
 import oidc.model.User;
 import oidc.model.UserConsent;
@@ -64,7 +65,7 @@ public class ResourceCleanerTest extends AbstractIntegrationTest implements Seed
 
     private UserConsent userConsent() {
         UserConsent userConsent = new UserConsent(new User("sub", "unspecifiedNameId", "http://mockidp",
-                "clientId", Collections.emptyMap(), Collections.emptyList()), Arrays.asList("openid", "profile"));
+                "clientId", Collections.emptyMap(), Collections.emptyList()), Arrays.asList("openid", "profile"), new OpenIDClient());
         Date lastAccessed = Date.from(new Date().toInstant().minus(365 * 10, ChronoUnit.DAYS).atZone(ZoneId.systemDefault()).toInstant());
         ReflectionTestUtils.setField(userConsent, "lastAccessed", lastAccessed);
         return userConsent;
