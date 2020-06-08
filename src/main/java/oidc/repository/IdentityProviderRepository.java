@@ -11,6 +11,6 @@ import java.util.Optional;
 @Repository
 public interface IdentityProviderRepository extends MongoRepository<IdentityProvider, String> {
 
-    IdentityProvider findByEntityId(String entityId);
+    Optional<IdentityProvider> findByEntityId(String entityId);
 
 }

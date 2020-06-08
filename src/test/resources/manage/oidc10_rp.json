@@ -168,8 +168,8 @@
           "client_credentials"
         ],
         "redirectUrls": [
-          "http://localhost:3000/redirect",
-          "http://localhost:3000/oidc/api/redirect"
+          "http://localhost:3006/redirect",
+          "http://localhost:3006/oidc/api/redirect"
         ],
         "accessTokenValidity": 3600,
         "refreshTokenValidity": 3600,

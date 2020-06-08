@@ -19,6 +19,7 @@ import oidc.exceptions.UnsupportedPromptValueException;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.EncryptedTokenValue;
+import oidc.model.IdentityProvider;
 import oidc.model.OpenIDClient;
 import oidc.model.ProvidedRedirectURI;
 import oidc.model.User;
@@ -115,7 +116,6 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     public ModelAndView consent(@RequestParam Map<String, String> body,
                                 Authentication authentication) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
         LOG.info(String.format("/oidc/consent %s %s", authentication.getDetails(), body));
-        OidcSamlAuthentication samlAuthentication = (OidcSamlAuthentication) authentication;
 
         LinkedMultiValueMap parameters = new LinkedMultiValueMap();
         parameters.setAll(body);
@@ -153,10 +153,11 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         if (consentRequired && client.isConsentRequired()) {
             Optional<UserConsent> userConsentOptional = this.userConsentRepository.findUserConsentBySub(user.getSub());
             boolean userConsentRequired = userConsentOptional
-                    .map(userConsent -> userConsent.getHash() != user.hashCode() || !userConsent.getScopes().containsAll(scopes))
+                    .map(userConsent -> userConsent.renewConsentRequired(user, scopes))
                     .orElse(true);
 
             if (userConsentRequired) {
+                LOG.info("Asking for consent for User " + user.getSub());
                 return doConsent(parameters, client, scopes, user);
             }
         } else {
@@ -224,7 +225,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 entry -> entry.getKey(),
                 entry -> entry.getValue().get(0)
         )));
-        body.put("identityProvider", identityProviderRepository.findByEntityId(user.getAuthenticatingAuthority()));
+        body.put("identityProvider", identityProviderRepository.findByEntityId(user.getAuthenticatingAuthority()).orElse(new IdentityProvider()));
         body.put("scopes", client.getScopes().stream().filter(scope -> scopes.contains(scope.getName())).collect(toList()));
         body.put("client", client.getName());
         List<String> allowedResourceServers = client.getAllowedResourceServers();

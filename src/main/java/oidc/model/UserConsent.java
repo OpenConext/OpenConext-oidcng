@@ -54,4 +54,8 @@ public class UserConsent {
         return this;
     }
 
+    public boolean renewConsentRequired(User user, List<String> newScopes) {
+        return hash != user.hashCode() || !this.scopes.containsAll(newScopes);
+    }
+
 }

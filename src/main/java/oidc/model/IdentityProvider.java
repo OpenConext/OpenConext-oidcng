@@ -20,6 +20,12 @@ public class IdentityProvider {
     private String name;
     private String nameNl;
 
+    public IdentityProvider(String entityId) {
+        this.entityId = entityId;
+        this.name = entityId;
+        this.nameNl = entityId;
+    }
+
     @SuppressWarnings("unchecked")
     public IdentityProvider(Map<String, Object> root) {
         Map<String, Object> data = (Map<String, Object>) root.get("data");
