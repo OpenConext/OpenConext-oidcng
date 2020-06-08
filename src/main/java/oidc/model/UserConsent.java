@@ -49,8 +49,8 @@ public class UserConsent {
 
     public UserConsent updateHash(User user, List<String> scopes) {
         this.hash = user.hashCode();
-        this.lastAccessed = new Date();
         this.scopes = scopes;
+        this.lastAccessed = new Date();
         return this;
     }
 

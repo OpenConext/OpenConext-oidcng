@@ -22,11 +22,15 @@ public class User implements Serializable {
 
     @Id
     @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private String id;
+
     private String sub;
     private String unspecifiedNameId;
     private String authenticatingAuthority;
     private String clientId;
+
+    @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private long updatedAt = System.currentTimeMillis() / 1000L;
     private Map<String, Object> attributes = new HashMap<>();
