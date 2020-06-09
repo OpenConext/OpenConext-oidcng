@@ -39,6 +39,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -51,6 +52,7 @@ import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -106,24 +108,27 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
     @GetMapping("/oidc/authorize")
     public ModelAndView authorize(@RequestParam MultiValueMap<String, String> parameters,
-                                  Authentication authentication) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
+                                  Authentication authentication,
+                                  HttpServletRequest request) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
         LOG.info(String.format("/oidc/authorize %s %s", authentication.getDetails(), parameters));
 
-        return doAuthorization(parameters, (OidcSamlAuthentication) authentication, true, false);
+        return doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, true, false);
     }
 
     @PostMapping(value = "/oidc/consent", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ModelAndView consent(@RequestParam Map<String, String> body,
-                                Authentication authentication) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
+                                Authentication authentication,
+                                HttpServletRequest request) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
         LOG.info(String.format("/oidc/consent %s %s", authentication.getDetails(), body));
 
         LinkedMultiValueMap parameters = new LinkedMultiValueMap();
         parameters.setAll(body);
-        return this.doAuthorization(parameters, (OidcSamlAuthentication) authentication, false, true);
+        return this.doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, false, true);
     }
 
     private ModelAndView doAuthorization(MultiValueMap<String, String> parameters,
                                          OidcSamlAuthentication samlAuthentication,
+                                         HttpServletRequest request,
                                          boolean consentRequired,
                                          boolean createConsent) throws ParseException, CertificateException, JOSEException, IOException, BadJOSEException, java.text.ParseException, URISyntaxException, NoSuchProviderException, NoSuchAlgorithmException {
         AuthorizationRequest authenticationRequest = AuthorizationRequest.parse(parameters);
@@ -160,13 +165,12 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 LOG.info("Asking for consent for User " + user + " and scopes " + scopes);
                 return doConsent(parameters, client, scopes, user);
             }
-        } else {
-            //We do not provide SSO as does EB not - up to the identity provider
-            logout();
         }
         if (createConsent) {
             createConsent(scopes, user, client);
         }
+        //We do not provide SSO as does EB not - up to the identity provider
+        logout(request);
 
         ResponseMode responseMode = authenticationRequest.impliedResponseMode();
 
@@ -187,6 +191,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         } else if (responseType.impliesImplicitFlow() || responseType.impliesHybridFlow()) {
             if (responseType.impliesImplicitFlow()) {
                 //User information is encrypted in access token
+                LOG.info("Deleting user " + user.getSub());
                 userRepository.delete(user);
             }
             Map<String, Object> body = authorizationEndpointResponse(user, client, authenticationRequest, scopes, responseType, state);
@@ -210,6 +215,15 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             throw new IllegalArgumentException("Response mode " + responseMode + " not supported");
         }
         throw new IllegalArgumentException("Not yet implemented response_type: " + responseType.toString());
+    }
+
+    private void logout(HttpServletRequest request) {
+        SecurityContextHolder.getContext().setAuthentication(null);
+        SecurityContextHolder.clearContext();
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
     }
 
     private void createConsent(List<String> scopes, User user, OpenIDClient openIDClient) {

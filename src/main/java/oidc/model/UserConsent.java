@@ -1,5 +1,6 @@
 package oidc.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.NoArgsConstructor;
 import oidc.crypto.KeyGenerator;
 import org.springframework.data.annotation.Id;
@@ -35,8 +36,16 @@ public class UserConsent {
         this.sub = user.getSub();
         this.scopes = scopes;
         this.clientName = openIDClient.getName();
-        this.hash = user.getAttributes().toString().hashCode();
+        this.hash = hashAttributes(user);
+
         this.lastAccessed = new Date();
+    }
+
+    @Transient
+    @JsonIgnore
+    private int hashAttributes(User user) {
+        //ArrayList hashCode is based on
+        return user.getAttributes().toString().hashCode();
     }
 
     public int getHash() {
@@ -48,14 +57,14 @@ public class UserConsent {
     }
 
     public UserConsent updateHash(User user, List<String> scopes) {
-        this.hash = user.getAttributes().toString().hashCode();
+        this.hash = hashAttributes(user);
         this.scopes = scopes;
         this.lastAccessed = new Date();
         return this;
     }
 
     public boolean renewConsentRequired(User user, List<String> newScopes) {
-        return hash != user.getAttributes().toString().hashCode() || !this.scopes.containsAll(newScopes);
+        return hash != hashAttributes(user) || !this.scopes.containsAll(newScopes);
     }
 
 }

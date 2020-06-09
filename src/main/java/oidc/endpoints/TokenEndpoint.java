@@ -229,6 +229,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         }
         User user = userRepository.findUserBySub(authorizationCode.getSub());
         //User information is encrypted in access token
+        LOG.info("Deleting user " + user.getSub());
         userRepository.delete(user);
 
         Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes(),

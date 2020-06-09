@@ -118,12 +118,6 @@ public interface OidcEndpoint {
     }
 
 
-    default void logout() {
-        SecurityContextHolder.getContext().setAuthentication(null);
-        SecurityContextHolder.clearContext();
-    }
-
-
     default Date accessTokenValidity(OpenIDClient client) {
         return tokenValidity(client.getAccessTokenValidity());
     }
