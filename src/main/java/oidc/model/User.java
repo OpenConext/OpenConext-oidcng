@@ -33,6 +33,7 @@ public class User implements Serializable {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private long updatedAt = System.currentTimeMillis() / 1000L;
+
     private Map<String, Object> attributes = new HashMap<>();
     private List<String> acrClaims = new ArrayList<>();
 

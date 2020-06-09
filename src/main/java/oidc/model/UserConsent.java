@@ -35,7 +35,7 @@ public class UserConsent {
         this.sub = user.getSub();
         this.scopes = scopes;
         this.clientName = openIDClient.getName();
-        this.hash = user.hashCode();
+        this.hash = user.getAttributes().toString().hashCode();
         this.lastAccessed = new Date();
     }
 
@@ -48,14 +48,14 @@ public class UserConsent {
     }
 
     public UserConsent updateHash(User user, List<String> scopes) {
-        this.hash = user.hashCode();
+        this.hash = user.getAttributes().toString().hashCode();
         this.scopes = scopes;
         this.lastAccessed = new Date();
         return this;
     }
 
     public boolean renewConsentRequired(User user, List<String> newScopes) {
-        return hash != user.hashCode() || !this.scopes.containsAll(newScopes);
+        return hash != user.getAttributes().toString().hashCode() || !this.scopes.containsAll(newScopes);
     }
 
 }

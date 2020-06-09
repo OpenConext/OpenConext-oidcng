@@ -9,43 +9,44 @@ import java.util.List;
 import java.util.Map;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.*;
 
 public class UserConsentTest {
 
     @Test
     public void renewConsentRequired() {
-        UserConsent userConsent = userConsent();
-        User user = user();
-        int i = user.hashCode();
-        boolean b = userConsent.renewConsentRequired(user, emptyList());
-        try {
-            Thread.sleep(10);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        User user2 = user();
-        int j = user2.hashCode();
-        System.out.println(b);
+        UserConsent userConsent = userConsent("urn:mace_something");
+        User user = user("urn:mace_something");
+        boolean renewConsentRequired = userConsent.renewConsentRequired(user, emptyList());
+        assertFalse(renewConsentRequired);
+
+        user = user("urn:mace_other");
+        renewConsentRequired = userConsent.renewConsentRequired(user, emptyList());
+        assertTrue(renewConsentRequired);
+
+        user = user("urn:mace_something");
+        renewConsentRequired = userConsent.renewConsentRequired(user, singletonList("profile"));
+        assertTrue(renewConsentRequired);
     }
 
 
-    private UserConsent userConsent() {
-        User user = user();
+    private UserConsent userConsent(String key) {
+        User user = user(key);
         List<String> scopes = Arrays.asList("openid");
         OpenIDClient openIDClient = new OpenIDClient("clientId", emptyList(), emptyList(), emptyList());
         return new UserConsent(user, scopes, openIDClient);
     }
 
-    private User user() {
+    private User user(String key) {
         return new User("sub", "unspecifiedNameId",
                 "authenticatingAuthority", "clientId",
-                attributes(), Collections.singletonList("acr"));
+                attributes(key), Collections.singletonList("acr"));
     }
 
-    private Map<String, Object> attributes() {
+    private Map<String, Object> attributes(String key) {
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put("urn:mace_something", Collections.singletonList("value"));
+        attributes.put(key, Collections.singletonList("value"));
         return attributes;
     }
 }

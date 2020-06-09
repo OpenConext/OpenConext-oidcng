@@ -157,7 +157,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                     .orElse(true);
 
             if (userConsentRequired) {
-                LOG.info("Asking for consent for User " + user);
+                LOG.info("Asking for consent for User " + user + " and scopes " + scopes);
                 return doConsent(parameters, client, scopes, user);
             }
         } else {
@@ -213,7 +213,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     }
 
     private void createConsent(List<String> scopes, User user, OpenIDClient openIDClient) {
-        LOG.info("Creating / updating consent for User " + user);
+        LOG.info("Creating consent for User " + user + " and scopes " + scopes);
         UserConsent userConsent = userConsentRepository.findUserConsentBySub(user.getSub())
                 .map(uc -> uc.updateHash(user, scopes)).orElse(new UserConsent(user, scopes, openIDClient));
 
