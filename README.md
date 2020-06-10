@@ -37,7 +37,7 @@ The output is used in ansible to create the file [https://github.com/OpenConext/
 ```
 https://oidcng.test2.surfconext.nl/oidc/generate-secret-key-set
 ```
-If you have started the application before adding the new keyset, you have to remove the existing signing and symmetric keys from the mongo database. Run these two commands on the mongo prompt: 
+If you have started the application before adding the new keyset, you have to remove the existing signing and symmetric keys from the mongo database. Run these two commands on the mongo prompt:
 ```
 db.symmetric_keys.remove({})
 db.signing_keys.remove({})
@@ -222,5 +222,10 @@ The metadata is generated on the fly and is displayed on http://localhost:8080/s
 
 ## [Trusted Proxy](#trusted-proxy)
 
-OpenConext-OIDC is a proxy for SP's that want to use OpenConnect ID instead of SAML to provide their Service to the federation members. 
+OpenConext-OIDC is a proxy for SP's that want to use OpenConnect ID instead of SAML to provide their Service to the federation members.
 Therefore the WAYF and ARP must be scoped for the requesting SP (and not this OIDC SP). This works if the OIDC-proxy is configured with the `coin:trusted_proxy` and `redirect.sign` settings in Manage.
+
+## [Consent](#consent)
+
+Running OIDC-NG on localhost you can test the consent page by visiting
+[http://localhost:8080/oidc/authorize?scope=openid&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fredirect&state=example&prompt=consent&nonce=example&client_id=playground_client&response_mode=query](http://localhost:8080/oidc/authorize?scope=openid&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fredirect&state=example&prompt=consent&nonce=example&client_id=playground_client&response_mode=query)

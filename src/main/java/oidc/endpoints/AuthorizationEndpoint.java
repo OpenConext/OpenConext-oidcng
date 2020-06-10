@@ -245,7 +245,9 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 entry -> entry.getKey(),
                 entry -> entry.getValue().get(0)
         )));
-        body.put("identityProvider", identityProviderRepository.findByEntityId(user.getAuthenticatingAuthority()).orElse(new IdentityProvider()));
+        String authenticatingAuthority = user.getAuthenticatingAuthority();
+        IdentityProvider identityProvider = identityProviderRepository.findByEntityId(authenticatingAuthority).orElse(new IdentityProvider(authenticatingAuthority));
+        body.put("identityProvider", identityProvider);
         body.put("scopes", client.getScopes().stream().filter(scope -> scopes.contains(scope.getName())).collect(toList()));
         body.put("client", client.getName());
         List<String> allowedResourceServers = client.getAllowedResourceServers();

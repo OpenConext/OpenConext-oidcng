@@ -5,31 +5,46 @@
         body {
             font-family: Verdana, sans-serif;
             display: flex;
+            flex-direction: column;
             font-size: 16px;
+            background-color: #235fb0;
+        }
+
+        div.container {
+            max-width: 1024px;
+            margin: 0    auto;
         }
 
         form {
-            max-width: 1024px;
-            margin: 25px auto;
-            border-radius: 8px;
+            border-radius: 4px;
             border: 1px solid #c9c9c9;
+            background-color: white;
         }
 
-        div.header {
+        div.top {
+            max-width: 1024px;
+            margin: 0 auto;
             display: flex;
+            color: #b9e3fe;
             padding: 15px 25px;
-            border-bottom: 1px solid #c9c9c9;
-            align-items: center;
+            background-color: #235fb0;
         }
 
-        div.header span {
+        div.top p {
             display: inline-block;
-            margin-left: 40px;
+            margin-left: 20px;
             font-size: 22px;
         }
 
-        div.header img {
+        div.top img {
             width: 48px;
+        }
+
+        div.header {
+            padding: 35px;
+            background-color: #fadc00;
+            font-size: 22px;
+            font-weight: bold;
         }
 
         div.content {
@@ -115,62 +130,70 @@
     </style>
 </head>
 <body>
-<form method="post" action="/oidc/consent">
-    <div class="header">
+<div class="container">
+    <div class="top">
         <img src="https://static.surfconext.nl/media/conext_logo.png" alt="conext">
-        <span>Sign in with OpenConext</span>
+        <p>Login with <span th:text="${identityProvider.name}"/></p>
     </div>
-    <div class="content">
-        <div class="client">
-            <span class="client" th:text="${client}"/>
-            <span>Wants to access your <span th:text="${identityProvider.name}"/> account.</span>
-            <span th:text="${email}"/>
+
+    <form method="post" action="/oidc/consent">
+        <div class="header">
+            <span>Please give consent to share your information</span>
         </div>
-        <div class="allow">
-            <span>This will allow <span class="client" th:text="${client}"/> to:</span>
-            <ul>
-                <li th:each="scope : ${scopes}" th:text="${scope.descriptions.get('en')}"/>
-            </ul>
-        </div>
-        <div class="audiences">
-            <span><span class="client" th:text="${client}"/> will have access to the following API endpoint:</span>
-            <ul>
-                <li th:each="audience : ${audiences}" th:text="${audience.value}"/>
-            </ul>
-        </div>
-        <div class="disclaimer">
+        <div class="content">
+            <div class="client">
+                <span class="client" th:text="${client}"/>
+                <span>Wants to access your <span th:text="${identityProvider.name}"/> account.</span>
+                <span th:text="${email}"/>
+            </div>
+            <div class="allow">
+                <span>This will allow <span class="client" th:text="${client}"/> to:</span>
+                <ul>
+                    <li th:each="scope : ${scopes}" th:text="${scope.descriptions.get('en')}"/>
+                </ul>
+            </div>
+            <div class="audiences">
+                <span><span class="client" th:text="${client}"/> will have access to the following API endpoint:</span>
+                <ul>
+                    <li th:each="audience : ${audiences}" th:text="${audience.value}"/>
+                </ul>
+            </div>
+            <div class="disclaimer">
             <span>Make sure you trust <span class="client" th:text="${client}"/>.
                 <a href="https://wiki.surfnet.nl/display/conextsupport/Het+Consent-scherm" target="_blank"> Find out about the risks.</a>
             </span>
+            </div>
+            <div class="claims">
+                <a id="show" class="show" href="#">Show me the information that will be shared with <span
+                        th:text="${client}"/></a>
+
+                <a id="hide" class="hide" href="#">Hide the information that will be shared with
+                    <span th:text="${client}"/>
+                </a>
+                <table id="attributes" class="hide">
+                    <tbody>
+                    <th:block th:each="claim : ${claims}">
+                        <tr>
+                            <td th:text="${claim.key}"></td>
+                            <td th:text="${claim.value}"></td>
+                        </tr>
+                    </th:block>
+                    </tbody>
+
+                </table>
+            </div>
+
         </div>
-        <div class="claims">
-            <a id="show" class="show" href="#">Show me the information that will be shared with <span
-                    th:text="${client}"/></a>
+        <input th:each="parameter : ${parameters}" type="hidden" th:name="${parameter.key}"
+               th:value="${parameter.value}"/>
 
-            <a id="hide" class="hide" href="#">Hide the information that will be shared with
-                <span th:text="${client}"/>
-            </a>
-            <table id="attributes" class="hide">
-                <tbody>
-                <th:block th:each="claim : ${claims}">
-                    <tr>
-                        <td th:text="${claim.key}"></td>
-                        <td th:text="${claim.value}"></td>
-                    </tr>
-                </th:block>
-                </tbody>
-
-            </table>
+        <div class="actions">
+            <button class="cancel" name="no" value="no" type="submit">Cancel</button>
+            <button name="yes" value="yes" type="submit">Allow</button>
         </div>
+    </form>
 
-    </div>
-    <input th:each="parameter : ${parameters}" type="hidden" th:name="${parameter.key}" th:value="${parameter.value}"/>
-
-    <div class="actions">
-        <button class="cancel" name="no" value="no" type="submit">Cancel</button>
-        <button name="yes" value="yes" type="submit">Allow</button>
-    </div>
-</form>
+</div>
 </body>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
