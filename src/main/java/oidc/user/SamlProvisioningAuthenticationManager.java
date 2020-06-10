@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import oidc.model.User;
 import oidc.repository.UserRepository;
+import oidc.web.RelayState;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.core.io.Resource;
@@ -40,11 +41,13 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
 
     private UserRepository userRepository;
     private List<UserAttribute> userAttributes;
+    private ObjectMapper objectMapper;
 
     public SamlProvisioningAuthenticationManager(UserRepository userRepository,
                                                  ObjectMapper objectMapper,
                                                  Resource oidcSamlMapping) throws IOException {
         this.userRepository = userRepository;
+        this.objectMapper = objectMapper;
         this.userAttributes = objectMapper.readValue(oidcSamlMapping.getInputStream(),
                 new TypeReference<List<UserAttribute>>() {
                 });
@@ -94,7 +97,7 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
                     .ifPresent(aa -> authenticatingAuthority.set(aa));
         }
 
-        String clientId = samlAuthentication.getRelayState();
+        String clientId = RelayState.from(samlAuthentication.getRelayState(), objectMapper).getClientId();
         //need to prevent NullPointer in HashMap merge
         Map<String, Object> attributes = userAttributes.stream()
                 .filter(ua -> !ua.customMapping)

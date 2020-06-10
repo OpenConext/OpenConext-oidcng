@@ -1,8 +1,8 @@
 package oidc.user;
 
 import oidc.model.User;
-import oidc.repository.UserConsentRepository;
 import oidc.repository.UserRepository;
+import oidc.web.RelayState;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
@@ -40,10 +40,11 @@ public class SamlProvisioningAuthenticationManagerTest implements SamlTest {
     @Test
     public void authenticate() throws IOException {
         Response response = resolveFromXMLFile(Response.class, "saml/authn_response.xml");
-        String inResponseTo = response.getInResponseTo();
 
         Assertion assertion = response.getAssertions().get(0);
-        DefaultSamlAuthentication samlAuthentication = new DefaultSamlAuthentication(true, assertion, null, null, "oidc_client");
+        String clientId = "oidc_client";
+        String relayState = new RelayState(clientId, "loa-level1 loa-level2").toJson(objectMapper);
+        DefaultSamlAuthentication samlAuthentication = new DefaultSamlAuthentication(true, assertion, null, null, relayState);
         samlAuthentication.setResponseXml(IOUtils.toString(new ClassPathResource("saml/authn_response.xml").getInputStream(), Charset.defaultCharset()));
         OidcSamlAuthentication authenticate = (OidcSamlAuthentication) subject.authenticate(samlAuthentication);
 
@@ -55,7 +56,7 @@ public class SamlProvisioningAuthenticationManagerTest implements SamlTest {
         User user = authenticate.getUser();
         String sub = user.getSub();
 
-        assertEquals("oidc_client", user.getClientId());
+        assertEquals(clientId, user.getClientId());
         assertEquals("270E4CB4-1C2A-4A96-9AD3-F28C39AD1110", user.getSub());
         assertEquals("urn:collab:person:example.com:admin", user.getUnspecifiedNameId());
         assertEquals("http://mock-idp", user.getAuthenticatingAuthority());

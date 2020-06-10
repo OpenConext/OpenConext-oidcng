@@ -1,5 +1,6 @@
 package oidc.web;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
@@ -51,35 +52,41 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
     private PortResolverImpl portResolver;
     private AuthenticationRequestRepository authenticationRequestRepository;
     private OpenIDClientRepository openIDClientRepository;
+    private ObjectMapper objectMapper;
 
     static String REDIRECT_URI_VALID = "REDIRECT_URI_VALID";
 
     public ConfigurableSamlAuthenticationRequestFilter(SamlProviderProvisioning<ServiceProviderService> provisioning,
                                                        SamlRequestMatcher samlRequestMatcher,
                                                        AuthenticationRequestRepository authenticationRequestRepository,
-                                                       OpenIDClientRepository openIDClientRepository) {
+                                                       OpenIDClientRepository openIDClientRepository,
+                                                       ObjectMapper objectMapper) {
         super(provisioning, samlRequestMatcher);
         this.openIDClientRepository = openIDClientRepository;
         this.authenticationRequestRepository = authenticationRequestRepository;
         this.portResolver = new PortResolverImpl();
+        this.objectMapper = objectMapper;
     }
 
     @Override
     protected String getRelayState(ServiceProviderService provider, HttpServletRequest request) {
-        return request.getParameter("client_id");
+        String acrValues = request.getParameter("acr_values");
+        String clientId = request.getParameter("client_id");
+        return new RelayState(clientId, acrValues).toJson(objectMapper);
     }
 
     private AuthenticationRequest enhanceAuthenticationRequest(ServiceProviderService provider,
                                                                HttpServletRequest request,
                                                                AuthenticationRequest authenticationRequest) throws ParseException {
-        String clientId = getRelayState(provider, request);
+        String clientId = RelayState.from(getRelayState(provider, request), objectMapper).getClientId();
+
         if (StringUtils.hasText(clientId)) {
             String entityId = ServiceProviderTranslation.translateClientId(clientId);
             authenticationRequest.setScoping(new Scoping(new ArrayList<>(), Collections.singletonList(entityId), 1));
         }
         String prompt = AuthorizationEndpoint.validatePrompt(request);
 
-        authenticationRequest.setForceAuth(prompt != null &&  prompt.contains("login"));
+        authenticationRequest.setForceAuth(prompt != null && prompt.contains("login"));
 
         /**
          * Based on the ongoing discussion with the certification committee

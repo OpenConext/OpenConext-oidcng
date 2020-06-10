@@ -162,8 +162,9 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
 
         String relayState = queryParams.getFirst("RelayState");
 
-        String decodedRelayState = StringUtils.hasText(relayState) ? URLDecoder.decode(relayState, "UTF-8") : null;
-        assertEquals(clientId, decodedRelayState);
+        RelayState decodedRelayState = RelayState.from(URLDecoder.decode(relayState, "UTF-8"), objectMapper);
+        assertEquals(clientId, decodedRelayState.getClientId());
+        assertEquals(acrValue, decodedRelayState.getAcrValues());
 
         String samlRequest = URLDecoder.decode(queryParams.getFirst("SAMLRequest"), "UTF-8");
         AuthenticationRequest authenticationRequest = resolveFromEncodedXML(AuthenticationRequest.class, samlRequest);
