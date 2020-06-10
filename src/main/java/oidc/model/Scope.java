@@ -20,8 +20,9 @@ public class Scope implements Serializable {
         this.name = name;
     }
 
+    @SuppressWarnings("unchecked")
     public Scope(Map<String, Object> jsonRepresentation) {
         this.name = (String) jsonRepresentation.get("name");
-        this.descriptions = (Map<String, String>) jsonRepresentation.get("descriptions");
+        this.descriptions = (Map<String, String>) jsonRepresentation.getOrDefault("descriptions", new HashMap<String, String>());
     }
 }

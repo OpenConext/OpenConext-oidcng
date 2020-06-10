@@ -62,6 +62,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -71,6 +72,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 @Controller
 public class AuthorizationEndpoint implements OidcEndpoint {
@@ -155,9 +157,12 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         User user = samlAuthentication.getUser();
 
-        if (consentRequired && client.isConsentRequired()) {
+        Prompt prompt = authenticationRequest.getPrompt();
+        boolean consentFromPrompt = prompt != null && prompt.toStringList().contains("consent");
+
+        if (consentRequired && (consentFromPrompt || client.isConsentRequired())) {
             Optional<UserConsent> userConsentOptional = this.userConsentRepository.findUserConsentBySub(user.getSub());
-            boolean userConsentRequired = userConsentOptional
+            boolean userConsentRequired = consentFromPrompt || userConsentOptional
                     .map(userConsent -> userConsent.renewConsentRequired(user, scopes))
                     .orElse(true);
 
@@ -250,8 +255,22 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 name -> resourceServers.stream().filter(rs -> rs.getClientId().equals(name)).findFirst().map(OpenIDClient::getName).orElse(name)
         ));
         body.put("audiences", audiences);
-        body.put("claims", user.getAttributes());
+        Map<String, Object> attributes = user.getAttributes();
+        Map<String, String> claims = attributes.keySet()
+                .stream().collect(toMap(key -> key, key -> attributeValueForConsent(attributes.get(key))));
+        body.put("claims", claims);
+        body.put("email", attributes.get("email"));
         return new ModelAndView("consent", body);
+    }
+
+    private String attributeValueForConsent(Object object) {
+        if (object == null) {
+            return "";
+        }
+        if (object instanceof Collection) {
+            return ((Collection) object).stream().collect(Collectors.joining(", ")).toString();
+        }
+        return object.toString();
     }
 
     public static ResponseType validateGrantType(AuthorizationRequest authorizationRequest, OpenIDClient client) {
@@ -346,19 +365,21 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
     private static final String unsupportedPromptMessage = "Unsupported Prompt value";
 
-    public static String validatePrompt(HttpServletRequest request) {
-        String prompt = request.getParameter("prompt");
-        //We trigger an error is prompt is present and not equals 'login'
-        if (StringUtils.hasText(prompt) && !prompt.equals("login")) {
-            throw new UnsupportedPromptValueException(unsupportedPromptValue(prompt), unsupportedPromptMessage);
-        }
-        return prompt;
+    public static String validatePrompt(HttpServletRequest request) throws ParseException {
+        String promptValue = request.getParameter("prompt");
+        Prompt prompt = Prompt.parse(promptValue);
+        return validatePrompt(prompt);
     }
 
     public static String validatePrompt(Prompt prompt) {
-        //We trigger an error is prompt is present and not equals 'login'
-        if (prompt != null && !prompt.toString().contains("login")) {
-            throw new UnsupportedPromptValueException(unsupportedPromptValue(prompt.toString()), unsupportedPromptMessage);
+        //We trigger an error is prompt is present and not equals 'login' or 'consent'
+        if (prompt != null) {
+            List<String> allowedValues = Arrays.asList("consent", "login");
+            prompt.toStringList().forEach(val -> {
+                if (!allowedValues.contains(val)) {
+                    throw new UnsupportedPromptValueException(unsupportedPromptValue(val), unsupportedPromptMessage);
+                }
+            });
         }
         return prompt != null ? prompt.toString() : null;
     }
@@ -367,8 +388,6 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         switch (prompt) {
             case "none":
                 return "interaction_required";
-            case "consent":
-                return "consent_required";
             case "select_account":
                 return "account_selection_required";
             default:

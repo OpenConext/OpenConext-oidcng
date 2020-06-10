@@ -143,7 +143,11 @@
       "allowedResourceServers": [
         {
           "name": "resource-server-playground-client"
+        },
+        {
+          "name": "mock-sp"
         }
+
       ],
       "metaDataFields": {
         "name:en": "Playground Client",
@@ -154,12 +158,19 @@
           {
             "name": "openid",
             "descriptions": {
-              "en": "English description",
+              "en": "See all your account information.",
               "nl": "nl",
               "pt": "pt"
             }
           },
-          "groups"
+          {
+            "name": "groups",
+            "descriptions": {
+              "en": "Have access to all your group memberships.",
+              "nl": "nl",
+              "pt": "pt"
+            }
+          }
         ],
         "grants": [
           "authorization_code",

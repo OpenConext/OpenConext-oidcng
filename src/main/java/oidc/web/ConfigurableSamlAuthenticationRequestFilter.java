@@ -6,6 +6,7 @@ import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.openid.connect.sdk.Prompt;
 import com.nimbusds.openid.connect.sdk.claims.ACR;
+import lombok.SneakyThrows;
 import oidc.endpoints.AuthorizationEndpoint;
 import oidc.manage.ServiceProviderTranslation;
 import oidc.model.OpenIDClient;
@@ -30,15 +31,11 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
-import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -49,7 +46,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticationRequestFilter implements URLCoding{
+public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticationRequestFilter implements URLCoding {
 
     private PortResolverImpl portResolver;
     private AuthenticationRequestRepository authenticationRequestRepository;
@@ -74,7 +71,7 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
 
     private AuthenticationRequest enhanceAuthenticationRequest(ServiceProviderService provider,
                                                                HttpServletRequest request,
-                                                               AuthenticationRequest authenticationRequest) {
+                                                               AuthenticationRequest authenticationRequest) throws ParseException {
         String clientId = getRelayState(provider, request);
         if (StringUtils.hasText(clientId)) {
             String entityId = ServiceProviderTranslation.translateClientId(clientId);
@@ -82,7 +79,7 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
         }
         String prompt = AuthorizationEndpoint.validatePrompt(request);
 
-        authenticationRequest.setForceAuth("login".equals(prompt));
+        authenticationRequest.setForceAuth(prompt != null &&  prompt.contains("login"));
 
         /**
          * Based on the ongoing discussion with the certification committee
@@ -141,9 +138,9 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
 
     }
 
+    @SneakyThrows
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (getRequestMatcher().matches(request) && (authentication == null || !authentication.isAuthenticated())) {
 

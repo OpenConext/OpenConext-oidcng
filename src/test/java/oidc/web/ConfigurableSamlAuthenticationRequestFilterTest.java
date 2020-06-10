@@ -71,12 +71,6 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
     }
 
     @Test
-    public void filterInternalPromptConsentError() throws Exception {
-        filterInternalInvalidRequest("consent", "consent_required",
-                "http://localhost:8091/redirect", "code", "query", "mock-sp");
-    }
-
-    @Test
     public void filterInternalPromptSelectAccountError() throws Exception {
         filterInternalInvalidRequest("select_account", "account_selection_required",
                 "http://localhost:8091/redirect", "code", "query", "mock-sp");
