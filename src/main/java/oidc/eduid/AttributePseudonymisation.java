@@ -27,13 +27,16 @@ public class AttributePseudonymisation {
     private final RestTemplate restTemplate;
     private final HttpHeaders headers;
     private final URI eduIdUri;
+    private final boolean enabled;
 
     public AttributePseudonymisation(@Value("${eduid.uri}") URI eduIdUri,
                                      @Value("${eduid.user}") String user,
-                                     @Value("${eduid.password}") String password) {
+                                     @Value("${eduid.password}") String password,
+                                     @Value("${eduid.enabled}") boolean enabled) {
         this.restTemplate = new RestTemplate();
         this.restTemplate.setErrorHandler(new FaultTolerantResponseErrorHandler());
         this.eduIdUri = eduIdUri;
+        this.enabled = enabled;
 
         this.headers = new HttpHeaders();
         this.headers.setContentType(MediaType.APPLICATION_JSON);
@@ -52,7 +55,7 @@ public class AttributePseudonymisation {
      * @return the manipulated attributes
      */
     public Map<String, Object> pseudonymise(OpenIDClient resourceServer, OpenIDClient openIDClient, Map<String, Object> attributes) {
-        if (attributes.containsKey("eduid") && !resourceServer.getClientId().equals(openIDClient.getClientId())) {
+        if (enabled && attributes.containsKey("eduid") && !resourceServer.getClientId().equals(openIDClient.getClientId())) {
             HttpEntity<?> requestEntity = new HttpEntity<>(headers);
             String uriString = UriComponentsBuilder.fromUri(eduIdUri)
                     .queryParam("uid", ((List<String>)attributes.get("uid")).get(0))

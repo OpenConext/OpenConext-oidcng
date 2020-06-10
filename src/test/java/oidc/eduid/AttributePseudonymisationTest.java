@@ -122,6 +122,14 @@ public class AttributePseudonymisationTest extends AbstractIntegrationTest {
         assertEquals("value", pseudonymisedAttributes.get("attr"));
     }
 
+    @Test
+    public void enabled() {
+        AttributePseudonymisation subject = new AttributePseudonymisation(null,"user","password",false);
+        Map<String, Object> attributes = Collections.singletonMap("k", "v");
+        Map<String, Object> result = subject.pseudonymise(null, null, attributes);
+        assertEquals(attributes, result);
+    }
+
     private Map<String, Object> responseBody(String eduId) {
         Map<String, Object> res = new HashMap<>();
         res.put("uid", Collections.singletonList("uid"));

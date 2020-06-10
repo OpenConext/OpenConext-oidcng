@@ -78,6 +78,7 @@ eduid:
   user: oidcng
   password: secret
   uri: https://eduid.test2.surfconext.nl/myconext/api/attribute-manipulation
+  enabled: true
 
 management:
   endpoints:
