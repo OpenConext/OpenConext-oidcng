@@ -153,7 +153,7 @@
                 </ul>
             </div>
             <div class="audiences">
-                <span><span class="client" th:text="${client}"/> will have access to the following API endpoint:</span>
+                <span><span class="client" th:text="${client}"/> will also grant other services access to your account information:</span>
                 <ul>
                     <li th:each="audience : ${audiences}" th:text="${audience.value}"/>
                 </ul>
