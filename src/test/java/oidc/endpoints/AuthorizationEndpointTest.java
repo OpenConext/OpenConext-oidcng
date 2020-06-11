@@ -318,7 +318,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         assertTrue(html.contains("<form method=\"post\" action=\"/oidc/consent\">"));
 
         Map<String, String> formParams = new HashMap<>();
-        Matcher matcher = Pattern.compile("<input type=\"hidden\" name=\"(.+?)\"/>").matcher(html);
+        Matcher matcher = Pattern.compile("<input type=\"hidden\" name=\"(.+?)\"/>", Pattern.DOTALL).matcher(html);
         while (matcher.find()) {
             String group = matcher.group(1);
             formParams.put(group.substring(0, group.indexOf("\"")), group.substring(group.lastIndexOf("\"") + 1));

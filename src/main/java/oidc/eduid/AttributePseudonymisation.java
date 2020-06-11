@@ -11,6 +11,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -55,16 +56,26 @@ public class AttributePseudonymisation {
      * @return the manipulated attributes
      */
     public Map<String, Object> pseudonymise(OpenIDClient resourceServer, OpenIDClient openIDClient, Map<String, Object> attributes) {
-        if (enabled && attributes.containsKey("eduid") && !resourceServer.getClientId().equals(openIDClient.getClientId())) {
+        boolean eduidPresent = attributes.containsKey("eduid");
+        boolean resourceServerIsDifferent = !resourceServer.getClientId().equals(openIDClient.getClientId());
+
+        LOG.info(String.format("Starting to pseudonymise for RS %s and openIDclient %s. Enabled is %s, eduidPresent is %s, resourceServerIsDifferent is %s",
+                resourceServer.getClientId(), openIDClient.getClientId(), enabled, eduidPresent, resourceServerIsDifferent));
+
+        if (enabled && eduidPresent && resourceServerIsDifferent) {
             HttpEntity<?> requestEntity = new HttpEntity<>(headers);
+            List<String> uids = (List<String>) attributes.get("uids");
+            if (CollectionUtils.isEmpty(uids)) {
+                throw new IllegalArgumentException("Required user attribute 'uids' not present in " + attributes);
+            }
             String uriString = UriComponentsBuilder.fromUri(eduIdUri)
-                    .queryParam("uid", ((List<String>)attributes.get("uid")).get(0))
+                    .queryParam("uid", uids.get(0))
                     .queryParam("sp_entity_id", resourceServer.getClientId())
                     .queryParam("sp_institution_guid", resourceServer.getInstitutionGuid())
                     .toUriString();
             ResponseEntity<Map<String, String>> responseEntity =
                     restTemplate.exchange(uriString, HttpMethod.GET, requestEntity, new ParameterizedTypeReference<Map<String, String>>() {
-            });
+                    });
             if (responseEntity.getStatusCode().is2xxSuccessful()) {
                 Map<String, String> body = responseEntity.getBody();
                 LOG.info(String.format("Pseudonymise result %s for RS %s, RP %s", body, resourceServer.getClientId(), openIDClient.getClientId()));
