@@ -4,8 +4,13 @@
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
             </pattern>
         </encoder>
-        <filter class="oidc.config.CustomThresholdFilter">
+        <filter class="filter.CustomThresholdFilter">
             <level>WARN</level>
+            <clazz>com.nimbusds.oauth2.sdk.ParseException</clazz>
+            <clazz>org.springframework.security.authentication.BadCredentialsException</clazz>
+            <clazz>oidc.exceptions.RedirectMismatchException</clazz>
+            <clazz>org.springframework.dao.EmptyResultDataAccessException</clazz>
+            <clazz>java.lang.IllegalArgumentException</clazz>
         </filter>
     </appender>
 
