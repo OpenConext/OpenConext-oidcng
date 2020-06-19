@@ -78,8 +78,10 @@ public class KeyGenerator {
     }
 
     @SneakyThrows
-    public static String oneWayHash(String s) {
-        return new String(Hex.encode(MessageDigest.getInstance("SHA-256").digest(s.getBytes())));
+    public static String oneWayHash(String original, String secret) {
+        MessageDigest messageDigest = MessageDigest.getInstance("SHA-512");
+        messageDigest.update(secret.getBytes());
+        return new String(Hex.encode(messageDigest.digest(original.getBytes())));
     }
 
 }

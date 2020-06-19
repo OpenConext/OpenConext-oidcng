@@ -2,9 +2,9 @@ package oidc.endpoints;
 
 import java.util.HashMap;
 
-public class FluentMap extends HashMap<String, String> {
+public class FluentMap<K, V> extends HashMap<K, V> {
 
-    public FluentMap p(String key, String value) {
+    public FluentMap p(K key, V value) {
         super.put(key, value);
         return this;
     }

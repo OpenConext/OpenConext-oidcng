@@ -15,10 +15,14 @@
  *
  */
 
-package oidc.config;
+package oidc.secure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
+import oidc.config.AppConfig;
+import oidc.config.BeanConfig;
+import oidc.config.OidcCorsConfigurationSource;
+import oidc.config.TokenUsers;
 import oidc.crypto.KeyGenerator;
 import oidc.repository.UserRepository;
 import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
@@ -26,14 +30,18 @@ import oidc.web.FakeSamlAuthenticationFilter;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.core.io.Resource;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configurers.provisioning.InMemoryUserDetailsManagerConfigurer;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -44,7 +52,6 @@ import org.springframework.security.saml.provider.service.config.ExternalIdentit
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityConfiguration;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityDsl;
 
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.stream.Stream;
@@ -52,6 +59,7 @@ import java.util.stream.Stream;
 import static org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityDsl.serviceProvider;
 
 @EnableWebSecurity
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfiguration {
 
     private static final Log LOG = LogFactory.getLog(SecurityConfiguration.class);
@@ -144,7 +152,7 @@ public class SecurityConfiguration {
         }
 
         @SneakyThrows
-        private String read(Resource resource)  {
+        private String read(Resource resource) {
             LOG.info("Reading resource: " + resource.getFilename());
             return IOUtils.toString(resource.getInputStream(), Charset.defaultCharset());
         }
@@ -160,10 +168,16 @@ public class SecurityConfiguration {
 
 
     @Configuration
+    @EnableConfigurationProperties(TokenUsers.class)
     public static class AppSecurity extends WebSecurityConfigurerAdapter {
 
-        private @Value("${manage.user}") String user;
-        private @Value("${manage.password}") String password;
+        private @Value("${manage.user}")
+        String user;
+        private @Value("${manage.password}")
+        String password;
+
+        @Autowired
+        private TokenUsers tokenUsers;
 
         @Override
         protected void configure(HttpSecurity http) throws Exception {
@@ -174,24 +188,36 @@ public class SecurityConfiguration {
                     .antMatchers("/actuator/health", "/actuator/info")
                     .permitAll()
                     .and()
-                    .antMatcher("/manage/**")
+                    .requestMatchers()
+                    .antMatchers("/manage/**", "/tokens")
+                    .and()
                     .authorizeRequests()
-                    .antMatchers("/manage/**")
+                    .antMatchers("/manage/**", "/tokens")
                     .authenticated()
                     .and()
                     .httpBasic()
                     .and()
                     .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-            ;
         }
 
         @Override
         protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-            auth
+            InMemoryUserDetailsManagerConfigurer<AuthenticationManagerBuilder> builder = auth
                     .inMemoryAuthentication()
                     .withUser(user)
                     .password("{noop}" + password)
-                    .roles("manage");
+                    .roles("manage")
+                    .and();
+
+            if (tokenUsers.isEnabled()) {
+                tokenUsers.getUsers().forEach(user -> {
+                    builder
+                            .withUser(user.getUser())
+                            .password("{noop}" + user.getPassword())
+                            .roles("api_tokens");
+                });
+
+            }
         }
     }
 

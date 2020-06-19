@@ -8,6 +8,7 @@ import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant;
 import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.ClientCredentialsGrant;
+import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.RefreshTokenGrant;
 import com.nimbusds.oauth2.sdk.TokenRequest;
@@ -20,6 +21,7 @@ import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
+import oidc.crypto.KeyGenerator;
 import oidc.exceptions.CodeVerifierMissingException;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.JWTAuthorizationGrantsException;
@@ -27,6 +29,7 @@ import oidc.exceptions.RedirectMismatchException;
 import oidc.exceptions.UnauthorizedException;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
+import oidc.model.EncryptedTokenValue;
 import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
 import oidc.model.Scope;
@@ -58,6 +61,8 @@ import java.security.cert.CertificateException;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -69,15 +74,15 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
     private static final Log LOG = LogFactory.getLog(TokenEndpoint.class);
 
-    private ConcurrentAuthorizationCodeRepository concurrentAuthorizationCodeRepository;
-    private AuthorizationCodeRepository authorizationCodeRepository;
-    private AccessTokenRepository accessTokenRepository;
-    private RefreshTokenRepository refreshTokenRepository;
-    private UserRepository userRepository;
-    private OpenIDClientRepository openIDClientRepository;
-    private TokenGenerator tokenGenerator;
-    private String tokenEndpoint;
-
+    private final ConcurrentAuthorizationCodeRepository concurrentAuthorizationCodeRepository;
+    private final AuthorizationCodeRepository authorizationCodeRepository;
+    private final AccessTokenRepository accessTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final UserRepository userRepository;
+    private final OpenIDClientRepository openIDClientRepository;
+    private final TokenGenerator tokenGenerator;
+    private final String tokenEndpoint;
+    private final String salt;
 
     public TokenEndpoint(OpenIDClientRepository openIDClientRepository,
                          AuthorizationCodeRepository authorizationCodeRepository,
@@ -86,7 +91,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                          RefreshTokenRepository refreshTokenRepository,
                          UserRepository userRepository,
                          TokenGenerator tokenGenerator,
-                         @Value("${oidc_token_endpoint}") String tokenEndpoint) {
+                         @Value("${oidc_token_endpoint}") String tokenEndpoint,
+                         @Value("${access_token_one_way_hash_salt}") String salt) {
         this.openIDClientRepository = openIDClientRepository;
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.concurrentAuthorizationCodeRepository = concurrentAuthorizationCodeRepository;
@@ -95,6 +101,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         this.userRepository = userRepository;
         this.tokenGenerator = tokenGenerator;
         this.tokenEndpoint = tokenEndpoint;
+        this.salt = salt;
     }
 
     @PostMapping(value = "oidc/token", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
@@ -266,6 +273,42 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                 Collections.emptyList(), true, null, Optional.empty(), Optional.empty());
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
+
+    private Map<String, Object> tokenEndpointResponse(Optional<User> user, OpenIDClient client,
+                                                      List<String> scopes, List<String> idTokenClaims,
+                                                      boolean clientCredentials, String nonce,
+                                                      Optional<Long> authorizationTime,
+                                                      Optional<String> authorizationCodeId) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        TokenGenerator tokenGenerator = getTokenGenerator();
+        EncryptedTokenValue encryptedAccessToken = user
+                .map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client))
+                .orElse(tokenGenerator.generateAccessToken(client));
+        String accessTokenValue = encryptedAccessToken.getValue();
+        String sub = user.map(User::getSub).orElse(client.getClientId());
+        String unspecifiedUrnHash = user.map(u -> KeyGenerator.oneWayHash(u.getUnspecifiedNameId(), this.salt)).orElse(null);
+
+        AccessToken accessToken = new AccessToken(accessTokenValue, sub, client.getClientId(), scopes,
+                encryptedAccessToken.getKeyId(), accessTokenValidity(client), !user.isPresent(),
+                authorizationCodeId.orElse(null), unspecifiedUrnHash);
+        getAccessTokenRepository().insert(accessToken);
+
+        map.put("access_token", accessTokenValue);
+        map.put("token_type", "Bearer");
+        if (client.getGrants().contains(GrantType.REFRESH_TOKEN.getValue())) {
+            String refreshTokenValue = tokenGenerator.generateRefreshToken();
+            getRefreshTokenRepository().insert(new RefreshToken(refreshTokenValue, sub, client.getClientId(), scopes,
+                    refreshTokenValidity(client), accessTokenValue, clientCredentials, unspecifiedUrnHash));
+            map.put("refresh_token", refreshTokenValue);
+        }
+        map.put("expires_in", client.getAccessTokenValidity());
+        if (isOpenIDRequest(scopes) && !clientCredentials) {
+            map.put("id_token", tokenGenerator.generateIDTokenForTokenEndpoint(user, client, nonce, idTokenClaims, authorizationTime));
+        }
+        return map;
+    }
+
+
 
     private HttpHeaders getResponseHeaders() {
         HttpHeaders headers = new HttpHeaders();

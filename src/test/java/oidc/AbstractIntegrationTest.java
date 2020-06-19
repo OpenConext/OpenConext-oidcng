@@ -131,7 +131,8 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
                 .remove(new Query())
                 .insert(identityProviders())
                 .execute();
-        Arrays.asList(UserConsent.class, SigningKey.class, SymmetricKey.class, AccessToken.class, AuthorizationCode.class)
+        Arrays.asList(UserConsent.class, SigningKey.class, SymmetricKey.class, RefreshToken.class, AccessToken.class,
+                AuthorizationCode.class)
                 .forEach(clazz -> mongoTemplate.remove(new Query(), clazz));
     }
 

@@ -33,6 +33,7 @@ oidc_saml_mapping_path: classpath:/oidc/saml_mapping.json
 openid_configuration_path: classpath:/openid-configuration.json
 secret_key_set_path: classpath:/secret_keyset.json
 associated_data: 4CEFFA8B-90DD-4737-8B04-6DA51C5B29AE
+access_token_one_way_hash_salt: secret
 private_key_path: classpath:/id_rsa
 certificate_path: classpath:/id_rsa.pub
 default_acr_value: http://test.surfconext.nl/assurance/loa1
@@ -73,6 +74,14 @@ spring:
 manage:
   user: oidcng
   password: secret
+
+token-api:
+  enabled: true
+  users:
+    - user: eduid
+      password: secret
+    - user: profile
+      password: secret
 
 eduid:
   user: oidcng

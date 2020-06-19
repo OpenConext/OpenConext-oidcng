@@ -34,12 +34,16 @@ public class AccessToken {
 
     private Date expiresIn;
 
+    private Date createdAt;
+
     private boolean clientCredentials;
 
     private String authorizationCodeId;
 
+    private String unspecifiedUrnHash;
+
     public AccessToken(String value, String sub, String clientId, List<String> scopes, String signingKeyId,
-                       Date expiresIn, boolean clientCredentials, String authorizationCodeId) {
+                       Date expiresIn, boolean clientCredentials, String authorizationCodeId, String unspecifiedUrnHash) {
         this.innerValue = value;
         this.value = UUID.nameUUIDFromBytes(value.getBytes(Charset.defaultCharset())).toString();
         this.sub = sub;
@@ -50,11 +54,17 @@ public class AccessToken {
                 Date.from(LocalDateTime.now().plusSeconds(3600).atZone(ZoneId.systemDefault()).toInstant());
         this.clientCredentials = clientCredentials;
         this.authorizationCodeId = authorizationCodeId;
+        this.unspecifiedUrnHash = unspecifiedUrnHash;
+        this.createdAt = new Date();
     }
 
     @Transient
     public boolean isExpired(Clock clock) {
         return clock.instant().isAfter(expiresIn.toInstant());
+    }
+
+    public String getId() {
+        return id;
     }
 
     public String getSub() {
@@ -75,5 +85,9 @@ public class AccessToken {
 
     public Date getExpiresIn() {
         return expiresIn;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
     }
 }

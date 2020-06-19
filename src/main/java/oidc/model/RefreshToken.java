@@ -12,8 +12,9 @@ public class RefreshToken extends AccessToken {
 
     private String accessTokenValue;
 
-    public RefreshToken(String value, String sub, String clientId, List<String> scopes, Date expiresIn, String accessTokenValue, boolean clientCredentials) {
-        super(value, sub, clientId, scopes, null, expiresIn, clientCredentials, null);
+    public RefreshToken(String value, String sub, String clientId, List<String> scopes, Date expiresIn,
+                        String accessTokenValue, boolean clientCredentials, String unspecifiedUrnHash) {
+        super(value, sub, clientId, scopes, null, expiresIn, clientCredentials, null, unspecifiedUrnHash);
         this.accessTokenValue = accessTokenValue;
     }
 

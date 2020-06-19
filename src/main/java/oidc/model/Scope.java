@@ -25,4 +25,9 @@ public class Scope implements Serializable {
         this.name = (String) jsonRepresentation.get("name");
         this.descriptions = (Map<String, String>) jsonRepresentation.getOrDefault("descriptions", new HashMap<String, String>());
     }
+
+    public Scope setDescriptions(Map<String, String> descriptions) {
+        this.descriptions = descriptions;
+        return this;
+    }
 }

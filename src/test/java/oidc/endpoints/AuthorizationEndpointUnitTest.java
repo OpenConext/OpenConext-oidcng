@@ -73,7 +73,7 @@ public class AuthorizationEndpointUnitTest {
 
     private void doValidateGrantType(String clientGrantType, String requestResponseType) throws IOException, ParseException {
         AuthorizationRequest authorizationRequest = authorizationRequest(
-                new FluentMap().p("client_id", "http://oidc-rp").p("response_type", requestResponseType));
+                new FluentMap<String, String>().p("client_id", "http://oidc-rp").p("response_type", requestResponseType));
         OpenIDClient client = openIDClient("http://redirect", "scope", clientGrantType);
         ResponseType responseType = AuthorizationEndpoint.validateGrantType(authorizationRequest, client);
 
@@ -82,7 +82,7 @@ public class AuthorizationEndpointUnitTest {
 
     private void doValidateScope(String clientScope, String requestResponseScope) throws IOException, ParseException {
         AuthorizationRequest authorizationRequest = authorizationRequest(
-                new FluentMap().p("client_id", "http://oidc-rp").p("response_type", "code").p("scope", requestResponseScope));
+                new FluentMap<String, String>().p("client_id", "http://oidc-rp").p("response_type", "code").p("scope", requestResponseScope));
         OpenIDClient client = openIDClient("http://redirect", clientScope, "authorization_code");
         List<String> scopes = AuthorizationEndpoint.validateScopes(authorizationRequest, client);
 
@@ -91,7 +91,7 @@ public class AuthorizationEndpointUnitTest {
 
     private void doValidateRedirectionUri(String clientRedirectUri, String requestRedirectUri) throws IOException, ParseException {
         AuthorizationRequest authorizationRequest = authorizationRequest(
-                new FluentMap().p("client_id", "http://oidc-rp").p("response_type", "code").p("redirect_uri", requestRedirectUri));
+                new FluentMap<String, String>().p("client_id", "http://oidc-rp").p("response_type", "code").p("redirect_uri", requestRedirectUri));
         OpenIDClient client = openIDClient(clientRedirectUri, "open_id", "authorization_code");
         ProvidedRedirectURI redirectUri = AuthorizationEndpoint.validateRedirectionURI(authorizationRequest, client);
 

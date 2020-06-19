@@ -9,9 +9,13 @@ import com.nimbusds.oauth2.sdk.ResponseMode;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.id.State;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
+import com.nimbusds.openid.connect.sdk.Nonce;
 import com.nimbusds.openid.connect.sdk.OIDCResponseTypeValue;
 import com.nimbusds.openid.connect.sdk.Prompt;
+import oidc.crypto.KeyGenerator;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.InvalidScopeException;
 import oidc.exceptions.RedirectMismatchException;
@@ -37,6 +41,7 @@ import oidc.user.OidcSamlAuthentication;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -88,6 +93,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     private final RefreshTokenRepository refreshTokenRepository;
     private final OpenIDClientRepository openIDClientRepository;
     private final IdentityProviderRepository identityProviderRepository;
+    private final String salt;
 
     @Autowired
     public AuthorizationEndpoint(AuthorizationCodeRepository authorizationCodeRepository,
@@ -97,7 +103,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                                  UserConsentRepository userConsentRepository,
                                  OpenIDClientRepository openIDClientRepository,
                                  IdentityProviderRepository identityProviderRepository,
-                                 TokenGenerator tokenGenerator) {
+                                 TokenGenerator tokenGenerator,
+                                 @Value("${access_token_one_way_hash_salt}") String salt) {
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.accessTokenRepository = accessTokenRepository;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -106,6 +113,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         this.openIDClientRepository = openIDClientRepository;
         this.identityProviderRepository = identityProviderRepository;
         this.tokenGenerator = tokenGenerator;
+        this.salt = salt;
     }
 
     @GetMapping("/oidc/authorize")
@@ -123,7 +131,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                                 HttpServletRequest request) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
         LOG.info(String.format("/oidc/consent %s %s", authentication.getDetails(), body));
 
-        LinkedMultiValueMap parameters = new LinkedMultiValueMap();
+        LinkedMultiValueMap<String, String> parameters = new LinkedMultiValueMap<>();
         parameters.setAll(body);
         return this.doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, false, true);
     }
@@ -265,6 +273,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         return new ModelAndView("consent", body);
     }
 
+    @SuppressWarnings("unchecked")
     private String attributeValueForConsent(Object object) {
         if (object == null) {
             return "";
@@ -288,13 +297,15 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     }
 
     private Map<String, Object> authorizationEndpointResponse(User user, OpenIDClient client, AuthorizationRequest authorizationRequest,
-                                                              List<String> scopes, ResponseType responseType, State state) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
+                                                              List<String> scopes, ResponseType responseType, State state)  {
         Map<String, Object> result = new LinkedHashMap<>();
         EncryptedTokenValue encryptedAccessToken = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client);
         String accessTokenValue = encryptedAccessToken.getValue();
         if (responseType.contains(ResponseType.Value.TOKEN.getValue()) || !isOpenIDRequest(authorizationRequest)) {
-            getAccessTokenRepository().insert(new AccessToken(accessTokenValue, user.getSub(), client.getClientId(), scopes,
-                    encryptedAccessToken.getKeyId(), accessTokenValidity(client), false, null));
+            String unspecifiedUrnHash = KeyGenerator.oneWayHash(user.getUnspecifiedNameId(), this.salt);
+            AccessToken accessToken = new AccessToken(accessTokenValue, user.getSub(), client.getClientId(), scopes,
+                    encryptedAccessToken.getKeyId(), accessTokenValidity(client), false, null, unspecifiedUrnHash);
+            getAccessTokenRepository().insert(accessToken);
             result.put("access_token", accessTokenValue);
             result.put("token_type", "Bearer");
         }
@@ -317,12 +328,35 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         return result;
     }
 
-    private AuthorizationCode createAndSaveAuthorizationCode(AuthorizationRequest authenticationRequest, OpenIDClient client, User user) {
-        AuthorizationCode authorizationCode = constructAuthorizationCode(authenticationRequest, client, user);
+    private AuthorizationCode createAndSaveAuthorizationCode(AuthorizationRequest authorizationRequest, OpenIDClient client, User user) {
+        URI redirectionURI = authorizationRequest.getRedirectionURI();
+        Scope scope = authorizationRequest.getScope();
+        List<String> scopes = scope != null ? scope.toStringList() : Collections.emptyList();
+        //Optional code challenges for PKCE
+        CodeChallenge codeChallenge = authorizationRequest.getCodeChallenge();
+        String codeChallengeValue = codeChallenge != null ? codeChallenge.getValue() : null;
+        CodeChallengeMethod codeChallengeMethod = authorizationRequest.getCodeChallengeMethod();
+        String codeChallengeMethodValue = codeChallengeMethod != null ? codeChallengeMethod.getValue() :
+                (codeChallengeValue != null ? CodeChallengeMethod.getDefault().getValue() : null);
+        List<String> idTokenClaims = getClaims(authorizationRequest);
+        String code = getTokenGenerator().generateAuthorizationCode();
+        Nonce nonce = authorizationRequest instanceof AuthenticationRequest ? AuthenticationRequest.class.cast(authorizationRequest).getNonce() : null;
+        AuthorizationCode authorizationCode = new AuthorizationCode(
+                code,
+                user.getSub(),
+                client.getClientId(),
+                scopes,
+                redirectionURI,
+                codeChallengeValue,
+                codeChallengeMethodValue,
+                nonce != null ? nonce.getValue() : null,
+                idTokenClaims,
+                redirectionURI != null,
+                tokenValidity(10 * 60));
+
         authorizationCodeRepository.insert(authorizationCode);
         return authorizationCode;
     }
-
 
     public static ProvidedRedirectURI validateRedirectionURI(AuthorizationRequest authenticationRequest, OpenIDClient client) throws UnsupportedEncodingException {
         URI redirectionURI = authenticationRequest.getRedirectionURI();

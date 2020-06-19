@@ -9,6 +9,7 @@ import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.ClaimsRequest;
 import com.nimbusds.openid.connect.sdk.Nonce;
+import oidc.crypto.KeyGenerator;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.EncryptedTokenValue;
@@ -35,64 +36,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public interface OidcEndpoint {
-
-    default Map<String, Object> tokenEndpointResponse(Optional<User> user, OpenIDClient client,
-                                                      List<String> scopes, List<String> idTokenClaims,
-                                                      boolean clientCredentials, String nonce,
-                                                      Optional<Long> authorizationTime,
-                                                      Optional<String> authorizationCodeId) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        TokenGenerator tokenGenerator = getTokenGenerator();
-        EncryptedTokenValue encryptedAccessToken = user
-                .map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client))
-                .orElse(tokenGenerator.generateAccessToken(client));
-        String accessTokenValue = encryptedAccessToken.getValue();
-        String sub = user.map(User::getSub).orElse(client.getClientId());
-
-        getAccessTokenRepository().insert(new AccessToken(accessTokenValue, sub, client.getClientId(), scopes,
-                encryptedAccessToken.getKeyId(), accessTokenValidity(client), !user.isPresent(), authorizationCodeId.orElse(null)));
-        map.put("access_token", accessTokenValue);
-        map.put("token_type", "Bearer");
-        if (client.getGrants().contains(GrantType.REFRESH_TOKEN.getValue())) {
-            String refreshTokenValue = tokenGenerator.generateRefreshToken();
-            getRefreshTokenRepository().insert(new RefreshToken(refreshTokenValue, sub, client.getClientId(), scopes,
-                    refreshTokenValidity(client), accessTokenValue, clientCredentials));
-            map.put("refresh_token", refreshTokenValue);
-        }
-        map.put("expires_in", client.getAccessTokenValidity());
-        if (isOpenIDRequest(scopes) && !clientCredentials) {
-            map.put("id_token", tokenGenerator.generateIDTokenForTokenEndpoint(user, client, nonce, idTokenClaims, authorizationTime));
-        }
-        return map;
-    }
-
-    default AuthorizationCode constructAuthorizationCode(AuthorizationRequest authorizationRequest, OpenIDClient client, User user) {
-        URI redirectionURI = authorizationRequest.getRedirectionURI();
-        Scope scope = authorizationRequest.getScope();
-        List<String> scopes = scope != null ? scope.toStringList() : Collections.emptyList();
-        //Optional code challenges for PKCE
-        CodeChallenge codeChallenge = authorizationRequest.getCodeChallenge();
-        String codeChallengeValue = codeChallenge != null ? codeChallenge.getValue() : null;
-        CodeChallengeMethod codeChallengeMethod = authorizationRequest.getCodeChallengeMethod();
-        String codeChallengeMethodValue = codeChallengeMethod != null ? codeChallengeMethod.getValue() :
-                (codeChallengeValue != null ? CodeChallengeMethod.getDefault().getValue() : null);
-        List<String> idTokenClaims = getClaims(authorizationRequest);
-        String code = getTokenGenerator().generateAuthorizationCode();
-        Nonce nonce = authorizationRequest instanceof AuthenticationRequest ? AuthenticationRequest.class.cast(authorizationRequest).getNonce() : null;
-        return new AuthorizationCode(
-                code,
-                user.getSub(),
-                client.getClientId(),
-                scopes,
-                redirectionURI,
-                codeChallengeValue,
-                codeChallengeMethodValue,
-                nonce != null ? nonce.getValue() : null,
-                idTokenClaims,
-                redirectionURI != null,
-                tokenValidity(10 * 60));
-    }
-
 
     default boolean isOpenIDRequest(AuthorizationRequest authorizationRequest) {
         return authorizationRequest instanceof AuthenticationRequest;

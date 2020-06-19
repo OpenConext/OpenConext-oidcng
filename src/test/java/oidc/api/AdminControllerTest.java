@@ -1,4 +1,4 @@
-package oidc.secure;
+package oidc.api;
 
 import oidc.AbstractIntegrationTest;
 import oidc.model.AccessToken;

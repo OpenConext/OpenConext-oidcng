@@ -44,7 +44,7 @@ public class KeyRollover {
         doSigningKeyRollover();
     }
 
-    void doSigningKeyRollover() {
+    public void doSigningKeyRollover() {
         try {
             SigningKey signingKey = tokenGenerator.rolloverSigningKeys();
             LOG.info("Successful signing key rollover. New signing key: " + signingKey.getKeyId());
@@ -55,7 +55,7 @@ public class KeyRollover {
         }
     }
 
-    void doSymmetricKeyRollover() {
+    public void doSymmetricKeyRollover() {
         try {
             SymmetricKey symmetricKey = tokenGenerator.rolloverSymmetricKeys();
             LOG.info("Successful symmetric key rollover. New symmetric key: " + symmetricKey.getKeyId());

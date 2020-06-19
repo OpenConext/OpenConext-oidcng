@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import java.nio.charset.Charset;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,6 +22,8 @@ public interface AccessTokenRepository extends MongoRepository<AccessToken, Stri
     Long deleteByExpiresInBefore(Date expiryDate);
 
     Long deleteByAuthorizationCodeId(String authorizationCodeId);
+
+    List<AccessToken> findAccessTokenByUnspecifiedUrnHash(String unspecifiedUrnHash);
 
     //Do not use
     Optional<AccessToken> findAccessTokenByValue(String value);

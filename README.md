@@ -229,3 +229,77 @@ Therefore the WAYF and ARP must be scoped for the requesting SP (and not this OI
 
 Running OIDC-NG on localhost you can test the consent page by visiting
 [the consent page](http://localhost:8080/oidc/authorize?scope=openid&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fredirect&state=example&prompt=consent&nonce=example&client_id=playground_client&response_mode=query)
+
+## [Token-API](#topenapi)
+If you run the `TokenControllerTest` the test seed resides in the mongo test database. Fetch all tokens
+```
+curl -u eduid:secret "http://localhost:8080/tokens?unspecifiedID=urn%3Acollab%3Aperson%3Aeduid.nl%3A7d4fca9b-2169-4d55-8347-73cf29b955a2"
+```
+The result:
+```
+[
+  {
+    "expiresIn": "2020-03-21T07:23:19.096+0000",
+    "createdAt": "2020-06-19T07:23:19.096+0000",
+    "id": "5eec6a5df0efad206831a65a",
+    "clientName": "Playground Client",
+    "audiences": [
+      "ResourceServer",
+      "OpenConext Mock SP"
+    ],
+    "scopes": [
+      {
+        "name": "openid",
+        "descriptions": {
+          "en": "See all your account information.",
+          "nl": "nl",
+          "pt": "pt"
+        }
+      },
+      {
+        "name": "groups",
+        "descriptions": {
+          "en": "Have access to all your group memberships.",
+          "nl": "nl",
+          "pt": "pt"
+        }
+      },
+      {
+        "name": "nope",
+        "descriptions": {}
+      }
+    ],
+    "type": "ACCESS"
+  },
+  {
+    "expiresIn": "2020-03-21T07:23:19.105+0000",
+    "createdAt": "2020-06-19T07:23:19.105+0000",
+    "id": "5eec6a5df0efad206831a658",
+    "clientName": "OpenConext Mock RP",
+    "audiences": [],
+    "scopes": [
+      {
+        "name": "openid",
+        "descriptions": {
+          "en": "English description",
+          "nl": "nl",
+          "pt": "pt"
+        }
+      },
+      {
+        "name": "groups",
+        "descriptions": {}
+      },
+      {
+        "name": "nope",
+        "descriptions": {}
+      }
+    ],
+    "type": "REFRESH"
+  }
+]
+```
+To delete tokens perform the following:
+```
+curl -u eduid:secret -H "Content-type: application/json" -X PUT -d '[{"id":"5eec6a5df0efad206831a658","tokenType":"REFRESH"},{"id":"5eec6a5df0efad206831a659","tokenType":"ACCESS"}]'
+```
