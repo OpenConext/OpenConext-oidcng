@@ -94,6 +94,7 @@ public class TokenController {
 
         Optional<OpenIDClient> optionalClient = openIDClientRepository.findOptionalByClientId(token.getClientId());
         optionalClient.ifPresent(openIDClient -> {
+            result.put("clientId", openIDClient.getClientId());
             result.put("clientName", openIDClient.getName());
             result.put("audiences", openIDClient.getAllowedResourceServers().stream()
                     .map(rs -> openIDClientRepository.findOptionalByClientId(rs))

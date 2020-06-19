@@ -28,7 +28,7 @@ public class TokenControllerFeatureDisabledTest {
     }
 
     @Test
-    public void getTokens403() {
+    public void getTokens401() {
         given()
                 .when()
                 .header("Content-type", "application/json")

@@ -26,10 +26,10 @@ import static org.junit.Assert.assertEquals;
 
 public class TokenControllerTest extends AbstractIntegrationTest {
 
-    private String user = "eduid";
-    private String password = "secret";
-    private String unspecifiedId = "urn:collab:person:eduid.nl:7d4fca9b-2169-4d55-8347-73cf29b955a2";
-    private String unspecifiedIdHash = KeyGenerator.oneWayHash(unspecifiedId, "secret");
+    private final String user = "eduid";
+    private final String password = "secret";
+    private final String unspecifiedId = "urn:collab:person:eduid.nl:7d4fca9b-2169-4d55-8347-73cf29b955a2";
+    private final String unspecifiedIdHash = KeyGenerator.oneWayHash(unspecifiedId, "secret");
 
     @Before
     public void before() throws IOException {
