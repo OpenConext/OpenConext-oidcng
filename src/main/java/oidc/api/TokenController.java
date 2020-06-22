@@ -66,11 +66,15 @@ public class TokenController {
         List<RefreshToken> refreshTokens = refreshTokenRepository.findAccessTokenByUnspecifiedUrnHash(unspecifiedUrnHash);
 
         accessTokens.addAll(refreshTokens);
-        return accessTokens.stream()
+        List<Map<String, Object>> result = accessTokens.stream()
                 .map(this::convertToken)
                 //No use returning tokens without RP
                 .filter(map -> map.containsKey("clientName"))
                 .collect(Collectors.toList());
+
+        LOG.debug(String.format("Returning tokens for %s with unspecified %s: %s", name, unspecifiedId, result));
+
+        return result;
     }
 
     @PutMapping("tokens")
@@ -79,7 +83,7 @@ public class TokenController {
                                              @RequestBody List<TokenRepresentation> tokenIdentifiers) {
         String name = authentication.getName();
 
-        LOG.info(String.format("Starting tokens PUT for %s with token %s", name, tokenIdentifiers));
+        LOG.info(String.format("Deleting tokens for %s with token(s) %s", name, tokenIdentifiers));
 
         tokenIdentifiers.stream().forEach(tokenRepresentation ->
                 (tokenRepresentation.getTokenType().equals(TokenType.ACCESS) ? accessTokenRepository : refreshTokenRepository)
