@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,6 +27,7 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -97,7 +99,11 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
             result.put("authenticating_authority", user.getAuthenticatingAuthority());
             result.put("sub", user.getSub());
             result.putAll(user.getAttributes());
-            result = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, result);
+
+            boolean validPseudonymisation = validPseudonymisation(result, resourceServer, openIDClient);
+            if (!validPseudonymisation) {
+                return ResponseEntity.ok(Collections.singletonMap("active", false));
+            }
         }
         //The following claims can not be overridden by the
         result.put("active", true);
@@ -109,6 +115,18 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
         result.put("token_type", "Bearer");
 
         return ResponseEntity.ok(sortMap(result));
+    }
+
+    private boolean validPseudonymisation(Map<String, Object> userAttributes, OpenIDClient resourceServer , OpenIDClient openIDClient ) {
+        List<String> uids = (List<String>) userAttributes.get("uids");
+        String eduId = (String) userAttributes.get("eduid");
+        Optional<Map<String, String>> pseudonymiseResult = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, eduId, uids);
+        if (pseudonymiseResult.isPresent() && !pseudonymiseResult.get().containsKey("eduperson_principal_name")) {
+            //The user is not linked to an IdP belonging to this RS
+            return false;
+        }
+        userAttributes.putAll(pseudonymiseResult.orElseGet(Collections::emptyMap));
+        return true;
     }
 
 }

@@ -1,5 +1,6 @@
 package oidc.endpoints;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.Scope;
@@ -7,6 +8,7 @@ import com.nimbusds.oauth2.sdk.TokenIntrospectionRequest;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -14,9 +16,14 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.nimbusds.oauth2.sdk.http.HTTPRequest.Method.POST;
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
@@ -24,6 +31,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class IntrospectEndpointTest extends AbstractIntegrationTest {
+
+    @ClassRule
+    public static WireMockRule wireMockRule = new WireMockRule(8099);
 
     @Test
     //https://bitbucket.org/connect2id/oauth-2.0-sdk-with-openid-connect-extensions/issues/265
@@ -41,6 +51,53 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
         assertEquals(true, result.get("active"));
         assertTrue(result.containsKey("unspecified_id"));
         assertTrue(result.containsKey("email"));
+    }
+
+    @Test
+    public void introspectionEduIdInvalidPseudonymisation() throws IOException {
+        Map<String, String> res = new HashMap<>();
+        res.put("eduid", "pseudoEduid");
+
+        Map<String, Object> result = doIntrospectionWithEduidUser(res);
+        assertEquals(false, result.get("active"));
+
+    }
+
+    @Test
+    public void introspectionEduIdValidPseudonymisation() throws IOException {
+        String eduPersonPrincipalName = "eduPersonPrincipalName";
+
+        Map<String, String> res = new HashMap<>();
+        res.put("eduid", "pseudoEduid");
+        res.put("eduperson_principal_name", eduPersonPrincipalName);
+
+        Map<String, Object> result = doIntrospectionWithEduidUser(res);
+        assertEquals(true, result.get("active"));
+        assertEquals(eduPersonPrincipalName, result.get("eduperson_principal_name"));
+    }
+
+    private Map<String, Object> doIntrospectionWithEduidUser(Map<String, String> eduIdAttributePseudonymisationresult) throws IOException {
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("scope", "openid");
+        queryParams.put("client_id", "mock-sp");
+        queryParams.put("response_type", "code");
+        queryParams.put("redirect_uri", openIDClient("mock-sp").getRedirectUrls().get(0));
+
+        Response response = given().redirects().follow(false)
+                .when()
+                .header("Content-type", "application/json")
+                .queryParams(queryParams)
+                .get("oidc/authorize?user=eduid");
+
+        String code = getCode(response);
+        Map<String, Object> body = doToken(code, "mock-sp", "secret", GrantType.AUTHORIZATION_CODE);
+        String accessToken = (String) body.get("access_token");
+
+        stubFor(get(urlPathMatching("/attribute-manipulation")).willReturn(aResponse()
+                .withHeader("Content-Type", "application/json")
+                .withBody(objectMapper.writeValueAsString(eduIdAttributePseudonymisationresult))));
+
+        return callIntrospection("resource-server-playground-client", accessToken, "secret");
     }
 
     @Test

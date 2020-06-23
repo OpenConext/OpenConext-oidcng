@@ -13,20 +13,25 @@ import org.springframework.security.saml.saml2.authentication.NameIdPrincipal;
 import org.springframework.security.saml.saml2.authentication.Subject;
 import org.springframework.security.saml.saml2.metadata.NameId;
 import org.springframework.security.saml.spi.DefaultSamlAuthentication;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.GenericFilterBean;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 public class FakeSamlAuthenticationFilter extends GenericFilterBean {
 
-    private UserRepository userRepository;
-    private ObjectMapper objectMapper;
+    private final UserRepository userRepository;
+    private final ObjectMapper objectMapper;
+    private final List<String> authorizeEndpoints = Arrays.asList("oidc/authorize", "oidc/consent");
 
     public FakeSamlAuthenticationFilter(UserRepository userRepository, ObjectMapper objectMapper) {
         this.userRepository = userRepository;
@@ -36,8 +41,10 @@ public class FakeSamlAuthenticationFilter extends GenericFilterBean {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if ((authentication == null || !authentication.isAuthenticated()) && !(authentication instanceof DefaultSamlAuthentication)) {
-            User user = getUser(objectMapper);
+        String requestURI = ((HttpServletRequest) request).getRequestURI();
+        boolean authorizeFlow = authorizeEndpoints.stream().anyMatch(requestURI::contains);
+        if (authorizeFlow && (authentication == null || !authentication.isAuthenticated()) && !(authentication instanceof DefaultSamlAuthentication)) {
+            User user = getUser(objectMapper, request);
             userRepository.deleteAll();
             userRepository.insert(user);
 
@@ -47,8 +54,10 @@ public class FakeSamlAuthenticationFilter extends GenericFilterBean {
         chain.doFilter(request, response);
     }
 
-    public static User getUser(ObjectMapper objectMapper) throws IOException {
-        return objectMapper.readValue(IOUtils.toString(new ClassPathResource("data/user.json").getInputStream(), Charset.defaultCharset()), User.class);
+    public static User getUser(ObjectMapper objectMapper, ServletRequest request) throws IOException {
+        String userParameter = request.getParameter("user");
+        String path = String.format("data/%s.json", StringUtils.hasText(userParameter) ? userParameter : "user");
+        return objectMapper.readValue(IOUtils.toString(new ClassPathResource(path).getInputStream(), Charset.defaultCharset()), User.class);
     }
 
     public static Assertion getAssertion() {

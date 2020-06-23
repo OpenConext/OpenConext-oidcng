@@ -31,7 +31,7 @@ public class ConcurrentSavedRequestAwareAuthenticationSuccessHandlerTest impleme
         when(authenticationRequestRepository.findById("ID"))
                 .thenReturn(Optional.of(new AuthenticationRequest("ID", new Date(), "http://localhost")));
         subject.onAuthenticationSuccess(new MockHttpServletRequest(), response, new OidcSamlAuthentication(FakeSamlAuthenticationFilter.getAssertion(),
-               FakeSamlAuthenticationFilter.getUser(objectMapper),
+               FakeSamlAuthenticationFilter.getUser(objectMapper, new MockHttpServletRequest()),
                 "ID"));
         assertEquals("http://localhost", response.getHeader("Location"));
         assertEquals(HttpServletResponse.SC_MOVED_TEMPORARILY, response.getStatus());
@@ -43,7 +43,7 @@ public class ConcurrentSavedRequestAwareAuthenticationSuccessHandlerTest impleme
         when(authenticationRequestRepository.findById("ID"))
                 .thenReturn(Optional.empty());
         subject.onAuthenticationSuccess(new MockHttpServletRequest(), response, new OidcSamlAuthentication(FakeSamlAuthenticationFilter.getAssertion(),
-                FakeSamlAuthenticationFilter.getUser(objectMapper),
+                FakeSamlAuthenticationFilter.getUser(objectMapper, new MockHttpServletRequest()),
                 "ID"));
     }
 

@@ -12,13 +12,16 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class AttributePseudonymisation {
@@ -52,41 +55,42 @@ public class AttributePseudonymisation {
      *
      * @param resourceServer the API owner RS
      * @param openIDClient   the owner of the access token who is calling an API endpoint of the resourceServer
-     * @param attributes     the user attributes
+     * @param eduId          the user eduID
+     * @param uids           the user identifiers
      * @return the manipulated attributes
      */
-    public Map<String, Object> pseudonymise(OpenIDClient resourceServer, OpenIDClient openIDClient, Map<String, Object> attributes) {
-        boolean eduidPresent = attributes.containsKey("eduid");
-        boolean resourceServerIsDifferent = !resourceServer.getClientId().equals(openIDClient.getClientId());
+    public Optional<Map<String, String>> pseudonymise(OpenIDClient resourceServer, OpenIDClient openIDClient, String eduId, List<String> uids) {
+        boolean eduIdMissing = StringUtils.isEmpty(eduId);
+        boolean resourceServerEquals = resourceServer.getClientId().equals(openIDClient.getClientId());
 
-        LOG.info(String.format("Starting to pseudonymise for RS %s and openIDclient %s. Enabled is %s, eduidPresent is %s, resourceServerIsDifferent is %s",
-                resourceServer.getClientId(), openIDClient.getClientId(), enabled, eduidPresent, resourceServerIsDifferent));
-
-        if (enabled && eduidPresent && resourceServerIsDifferent) {
-            HttpEntity<?> requestEntity = new HttpEntity<>(headers);
-            List<String> uids = (List<String>) attributes.get("uids");
-            if (CollectionUtils.isEmpty(uids)) {
-                throw new IllegalArgumentException("Required user attribute 'uids' not present in " + attributes);
-            }
-            String uriString = UriComponentsBuilder.fromUri(eduIdUri)
-                    .queryParam("uid", uids.get(0))
-                    .queryParam("sp_entity_id", resourceServer.getClientId())
-                    .queryParam("sp_institution_guid", resourceServer.getInstitutionGuid())
-                    .toUriString();
-            ResponseEntity<Map<String, String>> responseEntity =
-                    restTemplate.exchange(uriString, HttpMethod.GET, requestEntity, new ParameterizedTypeReference<Map<String, String>>() {
-                    });
-            if (responseEntity.getStatusCode().is2xxSuccessful()) {
-                Map<String, String> body = responseEntity.getBody();
-                LOG.info(String.format("Pseudonymise result %s for RS %s, RP %s", body, resourceServer.getClientId(), openIDClient.getClientId()));
-                attributes.putAll(body);
-            } else {
-                attributes.remove("eduid");
-                LOG.error(String.format("Error %s occurred in pseudonymise for RS %s, RP %s, attributes %s",
-                        requestEntity.getBody(), resourceServer.getClientId(), openIDClient.getClientId(), attributes));
-            }
+        LOG.info(String.format("Starting to pseudonymise for RS %s and openIDclient %s. Enabled is %s, eduIdMissing is %s, resourceServerEquals is %s",
+                resourceServer.getClientId(), openIDClient.getClientId(), enabled, eduIdMissing, resourceServerEquals));
+        if (!enabled || eduIdMissing || resourceServerEquals) {
+            return Optional.empty();
         }
-        return attributes;
+        Map<String, String> result = new HashMap<>();
+        HttpEntity<?> requestEntity = new HttpEntity<>(headers);
+        if (CollectionUtils.isEmpty(uids)) {
+            throw new IllegalArgumentException("Required user attribute 'uids' not presen");
+        }
+        String uriString = UriComponentsBuilder.fromUri(eduIdUri)
+                .queryParam("uid", uids.get(0))
+                .queryParam("sp_entity_id", resourceServer.getClientId())
+                .queryParam("sp_institution_guid", resourceServer.getInstitutionGuid())
+                .toUriString();
+        ResponseEntity<Map<String, String>> responseEntity =
+                restTemplate.exchange(uriString, HttpMethod.GET, requestEntity, new ParameterizedTypeReference<Map<String, String>>() {
+                });
+        if (responseEntity.getStatusCode().is2xxSuccessful()) {
+            Map<String, String> body = responseEntity.getBody();
+            result.putAll(body);
+            LOG.info(String.format("Pseudonymise result %s for RS %s, RP %s", body, resourceServer.getClientId(), openIDClient.getClientId()));
+        } else {
+            LOG.error(String.format("Error %s occurred in pseudonymise for RS %s, RP %s, response %s",
+                    requestEntity.getBody(), resourceServer.getClientId(), openIDClient.getClientId(), responseEntity));
+            return Optional.empty();
+        }
+        return Optional.of(result);
     }
 
 }
