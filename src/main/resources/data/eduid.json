@@ -1,0 +1,32 @@
+{
+  "id": "b6a6db1f-ddb6-4091-b165-52a36a050a69",
+  "sub": "cb6e40b7-1e07-48d0-a32c-4c994df8afd8",
+  "unspecifiedNameId": "urn:collab:person:example.com:admin",
+  "authenticatingAuthority": "http://mock-idp",
+  "clientId": "http@//mock-sp",
+  "acrClaims": [
+    "loa1",
+    "loa2",
+    "loa3"
+  ],
+  "attributes": {
+    "preferred_username": "Johnny D.",
+    "name": "John Doe",
+    "given_name": "John",
+    "family_name": "Doe",
+    "nickname": "Johhny",
+    "email": "john.doe@example.org",
+    "phone_number": "0612345678",
+    "schac_home_organization": "schac_home",
+    "eduid": "3415570f-be91-4ba8-b9ba-e479d18094d5",
+    "edu_person_principal_name": "edu_person_principal_name",
+    "edu_person_targeted_id": "edu_person_targeted_id",
+    "edu_person_affiliations": [
+      "student@example.org",
+      "teacher@example.org"
+    ],
+    "uids": [
+      "b967059e-6b45-4c6c-9063-d4fb5ecd9add"
+    ]
+  }
+}
