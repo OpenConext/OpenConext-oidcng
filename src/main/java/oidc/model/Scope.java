@@ -2,6 +2,7 @@ package oidc.model;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -10,6 +11,7 @@ import java.util.Map;
 
 @Getter
 @NoArgsConstructor
+@ToString(of = "name")
 public class Scope implements Serializable {
 
     private String name;
