@@ -41,7 +41,10 @@ secure_cookie: false
 oidc_token_endpoint: http://localhost:8080/oidc/token
 
 features:
-  # Do we enforce that the scopes granted to an access_token are configured with the resource server?
+  # Do we enforce that the RS - if eduID pseudonymisation is required - belongs to the SURF IdP linked to the eduID user account?
+  # We link RS's and SURF IdP's using the coin:institution-guid
+  enforce-eduid-resource-server-linked-account: true
+  # Do we enforce that the scopes granted to an access_token are configured with the RS?
   enforce-scope-resource-server: true
 
 idp:
@@ -80,6 +83,7 @@ manage:
   password: secret
 
 token-api:
+  # Is the token API enabled for Profile and eduID? If not access to the token API endpoints is forbidden
   enabled: true
   users:
     - user: eduid

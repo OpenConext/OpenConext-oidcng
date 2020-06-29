@@ -15,11 +15,12 @@ import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.OpenIDClientRepository;
 import oidc.secure.TokenGenerator;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -31,9 +32,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
+
+    private static final Log LOG = LogFactory.getLog(IntrospectEndpoint.class);
 
     private final AccessTokenRepository accessTokenRepository;
     private final OpenIDClientRepository openIDClientRepository;
@@ -41,19 +45,24 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
     private final TokenGenerator tokenGenerator;
     private final AttributePseudonymisation attributePseudonymisation;
     private final boolean enforceScopeResourceServer;
+    private final boolean enforceEduidResourceServerLinkedAccount;
+
 
     public IntrospectEndpoint(AccessTokenRepository accessTokenRepository,
                               OpenIDClientRepository openIDClientRepository,
                               TokenGenerator tokenGenerator,
                               AttributePseudonymisation attributePseudonymisation,
                               @Value("${spring.security.saml2.service-provider.entity-id}") String issuer,
-                              @Value("${features.enforce-scope-resource-server}") boolean enforceScopeResourceServer) {
+                              @Value("${features.enforce-scope-resource-server}") boolean enforceScopeResourceServer,
+                              @Value("${feature.enforce-eduid-resource-server-linked-account}") boolean enforceEduidResourceServerLinkedAccount) {
         this.accessTokenRepository = accessTokenRepository;
         this.openIDClientRepository = openIDClientRepository;
         this.tokenGenerator = tokenGenerator;
         this.attributePseudonymisation = attributePseudonymisation;
         this.issuer = issuer;
         this.enforceScopeResourceServer = enforceScopeResourceServer;
+        this.enforceEduidResourceServerLinkedAccount = enforceEduidResourceServerLinkedAccount;
+
     }
 
     @PostMapping(value = {"oidc/introspect"}, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
@@ -65,31 +74,40 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
 
         //https://tools.ietf.org/html/rfc7662 is vague about the authorization requirements, but we enforce basic auth
         if (!(clientAuthentication instanceof PlainClientSecret)) {
+            LOG.warn("No authentication present");
             throw new BadCredentialsException("Invalid user / secret");
         }
         OpenIDClient resourceServer = openIDClientRepository.findByClientId(clientAuthentication.getClientID().getValue());
 
         if (!secretsMatch((PlainClientSecret) clientAuthentication, resourceServer)) {
+            LOG.warn("Secret does not match for RS " + resourceServer.getClientId());
             throw new BadCredentialsException("Invalid user / secret");
         }
         if (!resourceServer.isResourceServer()) {
+            LOG.warn("RS required for not configured for RP " + resourceServer.getClientId());
             throw new BadCredentialsException("Requires ResourceServer");
         }
 
         Optional<AccessToken> optionalAccessToken = accessTokenRepository.findOptionalAccessTokenByValue(accessTokenValue);
         if (!optionalAccessToken.isPresent()) {
+            LOG.warn("No access_token found " + accessTokenValue);
             return ResponseEntity.ok(Collections.singletonMap("active", false));
         }
         AccessToken accessToken = optionalAccessToken.get();
         if (accessToken.isExpired(Clock.systemDefaultZone())) {
+            LOG.warn("Access token is expired " + accessTokenValue);
             return ResponseEntity.ok(Collections.singletonMap("active", false));
         }
 
         if (enforceScopeResourceServer) {
-            //TODO
-            List<Scope> scopes = resourceServer.getScopes();
-        }
+            List<String> configuredScopes = resourceServer.getScopes().stream().map(Scope::getName).collect(Collectors.toList());
+            if (!configuredScopes.containsAll(accessToken.getScopes())) {
+                LOG.warn(String.format("Resource server %s has configured scopes %s, but granted to access_token are scopes ",
+                        resourceServer.getClientId(), resourceServer.getScopes(), accessToken.getScopes()));
+                return ResponseEntity.ok(Collections.singletonMap("active", false));
 
+            }
+        }
 
         Map<String, Object> result = new HashMap<>();
 
@@ -112,7 +130,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
             result.putAll(user.getAttributes());
 
             boolean validPseudonymisation = validPseudonymisation(result, resourceServer, openIDClient);
-            if (!validPseudonymisation) {
+            if (!validPseudonymisation && enforceEduidResourceServerLinkedAccount) {
                 return ResponseEntity.ok(Collections.singletonMap("active", false));
             }
         }
@@ -128,7 +146,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
         return ResponseEntity.ok(sortMap(result));
     }
 
-    private boolean validPseudonymisation(Map<String, Object> userAttributes, OpenIDClient resourceServer , OpenIDClient openIDClient ) {
+    private boolean validPseudonymisation(Map<String, Object> userAttributes, OpenIDClient resourceServer, OpenIDClient openIDClient) {
         List<String> uids = (List<String>) userAttributes.get("uids");
         String eduId = (String) userAttributes.get("eduid");
         Optional<Map<String, String>> pseudonymiseResult = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, eduId, uids);
