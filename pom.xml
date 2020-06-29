@@ -10,7 +10,7 @@
     </parent>
     <groupId>org.openconext</groupId>
     <artifactId>oidcng</artifactId>
-    <version>2.0.2-FB-TOKENS-SNAPSHOT</version>
+    <version>3.0.0</version>
     <name>oidcng</name>
 
     <properties>
