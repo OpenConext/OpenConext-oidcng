@@ -221,7 +221,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
 
     protected Response doAuthorizeWithClaims(String clientId, String responseType, String responseMode, String nonce, String codeChallenge,
                                              List<String> claims) throws IOException {
-        return doAuthorizeWithClaimsAndScopes(clientId, responseType, responseMode, nonce, codeChallenge, claims, "openid profile", "example");
+        return doAuthorizeWithClaimsAndScopes(clientId, responseType, responseMode, nonce, codeChallenge, claims, "openid", "example");
     }
 
     protected String doAuthorizeWithScopes(String clientId, String responseType, String responseMode, String scopes) throws IOException {

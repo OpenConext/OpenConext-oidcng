@@ -297,7 +297,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void consent() throws IOException {
         doConsent();
         //consent only once
-        String code = doAuthorizeWithScopes("playground_client", "code", ResponseMode.QUERY.getValue(), "openid profile");
+        String code = doAuthorizeWithScopes("playground_client", "code", ResponseMode.QUERY.getValue(), "openid");
         Map<String, Object> body = doToken(code, "playground_client", "secret", GrantType.AUTHORIZATION_CODE);
 
         assertTrue(body.containsKey("access_token"));
@@ -309,7 +309,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         doConsent();
 
         userConsent = mongoTemplate.findAll(UserConsent.class).get(0);
-        assertEquals("[openid, profile]", userConsent.getScopes().toString());
+        assertEquals("[openid]", userConsent.getScopes().toString());
     }
 
     private void doConsent() throws IOException {

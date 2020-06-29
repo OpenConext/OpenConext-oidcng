@@ -54,7 +54,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
                               AttributePseudonymisation attributePseudonymisation,
                               @Value("${spring.security.saml2.service-provider.entity-id}") String issuer,
                               @Value("${features.enforce-scope-resource-server}") boolean enforceScopeResourceServer,
-                              @Value("${feature.enforce-eduid-resource-server-linked-account}") boolean enforceEduidResourceServerLinkedAccount) {
+                              @Value("${features.enforce-eduid-resource-server-linked-account}") boolean enforceEduidResourceServerLinkedAccount) {
         this.accessTokenRepository = accessTokenRepository;
         this.openIDClientRepository = openIDClientRepository;
         this.tokenGenerator = tokenGenerator;
@@ -102,7 +102,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
         if (enforceScopeResourceServer) {
             List<String> configuredScopes = resourceServer.getScopes().stream().map(Scope::getName).collect(Collectors.toList());
             if (!configuredScopes.containsAll(accessToken.getScopes())) {
-                LOG.warn(String.format("Resource server %s has configured scopes %s, but granted to access_token are scopes ",
+                LOG.warn(String.format("Resource server %s has configured scopes %s, but granted to access_token are scopes %s",
                         resourceServer.getClientId(), resourceServer.getScopes(), accessToken.getScopes()));
                 return ResponseEntity.ok(Collections.singletonMap("active", false));
 
