@@ -152,6 +152,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
         Optional<Map<String, String>> pseudonymiseResult = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, eduId, uids);
         if (pseudonymiseResult.isPresent() && !pseudonymiseResult.get().containsKey("eduperson_principal_name")) {
             //The user is not linked to an IdP belonging to this RS
+            userAttributes.put("eduid", pseudonymiseResult.get().get("eduid"));
             return false;
         }
         userAttributes.putAll(pseudonymiseResult.orElseGet(Collections::emptyMap));
