@@ -10,6 +10,7 @@ import oidc.eduid.AttributePseudonymisation;
 import oidc.exceptions.UnauthorizedException;
 import oidc.model.AccessToken;
 import oidc.model.OpenIDClient;
+import oidc.model.Scope;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.OpenIDClientRepository;
@@ -39,17 +40,20 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
     private final String issuer;
     private final TokenGenerator tokenGenerator;
     private final AttributePseudonymisation attributePseudonymisation;
+    private final boolean enforceScopeResourceServer;
 
     public IntrospectEndpoint(AccessTokenRepository accessTokenRepository,
                               OpenIDClientRepository openIDClientRepository,
                               TokenGenerator tokenGenerator,
                               AttributePseudonymisation attributePseudonymisation,
-                              @Value("${spring.security.saml2.service-provider.entity-id}") String issuer) {
+                              @Value("${spring.security.saml2.service-provider.entity-id}") String issuer,
+                              @Value("${features.enforce-scope-resource-server}") boolean enforceScopeResourceServer) {
         this.accessTokenRepository = accessTokenRepository;
         this.openIDClientRepository = openIDClientRepository;
         this.tokenGenerator = tokenGenerator;
         this.attributePseudonymisation = attributePseudonymisation;
         this.issuer = issuer;
+        this.enforceScopeResourceServer = enforceScopeResourceServer;
     }
 
     @PostMapping(value = {"oidc/introspect"}, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
@@ -80,6 +84,13 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
         if (accessToken.isExpired(Clock.systemDefaultZone())) {
             return ResponseEntity.ok(Collections.singletonMap("active", false));
         }
+
+        if (enforceScopeResourceServer) {
+            //TODO
+            List<Scope> scopes = resourceServer.getScopes();
+        }
+
+
         Map<String, Object> result = new HashMap<>();
 
         boolean isUserAccessToken = !accessToken.isClientCredentials();
