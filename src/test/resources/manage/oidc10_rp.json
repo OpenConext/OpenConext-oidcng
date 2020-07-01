@@ -115,7 +115,7 @@
         "name:nl": "ResourceServer",
         "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
         "scopes": [
-          "openid"
+          "openid", "groups"
         ],
         "grants": [
           "client_credentials"

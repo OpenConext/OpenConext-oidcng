@@ -99,11 +99,15 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
             return ResponseEntity.ok(Collections.singletonMap("active", false));
         }
 
+        List<String> scopes = accessToken.getScopes();
+
         if (enforceScopeResourceServer) {
             List<String> configuredScopes = resourceServer.getScopes().stream().map(Scope::getName).collect(Collectors.toList());
-            if (!configuredScopes.containsAll(accessToken.getScopes())) {
+            //The openid scope is a freebee for all RS
+            List<String> scopesRequiredForResourceServer = scopes.stream().filter(scope -> !scope.equals("openid")).collect(Collectors.toList());
+            if (!configuredScopes.containsAll(scopesRequiredForResourceServer)) {
                 LOG.warn(String.format("Resource server %s has configured scopes %s, but granted to access_token are scopes %s",
-                        resourceServer.getClientId(), resourceServer.getScopes(), accessToken.getScopes()));
+                        resourceServer.getClientId(), resourceServer.getScopes(), scopesRequiredForResourceServer));
                 return ResponseEntity.ok(Collections.singletonMap("active", false));
 
             }
@@ -131,17 +135,20 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
 
             boolean validPseudonymisation = validPseudonymisation(result, resourceServer, openIDClient);
             if (!validPseudonymisation && enforceEduidResourceServerLinkedAccount) {
+                LOG.warn(String.format("Pseudonymisation failed. No eduperson_principal_name for RS %s", resourceServer.getClientId()));
                 return ResponseEntity.ok(Collections.singletonMap("active", false));
             }
         }
         //The following claims can not be overridden by the
         result.put("active", true);
-        result.put("scope", String.join(" ", accessToken.getScopes()));
+        result.put("scope", String.join(" ", scopes));
         result.put("client_id", accessToken.getClientId());
         result.put("exp", accessToken.getExpiresIn().getTime() / 1000L);
         result.put("sub", accessToken.getSub());
         result.put("iss", issuer);
         result.put("token_type", "Bearer");
+
+        LOG.debug(String.format("Returning introspect active %s for RS %s", true, resourceServer.getClientId()));
 
         return ResponseEntity.ok(sortMap(result));
     }
