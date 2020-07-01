@@ -20,7 +20,8 @@ server:
     max-http-post-size: 10000000
     max-http-form-post-size: 10000000
     max-swallow-size: 10000000
-    max-connections: 20
+    max-connections: 200
+    max-threads: 20
 
 
 # used by the git plugin

@@ -271,6 +271,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     private ResponseEntity handleClientCredentialsGrant(OpenIDClient client) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes().stream().map(Scope::getName).collect(Collectors.toList()),
                 Collections.emptyList(), true, null, Optional.empty(), Optional.empty());
+        LOG.debug("Returning client_credentials access_token for RS " + client.getClientId());
         return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
     }
 
@@ -307,7 +308,6 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         }
         return map;
     }
-
 
 
     private HttpHeaders getResponseHeaders() {
