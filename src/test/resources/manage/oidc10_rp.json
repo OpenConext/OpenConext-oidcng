@@ -22,8 +22,8 @@
         "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
         "clientSecretJWT": "very-long-long-long-long-long-secret",
         "redirectUrls": [
-          "http://localhost:8091/redirect",
-          "http://localhost:8080"
+          "http://localhost:3006/redirect",
+          "http://localhost:3006/oidc/api/redirect"
         ],
         "scopes": [
           {

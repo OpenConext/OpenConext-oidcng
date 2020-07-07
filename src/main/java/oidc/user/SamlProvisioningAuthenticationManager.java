@@ -61,15 +61,15 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
         if (existingUserOptional.isPresent()) {
             User existingUser = existingUserOptional.get();
 
-            LOG.info("Authenticate with existing user: " + existingUser);
+            LOG.debug("Authenticate with existing user: " + existingUser);
 
             user.setId(existingUser.getId());
             if (!user.equals(existingUser)) {
-                LOG.info("Saving existing user with changed attributes: " + existingUser);
+                LOG.debug("Saving existing user with changed attributes: " + existingUser);
                 userRepository.save(existingUser);
             }
         } else {
-            LOG.info("Provisioning new user : " + user);
+            LOG.debug("Provisioning new user : " + user);
             userRepository.insert(user);
         }
         Matcher matcher = inResponseToPattern.matcher(samlAuthentication.getResponseXml());

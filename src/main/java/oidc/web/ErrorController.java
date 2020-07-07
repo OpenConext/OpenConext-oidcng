@@ -132,7 +132,7 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
                 if (StringUtils.hasText(state)) {
                     body.put("state", state);
                 }
-                LOG.info("Post form after error to " + url);
+                LOG.debug("Post form to " + url);
 
                 return new ModelAndView("form_post", body);
             }
@@ -140,7 +140,7 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         }
         URI uri = uriComponentsBuilder.build().toUri();
 
-        LOG.info("Redirection after error to " + uri);
+        LOG.debug("Redirect to " + uri);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setLocation(uri);

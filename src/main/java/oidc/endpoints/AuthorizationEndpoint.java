@@ -121,7 +121,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     public ModelAndView authorize(@RequestParam MultiValueMap<String, String> parameters,
                                   Authentication authentication,
                                   HttpServletRequest request) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
-        LOG.info(String.format("/oidc/authorize %s %s", authentication.getDetails(), parameters));
+        LOG.debug(String.format("/oidc/authorize %s %s", authentication.getDetails(), parameters));
 
         return doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, true, false);
     }
@@ -130,7 +130,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     public ModelAndView consent(@RequestParam Map<String, String> body,
                                 Authentication authentication,
                                 HttpServletRequest request) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
-        LOG.info(String.format("/oidc/consent %s %s", authentication.getDetails(), body));
+        LOG.debug(String.format("/oidc/consent %s %s", authentication.getDetails(), body));
 
         LinkedMultiValueMap<String, String> parameters = new LinkedMultiValueMap<>();
         parameters.setAll(body);
@@ -177,7 +177,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                     .orElse(true);
 
             if (userConsentRequired) {
-                LOG.info("Asking for consent for User " + user + " and scopes " + scopes);
+                LOG.debug("Asking for consent for User " + user + " and scopes " + scopes);
                 return doConsent(parameters, client, scopes, user);
             }
         }
@@ -191,7 +191,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         if (responseType.impliesCodeFlow()) {
             AuthorizationCode authorizationCode = createAndSaveAuthorizationCode(authenticationRequest, client, user);
-            LOG.info(String.format("Returning authorizationCode flow %s %s", ResponseMode.FORM_POST, redirectURI));
+            LOG.debug(String.format("Returning authorizationCode flow %s %s", ResponseMode.FORM_POST, redirectURI));
             if (responseMode.equals(ResponseMode.FORM_POST)) {
                 Map<String, String> body = new HashMap<>();
                 body.put("redirect_uri", redirectURI);
@@ -206,12 +206,12 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         } else if (responseType.impliesImplicitFlow() || responseType.impliesHybridFlow()) {
             if (responseType.impliesImplicitFlow()) {
                 //User information is encrypted in access token
-                LOG.info("Deleting user " + user.getSub());
+                LOG.debug("Deleting user " + user.getSub());
                 userRepository.delete(user);
             }
             Map<String, Object> body = authorizationEndpointResponse(user, client, authenticationRequest, scopes, responseType, state);
 
-            LOG.info(String.format("Returning implicit flow %s %s", ResponseMode.FORM_POST, redirectURI));
+            LOG.debug(String.format("Returning implicit flow %s %s", ResponseMode.FORM_POST, redirectURI));
             if (responseMode.equals(ResponseMode.FORM_POST)) {
                 body.put("redirect_uri", redirectURI);
                 return new ModelAndView("form_post", body);

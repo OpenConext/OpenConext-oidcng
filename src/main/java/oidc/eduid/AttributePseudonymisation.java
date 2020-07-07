@@ -63,7 +63,7 @@ public class AttributePseudonymisation {
         boolean eduIdMissing = StringUtils.isEmpty(eduId);
         boolean resourceServerEquals = resourceServer.getClientId().equals(openIDClient.getClientId());
 
-        LOG.info(String.format("Starting to pseudonymise for RS %s and openIDclient %s. Enabled is %s, eduIdMissing is %s, resourceServerEquals is %s",
+        LOG.debug(String.format("Starting to pseudonymise for RS %s and openIDclient %s. Enabled is %s, eduIdMissing is %s, resourceServerEquals is %s",
                 resourceServer.getClientId(), openIDClient.getClientId(), enabled, eduIdMissing, resourceServerEquals));
         if (!enabled || eduIdMissing || resourceServerEquals) {
             return Optional.empty();
@@ -84,7 +84,7 @@ public class AttributePseudonymisation {
         if (responseEntity.getStatusCode().is2xxSuccessful()) {
             Map<String, String> body = responseEntity.getBody();
             result.putAll(body);
-            LOG.info(String.format("Pseudonymise result %s for RS %s, RP %s", body, resourceServer.getClientId(), openIDClient.getClientId()));
+            LOG.debug(String.format("Pseudonymise result %s for RS %s, RP %s", body, resourceServer.getClientId(), openIDClient.getClientId()));
         } else {
             LOG.error(String.format("Error %s occurred in pseudonymise for RS %s, RP %s, response %s",
                     requestEntity.getBody(), resourceServer.getClientId(), openIDClient.getClientId(), responseEntity));

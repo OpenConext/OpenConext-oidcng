@@ -36,7 +36,7 @@ public class MetadataController {
                                             @RequestBody List<Map<String, Object>> connections,
                                             @RequestParam(name = "forceError", defaultValue = "false") boolean forceError) {
         String name = authentication.getName();
-        LOG.info("Starting to provision OIDC clients from push: " + name);
+        LOG.debug("Starting to provision OIDC clients from push: " + name);
 
         List<OpenIDClient> newClients = connections.stream()
                 .filter(connection -> connection.get("type").equals("oidc10_rp"))
@@ -60,7 +60,7 @@ public class MetadataController {
             throw new IllegalArgumentException("Forced error");
         }
 
-        LOG.info("Provisioned " + newClients.size() + " OIDC clients from push: " + name);
+        LOG.debug("Provisioned " + newClients.size() + " OIDC clients from push: " + name);
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }

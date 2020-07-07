@@ -58,7 +58,7 @@ public class TokenController {
         String name = authentication.getName();
         unspecifiedId = URLDecoder.decode(unspecifiedId, Charset.defaultCharset().name());
 
-        LOG.info(String.format("Starting tokens GET for %s with unspecified %s", name, unspecifiedId));
+        LOG.debug(String.format("Starting tokens GET for %s with unspecified %s", name, unspecifiedId));
 
         String unspecifiedUrnHash = KeyGenerator.oneWayHash(unspecifiedId, salt);
 
@@ -83,7 +83,7 @@ public class TokenController {
                                              @RequestBody List<TokenRepresentation> tokenIdentifiers) {
         String name = authentication.getName();
 
-        LOG.info(String.format("Deleting tokens for %s with token(s) %s", name, tokenIdentifiers));
+        LOG.debug(String.format("Deleting tokens for %s with token(s) %s", name, tokenIdentifiers));
 
         tokenIdentifiers.stream().forEach(tokenRepresentation ->
                 (tokenRepresentation.getTokenType().equals(TokenType.ACCESS) ? accessTokenRepository : refreshTokenRepository)

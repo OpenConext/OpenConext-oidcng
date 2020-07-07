@@ -25,7 +25,10 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -157,12 +160,12 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void validationScope() {
+    public void validationScope() throws UnsupportedEncodingException {
         Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("scope", "openid nope");
+        queryParams.put("scope", "openid nopes");
         queryParams.put("response_type", "code");
         queryParams.put("client_id", "mock-sp");
-        queryParams.put("redirect_uri", "http%3A%2F%2Flocalhost%3A8080");
+        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", "UTF-8"));
 
         given().redirects().follow(false)
                 .when()
@@ -189,8 +192,8 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 .get("oidc/authorize")
                 .as(mapTypeRef);
         assertEquals("Client mock-sp with registered redirect URI's " +
-                        "[http://localhost:8091/redirect, http://localhost:8080] requested " +
-                        "authorization with redirectURI http://nope",
+                        "[http://localhost:3006/redirect, http://localhost:3006/oidc/api/redirect] " +
+                        "requested authorization with redirectURI http://nope",
                 body.get("message"));
     }
 
