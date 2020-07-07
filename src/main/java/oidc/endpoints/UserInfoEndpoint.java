@@ -5,6 +5,7 @@ import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.openid.connect.sdk.UserInfoRequest;
 import oidc.exceptions.InvalidGrantException;
+import oidc.log.MDCContext;
 import oidc.model.AccessToken;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
@@ -51,6 +52,8 @@ public class UserInfoEndpoint implements OrderedMap {
 
         String accessTokenValue = userInfoRequest.getAccessToken().getValue();
 
+        MDCContext.mdcContext("action", "Userinfo", "accessTokenValue", accessTokenValue);
+
         Optional<AccessToken> optionalAccessToken = accessTokenRepository.findOptionalAccessTokenByValue(accessTokenValue);
         if (!optionalAccessToken.isPresent()) {
             return errorResponse("Access Token not found");
@@ -63,6 +66,9 @@ public class UserInfoEndpoint implements OrderedMap {
             throw new InvalidGrantException("UserEndpoint not allowed for Client Credentials");
         }
         User user = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessTokenValue);
+
+        MDCContext.mdcContext(user);
+
         Map<String, Object> attributes = user.getAttributes();
         attributes.put("updated_at", user.getUpdatedAt());
         attributes.put("sub", user.getSub());

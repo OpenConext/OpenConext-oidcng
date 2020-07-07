@@ -8,6 +8,7 @@ import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import oidc.eduid.AttributePseudonymisation;
 import oidc.exceptions.UnauthorizedException;
+import oidc.log.MDCContext;
 import oidc.model.AccessToken;
 import oidc.model.OpenIDClient;
 import oidc.model.Scope;
@@ -78,6 +79,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
             throw new BadCredentialsException("Invalid user / secret");
         }
         OpenIDClient resourceServer = openIDClientRepository.findByClientId(clientAuthentication.getClientID().getValue());
+        MDCContext.mdcContext("action", "Introspect", "rp", resourceServer.getClientId(), "accessTokenValue", accessTokenValue);
 
         if (!secretsMatch((PlainClientSecret) clientAuthentication, resourceServer)) {
             LOG.warn("Secret does not match for RS " + resourceServer.getClientId());

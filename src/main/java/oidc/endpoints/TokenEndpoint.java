@@ -27,6 +27,7 @@ import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.JWTAuthorizationGrantsException;
 import oidc.exceptions.RedirectMismatchException;
 import oidc.exceptions.UnauthorizedException;
+import oidc.log.MDCContext;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.EncryptedTokenValue;
@@ -83,6 +84,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     private final TokenGenerator tokenGenerator;
     private final String tokenEndpoint;
     private final String salt;
+    private final HttpHeaders responseHttpHeaders;
 
     public TokenEndpoint(OpenIDClientRepository openIDClientRepository,
                          AuthorizationCodeRepository authorizationCodeRepository,
@@ -102,6 +104,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         this.tokenGenerator = tokenGenerator;
         this.tokenEndpoint = tokenEndpoint;
         this.salt = salt;
+        this.responseHttpHeaders = this.getResponseHeaders();
     }
 
     @PostMapping(value = "oidc/token", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
@@ -136,6 +139,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                 throw new BadCredentialsException("Invalid user / signature");
             }
         }
+        MDCContext.mdcContext("action", "Token", "rp", clientId, "grant", authorizationGrant.getType().getValue());
         if (!client.getGrants().contains(authorizationGrant.getType().getValue())) {
             throw new InvalidGrantException("Invalid grant: " + authorizationGrant.getType().getValue());
         }
@@ -185,6 +189,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
     private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, OpenIDClient client) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
         String code = authorizationCodeGrant.getAuthorizationCode().getValue();
+        MDCContext.mdcContext("code", "code");
         AuthorizationCode authorizationCode = concurrentAuthorizationCodeRepository.findByCodeNotAlreadyUsedAndMarkAsUsed(code);
 
         if (authorizationCode == null) {
@@ -235,6 +240,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
             }
         }
         User user = userRepository.findUserBySub(authorizationCode.getSub());
+        MDCContext.mdcContext(user);
         //User information is encrypted in access token
         LOG.info("Deleting user " + user.getSub());
         userRepository.delete(user);
@@ -242,7 +248,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         Map<String, Object> body = tokenEndpointResponse(Optional.of(user), client, authorizationCode.getScopes(),
                 authorizationCode.getIdTokenClaims(), false, authorizationCode.getNonce(),
                 Optional.of(authorizationCode.getAuthTime()), Optional.of(authorizationCode.getId()));
-        return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
+        return new ResponseEntity<>(body, responseHttpHeaders, HttpStatus.OK);
     }
 
     private ResponseEntity handleRefreshCodeGrant(RefreshTokenGrant refreshTokenGrant, OpenIDClient client) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
@@ -264,7 +270,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                 Optional.of(tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(refreshToken.getAccessTokenValue()));
         Map<String, Object> body = tokenEndpointResponse(optionalUser, client, refreshToken.getScopes(),
                 Collections.emptyList(), false, null, optionalUser.map(User::getUpdatedAt), Optional.empty());
-        return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
+        return new ResponseEntity<>(body, responseHttpHeaders, HttpStatus.OK);
     }
 
 
@@ -272,7 +278,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes().stream().map(Scope::getName).collect(Collectors.toList()),
                 Collections.emptyList(), true, null, Optional.empty(), Optional.empty());
         LOG.debug("Returning client_credentials access_token for RS " + client.getClientId());
-        return new ResponseEntity<>(body, getResponseHeaders(), HttpStatus.OK);
+        return new ResponseEntity<>(body, responseHttpHeaders, HttpStatus.OK);
     }
 
     private Map<String, Object> tokenEndpointResponse(Optional<User> user, OpenIDClient client,

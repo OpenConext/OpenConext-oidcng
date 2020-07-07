@@ -20,6 +20,7 @@ import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.InvalidScopeException;
 import oidc.exceptions.RedirectMismatchException;
 import oidc.exceptions.UnsupportedPromptValueException;
+import oidc.log.MDCContext;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.EncryptedTokenValue;
@@ -147,7 +148,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         boolean isOpenIdClient = scope != null && isOpenIDRequest(scope.toStringList());
 
         OpenIDClient client = openIDClientRepository.findByClientId(authenticationRequest.getClientID().getValue());
-
+        MDCContext.mdcContext("action", "Authorize", "rp", client.getClientId());
         if (isOpenIdClient) {
             AuthenticationRequest oidcAuthenticationRequest = AuthenticationRequest.parse(parameters);
             if (oidcAuthenticationRequest.specifiesRequestObject()) {
@@ -164,6 +165,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         ResponseType responseType = validateGrantType(authenticationRequest, client);
 
         User user = samlAuthentication.getUser();
+        MDCContext.mdcContext(user);
 
         Prompt prompt = authenticationRequest.getPrompt();
         boolean consentFromPrompt = prompt != null && prompt.toStringList().contains("consent");
