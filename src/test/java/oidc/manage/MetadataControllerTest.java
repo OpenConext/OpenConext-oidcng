@@ -35,7 +35,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
         connections.addAll(samlIdentityProviders());
 
         postConnections(connections);
-        assertEquals(5L, mongoTemplate.count(new Query(), OpenIDClient.class));
+        assertEquals(6L, mongoTemplate.count(new Query(), OpenIDClient.class));
         assertEquals(2L, mongoTemplate.count(new Query(), IdentityProvider.class));
 
         List<Map<String, Object>> serviceProviders = connections;
@@ -50,7 +50,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
 
         postConnections(serviceProviders);
 
-        assertEquals(5L, mongoTemplate.count(new Query(), OpenIDClient.class));
+        assertEquals(6L, mongoTemplate.count(new Query(), OpenIDClient.class));
 
         OpenIDClient openIDClient = mongoTemplate.find(Query.query(Criteria.where("clientId").is("changed")), OpenIDClient.class).get(0);
         assertEquals("changed", openIDClient.getClientId());
@@ -69,7 +69,8 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
 
         List<String> clientIds = mongoTemplate.find(new Query(), OpenIDClient.class).stream().map(OpenIDClient::getClientId).collect(Collectors.toList());
         clientIds.sort(String::compareTo);
-        assertEquals(Arrays.asList("mock-rp", "mock-sp", "playground_client", "resource-server-playground-client", "rp-jwt-authentication"), clientIds);
+        assertEquals(Arrays.asList("mock-rp", "mock-sp", "playground_client", "resource-server-playground-client",
+                "rp-jwt-authentication", "student.mobility.rp.localhost"), clientIds);
     }
 
     private void postConnections(List<Map<String, Object>> serviceProviders) throws IOException {

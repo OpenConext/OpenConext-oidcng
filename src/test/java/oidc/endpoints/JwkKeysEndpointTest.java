@@ -11,13 +11,12 @@ import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -36,8 +35,10 @@ public class JwkKeysEndpointTest extends AbstractIntegrationTest {
 
     @Test
     public void wellKnownConfiguration() {
-        Map<String, Object> res = getMapFromEndpoint("oidc/.well-known/openid-configuration");
-        assertEquals(issuer, res.get("issuer"));
+        given().when().get("oidc/.well-known/openid-configuration")
+                .then()
+                .header("Cache-control", "max-age=14400, no-transform")
+                .body("issuer", equalTo(issuer));
     }
 
     @Test

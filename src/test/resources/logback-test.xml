@@ -14,7 +14,7 @@
             </layout>
         </encoder>
         <filter class="filter.CustomThresholdFilter">
-            <level>DEBUG</level>
+            <level>INFO</level>
             <clazz>com.nimbusds.oauth2.sdk.ParseException</clazz>
             <clazz>org.springframework.security.authentication.BadCredentialsException</clazz>
             <clazz>oidc.exceptions.RedirectMismatchException</clazz>

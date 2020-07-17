@@ -9,17 +9,19 @@ import com.nimbusds.jose.jwk.JWKSet;
 import oidc.secure.TokenGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.text.ParseException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 public class JwkKeysEndpoint implements MapTypeReference {
@@ -51,9 +53,9 @@ public class JwkKeysEndpoint implements MapTypeReference {
     }
 
     @GetMapping("oidc/.well-known/openid-configuration")
-    public Map<String, Object> wellKnownConfiguration() {
-        return this.wellKnownConfiguration;
+    public ResponseEntity<Map<String, Object>> wellKnownConfiguration() {
+        return ResponseEntity.status(HttpStatus.OK)
+                .cacheControl(CacheControl.maxAge(4, TimeUnit.HOURS).noTransform())
+                .body(this.wellKnownConfiguration);
     }
-
-
 }
