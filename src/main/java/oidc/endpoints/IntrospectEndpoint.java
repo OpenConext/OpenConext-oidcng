@@ -121,7 +121,8 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
 
         if (isUserAccessToken) {
             OpenIDClient openIDClient = openIDClientRepository.findByClientId(accessToken.getClientId());
-            if (!openIDClient.getAllowedResourceServers().contains(resourceServer.getClientId())) {
+            if (!openIDClient.getClientId().equals(resourceServer.getClientId()) &&
+                    !openIDClient.getAllowedResourceServers().contains(resourceServer.getClientId())) {
                 throw new UnauthorizedException(
                         String.format("RP %s is not allowed to use the API of resource server %s. Allowed resource servers are %s",
                                 accessToken.getClientId(), resourceServer.getClientId(), openIDClient.getAllowedResourceServers()));
