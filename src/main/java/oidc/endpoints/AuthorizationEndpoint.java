@@ -120,7 +120,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                                   HttpServletRequest request) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
         LOG.debug(String.format("/oidc/authorize %s %s", authentication.getDetails(), parameters));
 
-        return doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, true, false);
+        return doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, false, false);
     }
 
     @PostMapping(value = "/oidc/consent", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)

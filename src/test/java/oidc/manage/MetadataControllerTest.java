@@ -35,7 +35,6 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
 
         postConnections(connections);
         assertEquals(6L, mongoTemplate.count(new Query(), OpenIDClient.class));
-        assertEquals(2L, mongoTemplate.count(new Query(), IdentityProvider.class));
 
         List<Map<String, Object>> serviceProviders = connections;
         Map<String, Object> mockSp = serviceProviders.get(0);

@@ -13,6 +13,7 @@ import oidc.model.OpenIDClient;
 import oidc.model.User;
 import oidc.model.UserConsent;
 import oidc.secure.SignedJWTTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -297,6 +298,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
+    @Ignore
     public void consent() throws IOException {
         doConsent();
         //consent only once
