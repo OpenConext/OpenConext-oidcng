@@ -3,6 +3,7 @@ package oidc.secure;
 import oidc.AbstractIntegrationTest;
 import oidc.SeedUtils;
 import oidc.model.AccessToken;
+import oidc.model.RefreshToken;
 import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
 import org.junit.Test;
@@ -21,6 +22,8 @@ import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class KeyRolloverTest extends AbstractIntegrationTest implements SeedUtils {
 
@@ -77,5 +80,29 @@ public class KeyRolloverTest extends AbstractIntegrationTest implements SeedUtil
 
         mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, SigningKey.class).remove(new Query()).execute();
     }
+
+    @Test
+    public void rolloverSigningKeysWithRemainingRefreshTokens() throws GeneralSecurityException, ParseException, IOException {
+        resetAndCreateSigningKeys(3);
+        final List<String> signingKeys = mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().collect(toList());
+        assertEquals(3, signingKeys.size());
+
+        List<RefreshToken> tokens = Arrays.asList(refreshToken(signingKeys.get(0)));
+        mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, RefreshToken.class)
+                .remove(new Query())
+                .insert(tokens)
+                .execute();
+
+        KeyRollover keyRollover = new KeyRollover(tokenGenerator, mongoTemplate, true, sequenceRepository);
+        keyRollover.rollover();
+
+        List<String> keys = mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().collect(toList());
+        //Because of the keyRollover there is a new signing key and two are removed, because no token references, hence 2 remain
+        assertEquals(2, keys.size());
+        assertTrue(keys.contains(signingKeys.get(0)));
+        assertFalse(keys.contains(signingKeys.get(1)));
+        assertFalse(keys.contains(signingKeys.get(2)));
+    }
+
 
 }

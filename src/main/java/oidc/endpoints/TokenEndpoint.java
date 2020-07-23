@@ -305,7 +305,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         if (client.getGrants().contains(GrantType.REFRESH_TOKEN.getValue())) {
             String refreshTokenValue = tokenGenerator.generateRefreshToken();
             getRefreshTokenRepository().insert(new RefreshToken(refreshTokenValue, sub, client.getClientId(), scopes,
-                    refreshTokenValidity(client), accessTokenValue, clientCredentials, unspecifiedUrnHash));
+                    encryptedAccessToken.getKeyId(), refreshTokenValidity(client), accessTokenValue, clientCredentials, unspecifiedUrnHash));
             map.put("refresh_token", refreshTokenValue);
         }
         map.put("expires_in", client.getAccessTokenValidity());

@@ -1,6 +1,7 @@
 package oidc.secure;
 
 import oidc.model.AccessToken;
+import oidc.model.RefreshToken;
 import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
 import oidc.repository.SequenceRepository;
@@ -33,7 +34,7 @@ public class KeyRollover {
         this.tokenGenerator = tokenGenerator;
         this.mongoTemplate = mongoTemplate;
         this.cronJobResponsible = cronJobResponsible;
-        this.sequenceRepository =sequenceRepository;
+        this.sequenceRepository = sequenceRepository;
     }
 
     @Scheduled(cron = "${cron.key-rollover-expression}")
@@ -68,13 +69,17 @@ public class KeyRollover {
 
     private void cleanUpSigningKeys() {
         List<String> signingKeyValues = mongoTemplate.findDistinct("signingKeyId", AccessToken.class, String.class);
+        List<String> signingKeyValuesRefreshToken = mongoTemplate.findDistinct("signingKeyId", RefreshToken.class, String.class);
+        signingKeyValues.addAll(signingKeyValuesRefreshToken);
+
         signingKeyValues.add(String.format("key_%s", sequenceRepository.currentSigningKeyId()));
 
         Query query = Query.query(Criteria.where("keyId").not().in(signingKeyValues));
         List<SigningKey> signingKeys = mongoTemplate.findAllAndRemove(query, SigningKey.class);
 
         List<String> deleted = signingKeys.stream().map(SigningKey::getKeyId).collect(Collectors.toList());
-        LOG.info("Deleted signing keys that are no longer referenced by access_tokens: " + String.join(", ", deleted));
+        LOG.info("Deleted signing keys that are no longer referenced by access_tokens and refresh_token: "
+                + String.join(", ", deleted));
     }
 
     private void cleanUpSymmetricKeys() {
