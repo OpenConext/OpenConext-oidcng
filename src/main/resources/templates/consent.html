@@ -133,7 +133,6 @@
 <div class="container">
     <div class="top">
         <img src="https://static.surfconext.nl/media/conext_logo.png" alt="conext">
-        <p>Login with <span th:text="${identityProvider.name}"/></p>
     </div>
 
     <form method="post" action="/oidc/consent">
@@ -143,7 +142,6 @@
         <div class="content">
             <div class="client">
                 <span class="client" th:text="${client}"/>
-                <span>Wants to access your <span th:text="${identityProvider.name}"/> account.</span>
                 <span th:text="${email}"/>
             </div>
             <div class="allow">

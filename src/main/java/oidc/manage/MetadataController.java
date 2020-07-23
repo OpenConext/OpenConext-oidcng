@@ -47,15 +47,6 @@ public class MetadataController {
                 .insert(newClients)
                 .execute();
 
-        List<IdentityProvider> identityProviders = connections.stream()
-                .filter(connection -> connection.get("type").equals("saml20_idp"))
-                .map(IdentityProvider::new).collect(Collectors.toList());
-
-        mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, IdentityProvider.class)
-                .remove(new Query())
-                .insert(identityProviders)
-                .execute();
-
         if (forceError) {
             throw new IllegalArgumentException("Forced error");
         }

@@ -31,7 +31,7 @@ import oidc.model.User;
 import oidc.model.UserConsent;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
-import oidc.repository.IdentityProviderRepository;
+
 import oidc.repository.OpenIDClientRepository;
 import oidc.repository.RefreshTokenRepository;
 import oidc.repository.UserConsentRepository;
@@ -93,7 +93,6 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     private final UserConsentRepository userConsentRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final OpenIDClientRepository openIDClientRepository;
-    private final IdentityProviderRepository identityProviderRepository;
     private final String salt;
 
     @Autowired
@@ -103,7 +102,6 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                                  UserRepository userRepository,
                                  UserConsentRepository userConsentRepository,
                                  OpenIDClientRepository openIDClientRepository,
-                                 IdentityProviderRepository identityProviderRepository,
                                  TokenGenerator tokenGenerator,
                                  @Value("${access_token_one_way_hash_salt}") String salt) {
         this.authorizationCodeRepository = authorizationCodeRepository;
@@ -112,7 +110,6 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         this.userRepository = userRepository;
         this.userConsentRepository = userConsentRepository;
         this.openIDClientRepository = openIDClientRepository;
-        this.identityProviderRepository = identityProviderRepository;
         this.tokenGenerator = tokenGenerator;
         this.salt = salt;
     }
@@ -256,8 +253,6 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 entry -> entry.getValue().get(0)
         )));
         String authenticatingAuthority = user.getAuthenticatingAuthority();
-        IdentityProvider identityProvider = identityProviderRepository.findByEntityId(authenticatingAuthority).orElse(new IdentityProvider(authenticatingAuthority));
-        body.put("identityProvider", identityProvider);
         body.put("scopes", client.getScopes().stream().filter(scope -> scopes.contains(scope.getName())).collect(toList()));
         body.put("client", client.getName());
         List<String> allowedResourceServers = client.getAllowedResourceServers();
