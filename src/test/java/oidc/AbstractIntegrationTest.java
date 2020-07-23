@@ -68,6 +68,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -79,6 +80,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -340,7 +342,8 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
     }
 
     private <T> void doExpire(String token, Class<T> clazz) {
-        doExpireWithFindProperty(token, clazz, "innerValue");
+        String tokenValue = AccessToken.computeInnerValueFromJWT(token);
+        doExpireWithFindProperty(tokenValue, clazz, "value");
     }
 
     private <T> void doExpireWithFindProperty(String token, Class<T> clazz, String property) {

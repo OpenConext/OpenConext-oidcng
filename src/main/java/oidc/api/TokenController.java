@@ -63,7 +63,7 @@ public class TokenController {
         String unspecifiedUrnHash = KeyGenerator.oneWayHash(unspecifiedId, salt);
 
         List<AccessToken> accessTokens = accessTokenRepository.findAccessTokenByUnspecifiedUrnHash(unspecifiedUrnHash);
-        List<RefreshToken> refreshTokens = refreshTokenRepository.findAccessTokenByUnspecifiedUrnHash(unspecifiedUrnHash);
+        List<RefreshToken> refreshTokens = refreshTokenRepository.findRefreshTokenByUnspecifiedUrnHash(unspecifiedUrnHash);
 
         accessTokens.addAll(refreshTokens);
         List<Map<String, Object>> result = accessTokens.stream()

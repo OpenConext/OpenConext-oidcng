@@ -15,7 +15,7 @@ import java.util.UUID;
 public interface AccessTokenRepository extends MongoRepository<AccessToken, String> {
 
     default Optional<AccessToken> findOptionalAccessTokenByValue(String value) {
-        String newValue = UUID.nameUUIDFromBytes(value.getBytes(Charset.defaultCharset())).toString();
+        String newValue = AccessToken.computeInnerValueFromJWT(value);
         return findAccessTokenByValue(newValue);
     }
 

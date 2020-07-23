@@ -38,6 +38,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
@@ -47,6 +48,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static com.nimbusds.oauth2.sdk.auth.JWTAuthentication.CLIENT_ASSERTION_TYPE;
 import static io.restassured.RestAssured.given;
@@ -91,13 +93,14 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
         String code = doAuthorize();
         String accessToken = (String) doToken(code).get("access_token");
 
-        assertEquals(1, mongoTemplate.find(Query.query(Criteria.where("innerValue").is(accessToken)), AccessToken.class).size());
+        String accessTokenValue = AccessToken.computeInnerValueFromJWT(accessToken);
+        assertEquals(1, mongoTemplate.find(Query.query(Criteria.where("value").is(accessTokenValue)), AccessToken.class).size());
 
         Map<String, Object> body = doToken(code);
         assertEquals(401, body.get("status"));
         assertEquals("Authorization code already used", body.get("message"));
 
-        assertEquals(0, mongoTemplate.find(Query.query(Criteria.where("innerValue").is(accessToken)), AccessToken.class).size());
+        assertEquals(0, mongoTemplate.find(Query.query(Criteria.where("value").is(accessTokenValue)), AccessToken.class).size());
     }
 
     @Test

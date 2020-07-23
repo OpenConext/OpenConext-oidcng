@@ -108,7 +108,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     }
 
     @PostMapping(value = "oidc/token", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
-    public ResponseEntity token(HttpServletRequest request) throws IOException, ParseException, JOSEException, NoSuchProviderException, NoSuchAlgorithmException, java.text.ParseException, CertificateException, BadJOSEException {
+    public ResponseEntity token(HttpServletRequest request) throws IOException, ParseException, JOSEException, java.text.ParseException, CertificateException, BadJOSEException {
         HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
         TokenRequest tokenRequest = TokenRequest.parse(httpRequest);
 
@@ -187,7 +187,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         return Optional.of(JWTRequest.claimsSet(openIDClient, clientAssertion));
     }
 
-    private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, OpenIDClient client) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
+    private ResponseEntity handleAuthorizationCodeGrant(AuthorizationCodeGrant authorizationCodeGrant, OpenIDClient client) {
         String code = authorizationCodeGrant.getAuthorizationCode().getValue();
         MDCContext.mdcContext("code", "code");
         AuthorizationCode authorizationCode = concurrentAuthorizationCodeRepository.findByCodeNotAlreadyUsedAndMarkAsUsed(code);
@@ -251,30 +251,33 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         return new ResponseEntity<>(body, responseHttpHeaders, HttpStatus.OK);
     }
 
-    private ResponseEntity handleRefreshCodeGrant(RefreshTokenGrant refreshTokenGrant, OpenIDClient client) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
+    private ResponseEntity handleRefreshCodeGrant(RefreshTokenGrant refreshTokenGrant, OpenIDClient client) {
         String refreshTokenValue = refreshTokenGrant.getRefreshToken().getValue();
-        RefreshToken refreshToken = refreshTokenRepository.findByInnerValue(refreshTokenValue);
+        RefreshToken refreshToken = refreshTokenRepository.findOptionalRefreshTokenByValue(refreshTokenValue)
+                .orElseThrow(() -> new IllegalArgumentException("RefreshToken not found"));
+
         if (!refreshToken.getClientId().equals(client.getClientId())) {
             throw new BadCredentialsException("Client is not authorized for the refresh token");
         }
         if (refreshToken.isExpired(Clock.systemDefaultZone())) {
             throw new UnauthorizedException("Refresh token expired");
         }
+
         //New tokens will be issued
         refreshTokenRepository.delete(refreshToken);
         //It is possible that the access token is already removed by cron cleanup actions
-        Optional<AccessToken> accessToken = accessTokenRepository.findOptionalAccessTokenByValue(refreshToken.getAccessTokenValue());
+        Optional<AccessToken> accessToken = accessTokenRepository.findById(refreshToken.getAccessTokenId());
         accessToken.ifPresent(token -> accessTokenRepository.delete(token));
 
         Optional<User> optionalUser = refreshToken.isClientCredentials() ? Optional.empty() :
-                Optional.of(tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(refreshToken.getAccessTokenValue()));
+                Optional.of(tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(refreshTokenValue));
         Map<String, Object> body = tokenEndpointResponse(optionalUser, client, refreshToken.getScopes(),
                 Collections.emptyList(), false, null, optionalUser.map(User::getUpdatedAt), Optional.empty());
         return new ResponseEntity<>(body, responseHttpHeaders, HttpStatus.OK);
     }
 
 
-    private ResponseEntity handleClientCredentialsGrant(OpenIDClient client) throws JOSEException, NoSuchProviderException, NoSuchAlgorithmException {
+    private ResponseEntity handleClientCredentialsGrant(OpenIDClient client) {
         Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes().stream().map(Scope::getName).collect(Collectors.toList()),
                 Collections.emptyList(), true, null, Optional.empty(), Optional.empty());
         LOG.debug("Returning client_credentials access_token for RS " + client.getClientId());
@@ -298,14 +301,16 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         AccessToken accessToken = new AccessToken(accessTokenValue, sub, client.getClientId(), scopes,
                 encryptedAccessToken.getKeyId(), accessTokenValidity(client), !user.isPresent(),
                 authorizationCodeId.orElse(null), unspecifiedUrnHash);
-        getAccessTokenRepository().insert(accessToken);
+        accessToken = getAccessTokenRepository().insert(accessToken);
 
         map.put("access_token", accessTokenValue);
         map.put("token_type", "Bearer");
         if (client.getGrants().contains(GrantType.REFRESH_TOKEN.getValue())) {
-            String refreshTokenValue = tokenGenerator.generateRefreshToken();
-            getRefreshTokenRepository().insert(new RefreshToken(refreshTokenValue, sub, client.getClientId(), scopes,
-                    encryptedAccessToken.getKeyId(), refreshTokenValidity(client), accessTokenValue, clientCredentials, unspecifiedUrnHash));
+            EncryptedTokenValue encryptedRefreshToken = user
+                    .map(u -> tokenGenerator.generateRefreshTokenWithEmbeddedUserInfo(u, client))
+                    .orElse(tokenGenerator.generateRefreshToken(client));
+            String refreshTokenValue = encryptedRefreshToken.getValue();
+            getRefreshTokenRepository().insert(new RefreshToken(accessToken, refreshTokenValue, refreshTokenValidity(client)));
             map.put("refresh_token", refreshTokenValue);
         }
         map.put("expires_in", client.getAccessTokenValidity());

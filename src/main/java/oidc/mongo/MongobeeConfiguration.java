@@ -129,6 +129,14 @@ public class MongobeeConfiguration {
         ensureCollectionsAndIndexes(mongoTemplate, indexInfo);
     }
 
+    @ChangeSet(order = "008", id = "removeAndRebuildRefreshTokenIndex", author = "Okke Harsta")
+    public void removeAndRebuildRefreshTokenIndex(MongoTemplate mongoTemplate) {
+        IndexOperations indexOperations = mongoTemplate.indexOps(RefreshToken.class);
+        indexOperations.dropIndex("innerValue_unique");
+        Index index = new Index("value", Sort.Direction.ASC).named(String.format("value_unique")).unique();
+        indexOperations.ensureIndex(index);
+    }
+
     private void ensureCollectionsAndIndexes(MongoTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {
         ensureCollectionsAndIndexes(mongoTemplate, indexInfo, true);
     }

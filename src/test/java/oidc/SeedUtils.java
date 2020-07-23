@@ -24,7 +24,14 @@ public interface SeedUtils {
     }
 
     default RefreshToken refreshToken(String signingKey) {
-        return new RefreshToken(UUID.randomUUID().toString(), "sub", "clientId", singletonList("openid"),
-                signingKey, new Date(), "access_token_value", false, null);
+        return new RefreshToken(accessToken("value", signingKey), UUID.randomUUID().toString(), new Date());
+    }
+
+    default RefreshToken refreshToken(Date expiresIn) {
+        return new RefreshToken(accessToken("value", "signingKey"), UUID.randomUUID().toString(), expiresIn);
+    }
+
+    default RefreshToken refreshTokenWithValue(String value) {
+        return new RefreshToken(accessToken("value", "signingKey"), value, new Date());
     }
 }

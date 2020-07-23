@@ -20,8 +20,6 @@ public class AccessToken {
     @Id
     private String id;
 
-    private String innerValue;
-
     private String value;
 
     private String sub;
@@ -44,8 +42,7 @@ public class AccessToken {
 
     public AccessToken(String value, String sub, String clientId, List<String> scopes, String signingKeyId,
                        Date expiresIn, boolean clientCredentials, String authorizationCodeId, String unspecifiedUrnHash) {
-        this.innerValue = value;
-        this.value = UUID.nameUUIDFromBytes(value.getBytes(Charset.defaultCharset())).toString();
+        this.value = computeInnerValueFromJWT(value);
         this.sub = sub;
         this.clientId = clientId;
         this.scopes = scopes;
@@ -56,6 +53,10 @@ public class AccessToken {
         this.authorizationCodeId = authorizationCodeId;
         this.unspecifiedUrnHash = unspecifiedUrnHash;
         this.createdAt = new Date();
+    }
+
+    public static String computeInnerValueFromJWT(String value) {
+        return UUID.nameUUIDFromBytes(value.getBytes(Charset.defaultCharset())).toString();
     }
 
     @Transient
@@ -89,5 +90,13 @@ public class AccessToken {
 
     public Date getCreatedAt() {
         return createdAt;
+    }
+
+    public String getSigningKeyId() {
+        return signingKeyId;
+    }
+
+    public String getUnspecifiedUrnHash() {
+        return unspecifiedUrnHash;
     }
 }

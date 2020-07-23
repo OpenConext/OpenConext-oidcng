@@ -1,19 +1,29 @@
 package oidc.repository;
 
+import oidc.model.AccessToken;
 import oidc.model.RefreshToken;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
+import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface RefreshTokenRepository extends MongoRepository<RefreshToken, String> {
 
-    RefreshToken findByInnerValue(String value);
+    default Optional<RefreshToken> findOptionalRefreshTokenByValue(String value) {
+        String newValue = AccessToken.computeInnerValueFromJWT(value);
+        return findRefreshTokenByValue(newValue);
+    }
 
     Long deleteByExpiresInBefore(Date expiryDate);
 
-    List<RefreshToken> findAccessTokenByUnspecifiedUrnHash(String unspecifiedUrnHash);
+    List<RefreshToken> findRefreshTokenByUnspecifiedUrnHash(String unspecifiedUrnHash);
+
+    //Do not use
+    Optional<RefreshToken> findRefreshTokenByValue(String value);
 
 }

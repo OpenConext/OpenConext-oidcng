@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
@@ -29,14 +30,13 @@ public class AccessTokenRepositoryTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void findByInnerValue() {
+    public void findByValue() {
         String value = RandomStringUtils.random(3200, true, true);
         accessTokenRepository.insert(accessToken(value, new Date()));
 
         AccessToken accessToken = accessTokenRepository.findOptionalAccessTokenByValue(value).get();
-        assertEquals(value, ReflectionTestUtils.getField(accessToken, "innerValue"));
-
-        assertEquals(true, accessTokenRepository.findOptionalAccessTokenByValue(value).isPresent());
+        assertEquals(AccessToken.computeInnerValueFromJWT(value),
+                ReflectionTestUtils.getField(accessToken, "value"));
     }
 
     @Test
