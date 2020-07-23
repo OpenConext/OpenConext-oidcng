@@ -16,11 +16,11 @@ public class SequenceRepository {
     private static final String SIGNING_KEY_ID = SigningKey.class.getSimpleName();
     private static final String SYMMETRIC_KEY_ID = SymmetricKey.class.getSimpleName();
 
-    private FindAndModifyOptions options = FindAndModifyOptions.options().returnNew(true);
-    private MongoTemplate mongoTemplate;
+    private final FindAndModifyOptions options = FindAndModifyOptions.options().returnNew(true);
+    private final MongoTemplate mongoTemplate;
 
-    private BasicQuery signingKeyBasicQuery = new BasicQuery(String.format("{\"_id\":\"%s\"}", SIGNING_KEY_ID));
-    private BasicQuery symmetricKeyBasicQuery = new BasicQuery(String.format("{\"_id\":\"%s\"}", SYMMETRIC_KEY_ID));
+    private final BasicQuery signingKeyBasicQuery = new BasicQuery(String.format("{\"_id\":\"%s\"}", SIGNING_KEY_ID));
+    private final BasicQuery symmetricKeyBasicQuery = new BasicQuery(String.format("{\"_id\":\"%s\"}", SYMMETRIC_KEY_ID));
 
     @Autowired
     public SequenceRepository(MongoTemplate mongoTemplate) {
