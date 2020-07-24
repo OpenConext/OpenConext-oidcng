@@ -168,7 +168,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     private void initializeSigningKeys() throws GeneralSecurityException, ParseException, IOException {
         List<RSAKey> rsaKeys = this.signingKeyRepository.findAllByOrderByCreatedDesc().stream()
                 .filter(signingKey -> StringUtils.hasText(signingKey.getSymmetricKeyId()))
-                .map(ThrowingFunction.unchecked(this::parseEncryptedRsaKey))
+                .map(this::parseEncryptedRsaKey)
                 .collect(Collectors.toList());
 
         if (rsaKeys.isEmpty()) {
@@ -180,8 +180,8 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
         this.publicKeys = rsaKeys.stream().map(RSAKey::toPublicJWK).collect(Collectors.toList());
         this.currentSigningKeyId = rsaKeys.get(0).getKeyID();
-        this.signers = rsaKeys.stream().collect(toMap(JWK::getKeyID, ThrowingFunction.unchecked(this::createRSASigner)));
-        this.verifiers = rsaKeys.stream().collect(toMap(JWK::getKeyID, ThrowingFunction.unchecked(this::createRSAVerifier)));
+        this.signers = rsaKeys.stream().collect(toMap(JWK::getKeyID, this::createRSASigner));
+        this.verifiers = rsaKeys.stream().collect(toMap(JWK::getKeyID, this::createRSAVerifier));
     }
 
     public SigningKey rolloverSigningKeys() throws GeneralSecurityException, ParseException, IOException {
@@ -193,7 +193,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private void initializeSymmetricKeys() throws GeneralSecurityException, IOException {
         List<KeysetHandle> keysetHandles = this.symmetricKeyRepository.findAllByOrderByCreatedDesc().stream()
-                .map(ThrowingFunction.unchecked(this::parseKeysetHandle))
+                .map(this::parseKeysetHandle)
                 .collect(Collectors.toList());
 
         if (keysetHandles.isEmpty()) {
@@ -227,11 +227,13 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         return symmetricKey;
     }
 
-    private RSAKey parseEncryptedRsaKey(SigningKey signingKey) throws ParseException, GeneralSecurityException, IOException {
+    @SneakyThrows
+    private RSAKey parseEncryptedRsaKey(SigningKey signingKey)  {
         return RSAKey.parse(decryptAead(signingKey.getJwk(), signingKey.getSymmetricKeyId()));
     }
 
-    private KeysetHandle parseKeysetHandle(SymmetricKey symmetricKey) throws GeneralSecurityException, IOException {
+    @SneakyThrows
+    private KeysetHandle parseKeysetHandle(SymmetricKey symmetricKey)  {
         byte[] decoded = Base64.getDecoder().decode(symmetricKey.getAead());
         return KeysetHandle.read(JsonKeysetReader.withBytes(decoded), AeadFactory.getPrimitive(primaryKeysetHandle));
     }
@@ -400,7 +402,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
                            boolean isAccessToken) throws JOSEException, GeneralSecurityException, ParseException, IOException {
         List<String> audiences = new ArrayList<>();
         audiences.add(client.getClientId());
-        if (includeAllowedResourceServers) {
+        if (includeAllowedResourceServers && isAccessToken) {
             audiences.addAll(client.getAllowedResourceServers().stream()
                     .filter(rsEntityId -> !client.getClientId().equals(rsEntityId))
                     .collect(Collectors.toList()));
@@ -416,7 +418,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
                 .notBeforeTime(new Date(System.currentTimeMillis()));
 
 
-        if (!CollectionUtils.isEmpty(idTokenClaims) && optionalUser.isPresent()) {
+        if (!CollectionUtils.isEmpty(idTokenClaims) && optionalUser.isPresent() && isAccessToken) {
             User user = optionalUser.get();
             Map<String, Object> attributes = user.getAttributes();
             idTokenClaims.forEach(claim -> {
@@ -461,11 +463,13 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         return this.currentSymmetricKeyId;
     }
 
-    private RSASSASigner createRSASigner(RSAKey k) throws JOSEException {
+    @SneakyThrows
+    private RSASSASigner createRSASigner(RSAKey k) {
         return new RSASSASigner(k);
     }
 
-    private RSASSAVerifier createRSAVerifier(RSAKey k) throws JOSEException {
+    @SneakyThrows
+    private RSASSAVerifier createRSAVerifier(RSAKey k) {
         return new RSASSAVerifier(k);
     }
 
