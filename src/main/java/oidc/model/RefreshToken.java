@@ -20,7 +20,8 @@ public class RefreshToken extends AccessToken {
 
     public RefreshToken(AccessToken accessToken, String refreshTokenValue, Date expiresIn) {
         super(refreshTokenValue, accessToken.getSub(), accessToken.getClientId(), accessToken.getScopes(),
-                accessToken.getSigningKeyId(), expiresIn, accessToken.isClientCredentials(), null, accessToken.getUnspecifiedUrnHash());
+                accessToken.getSigningKeyId(), expiresIn, accessToken.isClientCredentials(), null,
+                accessToken.getUnspecifiedUrnHash());
         this.accessTokenId = accessToken.getId();
     }
 

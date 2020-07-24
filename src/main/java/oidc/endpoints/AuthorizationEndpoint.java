@@ -302,7 +302,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             String unspecifiedUrnHash = KeyGenerator.oneWayHash(user.getUnspecifiedNameId(), this.salt);
             AccessToken accessToken = new AccessToken(accessTokenValue, user.getSub(), client.getClientId(), scopes,
                     encryptedAccessToken.getKeyId(), accessTokenValidity(client), false, null, unspecifiedUrnHash);
-            getAccessTokenRepository().insert(accessToken);
+            accessTokenRepository.insert(accessToken);
             result.put("access_token", accessTokenValue);
             result.put("token_type", "Bearer");
         }
@@ -313,7 +313,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         if (responseType.contains(OIDCResponseTypeValue.ID_TOKEN.getValue()) && isOpenIDRequest(scopes) && isOpenIDRequest(authorizationRequest)) {
             AuthenticationRequest authenticationRequest = (AuthenticationRequest) authorizationRequest;
             List<String> claims = getClaims(authorizationRequest);
-            String idToken = getTokenGenerator().generateIDTokenForAuthorizationEndpoint(
+            String idToken = tokenGenerator.generateIDTokenForAuthorizationEndpoint(
                     user, client, authenticationRequest.getNonce(), responseType, accessTokenValue, claims,
                     Optional.ofNullable((String) result.get("code")), state);
             result.put("id_token", idToken);
@@ -336,7 +336,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         String codeChallengeMethodValue = codeChallengeMethod != null ? codeChallengeMethod.getValue() :
                 (codeChallengeValue != null ? CodeChallengeMethod.getDefault().getValue() : null);
         List<String> idTokenClaims = getClaims(authorizationRequest);
-        String code = getTokenGenerator().generateAuthorizationCode();
+        String code = tokenGenerator.generateAuthorizationCode();
         Nonce nonce = authorizationRequest instanceof AuthenticationRequest ? AuthenticationRequest.class.cast(authorizationRequest).getNonce() : null;
         AuthorizationCode authorizationCode = new AuthorizationCode(
                 code,
@@ -441,20 +441,4 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         }
         return requestedScopes;
     }
-
-    @Override
-    public TokenGenerator getTokenGenerator() {
-        return tokenGenerator;
-    }
-
-    @Override
-    public AccessTokenRepository getAccessTokenRepository() {
-        return accessTokenRepository;
-    }
-
-    @Override
-    public RefreshTokenRepository getRefreshTokenRepository() {
-        return refreshTokenRepository;
-    }
-
 }

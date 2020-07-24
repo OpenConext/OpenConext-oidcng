@@ -288,7 +288,6 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                                                       Optional<Long> authorizationTime,
                                                       Optional<String> authorizationCodeId) {
         Map<String, Object> map = new LinkedHashMap<>();
-        TokenGenerator tokenGenerator = getTokenGenerator();
         EncryptedTokenValue encryptedAccessToken = user
                 .map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client))
                 .orElse(tokenGenerator.generateAccessToken(client));
@@ -299,7 +298,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         AccessToken accessToken = new AccessToken(accessTokenValue, sub, client.getClientId(), scopes,
                 encryptedAccessToken.getKeyId(), accessTokenValidity(client), !user.isPresent(),
                 authorizationCodeId.orElse(null), unspecifiedUrnHash);
-        accessToken = getAccessTokenRepository().insert(accessToken);
+        accessToken = accessTokenRepository.insert(accessToken);
 
         map.put("access_token", accessTokenValue);
         map.put("token_type", "Bearer");
@@ -308,7 +307,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                     .map(u -> tokenGenerator.generateRefreshTokenWithEmbeddedUserInfo(u, client))
                     .orElse(tokenGenerator.generateRefreshToken(client));
             String refreshTokenValue = encryptedRefreshToken.getValue();
-            getRefreshTokenRepository().insert(new RefreshToken(accessToken, refreshTokenValue, refreshTokenValidity(client)));
+            refreshTokenRepository.insert(new RefreshToken(accessToken, refreshTokenValue, refreshTokenValidity(client)));
             map.put("refresh_token", refreshTokenValue);
         }
         map.put("expires_in", client.getAccessTokenValidity());
@@ -327,18 +326,4 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         return headers;
     }
 
-    @Override
-    public TokenGenerator getTokenGenerator() {
-        return tokenGenerator;
-    }
-
-    @Override
-    public AccessTokenRepository getAccessTokenRepository() {
-        return accessTokenRepository;
-    }
-
-    @Override
-    public RefreshTokenRepository getRefreshTokenRepository() {
-        return refreshTokenRepository;
-    }
 }

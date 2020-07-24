@@ -303,3 +303,9 @@ To delete tokens perform the following:
 ```
 curl -u eduid:secret -H "Content-type: application/json" -X PUT -d '[{"id":"5eec6a5df0efad206831a658","tokenType":"REFRESH"},{"id":"5eec6a5df0efad206831a659","tokenType":"ACCESS"}]'
 ```
+## [JMeter performance](#performance)
+In `src\jmeter` there is a JMeter project file to perform load / stress tests.
+```
+cd src/jmeter
+jmeter -n -t OIDC-NG.jmx -l results.log
+```

@@ -73,10 +73,4 @@ public interface OidcEndpoint {
         LocalDateTime ldt = LocalDateTime.now().plusSeconds(validity);
         return Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
     }
-
-    TokenGenerator getTokenGenerator();
-
-    AccessTokenRepository getAccessTokenRepository();
-
-    RefreshTokenRepository getRefreshTokenRepository();
 }

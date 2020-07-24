@@ -156,6 +156,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
         return ResponseEntity.ok(sortMap(result));
     }
 
+    @SuppressWarnings("unchecked")
     private boolean validPseudonymisation(Map<String, Object> userAttributes, OpenIDClient resourceServer, OpenIDClient openIDClient) {
         List<String> uids = (List<String>) userAttributes.get("uids");
         String eduId = (String) userAttributes.get("eduid");
