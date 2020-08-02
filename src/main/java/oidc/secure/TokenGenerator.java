@@ -89,12 +89,12 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     public static final JWSAlgorithm signingAlg = JWSAlgorithm.RS256;
     public static final Instant instant = Instant.parse("2100-01-01T00:00:00.00Z");
 
-    private static char[] DEFAULT_CODEC = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+    private static final char[] DEFAULT_CODEC = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
             .toCharArray();
 
-    private Random random = new SecureRandom();
+    private final Random random = new SecureRandom();
 
-    private String issuer;
+    private final String issuer;
 
     private Map<String, JWSSigner> signers;
 
@@ -104,27 +104,27 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private List<RSAKey> publicKeys;
 
-    private byte[] associatedData;
+    private final byte[] associatedData;
 
-    private KeysetHandle primaryKeysetHandle;
+    private final KeysetHandle primaryKeysetHandle;
 
     private Map<String, KeysetHandle> keysetHandleMap;
 
     private String currentSymmetricKeyId;
 
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
-    private Clock clock;
+    private final Clock clock;
 
-    private SigningKeyRepository signingKeyRepository;
+    private final SigningKeyRepository signingKeyRepository;
 
-    private SymmetricKeyRepository symmetricKeyRepository;
+    private final SymmetricKeyRepository symmetricKeyRepository;
 
-    private SequenceRepository sequenceRepository;
+    private final SequenceRepository sequenceRepository;
 
-    private List<String> acrValuesSupported;
+    private final List<String> acrValuesSupported;
 
-    private String defaultAcrValue;
+    private final String defaultAcrValue;
 
     @Autowired
     public TokenGenerator(@Value("${spring.security.saml2.service-provider.entity-id}") String issuer,
