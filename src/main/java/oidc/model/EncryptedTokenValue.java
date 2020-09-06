@@ -10,6 +10,4 @@ public class EncryptedTokenValue {
     private String value;
     private String keyId;
 
-
-
 }

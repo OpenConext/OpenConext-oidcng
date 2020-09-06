@@ -1,7 +1,6 @@
 package oidc.manage;
 
 import oidc.AbstractIntegrationTest;
-import oidc.model.IdentityProvider;
 import oidc.model.OpenIDClient;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,8 +23,10 @@ import static org.junit.Assert.assertEquals;
 @ActiveProfiles(value = "nope", inheritProfiles = false)
 public class MetadataControllerTest extends AbstractIntegrationTest {
 
-    private @Value("${manage.user}") String user;
-    private @Value("${manage.password}") String password;
+    private @Value("${manage.user}")
+    String user;
+    private @Value("${manage.password}")
+    String password;
 
     @Test
     public void connections() throws IOException {

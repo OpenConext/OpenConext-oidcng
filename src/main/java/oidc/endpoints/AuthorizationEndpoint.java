@@ -24,14 +24,12 @@ import oidc.log.MDCContext;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.EncryptedTokenValue;
-import oidc.model.IdentityProvider;
 import oidc.model.OpenIDClient;
 import oidc.model.ProvidedRedirectURI;
 import oidc.model.User;
 import oidc.model.UserConsent;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
-
 import oidc.repository.OpenIDClientRepository;
 import oidc.repository.RefreshTokenRepository;
 import oidc.repository.UserConsentRepository;
@@ -294,7 +292,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     }
 
     private Map<String, Object> authorizationEndpointResponse(User user, OpenIDClient client, AuthorizationRequest authorizationRequest,
-                                                              List<String> scopes, ResponseType responseType, State state)  {
+                                                              List<String> scopes, ResponseType responseType, State state) {
         Map<String, Object> result = new LinkedHashMap<>();
         EncryptedTokenValue encryptedAccessToken = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client);
         String accessTokenValue = encryptedAccessToken.getValue();

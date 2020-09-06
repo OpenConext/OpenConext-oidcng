@@ -1,6 +1,5 @@
 package oidc.manage;
 
-import oidc.model.IdentityProvider;
 import oidc.model.OpenIDClient;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

@@ -24,6 +24,7 @@ import oidc.config.BeanConfig;
 import oidc.config.OidcCorsConfigurationSource;
 import oidc.config.TokenUsers;
 import oidc.crypto.KeyGenerator;
+import oidc.log.MDCContextFilter;
 import oidc.repository.UserRepository;
 import oidc.web.ConfigurableSamlAuthenticationRequestFilter;
 import oidc.web.FakeSamlAuthenticationFilter;
@@ -51,6 +52,7 @@ import org.springframework.security.saml.provider.config.RotatingKeys;
 import org.springframework.security.saml.provider.service.config.ExternalIdentityProviderConfiguration;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityConfiguration;
 import org.springframework.security.saml.provider.service.config.SamlServiceProviderSecurityDsl;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 import java.nio.charset.Charset;
 import java.util.Collections;
@@ -107,6 +109,7 @@ public class SecurityConfiguration {
         protected void configure(HttpSecurity http) throws Exception {
             super.configure(http);
             http.cors().configurationSource(new OidcCorsConfigurationSource()).configure(http);
+
             SamlServiceProviderSecurityDsl samlServiceProviderSecurityDsl = http.apply(serviceProvider());
             samlServiceProviderSecurityDsl
                     .configure(appConfiguration)
@@ -121,12 +124,15 @@ public class SecurityConfiguration {
                         .setMetadata(idpMetaDataUrl);
                 samlServiceProviderSecurityDsl.identityProvider(idp);
             });
+            http.addFilterBefore(new MDCContextFilter(), BasicAuthenticationFilter.class);
 
             if (environment.acceptsProfiles(Profiles.of("dev"))) {
                 http.addFilterBefore(new FakeSamlAuthenticationFilter(userRepository, objectMapper),
                         ConfigurableSamlAuthenticationRequestFilter.class);
             }
         }
+
+
 
         private RotatingKeys getKeys() throws Exception {
             String privateKey;
@@ -197,7 +203,9 @@ public class SecurityConfiguration {
                     .and()
                     .httpBasic()
                     .and()
-                    .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+                    .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                    .and()
+                    .addFilterBefore(new MDCContextFilter(), BasicAuthenticationFilter.class);
         }
 
         @Override

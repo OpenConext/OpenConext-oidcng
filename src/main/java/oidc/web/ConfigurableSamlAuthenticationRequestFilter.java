@@ -9,6 +9,7 @@ import com.nimbusds.openid.connect.sdk.Prompt;
 import com.nimbusds.openid.connect.sdk.claims.ACR;
 import lombok.SneakyThrows;
 import oidc.endpoints.AuthorizationEndpoint;
+import oidc.log.MDCContext;
 import oidc.manage.ServiceProviderTranslation;
 import oidc.model.OpenIDClient;
 import oidc.repository.AuthenticationRequestRepository;
@@ -186,6 +187,8 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(ServletUtils.createHTTPRequest(request));
             ClientID clientID = authorizationRequest.getClientID();
             if (clientID != null) {
+                MDCContext.mdcContext("action", "Authorization", "clientId", clientID.getValue());
+
                 OpenIDClient openIDClient = openIDClientRepository.findByClientId(clientID.getValue());
                 AuthorizationEndpoint.validateRedirectionURI(authorizationRequest, openIDClient);
 

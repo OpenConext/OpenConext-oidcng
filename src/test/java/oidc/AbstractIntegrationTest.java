@@ -1,7 +1,6 @@
 package oidc;
 
 
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
@@ -27,7 +26,6 @@ import io.restassured.specification.RequestSpecification;
 import oidc.endpoints.MapTypeReference;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
-import oidc.model.IdentityProvider;
 import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
 import oidc.model.Sequence;
@@ -37,7 +35,6 @@ import oidc.model.UserConsent;
 import oidc.repository.SequenceRepository;
 import oidc.secure.TokenGenerator;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -68,7 +65,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -80,13 +76,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
