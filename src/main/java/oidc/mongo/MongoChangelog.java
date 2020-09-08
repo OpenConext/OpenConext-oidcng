@@ -1,10 +1,8 @@
 package oidc.mongo;
 
-import com.github.mongobee.Mongobee;
-import com.github.mongobee.changeset.ChangeLog;
-import com.github.mongobee.changeset.ChangeSet;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
+import com.github.cloudyrock.mongock.ChangeLog;
+import com.github.cloudyrock.mongock.ChangeSet;
+import com.github.cloudyrock.mongock.driver.mongodb.springdata.v3.decorator.impl.MongockTemplate;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.IdentityProvider;
@@ -14,13 +12,7 @@ import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
 import oidc.model.User;
 import oidc.model.UserConsent;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.MongoTransactionManager;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.index.IndexOperations;
 import org.springframework.data.mongodb.core.query.Query;
@@ -32,36 +24,11 @@ import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
 
-@Configuration
-@ChangeLog
-public class MongobeeConfiguration {
-
-    @Autowired
-    private MongoTemplate mongoTemplate;
-
-    @Value("${mongodb_db}")
-    private String databaseName;
-
-
-    @Value("${spring.data.mongodb.uri}")
-    private String mongobdUri;
-
-    @Bean
-    public MongoTransactionManager transactionManager() {
-        return new MongoTransactionManager(mongoTemplate.getMongoDbFactory());
-    }
-
-    @Bean
-    public Mongobee mongobee(@Value("${spring.data.mongodb.uri}") String mongobdUri) throws Exception {
-        Mongobee mongobee = new Mongobee(new MongoClient(new MongoClientURI(mongobdUri)));
-        return mongobee
-                .setChangeLogsScanPackage("oidc.mongo")
-                .setDbName(databaseName)
-                .setMongoTemplate(mongoTemplate);
-    }
+@ChangeLog(order = "001")
+public class MongoChangelog {
 
     @ChangeSet(order = "001", id = "createIndexes", author = "Okke Harsta")
-    public void createCollections(MongoTemplate mongoTemplate) {
+    public void createCollections(MongockTemplate mongoTemplate) {
         Map<Class<? extends Object>, List<String>> indexInfo = new HashMap<>();
 
         indexInfo.put(AccessToken.class, singletonList("value"));
@@ -73,7 +40,7 @@ public class MongobeeConfiguration {
     }
 
     @ChangeSet(order = "002", id = "createRefreshTokenIndex", author = "Okke Harsta")
-    public void createRefreshTokenIndex(MongoTemplate mongoTemplate) {
+    public void createRefreshTokenIndex(MongockTemplate mongoTemplate) {
         mongoTemplate.dropCollection(RefreshToken.class);
 
         Map<Class<? extends Object>, List<String>> indexInfo = new HashMap<>();
@@ -84,7 +51,7 @@ public class MongobeeConfiguration {
     }
 
     @ChangeSet(order = "003", id = "createSigningKeyCollection", author = "Okke Harsta")
-    public void createSigningKeyCollection(MongoTemplate mongoTemplate) {
+    public void createSigningKeyCollection(MongockTemplate mongoTemplate) {
         if (!mongoTemplate.collectionExists("signing_keys")) {
             mongoTemplate.createCollection("signing_keys");
         }
@@ -93,7 +60,7 @@ public class MongobeeConfiguration {
     }
 
     @ChangeSet(order = "004", id = "createSymmetricKeyCollection", author = "Okke Harsta")
-    public void createSymmetricKeyCollection(MongoTemplate mongoTemplate) {
+    public void createSymmetricKeyCollection(MongockTemplate mongoTemplate) {
         if (!mongoTemplate.collectionExists("symmetric_keys")) {
             mongoTemplate.createCollection("symmetric_keys");
         }
@@ -102,13 +69,13 @@ public class MongobeeConfiguration {
     }
 
     @ChangeSet(order = "005", id = "deleteTokens", author = "Okke Harsta")
-    public void deleteTokens(MongoTemplate mongoTemplate) {
+    public void deleteTokens(MongockTemplate mongoTemplate) {
         Stream.of(AccessToken.class, RefreshToken.class, AuthorizationCode.class, User.class)
                 .forEach(clazz -> mongoTemplate.remove(new Query(), clazz));
     }
 
     @ChangeSet(order = "006", id = "createUserConsentIndex", author = "Okke Harsta")
-    public void createUserConsent(MongoTemplate mongoTemplate) {
+    public void createUserConsent(MongockTemplate mongoTemplate) {
         mongoTemplate.dropCollection(UserConsent.class);
 
         Map<Class<? extends Object>, List<String>> indexInfo = new HashMap<>();
@@ -119,7 +86,7 @@ public class MongobeeConfiguration {
     }
 
     @ChangeSet(order = "007", id = "createIdentityProviders", author = "Okke Harsta")
-    public void createIdentityProviders(MongoTemplate mongoTemplate) {
+    public void createIdentityProviders(MongockTemplate mongoTemplate) {
         mongoTemplate.dropCollection(IdentityProvider.class);
 
         Map<Class<? extends Object>, List<String>> indexInfo = new HashMap<>();
@@ -130,18 +97,18 @@ public class MongobeeConfiguration {
     }
 
     @ChangeSet(order = "008", id = "removeAndRebuildRefreshTokenIndex", author = "Okke Harsta")
-    public void removeAndRebuildRefreshTokenIndex(MongoTemplate mongoTemplate) {
+    public void removeAndRebuildRefreshTokenIndex(MongockTemplate mongoTemplate) {
         IndexOperations indexOperations = mongoTemplate.indexOps(RefreshToken.class);
         indexOperations.dropIndex("innerValue_unique");
         Index index = new Index("value", Sort.Direction.ASC).named(String.format("value_unique")).unique();
         indexOperations.ensureIndex(index);
     }
 
-    private void ensureCollectionsAndIndexes(MongoTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {
+    private void ensureCollectionsAndIndexes(MongockTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {
         ensureCollectionsAndIndexes(mongoTemplate, indexInfo, true);
     }
 
-    private void ensureCollectionsAndIndexes(MongoTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo, boolean unique) {
+    private void ensureCollectionsAndIndexes(MongockTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo, boolean unique) {
         indexInfo.forEach((collection, fields) -> {
             if (!mongoTemplate.collectionExists(collection)) {
                 mongoTemplate.createCollection(collection);
@@ -154,4 +121,5 @@ public class MongobeeConfiguration {
             });
         });
     }
+
 }

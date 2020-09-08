@@ -42,6 +42,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -118,6 +119,7 @@ public class JWTRequest {
 
 
     private static AuthenticationRequest mergeAuthenticationRequest(AuthenticationRequest authenticationRequest, Map<String, Object> claims) throws com.nimbusds.oauth2.sdk.ParseException, URISyntaxException {
+        ClaimsRequest claimsRequest = claims.containsKey("claims") ? ClaimsRequest.parse((String) claims.get("claims")) : authenticationRequest.getClaims();
         return new AuthenticationRequest(
                 authenticationRequest.getEndpointURI(),
                 claims.containsKey("response_type") ? ResponseType.parse((String) claims.get("response_type")) : authenticationRequest.getResponseType(),
@@ -134,17 +136,17 @@ public class JWTRequest {
                 authenticationRequest.getClaimsLocales(),
                 authenticationRequest.getIDTokenHint(),
                 claims.containsKey("login_hint") ? (String) claims.get("login_hint") : authenticationRequest.getLoginHint(),
-                claims.containsKey("acr_values") ? Arrays.asList(((String) claims.get("acr_values")).split(" ")).stream().map(ACR::new).collect(Collectors.toList()) : authenticationRequest.getACRValues(),
-                claims.containsKey("claims") ? ClaimsRequest.parse((String) claims.get("claims")) : authenticationRequest.getClaims(),
+                claims.containsKey("acr_values") ? Arrays.stream(((String) claims.get("acr_values")).split(" ")).map(ACR::new).collect(Collectors.toList()) : authenticationRequest.getACRValues(),
+                claimsRequest,
                 authenticationRequest.getPurpose(),
-                null,
                 authenticationRequest.getRequestObject(),
                 authenticationRequest.getRequestURI(),
                 claims.containsKey("code_challenge") ? CodeChallenge.parse((String) claims.get("code_challenge")) : authenticationRequest.getCodeChallenge(),
                 claims.containsKey("code_challenge_method") ? CodeChallengeMethod.parse((String) claims.get("code_challenge_method")) : authenticationRequest.getCodeChallengeMethod(),
                 authenticationRequest.getResources(),
                 authenticationRequest.includeGrantedScopes(),
-                authenticationRequest.getCustomParameters());
+                authenticationRequest.getCustomParameters()
+        );
     }
 
 }

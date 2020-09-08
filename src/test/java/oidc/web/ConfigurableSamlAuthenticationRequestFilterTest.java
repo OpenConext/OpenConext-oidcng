@@ -77,12 +77,6 @@ public class ConfigurableSamlAuthenticationRequestFilterTest extends AbstractInt
     }
 
     @Test
-    public void filterInternalInvalidGrantTypeError() throws Exception {
-        filterInternalInvalidRequest(null, "unauthorized_client",
-                "http://localhost:8091/redirect", "token", "fragment", "mock-rp");
-    }
-
-    @Test
     public void filterInternalInvalidGrantTypeFormPostError() throws Exception {
         filterInternalInvalidRequest(null, "unauthorized_client",
                 "http://localhost:8091/redirect", "token", "form_post", "mock-rp");

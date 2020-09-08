@@ -2,6 +2,7 @@ package oidc.web;
 
 import oidc.exceptions.InvalidScopeException;
 import org.junit.Test;
+import org.springframework.boot.autoconfigure.web.ErrorProperties;
 import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -16,7 +17,7 @@ import static org.junit.Assert.assertEquals;
 
 public class ErrorControllerTest {
 
-    private ErrorController subject = new ErrorController(new DefaultErrorAttributes(true));
+    private ErrorController subject = new ErrorController();
 
     @Test
     @SuppressWarnings("unchecked")

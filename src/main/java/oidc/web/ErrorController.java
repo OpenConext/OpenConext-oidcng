@@ -1,9 +1,14 @@
 package oidc.web;
 
 import com.nimbusds.jose.JOSEException;
+import lombok.SneakyThrows;
 import oidc.exceptions.BaseException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.boot.autoconfigure.web.ErrorProperties;
+import org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController;
+import org.springframework.boot.web.error.ErrorAttributeOptions;
+import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
 import org.springframework.boot.web.servlet.error.ErrorAttributes;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -32,24 +37,20 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 public class ErrorController implements org.springframework.boot.web.servlet.error.ErrorController {
 
     private static final Log LOG = LogFactory.getLog(ErrorController.class);
+    private final DefaultErrorAttributes errorAttributes;
 
-    private ErrorAttributes errorAttributes;
-
-    public ErrorController(ErrorAttributes errorAttributes) {
-        this.errorAttributes = errorAttributes;
+    public ErrorController() {
+        this.errorAttributes = new DefaultErrorAttributes();
     }
 
-    @Override
-    public String getErrorPath() {
-        return "/error";
-    }
-
-    @RequestMapping("/error")
-    public Object error(HttpServletRequest request) throws UnsupportedEncodingException {
+    @SneakyThrows
+    @RequestMapping("${server.error.path:${error.path:/error}}")
+    public Object error(HttpServletRequest request) {
         ServletWebRequest webRequest = new ServletWebRequest(request);
-        Map<String, Object> result = this.errorAttributes.getErrorAttributes(webRequest, false);
 
-        Throwable error = this.errorAttributes.getError(webRequest);
+        Map<String, Object> result = errorAttributes.getErrorAttributes(webRequest, ErrorAttributeOptions.defaults());
+
+        Throwable error = errorAttributes.getError(webRequest);
         boolean status = result.containsKey("status") && !result.get("status").equals(999) && !result.get("status").equals(500);
         HttpStatus statusCode = status ? HttpStatus.resolve((Integer) result.get("status")) : BAD_REQUEST;
         if (error != null) {
@@ -59,7 +60,8 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
                 LOG.error("Error has occurred", error);
             }
 
-            result.put("error_description",message);
+            result.put("error_description", message);
+            result.put("message", message);
             ResponseStatus annotation = AnnotationUtils.getAnnotation(error.getClass(), ResponseStatus.class);
             statusCode = annotation != null ? annotation.value() : statusCode;
 
@@ -153,4 +155,8 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         return StringUtils.hasText(value) ? value : defaultValue;
     }
 
+    @Override
+    public String getErrorPath() {
+        return null;
+    }
 }

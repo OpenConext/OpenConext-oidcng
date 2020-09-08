@@ -37,6 +37,7 @@ import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -151,6 +152,8 @@ public class JWTRequestTest implements MapTypeReference, SignedJWTTest {
         SignedJWT signedJWT = signedJWT(client.getClientId(), keyID, client.getRedirectUrls().get(0));
         ClaimsRequest claimsRequest = new ClaimsRequest();
         claimsRequest.addIDTokenClaim("email");
+        List<LangTag> langTags = Collections.singletonList(new LangTag("en"));
+        List<ACR> acrValues = Collections.singletonList(new ACR("loa"));
         AuthenticationRequest authenticationRequest = new AuthenticationRequest(
                 new URI("http://localhost/authorize"),
                 ResponseType.getDefault(),
@@ -163,14 +166,13 @@ public class JWTRequestTest implements MapTypeReference, SignedJWTTest {
                 Display.getDefault(),
                 Prompt.parse("consent"),
                 1200,
-                Collections.singletonList(new LangTag("en")),
-                Collections.singletonList(new LangTag("en")),
+                langTags,
+                langTags,
                 null,
                 "hint",
-                Collections.singletonList(new ACR("loa")),
+                acrValues,
                 claimsRequest,
                 "purpose",
-                null,
                 signedJWT,
                 null,
                 CodeChallenge.compute(CodeChallengeMethod.S256, new CodeVerifier()),
