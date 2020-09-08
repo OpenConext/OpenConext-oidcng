@@ -23,6 +23,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -134,16 +135,16 @@ public class SamlProvisioningAuthenticationManager implements AuthenticationMana
     }
 
     private String getAttributeValue(String samlAttributeName, Assertion assertion) {
-        Set<String> values = getAttributeValues(samlAttributeName, assertion);
-        return !CollectionUtils.isEmpty(values) ? values.iterator().next() : null;
+        List<String> values = getAttributeValues(samlAttributeName, assertion);
+        return !CollectionUtils.isEmpty(values) ? values.get(0) : null;
     }
 
-    private Set<String> getAttributeValues(String samlAttributeName, Assertion assertion) {
+    private List<String> getAttributeValues(String samlAttributeName, Assertion assertion) {
         Attribute firstAttribute = assertion.getFirstAttribute(samlAttributeName);
         if (firstAttribute != null) {
             List<Object> values = firstAttribute.getValues();
             if (!CollectionUtils.isEmpty(values) && values.size() > 0) {
-                return values.stream().filter(Objects::nonNull).map(Object::toString).collect(Collectors.toSet());
+                return new ArrayList<>(values.stream().filter(Objects::nonNull).map(Object::toString).collect(Collectors.toSet()));
             }
         }
         return null;
