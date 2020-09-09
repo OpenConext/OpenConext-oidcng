@@ -52,6 +52,11 @@ import java.util.Date;
 
 public class KeyGenerator {
 
+    private static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----\n";
+    private static final String END_CERT = "-----END CERTIFICATE-----";
+    private static final String BEGIN_KEY = "-----BEGIN RSA PRIVATE KEY-----\n";
+    private static final String END_KEY = "-----END RSA PRIVATE KEY-----";
+
     private static final BouncyCastleProvider bcProvider = new BouncyCastleProvider();
 
     static {
@@ -107,20 +112,7 @@ public class KeyGenerator {
         messageDigest.update(secret.getBytes());
         return new String(Hex.encode(messageDigest.digest(original.getBytes())));
     }
-    public static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----\n";
-    public static final String END_CERT = "-----END CERTIFICATE-----";
-    public static final String BEGIN_KEY = "-----BEGIN RSA PRIVATE KEY-----\n";
-    public static final String END_KEY = "-----END RSA PRIVATE KEY-----";
 
-    public static byte[] getDER(
-            String combinedKeyAndCertPem,
-            String begin,
-            String end
-    ) {
-        String[] tokens = combinedKeyAndCertPem.split(begin);
-        tokens = tokens[0].split(end);
-        return getDER(tokens[0]);
-    }
 
     public static byte[] getDER(String pem) {
         String data = keyCleanup(pem);
@@ -134,7 +126,7 @@ public class KeyGenerator {
                 .replace(END_CERT, "")
                 .replace(BEGIN_KEY, "")
                 .replace(END_KEY, "")
-                .replace("\n", "")
+                .replaceAll("[\n\t\n]", "")
                 .trim();
     }
 

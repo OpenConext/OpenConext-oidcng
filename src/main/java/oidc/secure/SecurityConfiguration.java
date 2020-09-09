@@ -156,7 +156,7 @@ public class SecurityConfiguration {
         }
 
         private Saml2X509Credential getVerificationCertificate() {
-            String certificate = strip(read(metadataSigningCertificatePath));
+            String certificate = KeyGenerator.keyCleanup(read(metadataSigningCertificatePath));
             byte[] certBytes = KeyGenerator.getDER(certificate);
             X509Certificate x509Certificate = KeyGenerator.getCertificate(certBytes);
             return new Saml2X509Credential(x509Certificate, Saml2X509Credential.Saml2X509CredentialType.VERIFICATION);
@@ -210,13 +210,6 @@ public class SecurityConfiguration {
         private String read(Resource resource) {
             LOG.info("Reading resource: " + resource.getFilename());
             return IOUtils.toString(resource.getInputStream(), Charset.defaultCharset());
-        }
-
-        private String strip(String certificate) {
-            return certificate
-                    .replaceAll("-----BEGIN CERTIFICATE-----", "")
-                    .replaceAll("-----END CERTIFICATE-----", "")
-                    .replaceAll("[\n\t\r ]", "");
         }
 
     }
