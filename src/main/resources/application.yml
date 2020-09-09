@@ -48,6 +48,8 @@ features:
   # Do we enforce that the scopes granted to an access_token are configured with the RS?
   enforce-scope-resource-server: true
 
+base_url: http://localhost:8080
+
 idp:
   alias: engine-test
   # comma separated string of metadata url's
@@ -61,23 +63,6 @@ spring:
       uri: mongodb://127.0.0.1:27017/${mongodb_db}
   thymeleaf:
     cache: false
-  security:
-    saml2:
-      network:
-        read-timeout: 10000
-        connect-timeout: 5000
-      service-provider:
-        entity-id: https://org.openconext.oidc.ng
-        prefix: oidc
-        alias: oidc-proxy
-        base-path: http://localhost:8080
-        sign-metadata: true
-        sign-requests: true
-        want-assertions-signed: true
-        single-logout-enabled: false
-        name-ids:
-          - urn:oasis:names:tc:SAML:2.0:nameid-format:persistent
-          - urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified
 
 manage:
   user: oidcng
