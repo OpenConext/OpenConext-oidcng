@@ -49,13 +49,14 @@ features:
   enforce-scope-resource-server: true
 
 base_url: http://localhost:8080
+registration_id: oidcng
 
-idp:
-  alias: engine-test
-  # comma separated string of metadata url's
-  metadata_urls: https://engine.test2.surfconext.nl/authentication/idp/metadata
-  name_id: https://engine.test2.surfconext.nl/authentication/idp/metadata
-  metadata_signing_certificate_path: classpath:/engine.test2.surfconext.nl.pem
+#idp:
+#  alias: engine-test
+#  # comma separated string of metadata url's
+#  metadata_urls: https://engine.test2.surfconext.nl/authentication/idp/metadata
+#  name_id: https://engine.test2.surfconext.nl/authentication/idp/metadata
+#  metadata_signing_certificate_path: classpath:/engine.test2.surfconext.nl.pem
 
 spring:
   data:

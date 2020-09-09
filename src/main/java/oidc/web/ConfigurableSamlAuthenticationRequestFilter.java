@@ -17,15 +17,6 @@ import oidc.repository.OpenIDClientRepository;
 import oidc.secure.JWTRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.saml.SamlRequestMatcher;
-import org.springframework.security.saml.provider.provisioning.SamlProviderProvisioning;
-import org.springframework.security.saml.provider.service.SamlAuthenticationRequestFilter;
-import org.springframework.security.saml.provider.service.ServiceProviderService;
-import org.springframework.security.saml.saml2.authentication.AuthenticationContextClassReference;
-import org.springframework.security.saml.saml2.authentication.AuthenticationRequest;
-import org.springframework.security.saml.saml2.authentication.RequestedAuthenticationContext;
-import org.springframework.security.saml.saml2.authentication.Scoping;
-import org.springframework.security.saml.saml2.metadata.IdentityProviderMetadata;
 import org.springframework.security.web.PortResolverImpl;
 import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 import org.springframework.security.web.savedrequest.SavedRequest;
@@ -48,169 +39,169 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticationRequestFilter implements URLCoding {
+public class ConfigurableSamlAuthenticationRequestFilter {//extends SamlAuthenticationRequestFilter implements URLCoding {
 
-    private PortResolverImpl portResolver;
-    private AuthenticationRequestRepository authenticationRequestRepository;
-    private OpenIDClientRepository openIDClientRepository;
-    private ObjectMapper objectMapper;
-
-    static String REDIRECT_URI_VALID = "REDIRECT_URI_VALID";
-
-    public ConfigurableSamlAuthenticationRequestFilter(SamlProviderProvisioning<ServiceProviderService> provisioning,
-                                                       SamlRequestMatcher samlRequestMatcher,
-                                                       AuthenticationRequestRepository authenticationRequestRepository,
-                                                       OpenIDClientRepository openIDClientRepository,
-                                                       ObjectMapper objectMapper) {
-        super(provisioning, samlRequestMatcher);
-        this.openIDClientRepository = openIDClientRepository;
-        this.authenticationRequestRepository = authenticationRequestRepository;
-        this.portResolver = new PortResolverImpl();
-        this.objectMapper = objectMapper;
-    }
-
-    @Override
-    protected String getRelayState(ServiceProviderService provider, HttpServletRequest request) {
-        String acrValues = request.getParameter("acr_values");
-        String clientId = request.getParameter("client_id");
-        return new RelayState(clientId, acrValues).toJson(objectMapper);
-    }
-
-    private AuthenticationRequest enhanceAuthenticationRequest(ServiceProviderService provider,
-                                                               HttpServletRequest request,
-                                                               AuthenticationRequest authenticationRequest) throws ParseException {
-        String clientId = RelayState.from(getRelayState(provider, request), objectMapper).getClientId();
-
-        if (StringUtils.hasText(clientId)) {
-            String entityId = ServiceProviderTranslation.translateClientId(clientId);
-            authenticationRequest.setScoping(new Scoping(new ArrayList<>(), Collections.singletonList(entityId), 1));
-        }
-        String prompt = AuthorizationEndpoint.validatePrompt(request);
-
-        authenticationRequest.setForceAuth(prompt != null && prompt.contains("login"));
-
-        /**
-         * Based on the ongoing discussion with the certification committee
-         * authenticationRequest.setPassive("none".equals(prompt));
-         */
-        if (!authenticationRequest.isForceAuth() && StringUtils.hasText(request.getParameter("max_age"))) {
-            authenticationRequest.setForceAuth(true);
-        }
-        String acrValues = request.getParameter("acr_values");
-        if (StringUtils.hasText(acrValues)) {
-            List<ACR> acrList = Arrays.stream(acrValues.split(" ")).map(ACR::new).collect(Collectors.toList());
-            parseAcrValues(authenticationRequest, acrList);
-        }
-        String requestP = request.getParameter("request");
-        String requestUrlP = request.getParameter("request_uri");
-        if (StringUtils.hasText(requestP) || StringUtils.hasText(requestUrlP)) {
-            OpenIDClient openIDClient = openIDClientRepository.findByClientId(clientId);
-            try {
-                com.nimbusds.openid.connect.sdk.AuthenticationRequest authRequest =
-                        com.nimbusds.openid.connect.sdk.AuthenticationRequest.parse(ServletUtils.createHTTPRequest(request));
-                authRequest = JWTRequest.parse(authRequest, openIDClient);
-                List<ACR> acrValuesObjects = authRequest.getACRValues();
-                parseAcrValues(authenticationRequest, acrValuesObjects);
-                Prompt authRequestPrompt = authRequest.getPrompt();
-                prompt = AuthorizationEndpoint.validatePrompt(authRequestPrompt);
-                if (!authenticationRequest.isForceAuth() && authRequest.getMaxAge() > -1) {
-                    authenticationRequest.setForceAuth(true);
-                }
-                if (!authenticationRequest.isForceAuth() && prompt != null) {
-                    authenticationRequest.setForceAuth(prompt.contains("login"));
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-        String loginHint = request.getParameter("login_hint");
-        if (StringUtils.hasText(loginHint)) {
-            Scoping scoping = authenticationRequest.getScoping();
-            if (scoping == null) {
-                authenticationRequest.setScoping(new Scoping(new ArrayList<>(), Collections.emptyList(), 0));
-            }
-            List<String> idpList = authenticationRequest.getScoping().getIdpList();
-            loginHint = decode(loginHint);
-            Stream.of(loginHint.split(",")).map(String::trim).filter(this::isValidURI).forEach(idpEntityId -> idpList.add(idpEntityId.trim()));
-        }
-        return authenticationRequest;
-    }
-
-    private boolean isValidURI(String uri) {
-        try {
-            new URI(uri);
-            return true;
-        } catch (URISyntaxException e) {
-            return false;
-        }
-
-    }
-
-    @SneakyThrows
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (getRequestMatcher().matches(request) && (authentication == null || !authentication.isAuthenticated())) {
-
-            validateAuthorizationRequest(request);
-
-            ServiceProviderService provider = getProvisioning().getHostedProvider();
-            IdentityProviderMetadata idp = provider.getRemoteProviders().get(0);
-            AuthenticationRequest authenticationRequest = provider.authenticationRequest(idp);
-            authenticationRequest = enhanceAuthenticationRequest(provider, request, authenticationRequest);
-            saveAuthenticationRequestUrl(request, authenticationRequest);
-
-            sendAuthenticationRequest(
-                    provider,
-                    request,
-                    response,
-                    authenticationRequest,
-                    authenticationRequest.getDestination()
-            );
-        } else {
-            filterChain.doFilter(request, response);
-        }
-    }
-
-    private void saveAuthenticationRequestUrl(HttpServletRequest request, AuthenticationRequest authenticationRequest) {
-        String id = authenticationRequest.getId();
-        LocalDateTime ldt = LocalDateTime.now().plusSeconds(60 * 15);
-        Date expiresIn = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
-        SavedRequest savedRequest = new DefaultSavedRequest(request, portResolver);
-        authenticationRequestRepository.insert(
-                new oidc.model.AuthenticationRequest(id, expiresIn, savedRequest.getRedirectUrl())
-        );
-    }
-
-    private void validateAuthorizationRequest(HttpServletRequest request) throws IOException {
-        try {
-            AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(ServletUtils.createHTTPRequest(request));
-            ClientID clientID = authorizationRequest.getClientID();
-            if (clientID != null) {
-                MDCContext.mdcContext("action", "Authorization", "clientId", clientID.getValue());
-
-                OpenIDClient openIDClient = openIDClientRepository.findByClientId(clientID.getValue());
-                AuthorizationEndpoint.validateRedirectionURI(authorizationRequest, openIDClient);
-
-                request.setAttribute(REDIRECT_URI_VALID, true);
-
-                AuthorizationEndpoint.validateScopes(authorizationRequest, openIDClient);
-                AuthorizationEndpoint.validateGrantType(authorizationRequest, openIDClient);
-            }
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void parseAcrValues(AuthenticationRequest authenticationRequest, List<ACR> acrValuesObjects) {
-        if (!CollectionUtils.isEmpty(acrValuesObjects)) {
-
-            authenticationRequest.setAuthenticationContextClassReferences(
-                    acrValuesObjects.stream()
-                            .map(acrValue -> AuthenticationContextClassReference.fromUrn(acrValue.getValue()))
-                            .collect(Collectors.toList()));
-            authenticationRequest.setRequestedAuthenticationContext(RequestedAuthenticationContext.exact);
-        }
-    }
+//    private PortResolverImpl portResolver;
+//    private AuthenticationRequestRepository authenticationRequestRepository;
+//    private OpenIDClientRepository openIDClientRepository;
+//    private ObjectMapper objectMapper;
+//
+//    static String REDIRECT_URI_VALID = "REDIRECT_URI_VALID";
+//
+//    public ConfigurableSamlAuthenticationRequestFilter(SamlProviderProvisioning<ServiceProviderService> provisioning,
+//                                                       SamlRequestMatcher samlRequestMatcher,
+//                                                       AuthenticationRequestRepository authenticationRequestRepository,
+//                                                       OpenIDClientRepository openIDClientRepository,
+//                                                       ObjectMapper objectMapper) {
+//        super(provisioning, samlRequestMatcher);
+//        this.openIDClientRepository = openIDClientRepository;
+//        this.authenticationRequestRepository = authenticationRequestRepository;
+//        this.portResolver = new PortResolverImpl();
+//        this.objectMapper = objectMapper;
+//    }
+//
+//    @Override
+//    protected String getRelayState(ServiceProviderService provider, HttpServletRequest request) {
+//        String acrValues = request.getParameter("acr_values");
+//        String clientId = request.getParameter("client_id");
+//        return new RelayState(clientId, acrValues).toJson(objectMapper);
+//    }
+//
+//    private AuthenticationRequest enhanceAuthenticationRequest(ServiceProviderService provider,
+//                                                               HttpServletRequest request,
+//                                                               AuthenticationRequest authenticationRequest) throws ParseException {
+//        String clientId = RelayState.from(getRelayState(provider, request), objectMapper).getClientId();
+//
+//        if (StringUtils.hasText(clientId)) {
+//            String entityId = ServiceProviderTranslation.translateClientId(clientId);
+//            authenticationRequest.setScoping(new Scoping(new ArrayList<>(), Collections.singletonList(entityId), 1));
+//        }
+//        String prompt = AuthorizationEndpoint.validatePrompt(request);
+//
+//        authenticationRequest.setForceAuth(prompt != null && prompt.contains("login"));
+//
+//        /**
+//         * Based on the ongoing discussion with the certification committee
+//         * authenticationRequest.setPassive("none".equals(prompt));
+//         */
+//        if (!authenticationRequest.isForceAuth() && StringUtils.hasText(request.getParameter("max_age"))) {
+//            authenticationRequest.setForceAuth(true);
+//        }
+//        String acrValues = request.getParameter("acr_values");
+//        if (StringUtils.hasText(acrValues)) {
+//            List<ACR> acrList = Arrays.stream(acrValues.split(" ")).map(ACR::new).collect(Collectors.toList());
+//            parseAcrValues(authenticationRequest, acrList);
+//        }
+//        String requestP = request.getParameter("request");
+//        String requestUrlP = request.getParameter("request_uri");
+//        if (StringUtils.hasText(requestP) || StringUtils.hasText(requestUrlP)) {
+//            OpenIDClient openIDClient = openIDClientRepository.findByClientId(clientId);
+//            try {
+//                com.nimbusds.openid.connect.sdk.AuthenticationRequest authRequest =
+//                        com.nimbusds.openid.connect.sdk.AuthenticationRequest.parse(ServletUtils.createHTTPRequest(request));
+//                authRequest = JWTRequest.parse(authRequest, openIDClient);
+//                List<ACR> acrValuesObjects = authRequest.getACRValues();
+//                parseAcrValues(authenticationRequest, acrValuesObjects);
+//                Prompt authRequestPrompt = authRequest.getPrompt();
+//                prompt = AuthorizationEndpoint.validatePrompt(authRequestPrompt);
+//                if (!authenticationRequest.isForceAuth() && authRequest.getMaxAge() > -1) {
+//                    authenticationRequest.setForceAuth(true);
+//                }
+//                if (!authenticationRequest.isForceAuth() && prompt != null) {
+//                    authenticationRequest.setForceAuth(prompt.contains("login"));
+//                }
+//            } catch (Exception e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//        String loginHint = request.getParameter("login_hint");
+//        if (StringUtils.hasText(loginHint)) {
+//            Scoping scoping = authenticationRequest.getScoping();
+//            if (scoping == null) {
+//                authenticationRequest.setScoping(new Scoping(new ArrayList<>(), Collections.emptyList(), 0));
+//            }
+//            List<String> idpList = authenticationRequest.getScoping().getIdpList();
+//            loginHint = decode(loginHint);
+//            Stream.of(loginHint.split(",")).map(String::trim).filter(this::isValidURI).forEach(idpEntityId -> idpList.add(idpEntityId.trim()));
+//        }
+//        return authenticationRequest;
+//    }
+//
+//    private boolean isValidURI(String uri) {
+//        try {
+//            new URI(uri);
+//            return true;
+//        } catch (URISyntaxException e) {
+//            return false;
+//        }
+//
+//    }
+//
+//    @SneakyThrows
+//    @Override
+//    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) {
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        if (getRequestMatcher().matches(request) && (authentication == null || !authentication.isAuthenticated())) {
+//
+//            validateAuthorizationRequest(request);
+//
+//            ServiceProviderService provider = getProvisioning().getHostedProvider();
+//            IdentityProviderMetadata idp = provider.getRemoteProviders().get(0);
+//            AuthenticationRequest authenticationRequest = provider.authenticationRequest(idp);
+//            authenticationRequest = enhanceAuthenticationRequest(provider, request, authenticationRequest);
+//            saveAuthenticationRequestUrl(request, authenticationRequest);
+//
+//            sendAuthenticationRequest(
+//                    provider,
+//                    request,
+//                    response,
+//                    authenticationRequest,
+//                    authenticationRequest.getDestination()
+//            );
+//        } else {
+//            filterChain.doFilter(request, response);
+//        }
+//    }
+//
+//    private void saveAuthenticationRequestUrl(HttpServletRequest request, AuthenticationRequest authenticationRequest) {
+//        String id = authenticationRequest.getId();
+//        LocalDateTime ldt = LocalDateTime.now().plusSeconds(60 * 15);
+//        Date expiresIn = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
+//        SavedRequest savedRequest = new DefaultSavedRequest(request, portResolver);
+//        authenticationRequestRepository.insert(
+//                new oidc.model.AuthenticationRequest(id, expiresIn, savedRequest.getRedirectUrl())
+//        );
+//    }
+//
+//    private void validateAuthorizationRequest(HttpServletRequest request) throws IOException {
+//        try {
+//            AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(ServletUtils.createHTTPRequest(request));
+//            ClientID clientID = authorizationRequest.getClientID();
+//            if (clientID != null) {
+//                MDCContext.mdcContext("action", "Authorization", "clientId", clientID.getValue());
+//
+//                OpenIDClient openIDClient = openIDClientRepository.findByClientId(clientID.getValue());
+//                AuthorizationEndpoint.validateRedirectionURI(authorizationRequest, openIDClient);
+//
+//                request.setAttribute(REDIRECT_URI_VALID, true);
+//
+//                AuthorizationEndpoint.validateScopes(authorizationRequest, openIDClient);
+//                AuthorizationEndpoint.validateGrantType(authorizationRequest, openIDClient);
+//            }
+//        } catch (ParseException e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
+//
+//    private void parseAcrValues(AuthenticationRequest authenticationRequest, List<ACR> acrValuesObjects) {
+//        if (!CollectionUtils.isEmpty(acrValuesObjects)) {
+//
+//            authenticationRequest.setAuthenticationContextClassReferences(
+//                    acrValuesObjects.stream()
+//                            .map(acrValue -> AuthenticationContextClassReference.fromUrn(acrValue.getValue()))
+//                            .collect(Collectors.toList()));
+//            authenticationRequest.setRequestedAuthenticationContext(RequestedAuthenticationContext.exact);
+//        }
+//    }
 
 }
