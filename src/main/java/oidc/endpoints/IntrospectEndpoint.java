@@ -53,7 +53,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
                               OpenIDClientRepository openIDClientRepository,
                               TokenGenerator tokenGenerator,
                               AttributePseudonymisation attributePseudonymisation,
-                              @Value("${spring.security.saml2.service-provider.entity-id}") String issuer,
+                              @Value("${service-provider-entity-id}") String issuer,
                               @Value("${features.enforce-scope-resource-server}") boolean enforceScopeResourceServer,
                               @Value("${features.enforce-eduid-resource-server-linked-account}") boolean enforceEduidResourceServerLinkedAccount) {
         this.accessTokenRepository = accessTokenRepository;

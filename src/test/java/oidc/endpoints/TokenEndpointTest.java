@@ -64,7 +64,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
     private TokenGenerator tokenGenerator;
 
     @Autowired
-    @Value("${spring.security.saml2.service-provider.entity-id}")
+    @Value("${service-provider-entity-id}")
     private String issuer;
 
     @Test

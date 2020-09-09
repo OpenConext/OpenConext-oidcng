@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 
 public class JwkKeysEndpointTest extends AbstractIntegrationTest {
 
-    @Value("${spring.security.saml2.service-provider.entity-id}")
+    @Value("${service-provider-entity-id}")
     private String issuer;
 
     @Test

@@ -3,9 +3,10 @@ package oidc.user;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import oidc.model.User;
+import org.opensaml.saml.saml2.core.Assertion;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.saml.saml2.authentication.Assertion;
+
 
 import java.util.Collection;
 import java.util.Collections;
@@ -20,7 +21,7 @@ public class OidcSamlAuthentication implements Authentication {
 
     public OidcSamlAuthentication(Assertion assertion, User user, String authenticationRequestID) {
         this.user = user;
-        this.name = assertion.getSubject().getPrincipal().getValue();
+        this.name = assertion.getSubject().getNameID().getValue();
         this.authenticationRequestID = authenticationRequestID;
     }
 

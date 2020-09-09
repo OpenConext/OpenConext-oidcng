@@ -4,8 +4,8 @@ logging:
     oidc: INFO
     org.springframework.session: INFO
     org.springframework.web: INFO
-    org.springframework.security: INFO
-    org.springframework.security.saml: INFO
+    org.springframework.security: TRACE
+    org.springframework.security.saml2: TRACE
     org.springframework.data: INFO
 
 cron:
@@ -40,6 +40,7 @@ certificate_path: classpath:/id_rsa.pub
 default_acr_value: http://test.surfconext.nl/assurance/loa1
 secure_cookie: false
 oidc_token_endpoint: http://localhost:8080/oidc/token
+service-provider-entity-id: https://org.openconext.oidc.ng
 
 features:
   # Do we enforce that the RS - if eduID pseudonymisation is required - belongs to the SURF IdP linked to the eduID user account?
@@ -51,12 +52,12 @@ features:
 base_url: http://localhost:8080
 registration_id: oidcng
 
-#idp:
-#  alias: engine-test
-#  # comma separated string of metadata url's
-#  metadata_urls: https://engine.test2.surfconext.nl/authentication/idp/metadata
-#  name_id: https://engine.test2.surfconext.nl/authentication/idp/metadata
-#  metadata_signing_certificate_path: classpath:/engine.test2.surfconext.nl.pem
+idp:
+  alias: engine-test
+  # comma separated string of metadata url's
+  metadata_urls: https://engine.test2.surfconext.nl/authentication/idp/metadata
+  name_id: https://engine.test2.surfconext.nl/authentication/idp/metadata
+  metadata_signing_certificate_path: classpath:/engine.test2.surfconext.nl.pem
 
 spring:
   data:

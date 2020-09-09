@@ -127,7 +127,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     private final String defaultAcrValue;
 
     @Autowired
-    public TokenGenerator(@Value("${spring.security.saml2.service-provider.entity-id}") String issuer,
+    public TokenGenerator(@Value("${service-provider-entity-id}") String issuer,
                           @Value("${secret_key_set_path}") Resource secretKeySetPath,
                           @Value("${associated_data}") String associatedData,
                           @Value("${openid_configuration_path}") Resource configurationPath,

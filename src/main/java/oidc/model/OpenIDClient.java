@@ -2,10 +2,10 @@ package oidc.model;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.opensaml.saml.saml2.metadata.NameIDFormat;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.security.saml.saml2.metadata.NameIdFormat;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -91,7 +91,7 @@ public class OpenIDClient {
 
         this.includeUnspecifiedNameID = nameIdFormats.stream()
                 .filter(id -> metaDataFields.containsKey(id))
-                .map(id -> metaDataFields.get(id).equals(NameIdFormat.UNSPECIFIED))
+                .map(id -> metaDataFields.get(id).equals("urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"))
                 .findAny()
                 .isPresent();
     }

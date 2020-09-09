@@ -1,20 +1,34 @@
 package oidc.secure;
 
 import org.joda.time.DateTime;
-import org.springframework.security.saml.spi.DefaultValidator;
-import org.springframework.security.saml.spi.SpringSecuritySaml;
 
-public class CustomValidator extends DefaultValidator {
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-    public CustomValidator(SpringSecuritySaml implementation) {
-        super(implementation);
+public class CustomValidator {
+
+    private Map<String, List<? extends Serializable>> userAttributes;
+
+    public CustomValidator() {
+        userAttributes = new HashMap<>();
+        List<String> strings = new ArrayList();
+        userAttributes.put("aa", strings);
     }
 
-    @Override
-    public boolean isDateTimeSkewValid(int skewMillis, int forwardMillis, DateTime time) {
-        if (forwardMillis == 0) {
-            return super.isDateTimeSkewValid(skewMillis, forwardMillis, time);
-        }
-        return true;
-    }
+    //extends DefaultValidator {
+//
+//    public CustomValidator(SpringSecuritySaml implementation) {
+//        super(implementation);
+//    }
+//
+//    @Override
+//    public boolean isDateTimeSkewValid(int skewMillis, int forwardMillis, DateTime time) {
+//        if (forwardMillis == 0) {
+//            return super.isDateTimeSkewValid(skewMillis, forwardMillis, time);
+//        }
+//        return true;
+//    }
 }
