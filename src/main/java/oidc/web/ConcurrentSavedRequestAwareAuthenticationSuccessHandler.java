@@ -25,6 +25,7 @@ public class ConcurrentSavedRequestAwareAuthenticationSuccessHandler extends Sim
         OidcSamlAuthentication samlAuthentication = (OidcSamlAuthentication) authentication;
         AuthenticationRequest authenticationRequest = authenticationRequestRepository.findById(samlAuthentication.getAuthenticationRequestID()).orElseThrow(
                 () -> new IllegalArgumentException("No Authentication Request found for ID: " + samlAuthentication.getAuthenticationRequestID()));
-        getRedirectStrategy().sendRedirect(request, response, authenticationRequest.getOriginalRequestUrl());
+        String originalRequestUrl = authenticationRequest.getOriginalRequestUrl() + "&cntpbin=true";
+        getRedirectStrategy().sendRedirect(request, response, originalRequestUrl);
     }
 }

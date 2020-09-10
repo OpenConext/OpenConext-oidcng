@@ -15,6 +15,10 @@ import oidc.model.OpenIDClient;
 import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.OpenIDClientRepository;
 import oidc.secure.JWTRequest;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.saml.SamlRequestMatcher;
@@ -38,6 +42,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -67,6 +72,39 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
         this.authenticationRequestRepository = authenticationRequestRepository;
         this.portResolver = new PortResolverImpl();
         this.objectMapper = objectMapper;
+    }
+
+    @SneakyThrows
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (getRequestMatcher().matches(request) && (authentication == null || !authentication.isAuthenticated())) {
+            /*
+             * If we were expecting a valid authentication, but cookies are not supported we fail-fast
+             */
+            List<NameValuePair> params = URLEncodedUtils.parse(request.getQueryString(), Charset.defaultCharset());
+            if (params.stream().anyMatch(pair -> "cntpbin".equals(pair.getName()))) {
+                response.sendRedirect("/feedback/no-cookies");
+                return;
+            }
+            validateAuthorizationRequest(request);
+
+            ServiceProviderService provider = getProvisioning().getHostedProvider();
+            IdentityProviderMetadata idp = provider.getRemoteProviders().get(0);
+            AuthenticationRequest authenticationRequest = provider.authenticationRequest(idp);
+            authenticationRequest = enhanceAuthenticationRequest(provider, request, authenticationRequest);
+            saveAuthenticationRequestUrl(request, authenticationRequest);
+
+            sendAuthenticationRequest(
+                    provider,
+                    request,
+                    response,
+                    authenticationRequest,
+                    authenticationRequest.getDestination()
+            );
+        } else {
+            filterChain.doFilter(request, response);
+        }
     }
 
     @Override
@@ -144,32 +182,6 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
             return false;
         }
 
-    }
-
-    @SneakyThrows
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (getRequestMatcher().matches(request) && (authentication == null || !authentication.isAuthenticated())) {
-
-            validateAuthorizationRequest(request);
-
-            ServiceProviderService provider = getProvisioning().getHostedProvider();
-            IdentityProviderMetadata idp = provider.getRemoteProviders().get(0);
-            AuthenticationRequest authenticationRequest = provider.authenticationRequest(idp);
-            authenticationRequest = enhanceAuthenticationRequest(provider, request, authenticationRequest);
-            saveAuthenticationRequestUrl(request, authenticationRequest);
-
-            sendAuthenticationRequest(
-                    provider,
-                    request,
-                    response,
-                    authenticationRequest,
-                    authenticationRequest.getDestination()
-            );
-        } else {
-            filterChain.doFilter(request, response);
-        }
     }
 
     private void saveAuthenticationRequestUrl(HttpServletRequest request, AuthenticationRequest authenticationRequest) {
