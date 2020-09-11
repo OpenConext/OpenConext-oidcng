@@ -26,7 +26,7 @@ public class ConcurrentSavedRequestAwareAuthenticationSuccessHandlerTest impleme
             new ConcurrentSavedRequestAwareAuthenticationSuccessHandler(authenticationRequestRepository);
 
     @Test
-    public void onAuthenticationSuccess() throws IOException, ServletException {
+    public void onAuthenticationSuccess() throws IOException {
         MockHttpServletResponse response = new MockHttpServletResponse();
         when(authenticationRequestRepository.findById("ID"))
                 .thenReturn(Optional.of(new AuthenticationRequest("ID", new Date(), "http://localhost")));
@@ -38,7 +38,7 @@ public class ConcurrentSavedRequestAwareAuthenticationSuccessHandlerTest impleme
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void onAuthenticationSuccessFailure() throws IOException, ServletException {
+    public void onAuthenticationSuccessFailure() throws IOException {
         MockHttpServletResponse response = new MockHttpServletResponse();
         when(authenticationRequestRepository.findById("ID"))
                 .thenReturn(Optional.empty());
