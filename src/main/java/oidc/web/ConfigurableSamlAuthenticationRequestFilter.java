@@ -55,12 +55,14 @@ import java.util.stream.Stream;
 
 public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticationRequestFilter implements URLCoding {
 
-    private PortResolverImpl portResolver;
-    private AuthenticationRequestRepository authenticationRequestRepository;
-    private OpenIDClientRepository openIDClientRepository;
-    private ObjectMapper objectMapper;
+    private final PortResolverImpl portResolver;
+    private final AuthenticationRequestRepository authenticationRequestRepository;
+    private final OpenIDClientRepository openIDClientRepository;
+    private final ObjectMapper objectMapper;
 
     static String REDIRECT_URI_VALID = "REDIRECT_URI_VALID";
+
+    public static String AUTHENTICATION_SUCCESS_QUERY_PARAMETER = "authentication_success";
 
     public ConfigurableSamlAuthenticationRequestFilter(SamlProviderProvisioning<ServiceProviderService> provisioning,
                                                        SamlRequestMatcher samlRequestMatcher,
@@ -83,8 +85,8 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
              * If we were expecting a valid authentication, but cookies are not supported we fail-fast
              */
             List<NameValuePair> params = URLEncodedUtils.parse(request.getQueryString(), Charset.defaultCharset());
-            if (params.stream().anyMatch(pair -> "cntpbin".equals(pair.getName()))) {
-                response.sendRedirect("/feedback/no-cookies");
+            if (params.stream().anyMatch(pair -> AUTHENTICATION_SUCCESS_QUERY_PARAMETER.equals(pair.getName()))) {
+                response.sendRedirect("/feedback/no-session");
                 return;
             }
             validateAuthorizationRequest(request);
