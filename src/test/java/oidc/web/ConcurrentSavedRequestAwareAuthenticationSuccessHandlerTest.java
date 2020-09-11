@@ -33,7 +33,7 @@ public class ConcurrentSavedRequestAwareAuthenticationSuccessHandlerTest impleme
         subject.onAuthenticationSuccess(new MockHttpServletRequest(), response, new OidcSamlAuthentication(FakeSamlAuthenticationFilter.getAssertion(),
                FakeSamlAuthenticationFilter.getUser(objectMapper, new MockHttpServletRequest()),
                 "ID"));
-        assertEquals("http://localhost", response.getHeader("Location"));
+        assertEquals("http://localhost?authentication_success=true", response.getHeader("Location"));
         assertEquals(HttpServletResponse.SC_MOVED_TEMPORARILY, response.getStatus());
     }
 
