@@ -12,13 +12,14 @@ import oidc.endpoints.AuthorizationEndpoint;
 import oidc.log.MDCContext;
 import oidc.manage.ServiceProviderTranslation;
 import oidc.model.OpenIDClient;
+import oidc.model.User;
 import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.OpenIDClientRepository;
+import oidc.repository.UserRepository;
 import oidc.secure.JWTRequest;
-import org.apache.commons.io.IOUtils;
+import oidc.user.OidcSamlAuthentication;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.saml.SamlRequestMatcher;
@@ -50,26 +51,32 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticationRequestFilter implements URLCoding {
 
-    private PortResolverImpl portResolver;
-    private AuthenticationRequestRepository authenticationRequestRepository;
-    private OpenIDClientRepository openIDClientRepository;
-    private ObjectMapper objectMapper;
+    private final PortResolverImpl portResolver;
+    private final AuthenticationRequestRepository authenticationRequestRepository;
+    private final OpenIDClientRepository openIDClientRepository;
+    private final ObjectMapper objectMapper;
+    private final UserRepository userRepository;
 
     static String REDIRECT_URI_VALID = "REDIRECT_URI_VALID";
+
+    public static String AUTHENTICATION_REQUEST_ID = "authentication_request_id";
 
     public ConfigurableSamlAuthenticationRequestFilter(SamlProviderProvisioning<ServiceProviderService> provisioning,
                                                        SamlRequestMatcher samlRequestMatcher,
                                                        AuthenticationRequestRepository authenticationRequestRepository,
+                                                       UserRepository userRepository,
                                                        OpenIDClientRepository openIDClientRepository,
                                                        ObjectMapper objectMapper) {
         super(provisioning, samlRequestMatcher);
         this.openIDClientRepository = openIDClientRepository;
         this.authenticationRequestRepository = authenticationRequestRepository;
+        this.userRepository = userRepository;
         this.portResolver = new PortResolverImpl();
         this.objectMapper = objectMapper;
     }
@@ -80,13 +87,35 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (getRequestMatcher().matches(request) && (authentication == null || !authentication.isAuthenticated())) {
             /*
-             * If we were expecting a valid authentication, but cookies are not supported we fail-fast
+             * See ConcurrentSavedRequestAwareAuthenticationSuccessHandler#onAuthenticationSuccess
              */
             List<NameValuePair> params = URLEncodedUtils.parse(request.getQueryString(), Charset.defaultCharset());
-            if (params.stream().anyMatch(pair -> "cntpbin".equals(pair.getName()))) {
-                response.sendRedirect("/feedback/no-cookies");
+            Optional<NameValuePair> optionalAuthenticationRequestId = params.stream()
+                    .filter(nameValuePair -> nameValuePair.getName().equals(AUTHENTICATION_REQUEST_ID))
+                    .findFirst();
+            boolean present = optionalAuthenticationRequestId.isPresent();
+            boolean securityContextSet = false;
+            if (present) {
+                Optional<oidc.model.AuthenticationRequest> optionalAuthenticationRequest =
+                        authenticationRequestRepository.findById(optionalAuthenticationRequestId.get().getValue());
+                if (optionalAuthenticationRequest.isPresent()) {
+                    Optional<User> userOptional = userRepository.findById(optionalAuthenticationRequest.get().getUserId());
+                    authenticationRequestRepository.delete(optionalAuthenticationRequest.get());
+                    if (userOptional.isPresent()) {
+                        OidcSamlAuthentication oidcSamlAuthentication = new OidcSamlAuthentication(userOptional.get());
+                        SecurityContextHolder.getContext().setAuthentication(oidcSamlAuthentication);
+                        request.setAttribute(AUTHENTICATION_REQUEST_ID, oidcSamlAuthentication);
+                        securityContextSet = true;
+                    }
+                }
+                if (!securityContextSet) {
+                    response.sendRedirect("/feedback/session-lost");
+                } else {
+                    filterChain.doFilter(request, response);
+                }
                 return;
             }
+
             validateAuthorizationRequest(request);
 
             ServiceProviderService provider = getProvisioning().getHostedProvider();

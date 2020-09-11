@@ -19,6 +19,7 @@ import oidc.crypto.KeyGenerator;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.InvalidScopeException;
 import oidc.exceptions.RedirectMismatchException;
+import oidc.exceptions.UnauthorizedException;
 import oidc.exceptions.UnsupportedPromptValueException;
 import oidc.log.MDCContext;
 import oidc.model.AccessToken;
@@ -51,6 +52,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -77,6 +79,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static oidc.web.ConfigurableSamlAuthenticationRequestFilter.AUTHENTICATION_REQUEST_ID;
 
 @Controller
 public class AuthorizationEndpoint implements OidcEndpoint {
@@ -116,9 +119,14 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     public ModelAndView authorize(@RequestParam MultiValueMap<String, String> parameters,
                                   Authentication authentication,
                                   HttpServletRequest request) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
-        LOG.debug(String.format("/oidc/authorize %s %s", authentication.getDetails(), parameters));
+        if (authentication == null && request.getAttribute(AUTHENTICATION_REQUEST_ID) == null) {
+            throw new UnauthorizedException("no_authentication");
+        }
+        OidcSamlAuthentication oidcSamlAuthentication = authentication instanceof OidcSamlAuthentication ? (OidcSamlAuthentication) authentication : (OidcSamlAuthentication) request.getAttribute(AUTHENTICATION_REQUEST_ID);
 
-        return doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, false, false);
+        LOG.debug(String.format("/oidc/authorize %s %s", oidcSamlAuthentication.getDetails(), parameters));
+
+        return doAuthorization(parameters, oidcSamlAuthentication, request, false, false);
     }
 
     @PostMapping(value = "/oidc/consent", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)

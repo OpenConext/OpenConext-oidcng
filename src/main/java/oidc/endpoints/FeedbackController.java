@@ -9,9 +9,9 @@ import org.springframework.web.servlet.ModelAndView;
 @Controller
 public class FeedbackController {
 
-    @GetMapping(value = "feedback/no-cookies")
+    @GetMapping(value = "feedback/session-lost-cookies")
     public ModelAndView feedback(@RequestParam(name = "lang", required = false, defaultValue = "en") String lang) {
-        String view = "en".equals(lang) ? "no_session_found" : "no_session_found_nl";
+        String view = "en".equals(lang) ? "session_lost" : "session_lost_nl";
         return new ModelAndView(view, HttpStatus.OK);
     }
 }

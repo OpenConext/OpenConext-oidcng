@@ -24,6 +24,11 @@ public class OidcSamlAuthentication implements Authentication {
         this.authenticationRequestID = authenticationRequestID;
     }
 
+    public OidcSamlAuthentication(User user) {
+        this.name = user.getUnspecifiedNameId();
+        this.user = user;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.emptyList();

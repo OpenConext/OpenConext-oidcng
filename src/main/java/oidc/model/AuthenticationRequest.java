@@ -11,7 +11,6 @@ import java.util.Date;
 @Document(collection = "authentication_requests")
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
 public class AuthenticationRequest {
 
     @Id
@@ -20,4 +19,16 @@ public class AuthenticationRequest {
     private Date expiresIn;
 
     private String originalRequestUrl;
+
+    private String userId;
+
+    public AuthenticationRequest(String id, Date expiresIn, String originalRequestUrl) {
+        this.id = id;
+        this.expiresIn = expiresIn;
+        this.originalRequestUrl = originalRequestUrl;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
 }

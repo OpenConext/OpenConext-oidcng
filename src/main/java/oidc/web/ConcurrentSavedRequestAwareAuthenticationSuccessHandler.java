@@ -6,10 +6,11 @@ import oidc.user.OidcSamlAuthentication;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+
+import static oidc.web.ConfigurableSamlAuthenticationRequestFilter.AUTHENTICATION_REQUEST_ID;
 
 public class ConcurrentSavedRequestAwareAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
@@ -25,7 +26,13 @@ public class ConcurrentSavedRequestAwareAuthenticationSuccessHandler extends Sim
         OidcSamlAuthentication samlAuthentication = (OidcSamlAuthentication) authentication;
         AuthenticationRequest authenticationRequest = authenticationRequestRepository.findById(samlAuthentication.getAuthenticationRequestID()).orElseThrow(
                 () -> new IllegalArgumentException("No Authentication Request found for ID: " + samlAuthentication.getAuthenticationRequestID()));
-        String originalRequestUrl = authenticationRequest.getOriginalRequestUrl() + "&cntpbin=true";
+        String originalRequestUrl = authenticationRequest.getOriginalRequestUrl();
+        String append = originalRequestUrl.contains("?") ? "&" : "?";
+        //To be cookie-less
+        originalRequestUrl += (append + AUTHENTICATION_REQUEST_ID + "=" + authenticationRequest.getId());
+        authenticationRequest.setUserId(samlAuthentication.getUser().getId());
+        authenticationRequestRepository.save(authenticationRequest);
+        //Redirect to authorize endpoint
         getRedirectStrategy().sendRedirect(request, response, originalRequestUrl);
     }
 }

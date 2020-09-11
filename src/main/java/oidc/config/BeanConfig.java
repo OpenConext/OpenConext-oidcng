@@ -107,7 +107,7 @@ public class BeanConfig extends SamlServiceProviderServerBeanConfiguration {
         SamlProviderProvisioning<ServiceProviderService> provisioning = getSamlProvisioning();
         SamlRequestMatcher requestMatcher = new SamlRequestMatcher(provisioning, "authorize", false);
         return new ConfigurableSamlAuthenticationRequestFilter(provisioning, requestMatcher,
-                authenticationRequestRepository, openIDClientRepository, objectMapper);
+                authenticationRequestRepository, userRepository, openIDClientRepository, objectMapper);
     }
 
     @Bean
