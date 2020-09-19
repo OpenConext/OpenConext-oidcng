@@ -46,5 +46,4 @@ public class ConcurrentSavedRequestAwareAuthenticationSuccessHandlerTest impleme
 //                FakeSamlAuthenticationFilter.getUser(objectMapper, new MockHttpServletRequest()),
 //                "ID"));
 //    }
-
 }

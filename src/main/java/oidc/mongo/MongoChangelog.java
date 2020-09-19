@@ -15,12 +15,10 @@ import oidc.model.UserConsent;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.index.IndexOperations;
-import org.springframework.data.mongodb.core.query.Query;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
 
@@ -39,69 +37,39 @@ public class MongoChangelog {
         ensureCollectionsAndIndexes(mongoTemplate, indexInfo);
     }
 
-    @ChangeSet(order = "002", id = "createRefreshTokenIndex", author = "Okke Harsta")
-    public void createRefreshTokenIndex(MongockTemplate mongoTemplate) {
-        mongoTemplate.dropCollection(RefreshToken.class);
-
-        Map<Class<? extends Object>, List<String>> indexInfo = new HashMap<>();
-
-        indexInfo.put(RefreshToken.class, singletonList("innerValue"));
-
-        ensureCollectionsAndIndexes(mongoTemplate, indexInfo);
-    }
-
-    @ChangeSet(order = "003", id = "createSigningKeyCollection", author = "Okke Harsta")
+    @ChangeSet(order = "002", id = "createSigningAndSymmetricKeyCollection", author = "Okke Harsta")
     public void createSigningKeyCollection(MongockTemplate mongoTemplate) {
         if (!mongoTemplate.collectionExists("signing_keys")) {
             mongoTemplate.createCollection("signing_keys");
         }
-        IndexOperations indexOperations = mongoTemplate.indexOps(SigningKey.class);
-        indexOperations.ensureIndex(new Index("created", Sort.Direction.DESC));
-    }
+        mongoTemplate.indexOps(SigningKey.class).ensureIndex(new Index("created", Sort.Direction.DESC));
 
-    @ChangeSet(order = "004", id = "createSymmetricKeyCollection", author = "Okke Harsta")
-    public void createSymmetricKeyCollection(MongockTemplate mongoTemplate) {
         if (!mongoTemplate.collectionExists("symmetric_keys")) {
             mongoTemplate.createCollection("symmetric_keys");
         }
-        IndexOperations indexOperations = mongoTemplate.indexOps(SymmetricKey.class);
-        indexOperations.ensureIndex(new Index("created", Sort.Direction.DESC));
+        mongoTemplate.indexOps(SymmetricKey.class).ensureIndex(new Index("created", Sort.Direction.DESC));
     }
 
-    @ChangeSet(order = "005", id = "deleteTokens", author = "Okke Harsta")
-    public void deleteTokens(MongockTemplate mongoTemplate) {
-        Stream.of(AccessToken.class, RefreshToken.class, AuthorizationCode.class, User.class)
-                .forEach(clazz -> mongoTemplate.remove(new Query(), clazz));
-    }
-
-    @ChangeSet(order = "006", id = "createUserConsentIndex", author = "Okke Harsta")
+    @ChangeSet(order = "003", id = "createUserConsentIndex", author = "Okke Harsta")
     public void createUserConsent(MongockTemplate mongoTemplate) {
         mongoTemplate.dropCollection(UserConsent.class);
-
         Map<Class<? extends Object>, List<String>> indexInfo = new HashMap<>();
-
         indexInfo.put(UserConsent.class, singletonList("sub"));
-
         ensureCollectionsAndIndexes(mongoTemplate, indexInfo);
     }
 
-    @ChangeSet(order = "007", id = "createIdentityProviders", author = "Okke Harsta")
+    @ChangeSet(order = "004", id = "createIdentityProviders", author = "Okke Harsta")
     public void createIdentityProviders(MongockTemplate mongoTemplate) {
         mongoTemplate.dropCollection(IdentityProvider.class);
-
         Map<Class<? extends Object>, List<String>> indexInfo = new HashMap<>();
-
         indexInfo.put(IdentityProvider.class, singletonList("entityId"));
-
         ensureCollectionsAndIndexes(mongoTemplate, indexInfo);
     }
 
-    @ChangeSet(order = "008", id = "removeAndRebuildRefreshTokenIndex", author = "Okke Harsta")
+    @ChangeSet(order = "005", id = "removeAndRebuildRefreshTokenIndex", author = "Okke Harsta")
     public void removeAndRebuildRefreshTokenIndex(MongockTemplate mongoTemplate) {
-        IndexOperations indexOperations = mongoTemplate.indexOps(RefreshToken.class);
-        indexOperations.dropIndex("innerValue_unique");
-        Index index = new Index("value", Sort.Direction.ASC).named(String.format("value_unique")).unique();
-        indexOperations.ensureIndex(index);
+        mongoTemplate.indexOps(RefreshToken.class)
+                .ensureIndex(new Index("value", Sort.Direction.ASC).named(String.format("value_unique")).unique());
     }
 
     private void ensureCollectionsAndIndexes(MongockTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {

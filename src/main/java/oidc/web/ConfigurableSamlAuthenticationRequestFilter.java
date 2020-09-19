@@ -15,6 +15,10 @@ import oidc.model.OpenIDClient;
 import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.OpenIDClientRepository;
 import oidc.secure.JWTRequest;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.PortResolverImpl;
@@ -29,6 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -38,6 +43,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 
 public class ConfigurableSamlAuthenticationRequestFilter {//extends SamlAuthenticationRequestFilter implements URLCoding {
 
@@ -203,5 +209,4 @@ public class ConfigurableSamlAuthenticationRequestFilter {//extends SamlAuthenti
 //            authenticationRequest.setRequestedAuthenticationContext(RequestedAuthenticationContext.exact);
 //        }
 //    }
-
 }
