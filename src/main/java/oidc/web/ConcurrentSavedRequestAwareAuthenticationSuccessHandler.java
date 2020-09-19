@@ -11,7 +11,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-import static oidc.web.ConfigurableSamlAuthenticationRequestFilter.AUTHENTICATION_SUCCESS_QUERY_PARAMETER;
+//import static oidc.web.ConfigurableSamlAuthenticationRequestFilter.AUTHENTICATION_SUCCESS_QUERY_PARAMETER;
 
 public class ConcurrentSavedRequestAwareAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
@@ -31,7 +31,7 @@ public class ConcurrentSavedRequestAwareAuthenticationSuccessHandler extends Sim
 
         String append = originalRequestUrl.contains("?") ? "&" : "?";
         //To check if cookies are blocked
-        originalRequestUrl += (append + AUTHENTICATION_SUCCESS_QUERY_PARAMETER + "=" + true);
+//        originalRequestUrl += (append + AUTHENTICATION_SUCCESS_QUERY_PARAMETER + "=" + true);
         //Redirect to authorize endpoint
         getRedirectStrategy().sendRedirect(request, response, originalRequestUrl);
     }
