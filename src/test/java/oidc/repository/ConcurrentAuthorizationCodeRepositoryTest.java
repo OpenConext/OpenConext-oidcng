@@ -24,7 +24,7 @@ public class ConcurrentAuthorizationCodeRepositoryTest extends AbstractIntegrati
     @Test
     public void findByCodeAndMarkUsed() throws URISyntaxException {
         authorizationCodeRepository.save(new AuthorizationCode("code", "sub","client_id",
-                Collections.singletonList("oidc"), new URI("http://localhost"), null,
+                Collections.singletonList("openid"), new URI("http://localhost"), null,
                 null,"nonce",null, true, new Date()));
         assertNull(concurrentAuthorizationCodeRepository.findByCodeNotAlreadyUsedAndMarkAsUsed("nope"));
 

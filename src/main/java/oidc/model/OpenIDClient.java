@@ -72,7 +72,7 @@ public class OpenIDClient {
         this.secret = (String) metaDataFields.get("secret");
         this.clientSecretJWT = (String) metaDataFields.get("clientSecretJWT");
         this.redirectUrls = (List) metaDataFields.get("redirectUrls");
-        this.scopes = (List<Scope>) ((List) metaDataFields.getOrDefault("scopes", Collections.singletonList("oidc"))).stream()
+        this.scopes = (List<Scope>) ((List) metaDataFields.getOrDefault("scopes", Collections.singletonList("openid"))).stream()
                 .map(val -> val instanceof String ? new Scope((String) val) : new Scope((Map<String, Object>) val))
                 .collect(Collectors.toList());
 
