@@ -32,12 +32,8 @@ public class ConcurrentSavedRequestAwareAuthenticationSuccessHandler extends Sim
             throws IOException {
         OidcSamlAuthentication samlAuthentication = (OidcSamlAuthentication) authentication;
         Optional<AuthenticationRequest> optionalAuthenticationRequest = authenticationRequestRepository.findById(samlAuthentication.getAuthenticationRequestID());
-        if (!optionalAuthenticationRequest.isPresent()) {
-            LOG.error("No Authentication Request found for ID: " + samlAuthentication.getAuthenticationRequestID());
-            response.sendRedirect("/feedback/no-session");
-        } else {
-            AuthenticationRequest authenticationRequest = optionalAuthenticationRequest.orElseThrow(
-                    () -> new IllegalArgumentException("No Authentication Request found for ID: " + samlAuthentication.getAuthenticationRequestID()));
+        if (optionalAuthenticationRequest.isPresent()) {
+            AuthenticationRequest authenticationRequest = optionalAuthenticationRequest.get();
             String originalRequestUrl = authenticationRequest.getOriginalRequestUrl();
 
             String append = originalRequestUrl.contains("?") ? "&" : "?";
@@ -45,6 +41,9 @@ public class ConcurrentSavedRequestAwareAuthenticationSuccessHandler extends Sim
             originalRequestUrl += (append + AUTHENTICATION_SUCCESS_QUERY_PARAMETER + "=" + true);
             //Redirect to authorize endpoint
             getRedirectStrategy().sendRedirect(request, response, originalRequestUrl);
+        } else {
+            LOG.error("No Authentication Request found for ID: " + samlAuthentication.getAuthenticationRequestID());
+            response.sendRedirect("/feedback/no-session");
         }
     }
 }
