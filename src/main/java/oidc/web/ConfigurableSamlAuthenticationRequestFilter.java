@@ -188,7 +188,8 @@ public class ConfigurableSamlAuthenticationRequestFilter extends SamlAuthenticat
 
     private void saveAuthenticationRequestUrl(HttpServletRequest request, AuthenticationRequest authenticationRequest) {
         String id = authenticationRequest.getId();
-        LocalDateTime ldt = LocalDateTime.now().plusSeconds(60 * 15);
+        //EB also has a 1 hour validity
+        LocalDateTime ldt = LocalDateTime.now().plusHours(1L);
         Date expiresIn = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
         SavedRequest savedRequest = new DefaultSavedRequest(request, portResolver);
         authenticationRequestRepository.insert(
