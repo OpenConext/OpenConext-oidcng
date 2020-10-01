@@ -1,5 +1,5 @@
 # OpenConext-oidcng
-[![Build Status](https://travis-ci.org/OpenConext/OpenConext-oidcng.svg)](https://travis-ci.org/OpenConext/OpenConext-oidcng)
+[![Build Status](https://travis-ci.org/OpenConext/OpenConext-oidcng.svg?branch=master)](https://travis-ci.org/OpenConext/OpenConext-oidcng)
 [![codecov.io](https://codecov.io/github/OpenConext/OpenConext-oidcng/coverage.svg)](https://codecov.io/github/OpenConext/OpenConext-oidcng)
 
 OpenID Connect - SAML proxy
