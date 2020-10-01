@@ -37,7 +37,7 @@ public class ConcurrentSavedRequestAwareAuthenticationSuccessHandlerTest impleme
         assertEquals(HttpServletResponse.SC_MOVED_TEMPORARILY, response.getStatus());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void onAuthenticationSuccessFailure() throws IOException {
         MockHttpServletResponse response = new MockHttpServletResponse();
         when(authenticationRequestRepository.findById("ID"))
@@ -45,6 +45,8 @@ public class ConcurrentSavedRequestAwareAuthenticationSuccessHandlerTest impleme
         subject.onAuthenticationSuccess(new MockHttpServletRequest(), response, new OidcSamlAuthentication(FakeSamlAuthenticationFilter.getAssertion(),
                 FakeSamlAuthenticationFilter.getUser(objectMapper, new MockHttpServletRequest()),
                 "ID"));
+        String redirectedUrl = response.getRedirectedUrl();
+        assertEquals("/feedback/no-session", redirectedUrl);
     }
 
 }
