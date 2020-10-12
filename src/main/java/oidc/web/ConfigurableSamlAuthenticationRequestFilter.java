@@ -47,12 +47,14 @@ import java.util.stream.Stream;
 
 public class ConfigurableSamlAuthenticationRequestFilter {//extends SamlAuthenticationRequestFilter implements URLCoding {
 
-//    private PortResolverImpl portResolver;
-//    private AuthenticationRequestRepository authenticationRequestRepository;
-//    private OpenIDClientRepository openIDClientRepository;
-//    private ObjectMapper objectMapper;
+//    private final PortResolverImpl portResolver;
+//    private final AuthenticationRequestRepository authenticationRequestRepository;
+//    private final OpenIDClientRepository openIDClientRepository;
+//    private final ObjectMapper objectMapper;
 //
 //    static String REDIRECT_URI_VALID = "REDIRECT_URI_VALID";
+//
+//    public static String AUTHENTICATION_SUCCESS_QUERY_PARAMETER = "authentication_success";
 //
 //    public ConfigurableSamlAuthenticationRequestFilter(SamlProviderProvisioning<ServiceProviderService> provisioning,
 //                                                       SamlRequestMatcher samlRequestMatcher,
@@ -64,6 +66,39 @@ public class ConfigurableSamlAuthenticationRequestFilter {//extends SamlAuthenti
 //        this.authenticationRequestRepository = authenticationRequestRepository;
 //        this.portResolver = new PortResolverImpl();
 //        this.objectMapper = objectMapper;
+//    }
+//
+//    @SneakyThrows
+//    @Override
+//    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) {
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        if (getRequestMatcher().matches(request) && (authentication == null || !authentication.isAuthenticated())) {
+//            /*
+//             * If we were expecting a valid authentication, but cookies are not supported we fail-fast
+//             */
+//            List<NameValuePair> params = URLEncodedUtils.parse(request.getQueryString(), Charset.defaultCharset());
+//            if (params.stream().anyMatch(pair -> AUTHENTICATION_SUCCESS_QUERY_PARAMETER.equals(pair.getName()))) {
+//                response.sendRedirect("/feedback/no-session");
+//                return;
+//            }
+//            validateAuthorizationRequest(request);
+//
+//            ServiceProviderService provider = getProvisioning().getHostedProvider();
+//            IdentityProviderMetadata idp = provider.getRemoteProviders().get(0);
+//            AuthenticationRequest authenticationRequest = provider.authenticationRequest(idp);
+//            authenticationRequest = enhanceAuthenticationRequest(provider, request, authenticationRequest);
+//            saveAuthenticationRequestUrl(request, authenticationRequest);
+//
+//            sendAuthenticationRequest(
+//                    provider,
+//                    request,
+//                    response,
+//                    authenticationRequest,
+//                    authenticationRequest.getDestination()
+//            );
+//        } else {
+//            filterChain.doFilter(request, response);
+//        }
 //    }
 //
 //    @Override
@@ -143,35 +178,10 @@ public class ConfigurableSamlAuthenticationRequestFilter {//extends SamlAuthenti
 //
 //    }
 //
-//    @SneakyThrows
-//    @Override
-//    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) {
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//        if (getRequestMatcher().matches(request) && (authentication == null || !authentication.isAuthenticated())) {
-//
-//            validateAuthorizationRequest(request);
-//
-//            ServiceProviderService provider = getProvisioning().getHostedProvider();
-//            IdentityProviderMetadata idp = provider.getRemoteProviders().get(0);
-//            AuthenticationRequest authenticationRequest = provider.authenticationRequest(idp);
-//            authenticationRequest = enhanceAuthenticationRequest(provider, request, authenticationRequest);
-//            saveAuthenticationRequestUrl(request, authenticationRequest);
-//
-//            sendAuthenticationRequest(
-//                    provider,
-//                    request,
-//                    response,
-//                    authenticationRequest,
-//                    authenticationRequest.getDestination()
-//            );
-//        } else {
-//            filterChain.doFilter(request, response);
-//        }
-//    }
-//
 //    private void saveAuthenticationRequestUrl(HttpServletRequest request, AuthenticationRequest authenticationRequest) {
 //        String id = authenticationRequest.getId();
-//        LocalDateTime ldt = LocalDateTime.now().plusSeconds(60 * 15);
+//        //EB also has a 1 hour validity
+//        LocalDateTime ldt = LocalDateTime.now().plusHours(1L);
 //        Date expiresIn = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
 //        SavedRequest savedRequest = new DefaultSavedRequest(request, portResolver);
 //        authenticationRequestRepository.insert(
@@ -209,4 +219,6 @@ public class ConfigurableSamlAuthenticationRequestFilter {//extends SamlAuthenti
 //            authenticationRequest.setRequestedAuthenticationContext(RequestedAuthenticationContext.exact);
 //        }
 //    }
+
 }
+

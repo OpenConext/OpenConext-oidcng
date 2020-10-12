@@ -26,24 +26,27 @@ public class ConcurrentSavedRequestAwareAuthenticationSuccessHandlerTest impleme
             new ConcurrentSavedRequestAwareAuthenticationSuccessHandler(authenticationRequestRepository);
 
 //    @Test
-//    public void onAuthenticationSuccess() throws IOException, ServletException {
+//    public void onAuthenticationSuccess() throws IOException {
 //        MockHttpServletResponse response = new MockHttpServletResponse();
 //        when(authenticationRequestRepository.findById("ID"))
 //                .thenReturn(Optional.of(new AuthenticationRequest("ID", new Date(), "http://localhost")));
 //        subject.onAuthenticationSuccess(new MockHttpServletRequest(), response, new OidcSamlAuthentication(FakeSamlAuthenticationFilter.getAssertion(),
 //               FakeSamlAuthenticationFilter.getUser(objectMapper, new MockHttpServletRequest()),
 //                "ID"));
-//        assertEquals("http://localhost", response.getHeader("Location"));
+//        assertEquals("http://localhost?authentication_success=true", response.getHeader("Location"));
 //        assertEquals(HttpServletResponse.SC_MOVED_TEMPORARILY, response.getStatus());
 //    }
 //
-//    @Test(expected = IllegalArgumentException.class)
-//    public void onAuthenticationSuccessFailure() throws IOException, ServletException {
+//    @Test
+//    public void onAuthenticationSuccessFailure() throws IOException {
 //        MockHttpServletResponse response = new MockHttpServletResponse();
 //        when(authenticationRequestRepository.findById("ID"))
 //                .thenReturn(Optional.empty());
 //        subject.onAuthenticationSuccess(new MockHttpServletRequest(), response, new OidcSamlAuthentication(FakeSamlAuthenticationFilter.getAssertion(),
 //                FakeSamlAuthenticationFilter.getUser(objectMapper, new MockHttpServletRequest()),
 //                "ID"));
+//        String redirectedUrl = response.getRedirectedUrl();
+//        assertEquals("/feedback/no-session", redirectedUrl);
 //    }
+
 }
