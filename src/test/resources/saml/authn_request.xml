@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<saml2p:AuthnRequest
+        AssertionConsumerServiceURL="https://connect.test2.surfconext.nl/oidc/SSO/alias/oidc-proxy"
+        Destination="https://engine.test2.surfconext.nl/authentication/idp/single-sign-on" ForceAuthn="true"
+        ID="ARQd70410a-d95b-4445-9e59-daebecd6e6bb" IsPassive="false"
+        IssueInstant="2020-10-13T14:05:59.097Z"
+        ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Version="2.0"
+        xmlns:saml2p="urn:oasis:names:tc:SAML:2.0:protocol">
+    <saml2:Issuer xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion">https://connect.test2.surfconext.nl</saml2:Issuer>
+    <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:SignedInfo>
+            <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+            <ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+            <ds:Reference URI="#ARQd70410a-d95b-4445-9e59-daebecd6e6bb">
+                <ds:Transforms>
+                    <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+                    <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+                </ds:Transforms>
+                <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+                <ds:DigestValue>0PrmegesqPbFvDkzOiaWZg2RcOWT72FuDAOqoq3l/R8=</ds:DigestValue>
+            </ds:Reference>
+        </ds:SignedInfo>
+        <ds:SignatureValue>
+            U3XeQbxbHJgQ0tOepWcUIvlhN6EgEOLQp9OBGCKScu42XOMxeuAe2PhAM40Nv1g8sR6mF9Hmf9ol&#xd;
+            vtu4PyuPbZEgs5Qx9K0Zv5wJ1qOvNxMe4oGma1g3mZApc6HNOg3gwcRko3kQ90Eg3Uh+LWv2kVu/&#xd;
+            rR1l1ZLzajdSyYUZbAc=
+        </ds:SignatureValue>
+        <ds:KeyInfo>
+            <ds:X509Data>
+                <ds:X509Certificate>MIICgTCCAeoCCQCuVzyqFgMSyDANBgkqhkiG9w0BAQsFADCBhDELMAkGA1UEBhMCVVMxEzARBgNV
+                    BAgMCldhc2hpbmd0b24xEjAQBgNVBAcMCVZhbmNvdXZlcjEdMBsGA1UECgwUU3ByaW5nIFNlY3Vy
+                    aXR5IFNBTUwxCzAJBgNVBAsMAnNwMSAwHgYDVQQDDBdzcC5zcHJpbmcuc2VjdXJpdHkuc2FtbDAe
+                    Fw0xODA1MTQxNDMwNDRaFw0yODA1MTExNDMwNDRaMIGEMQswCQYDVQQGEwJVUzETMBEGA1UECAwK
+                    V2FzaGluZ3RvbjESMBAGA1UEBwwJVmFuY291dmVyMR0wGwYDVQQKDBRTcHJpbmcgU2VjdXJpdHkg
+                    U0FNTDELMAkGA1UECwwCc3AxIDAeBgNVBAMMF3NwLnNwcmluZy5zZWN1cml0eS5zYW1sMIGfMA0G
+                    CSqGSIb3DQEBAQUAA4GNADCBiQKBgQDRu7/EI0BlNzMEBFVAcbx+lLosvzIWU+01dGTY8gBdhMQN
+                    YKZ92lMceo2CuVJ66cUURPym3i7nGGzoSnAxAre+0YIM+U0razrWtAUE735bkcqELZkOTZLelaoO
+                    ztmWqRbe5OuEmpewH7cx+kNgcVjdctOGy3Q6x+I4qakY/9qhBQIDAQABMA0GCSqGSIb3DQEBCwUA
+                    A4GBAAeViTvHOyQopWEiXOfI2Z9eukwrSknDwq/zscR0YxwwqDBMt/QdAODfSwAfnciiYLkmEjlo
+                    zWRtOeN+qK7UFgP1bRl5qksrYX5S0z2iGJh0GvonLUt3e20Ssfl5tTEDDnAEUMLfBkyaxEHDRZ/n
+                    bTJ7VTeZOSyRoVn5XHhpuJ0B
+                </ds:X509Certificate>
+            </ds:X509Data>
+        </ds:KeyInfo>
+    </ds:Signature>
+    <saml2p:NameIDPolicy AllowCreate="true"
+                         Format="https://engine.test2.surfconext.nl/authentication/idp/metadata"
+                         SPNameQualifier="oidc-proxy"/>
+    <saml2p:RequestedAuthnContext Comparison="exact">
+        <saml2:AuthnContextClassRef xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion">
+            https://eduid.nl/trust/linked-institution
+        </saml2:AuthnContextClassRef>
+    </saml2p:RequestedAuthnContext>
+    <saml2p:Scoping ProxyCount="1">
+        <saml2p:RequesterID>playground_client</saml2p:RequesterID>
+    </saml2p:Scoping>
+</saml2p:AuthnRequest>

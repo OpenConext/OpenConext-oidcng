@@ -24,24 +24,26 @@ import oidc.config.TokenUsers;
 import oidc.crypto.KeyGenerator;
 import oidc.log.MDCContextFilter;
 import oidc.repository.UserRepository;
-import oidc.web.FakeSamlAuthenticationFilter;
+import oidc.saml.AuthnRequestConverter;
+import oidc.saml.CustomSaml2AuthenticationRequestContext;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.opensaml.core.config.ConfigurationService;
+import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
+import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.Issuer;
+import org.opensaml.saml.saml2.core.impl.AuthnRequestBuilder;
+import org.opensaml.saml.saml2.core.impl.IssuerBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 import org.springframework.core.io.Resource;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -51,29 +53,21 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.saml2.credentials.Saml2X509Credential;
+import org.springframework.security.saml2.core.Saml2X509Credential;
 import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationRequestFactory;
+import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationRequestContext;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationRequestFactory;
 import org.springframework.security.saml2.provider.service.registration.InMemoryRelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
+import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
+import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationRequestContextResolver;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
-import java.math.BigInteger;
 import java.nio.charset.Charset;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.Security;
-import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.Date;
-
-import static org.springframework.security.config.Customizer.withDefaults;
 
 @EnableScheduling
 @EnableWebSecurity
@@ -122,10 +116,25 @@ public class SecurityConfiguration {
             this.metadataSigningCertificatePath = metadataSigningCertificatePath;
         }
 
-//        @Bean
-//        public Saml2AuthenticationRequestFactory authenticationRequestFactory() {
-//            return new CustomOpenSamlAuthenticationRequestFactory();
-//        }
+        @Bean
+        public Saml2AuthenticationRequestContextResolver authenticationRequestContextResolver(RelyingPartyRegistrationRepository registrationRepository) {
+            return request -> new CustomSaml2AuthenticationRequestContext(registrationRepository.findByRegistrationId("oidcng"), request);
+        }
+
+        @Bean
+        public Saml2AuthenticationRequestFactory authenticationRequestFactory() {
+            OpenSamlAuthenticationRequestFactory authenticationRequestFactory =
+                    new OpenSamlAuthenticationRequestFactory();
+
+            XMLObjectProviderRegistry registry = ConfigurationService.get(XMLObjectProviderRegistry.class);
+            AuthnRequestBuilder authnRequestBuilder = (AuthnRequestBuilder) registry.getBuilderFactory()
+                    .getBuilder(AuthnRequest.DEFAULT_ELEMENT_NAME);
+            IssuerBuilder issuerBuilder = (IssuerBuilder) registry.getBuilderFactory().getBuilder(Issuer.DEFAULT_ELEMENT_NAME);
+
+            AuthnRequestConverter authnRequestConverter = new AuthnRequestConverter(authnRequestBuilder, issuerBuilder);
+            authenticationRequestFactory.setAuthenticationRequestContextConverter(authnRequestConverter);
+            return authenticationRequestFactory;
+        }
 
         @Bean
         public RelyingPartyRegistrationRepository relyingPartyRegistrationRepository() {
@@ -141,15 +150,18 @@ public class SecurityConfiguration {
             Saml2X509Credential signingCredential = getSigningCredential();
             //IDP certificate for verification of incoming messages
             Saml2X509Credential idpVerificationCertificate = getVerificationCertificate();
+
             RelyingPartyRegistration rp = RelyingPartyRegistration
                     .withRegistrationId(registrationId)
-                    .providerDetails(config -> config
+                    .entityId(localEntityIdTemplate)
+                    .signingX509Credentials(c -> c.add(signingCredential))
+                    .assertingPartyDetails(assertingPartyDetails -> assertingPartyDetails
                             .entityId(idpNameId)
-                            .webSsoUrl(webSsoEndpoint))
-                    .credentials(c -> c.add(signingCredential))
-                    .credentials(c -> c.add(idpVerificationCertificate))
-                    .localEntityIdTemplate(localEntityIdTemplate)
-                    .assertionConsumerServiceUrlTemplate(acsUrlTemplate)
+                            .singleSignOnServiceLocation(webSsoEndpoint)
+                            .singleSignOnServiceBinding(Saml2MessageBinding.REDIRECT)
+                            .wantAuthnRequestsSigned(true)
+                            .verificationX509Credentials(c -> c.add(idpVerificationCertificate)))
+                    .assertionConsumerServiceLocation(acsUrlTemplate)
                     .build();
 
             return new InMemoryRelyingPartyRegistrationRepository(rp);
@@ -163,7 +175,7 @@ public class SecurityConfiguration {
         }
 
         @SneakyThrows
-        private Saml2X509Credential getSigningCredential()  {
+        private Saml2X509Credential getSigningCredential() {
             String pem;
             String certificate;
             if (this.privateKeyPath.exists() && this.certificatePath.exists()) {
