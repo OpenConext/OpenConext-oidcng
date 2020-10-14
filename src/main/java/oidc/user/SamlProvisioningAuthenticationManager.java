@@ -7,7 +7,6 @@ import oidc.repository.UserRepository;
 import oidc.web.RelayState;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.opensaml.saml.saml1.core.AuthenticationStatement;
 import org.opensaml.saml.saml2.core.Assertion;
 import org.springframework.core.io.Resource;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,7 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class SamlProvisioningAuthenticationManager{//} implements AuthenticationManager {
+public class SamlProvisioningAuthenticationManager {//} implements AuthenticationManager {
 
 //    private static final Log LOG = LogFactory.getLog(SamlProvisioningAuthenticationManager.class);
 //    private static final Pattern inResponseToPattern = Pattern.compile("InResponseTo=\"(.+?)\">", Pattern.DOTALL);

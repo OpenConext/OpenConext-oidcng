@@ -4,8 +4,8 @@ logging:
     oidc: INFO
     org.springframework.session: INFO
     org.springframework.web: INFO
-    org.springframework.security: TRACE
-    org.springframework.security.saml2: TRACE
+#    org.springframework.security: TRACE
+#    org.springframework.security.saml2: TRACE
     org.springframework.data: INFO
 
 cron:
@@ -19,7 +19,6 @@ server:
     path: "/error"
   max-http-header-size: 10000000
   tomcat:
-    max-http-post-size: 10000000
     max-http-form-post-size: 10000000
     max-swallow-size: 10000000
 

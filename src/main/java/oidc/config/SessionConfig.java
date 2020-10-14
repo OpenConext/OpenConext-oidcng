@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.jackson2.CoreJackson2Module;
+import org.springframework.security.saml2.provider.service.authentication.Saml2Authentication;
 import org.springframework.session.data.mongo.JacksonMongoSessionConverter;
 import org.springframework.session.data.mongo.config.annotation.web.http.EnableMongoHttpSession;
 import org.springframework.session.web.context.AbstractHttpSessionApplicationInitializer;
@@ -42,6 +43,7 @@ public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
                 context.setMixInAnnotations(HashSet.class, HashSetMixin.class);
                 context.setMixInAnnotations(LinkedHashMap.class, LinkedHashMapMixin.class);
                 context.setMixInAnnotations(User.class, UserMixin.class);
+                context.setMixInAnnotations(Saml2Authentication.class, Saml2AuthenticationMixin.class);
             }
         };
 
@@ -49,6 +51,10 @@ public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
         modules.add(module);
 
         return new JacksonMongoSessionConverter(modules);
+    }
+
+    private static class Saml2AuthenticationMixin {
+
     }
 
     private static class OidcSamlAuthenticationMixin {
