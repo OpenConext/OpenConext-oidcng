@@ -143,7 +143,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
         SignedJWT signedJWT = SignedJWT.parse(accessToken);
         JWTClaimsSet jwtClaimsSet = signedJWT.getJWTClaimsSet();
 
-        assertEquals("https://org.openconext.oidc.ng", jwtClaimsSet.getIssuer());
+        assertEquals("https://org.openconext.local.oidc.ng", jwtClaimsSet.getIssuer());
         assertEquals("mock-sp", jwtClaimsSet.getSubject());
     }
 
