@@ -47,9 +47,6 @@ features:
   # Do we enforce that the scopes granted to an access_token are configured with the RS?
   enforce-scope-resource-server: true
 
-base_url: http://localhost:8080
-registration_id: oidcng
-
 sp:
   entity_id: https://org.openconext.local.oidc.ng
   acs_location: http://localhost:8080/login/saml2/sso/oidcng

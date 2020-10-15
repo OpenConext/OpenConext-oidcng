@@ -1,5 +1,5 @@
 {
-  "issuer": "https://org.openconext.oidc.ng",
+  "issuer": "https://org.openconext.local.oidc.ng",
   "authorization_endpoint": "http://localhost:8080/oidc/authorize",
   "token_endpoint": "http://localhost:8080/oidc/token",
   "userinfo_endpoint": "http://localhost:8080/oidc/userinfo",
