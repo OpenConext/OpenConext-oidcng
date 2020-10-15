@@ -31,6 +31,7 @@ public class OidcSamlAuthentication extends AbstractAuthenticationToken {
         this.user = user;
         this.name = assertion.getSubject().getNameID().getValue();
         this.authenticationRequestID = authenticationRequestID;
+        super.setAuthenticated(true);
     }
 
     @Override

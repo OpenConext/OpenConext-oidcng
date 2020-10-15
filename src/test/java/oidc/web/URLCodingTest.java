@@ -10,4 +10,9 @@ public class URLCodingTest implements URLCoding {
     public void decode() {
         decode("nope", "");
     }
+
+    @Test
+    public void decodeHappy() {
+        assertEquals("nope", decode("nope"));
+    }
 }

@@ -13,14 +13,10 @@ import javax.servlet.http.HttpServletRequest;
 @Getter
 public class CustomSaml2AuthenticationRequestContext extends Saml2AuthenticationRequestContext {
 
-    private final RequestCache requestCache = new HttpSessionRequestCache();
-
-    private final SavedRequest savedRequest;
     private final HttpServletRequest request;
 
     public CustomSaml2AuthenticationRequestContext(RelyingPartyRegistration relyingPartyRegistration, HttpServletRequest request) {
         super(relyingPartyRegistration, relyingPartyRegistration.getEntityId(), relyingPartyRegistration.getAssertionConsumerServiceLocation(), request.getParameter("RelayState"));
-        this.savedRequest = requestCache.getRequest(request, null);
         this.request = request;
     }
 }

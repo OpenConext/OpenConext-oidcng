@@ -64,7 +64,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
     private TokenGenerator tokenGenerator;
 
     @Autowired
-    @Value("${service-provider-entity-id}")
+    @Value("${sp.entity_id}")
     private String issuer;
 
     @Test
@@ -360,8 +360,8 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
     @Test
     public void clientWrongSecretJwtAuthentication() throws IOException, JOSEException {
         Map<String, Object> body = doClientSecretJwtAuthorization("very-long-long-long-long-long-secret-but-invalid");
-        assertEquals(403, body.get("status"));
-        assertEquals("Invalid user / signature", body.get("error"));
+        assertEquals(401, body.get("status"));
+        assertEquals("Invalid user / signature", body.get("error_description"));
     }
 
     @Test

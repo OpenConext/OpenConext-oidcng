@@ -5,7 +5,6 @@ import com.github.cloudyrock.mongock.ChangeSet;
 import com.github.cloudyrock.mongock.driver.mongodb.springdata.v3.decorator.impl.MongockTemplate;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
-import oidc.model.IdentityProvider;
 import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
 import oidc.model.SigningKey;
@@ -60,10 +59,7 @@ public class MongoChangelog {
 
     @ChangeSet(order = "004", id = "createIdentityProviders", author = "Okke Harsta")
     public void createIdentityProviders(MongockTemplate mongoTemplate) {
-        mongoTemplate.dropCollection(IdentityProvider.class);
-        Map<Class<? extends Object>, List<String>> indexInfo = new HashMap<>();
-        indexInfo.put(IdentityProvider.class, singletonList("entityId"));
-        ensureCollectionsAndIndexes(mongoTemplate, indexInfo);
+        mongoTemplate.dropCollection("identity_providers");
     }
 
     @ChangeSet(order = "005", id = "removeAndRebuildRefreshTokenIndex", author = "Okke Harsta")

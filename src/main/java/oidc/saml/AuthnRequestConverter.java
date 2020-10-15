@@ -64,30 +64,33 @@ public class AuthnRequestConverter implements
 
     public final static String REDIRECT_URI_VALID = "REDIRECT_URI_VALID";
 
-    private final PortResolver portResolver = new PortResolverImpl();
     private final OpenIDClientRepository openIDClientRepository;
     private final AuthenticationRequestRepository authenticationRequestRepository;
     private final XMLObjectProviderRegistry registry = ConfigurationService.get(XMLObjectProviderRegistry.class);
+    private final RequestCache requestCache;
 
     public AuthnRequestConverter(OpenIDClientRepository openIDClientRepository,
-                                 AuthenticationRequestRepository authenticationRequestRepository) {
+                                 AuthenticationRequestRepository authenticationRequestRepository,
+                                 RequestCache requestCache) {
 
         this.openIDClientRepository = openIDClientRepository;
         this.authenticationRequestRepository = authenticationRequestRepository;
+        this.requestCache = requestCache;
     }
 
     @SneakyThrows
     @Override
     public AuthnRequest convert(Saml2AuthenticationRequestContext ctx) {
         CustomSaml2AuthenticationRequestContext context = (CustomSaml2AuthenticationRequestContext) ctx;
-        SavedRequest savedRequest = context.getSavedRequest();
+        HttpServletRequest request = context.getRequest();
+        SavedRequest savedRequest = requestCache.getRequest(request, null);
 
         Map<String, String[]> parameterMap = savedRequest.getParameterMap();
         Map<String, List<String>> parameters = parameterMap.keySet().stream()
                 .collect(Collectors.toMap(key -> key, key -> Arrays.asList(parameterMap.get(key))));
         AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(parameters);
 
-        validateAuthorizationRequest(authorizationRequest, context.getRequest());
+        validateAuthorizationRequest(authorizationRequest, request);
 
         RelyingPartyRegistration relyingParty = context.getRelyingPartyRegistration();
         AuthnRequestBuilder authnRequestBuilder = (AuthnRequestBuilder) registry.getBuilderFactory()

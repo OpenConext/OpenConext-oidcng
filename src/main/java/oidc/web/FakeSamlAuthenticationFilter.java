@@ -5,6 +5,16 @@ import oidc.model.User;
 import oidc.repository.UserRepository;
 import oidc.user.OidcSamlAuthentication;
 import org.apache.commons.io.IOUtils;
+import org.opensaml.core.config.ConfigurationService;
+import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
+import org.opensaml.saml.saml2.core.Assertion;
+import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.NameID;
+import org.opensaml.saml.saml2.core.Subject;
+import org.opensaml.saml.saml2.core.impl.AssertionBuilder;
+import org.opensaml.saml.saml2.core.impl.AuthnRequestBuilder;
+import org.opensaml.saml.saml2.core.impl.NameIDBuilder;
+import org.opensaml.saml.saml2.core.impl.SubjectBuilder;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,52 +37,60 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class FakeSamlAuthenticationFilter {//} extends GenericFilterBean {
+import static oidc.saml.AuthnRequestConverter.REDIRECT_URI_VALID;
 
-//    private final UserRepository userRepository;
-//    private final ObjectMapper objectMapper;
-//    private final List<String> authorizeEndpoints = Arrays.asList("oidc/authorize", "oidc/consent");
-//
-//    public FakeSamlAuthenticationFilter(UserRepository userRepository, ObjectMapper objectMapper) {
-//        this.userRepository = userRepository;
-//        this.objectMapper = objectMapper;
-//    }
-//
-//    @Override
-//    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//        String requestURI = ((HttpServletRequest) request).getRequestURI();
-//        boolean authorizeFlow = authorizeEndpoints.stream().anyMatch(requestURI::contains);
-//        if (authorizeFlow && (authentication == null || !authentication.isAuthenticated()) && !(authentication instanceof DefaultSamlAuthentication)) {
-//            User user = getUser(objectMapper, request);
-//            userRepository.deleteAll();
-//            userRepository.insert(user);
-//
-//            OidcSamlAuthentication samlAuthentication = new OidcSamlAuthentication(getAssertion(), user, "http://localhost");
-//            SecurityContextHolder.getContext().setAuthentication(samlAuthentication);
-//        }
-//        chain.doFilter(request, response);
-//    }
-//
-//    public static User getUser(ObjectMapper objectMapper, ServletRequest request) throws IOException {
-//        String userParameter = request.getParameter("user");
-//        String path = String.format("data/%s.json", StringUtils.hasText(userParameter) ? userParameter : "user");
-//        return objectMapper.readValue(IOUtils.toString(new ClassPathResource(path).getInputStream(), Charset.defaultCharset()), User.class);
-//    }
-//
-//    public static Assertion getAssertion() {
-//        Assertion assertion = new Assertion();
-//        Subject subject = new Subject();
-//
-//        NameIdPrincipal principal = new NameIdPrincipal();
-//        principal.setValue("urn:collab:person:example.com:admin");
-//        principal.setFormat(NameId.UNSPECIFIED);
-//
-//        subject.setPrincipal(principal);
-//
-//        assertion.setSubject(subject);
-//        assertion.setAttributes(Collections.emptyList());
-//        return assertion;
-//    }
-//
+public class FakeSamlAuthenticationFilter extends GenericFilterBean {
+
+    private final UserRepository userRepository;
+    private final ObjectMapper objectMapper;
+    private final List<String> authorizeEndpoints = Arrays.asList("oidc/authorize", "oidc/consent");
+    private final XMLObjectProviderRegistry registry = ConfigurationService.get(XMLObjectProviderRegistry.class);
+
+    public FakeSamlAuthenticationFilter(UserRepository userRepository, ObjectMapper objectMapper) {
+        this.userRepository = userRepository;
+        this.objectMapper = objectMapper;
+    }
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String requestURI = ((HttpServletRequest) request).getRequestURI();
+        boolean authorizeFlow = authorizeEndpoints.stream().anyMatch(requestURI::contains);
+        if (authorizeFlow && (authentication == null || !authentication.isAuthenticated()) && !(authentication instanceof OidcSamlAuthentication)) {
+            User user = getUser(objectMapper, request);
+            userRepository.deleteAll();
+            userRepository.insert(user);
+
+            request.getAttribute(REDIRECT_URI_VALID);
+
+            OidcSamlAuthentication samlAuthentication = new OidcSamlAuthentication(getAssertion(), user, "http://localhost");
+            SecurityContextHolder.getContext().setAuthentication(samlAuthentication);
+        }
+        chain.doFilter(request, response);
+    }
+
+    public User getUser(ObjectMapper objectMapper, ServletRequest request) throws IOException {
+        String userParameter = request.getParameter("user");
+        String path = String.format("data/%s.json", StringUtils.hasText(userParameter) ? userParameter : "user");
+        return objectMapper.readValue(IOUtils.toString(new ClassPathResource(path).getInputStream(), Charset.defaultCharset()), User.class);
+    }
+
+    public Assertion getAssertion() {
+        AssertionBuilder assertionBuilder = (AssertionBuilder) registry.getBuilderFactory()
+                .getBuilder(Assertion.DEFAULT_ELEMENT_NAME);
+        Assertion assertion = assertionBuilder.buildObject();
+        SubjectBuilder subjectBuilder = (SubjectBuilder) registry.getBuilderFactory()
+                .getBuilder(Subject.DEFAULT_ELEMENT_NAME);
+        Subject subject = subjectBuilder.buildObject();
+
+        NameIDBuilder nameIDBuilder = (NameIDBuilder) registry.getBuilderFactory().getBuilder(NameID.DEFAULT_ELEMENT_NAME);
+
+        NameID nameID = nameIDBuilder.buildObject();
+        nameID.setValue("urn:collab:person:example.com:admin");
+
+        subject.setNameID(nameID);
+        assertion.setSubject(subject);
+        return assertion;
+    }
+
 }

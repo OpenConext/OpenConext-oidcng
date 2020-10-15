@@ -53,7 +53,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
                               OpenIDClientRepository openIDClientRepository,
                               TokenGenerator tokenGenerator,
                               AttributePseudonymisation attributePseudonymisation,
-                              @Value("${service-provider-entity-id}") String issuer,
+                              @Value("${sp.entity_id}") String issuer,
                               @Value("${features.enforce-scope-resource-server}") boolean enforceScopeResourceServer,
                               @Value("${features.enforce-eduid-resource-server-linked-account}") boolean enforceEduidResourceServerLinkedAccount) {
         this.accessTokenRepository = accessTokenRepository;
@@ -76,18 +76,18 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
         //https://tools.ietf.org/html/rfc7662 is vague about the authorization requirements, but we enforce basic auth
         if (!(clientAuthentication instanceof PlainClientSecret)) {
             LOG.warn("No authentication present");
-            throw new BadCredentialsException("Invalid user / secret");
+            throw new UnauthorizedException("Invalid user / secret");
         }
         OpenIDClient resourceServer = openIDClientRepository.findByClientId(clientAuthentication.getClientID().getValue());
         MDCContext.mdcContext("action", "Introspect", "rp", resourceServer.getClientId(), "accessTokenValue", accessTokenValue);
 
         if (!secretsMatch((PlainClientSecret) clientAuthentication, resourceServer)) {
             LOG.warn("Secret does not match for RS " + resourceServer.getClientId());
-            throw new BadCredentialsException("Invalid user / secret");
+            throw new UnauthorizedException("Invalid user / secret");
         }
         if (!resourceServer.isResourceServer()) {
             LOG.warn("RS required for not configured for RP " + resourceServer.getClientId());
-            throw new BadCredentialsException("Requires ResourceServer");
+            throw new UnauthorizedException("Requires ResourceServer");
         }
 
         Optional<AccessToken> optionalAccessToken = accessTokenRepository.findOptionalAccessTokenByValue(accessTokenValue);
@@ -111,7 +111,6 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
                 LOG.warn(String.format("Resource server %s has configured scopes %s, but granted to access_token are scopes %s",
                         resourceServer.getClientId(), resourceServer.getScopes(), scopesRequiredForResourceServer));
                 return ResponseEntity.ok(Collections.singletonMap("active", false));
-
             }
         }
 

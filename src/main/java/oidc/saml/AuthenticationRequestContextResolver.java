@@ -2,7 +2,6 @@ package oidc.saml;
 
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationRequestContext;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
-import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationRequestContextResolver;
 
 import javax.servlet.http.HttpServletRequest;

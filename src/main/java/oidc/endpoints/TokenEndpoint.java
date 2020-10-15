@@ -126,15 +126,15 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         OpenIDClient client = openIDClientRepository.findByClientId(clientId);
 
         if (clientAuthentication == null && !client.isPublicClient()) {
-            throw new BadCredentialsException("Non-public client requires authentication");
+            throw new UnauthorizedException("Non-public client requires authentication");
         }
         if (clientAuthentication != null) {
             if (clientAuthentication instanceof PlainClientSecret &&
                     !secretsMatch((PlainClientSecret) clientAuthentication, client)) {
-                throw new BadCredentialsException("Invalid user / secret");
+                throw new UnauthorizedException("Invalid user / secret");
             } else if (clientAuthentication instanceof JWTAuthentication &&
                     !verifySignature((JWTAuthentication) clientAuthentication, client, this.tokenEndpoint)) {
-                throw new BadCredentialsException("Invalid user / signature");
+                throw new UnauthorizedException("Invalid user / signature");
             }
         }
         MDCContext.mdcContext("action", "Token", "rp", clientId, "grant", authorizationGrant.getType().getValue());
@@ -205,7 +205,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         }
 
         if (!authorizationCode.getClientId().equals(client.getClientId())) {
-            throw new BadCredentialsException("Client is not authorized for the authorization code");
+            throw new UnauthorizedException("Client is not authorized for the authorization code");
         }
 
         if (authorizationCodeGrant.getRedirectionURI() != null &&
@@ -255,7 +255,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                 .orElseThrow(() -> new IllegalArgumentException("RefreshToken not found"));
 
         if (!refreshToken.getClientId().equals(client.getClientId())) {
-            throw new BadCredentialsException("Client is not authorized for the refresh token");
+            throw new UnauthorizedException("Client is not authorized for the refresh token");
         }
         if (refreshToken.isExpired(Clock.systemDefaultZone())) {
             throw new UnauthorizedException("Refresh token expired");

@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 
 public class JwkKeysEndpointTest extends AbstractIntegrationTest {
 
-    @Value("${service-provider-entity-id}")
+    @Value("${sp.entity_id}")
     private String issuer;
 
     @Test

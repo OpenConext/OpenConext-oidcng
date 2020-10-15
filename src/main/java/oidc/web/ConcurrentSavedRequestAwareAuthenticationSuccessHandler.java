@@ -14,8 +14,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-//import static oidc.web.ConfigurableSamlAuthenticationRequestFilter.AUTHENTICATION_SUCCESS_QUERY_PARAMETER;
-
 public class ConcurrentSavedRequestAwareAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private AuthenticationRequestRepository authenticationRequestRepository;
