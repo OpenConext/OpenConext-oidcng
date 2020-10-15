@@ -2,11 +2,6 @@ logging:
   level:
     root: INFO
     oidc: INFO
-    org.springframework.session: INFO
-    org.springframework.web: INFO
-    org.springframework.security: DEBUG
-#    org.springframework.security.saml2: TRACE
-    org.springframework.data: INFO
 
 cron:
   node-cron-job-responsible: true

@@ -50,6 +50,7 @@ public class AuthnRequestConverterTest extends AbstractIntegrationTest {
                 .get("saml2/authenticate/oidcng");
 
         location = response.getHeader("Location");
+        assertTrue(location.startsWith("https://engine"));
         MultiValueMap<String, String> params = UriComponentsBuilder.fromHttpUrl(location).build().getQueryParams();
         Arrays.asList("SAMLRequest", "SigAlg", "Signature" ).forEach(param -> assertTrue(params.containsKey(param)));
     }

@@ -190,10 +190,10 @@ public class AuthnRequestConverter implements
                 ScopingBuilder scopingBuilder = (ScopingBuilder) registry.getBuilderFactory()
                         .getBuilder(Issuer.DEFAULT_ELEMENT_NAME);
                 scoping = scopingBuilder.buildObject();
+                authnRequest.setScoping(scoping);
             }
             List<String> requesterIds = Stream.of(loginHint.split(",")).map(String::trim).filter(this::isValidURI).collect(Collectors.toList());
             addRequesterIds(requesterIds, scoping);
-            authnRequest.setScoping(scoping);
         }
         return authnRequest;
     }

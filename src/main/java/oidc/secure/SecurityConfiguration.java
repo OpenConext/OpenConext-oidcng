@@ -169,7 +169,8 @@ public class SecurityConfiguration {
                             .singleSignOnServiceLocation(idpSsoLocation)
                             .singleSignOnServiceBinding(Saml2MessageBinding.REDIRECT)
                             .wantAuthnRequestsSigned(true)
-                            .verificationX509Credentials(c -> c.add(idpVerificationCertificate)))
+                            .verificationX509Credentials(c -> c.add(idpVerificationCertificate))
+                    )
                     .assertionConsumerServiceLocation(spAcsLocation)
                     .build();
 
