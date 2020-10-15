@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static oidc.saml.AuthnRequestConverter.REDIRECT_URI_VALID;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 @RestController
@@ -75,7 +76,7 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         result.put("status", statusCode.value());
 
         //https://openid.net/specs/openid-connect-core-1_0.html#AuthError
-        Object redirectUriValid = request.getAttribute("REDIRECT_URI_VALID");
+        Object redirectUriValid = request.getAttribute(REDIRECT_URI_VALID);
         String redirectUri = request.getParameter("redirect_uri");
 
         if (redirectUriValid != null && (boolean) redirectUriValid && (statusCode.is3xxRedirection() || ((String) result.getOrDefault("path", "")).contains("authorize"))

@@ -2,7 +2,9 @@ package oidc.saml;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import oidc.model.AuthenticationRequest;
 import oidc.model.User;
+import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.UserRepository;
 import oidc.user.OidcSamlAuthentication;
 import oidc.user.UserAttribute;
@@ -21,7 +23,6 @@ import org.opensaml.saml.saml2.core.Assertion;
 import org.opensaml.saml.saml2.core.AttributeStatement;
 import org.opensaml.saml.saml2.core.AuthnContextClassRef;
 import org.opensaml.saml.saml2.core.AuthnStatement;
-import org.opensaml.saml.saml2.core.NameID;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.Resource;
 import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider;
@@ -52,13 +53,14 @@ public class ResponseAuthenticationConverter implements Converter<OpenSamlAuthen
 
     private UserRepository userRepository;
     private List<UserAttribute> userAttributes;
-    private ObjectMapper objectMapper;
+    private final AuthenticationRequestRepository authenticationRequestRepository;
 
     public ResponseAuthenticationConverter(UserRepository userRepository,
+                                           AuthenticationRequestRepository authenticationRequestRepository,
                                            ObjectMapper objectMapper,
                                            Resource oidcSamlMapping) throws IOException {
         this.userRepository = userRepository;
-        this.objectMapper = objectMapper;
+        this.authenticationRequestRepository = authenticationRequestRepository;
         this.userAttributes = objectMapper.readValue(oidcSamlMapping.getInputStream(),
                 new TypeReference<List<UserAttribute>>() {
                 });
@@ -71,7 +73,14 @@ public class ResponseAuthenticationConverter implements Converter<OpenSamlAuthen
                 .convert(responseToken);
         Assertion assertion = responseToken.getResponse().getAssertions().get(0);
 
-        User user = buildUser(assertion);
+        Matcher matcher = inResponseToPattern.matcher(authentication.getSaml2Response());
+        boolean match = matcher.find();
+        if (!match) {
+            throw new SessionAuthenticationException("Invalid Authn Statement. Missing InResponseTo");
+        }
+        String authenticationRequestID = matcher.group(1);
+
+        User user = buildUser(assertion, authenticationRequestID);
         Optional<User> existingUserOptional = userRepository.findOptionalUserBySub(user.getSub());
         if (existingUserOptional.isPresent()) {
             User existingUser = existingUserOptional.get();
@@ -87,19 +96,14 @@ public class ResponseAuthenticationConverter implements Converter<OpenSamlAuthen
             LOG.debug("Provisioning new user : " + user);
             userRepository.insert(user);
         }
-        Matcher matcher = inResponseToPattern.matcher(authentication.getSaml2Response());
-        boolean match = matcher.find();
-        if (!match) {
-            throw new SessionAuthenticationException("Invalid Authn Statement. Missing InResponseTo");
-        }
         OidcSamlAuthentication oidcSamlAuthentication =
-                new OidcSamlAuthentication(assertion, user, matcher.group(1));
+                new OidcSamlAuthentication(assertion, user, authenticationRequestID);
 //        SecurityContextHolder.getContext().setAuthentication(oidcSamlAuthentication);
         return oidcSamlAuthentication;
 
     }
 
-    private User buildUser(Assertion assertion) {
+    private User buildUser(Assertion assertion, String authenticationRequestID) {
         String unspecifiedNameId = assertion.getSubject().getNameID().getValue();
 
         List<AuthnStatement> authnStatements = assertion.getAuthnStatements();
@@ -111,8 +115,6 @@ public class ResponseAuthenticationConverter implements Converter<OpenSamlAuthen
                     .findAny()
                     .ifPresent(aa -> authenticatingAuthority.set(aa.getURI()));
         }
-        //TODO - where to get the  clientID from??
-        String clientId = "";//RelayState.from(samlAuthentication.getRelayState(), objectMapper).getClientId();
         //need to prevent NullPointer in HashMap merge
         Map<String, Object> attributes = userAttributes.stream()
                 .filter(ua -> !ua.customMapping)
@@ -123,8 +125,12 @@ public class ResponseAuthenticationConverter implements Converter<OpenSamlAuthen
         this.addDerivedAttributes(attributes);
 
         String eduPersonTargetedId = getAttributeValue("urn:mace:dir:attribute-def:eduPersonTargetedID", assertion);
-        String sub = StringUtils.hasText(eduPersonTargetedId) ? eduPersonTargetedId :
-                UUID.nameUUIDFromBytes((unspecifiedNameId + "_" + clientId).getBytes()).toString();
+
+        AuthenticationRequest authenticationRequest = authenticationRequestRepository.findById(authenticationRequestID).orElseThrow(
+                () -> new IllegalArgumentException("No Authentication Request found for ID: " + authenticationRequestID));
+        String clientId = authenticationRequest.getClientId();
+
+        String sub = StringUtils.hasText(eduPersonTargetedId) ? eduPersonTargetedId : UUID.nameUUIDFromBytes((unspecifiedNameId + "_" + clientId).getBytes()).toString();
         attributes.put("sub", sub);
 
         List<String> acrClaims = assertion.getAuthnStatements().stream()

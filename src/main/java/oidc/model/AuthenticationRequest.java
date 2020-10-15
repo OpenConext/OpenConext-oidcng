@@ -19,5 +19,7 @@ public class AuthenticationRequest {
 
     private Date expiresIn;
 
+    private String clientId;
+
     private String originalRequestUrl;
 }

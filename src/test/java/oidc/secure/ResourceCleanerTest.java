@@ -27,7 +27,6 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -54,7 +53,7 @@ public class ResourceCleanerTest extends AbstractIntegrationTest implements Seed
                         "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), true, expiresIn),
                 new User("nope", "unspecifiedNameId", "authenticatingAuthority", "clientId",
                         Collections.emptyMap(), Collections.emptyList()),
-                new AuthenticationRequest(UUID.randomUUID().toString(), expiresIn, "http://localhost/authorize"),
+                new AuthenticationRequest(UUID.randomUUID().toString(), expiresIn, "clientID", "http://localhost/authorize"),
                 userConsent()
         ).forEach(o -> mongoTemplate.insert(o));
 

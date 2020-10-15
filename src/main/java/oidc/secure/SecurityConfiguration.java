@@ -23,10 +23,14 @@ import oidc.config.OidcCorsConfigurationSource;
 import oidc.config.TokenUsers;
 import oidc.crypto.KeyGenerator;
 import oidc.log.MDCContextFilter;
+import oidc.repository.AuthenticationRequestRepository;
+import oidc.repository.OpenIDClientRepository;
 import oidc.repository.UserRepository;
+import oidc.saml.AuthenticationRequestContextResolver;
 import oidc.saml.AuthnRequestConverter;
 import oidc.saml.CustomSaml2AuthenticationRequestContext;
 import oidc.saml.ResponseAuthenticationConverter;
+import oidc.web.ConcurrentSavedRequestAwareAuthenticationSuccessHandler;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -66,6 +70,7 @@ import org.springframework.security.saml2.provider.service.registration.RelyingP
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
 import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationRequestContextResolver;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 import java.nio.charset.Charset;
@@ -96,7 +101,9 @@ public class SecurityConfiguration {
         private Resource metadataSigningCertificatePath;
         private Environment environment;
         private ObjectMapper objectMapper;
+        private OpenIDClientRepository openIDClientRepository;
         private UserRepository userRepository;
+        private AuthenticationRequestRepository authenticationRequestRepository;
         private Resource privateKeyPath;
         private Resource certificatePath;
         private Resource oidcSamlMapping;
@@ -105,6 +112,8 @@ public class SecurityConfiguration {
                 Environment environment,
                 ObjectMapper objectMapper,
                 UserRepository userRepository,
+                AuthenticationRequestRepository authenticationRequestRepository,
+                OpenIDClientRepository openIDClientRepository,
                 @Value("${private_key_path}") Resource privateKeyPath,
                 @Value("${certificate_path}") Resource certificatePath,
                 @Value("${idp.metadata_urls}") String[] idpMetaDataUrls,
@@ -114,6 +123,8 @@ public class SecurityConfiguration {
             this.environment = environment;
             this.objectMapper = objectMapper;
             this.userRepository = userRepository;
+            this.authenticationRequestRepository = authenticationRequestRepository;
+            this.openIDClientRepository = openIDClientRepository;
             this.privateKeyPath = privateKeyPath;
             this.certificatePath = certificatePath;
             this.idpAlias = idpAlias;
@@ -124,8 +135,13 @@ public class SecurityConfiguration {
         }
 
         @Bean
+        public AuthenticationSuccessHandler concurrentSavedRequestAwareAuthenticationSuccessHandler() {
+            return new ConcurrentSavedRequestAwareAuthenticationSuccessHandler(authenticationRequestRepository);
+        }
+
+        @Bean
         public Saml2AuthenticationRequestContextResolver authenticationRequestContextResolver(RelyingPartyRegistrationRepository registrationRepository) {
-            return request -> new CustomSaml2AuthenticationRequestContext(registrationRepository.findByRegistrationId("oidcng"), request);
+            return new AuthenticationRequestContextResolver(registrationRepository.findByRegistrationId("oidcng"));
         }
 
         @Bean
@@ -133,13 +149,8 @@ public class SecurityConfiguration {
             OpenSamlAuthenticationRequestFactory authenticationRequestFactory =
                     new OpenSamlAuthenticationRequestFactory();
 
-            XMLObjectProviderRegistry registry = ConfigurationService.get(XMLObjectProviderRegistry.class);
-            AuthnRequestBuilder authnRequestBuilder = (AuthnRequestBuilder) registry.getBuilderFactory()
-                    .getBuilder(AuthnRequest.DEFAULT_ELEMENT_NAME);
-            IssuerBuilder issuerBuilder = (IssuerBuilder) registry.getBuilderFactory()
-                    .getBuilder(Issuer.DEFAULT_ELEMENT_NAME);
-
-            AuthnRequestConverter authnRequestConverter = new AuthnRequestConverter(authnRequestBuilder, issuerBuilder);
+            AuthnRequestConverter authnRequestConverter =
+                    new AuthnRequestConverter(openIDClientRepository, authenticationRequestRepository);
             authenticationRequestFactory.setAuthenticationRequestContextConverter(authnRequestConverter);
             return authenticationRequestFactory;
         }
@@ -206,9 +217,9 @@ public class SecurityConfiguration {
         @Override
         protected void configure(HttpSecurity http) throws Exception {
             OpenSamlAuthenticationProvider authenticationProvider = new OpenSamlAuthenticationProvider();
-            ResponseAuthenticationConverter responseAuthenticationConverter = new ResponseAuthenticationConverter(userRepository, objectMapper, oidcSamlMapping);
+            ResponseAuthenticationConverter responseAuthenticationConverter =
+                    new ResponseAuthenticationConverter(userRepository,authenticationRequestRepository,objectMapper, oidcSamlMapping);
             authenticationProvider.setResponseAuthenticationConverter(responseAuthenticationConverter);
-
             http.cors().configurationSource(new OidcCorsConfigurationSource()).configure(http);
             http.csrf().disable();
             http
@@ -220,7 +231,11 @@ public class SecurityConfiguration {
                     .antMatchers("/oidc/**")
                     .permitAll()
                     .and()
-                    .saml2Login(saml2 -> saml2.authenticationManager(new ProviderManager(authenticationProvider)));
+                    .saml2Login(saml2 -> {
+                        saml2.authenticationManager(new ProviderManager(authenticationProvider));
+                        AuthenticationSuccessHandler bean = getApplicationContext().getBean(AuthenticationSuccessHandler.class);
+                        saml2.successHandler(bean);
+                    });
 
             http.addFilterBefore(new MDCContextFilter(), BasicAuthenticationFilter.class);
 

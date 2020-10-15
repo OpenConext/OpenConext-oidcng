@@ -4,7 +4,7 @@ logging:
     oidc: INFO
     org.springframework.session: INFO
     org.springframework.web: INFO
-#    org.springframework.security: TRACE
+    org.springframework.security: DEBUG
 #    org.springframework.security.saml2: TRACE
     org.springframework.data: INFO
 

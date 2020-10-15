@@ -45,6 +45,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
@@ -396,8 +397,9 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
     private static final String unsupportedPromptMessage = "Unsupported Prompt value";
 
-    public static String validatePrompt(HttpServletRequest request) throws ParseException {
-        String promptValue = request.getParameter("prompt");
+    public static String validatePrompt(Map<String, List<String>> request) throws ParseException {
+        List<String> promptValues = request.get("prompt");
+        String promptValue = CollectionUtils.isEmpty(promptValues) ? null : promptValues.get(0);
         Prompt prompt = Prompt.parse(promptValue);
         return validatePrompt(prompt);
     }
