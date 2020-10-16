@@ -16,7 +16,8 @@ public class CustomSaml2AuthenticationRequestContext extends Saml2Authentication
     private final HttpServletRequest request;
 
     public CustomSaml2AuthenticationRequestContext(RelyingPartyRegistration relyingPartyRegistration, HttpServletRequest request) {
-        super(relyingPartyRegistration, relyingPartyRegistration.getEntityId(), relyingPartyRegistration.getAssertionConsumerServiceLocation(), request.getParameter("RelayState"));
+        super(relyingPartyRegistration, relyingPartyRegistration.getEntityId(),
+                relyingPartyRegistration.getAssertionConsumerServiceLocation(), request.getParameter("RelayState"));
         this.request = request;
     }
 }

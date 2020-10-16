@@ -1,6 +1,7 @@
 package oidc.saml;
 
 import com.nimbusds.jwt.SignedJWT;
+import oidc.exceptions.CookiesNotSupportedException;
 import oidc.model.OpenIDClient;
 import oidc.model.Scope;
 import oidc.repository.AuthenticationRequestRepository;
@@ -14,6 +15,8 @@ import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 import org.springframework.security.web.savedrequest.RequestCache;
 
 import javax.servlet.http.HttpServletRequest;
+
+import java.security.cert.CertificateException;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
@@ -33,6 +36,10 @@ public class AuthnRequestConverterUnitTest extends AbstractSamlUnitTest implemen
     @Before
     public void beforeTest() throws Exception {
         subject = new AuthnRequestConverter(openIDClientRepository, authenticationRequestRepository, requestCache);
+    }
+
+    @Test
+    public void testSaml() throws Exception {
         OpenIDClient openIDClient = new OpenIDClient("clientId", singletonList("http://redirect"), singletonList(new Scope("openid")), singletonList("authorization_code"));
         String cert = readFile("keys/certificate.crt");
         setCertificateFields(openIDClient, cert, null, null);
@@ -49,18 +56,23 @@ public class AuthnRequestConverterUnitTest extends AbstractSamlUnitTest implemen
         SignedJWT signedJWT = signedJWT(openIDClient.getClientId(), keyID, openIDClient.getRedirectUrls().get(0));
         request.addParameter("request", signedJWT.serialize());
 
+        HttpServletRequest servletRequest = new MockHttpServletRequest();
+        CustomSaml2AuthenticationRequestContext ctx = new CustomSaml2AuthenticationRequestContext(relyingParty, servletRequest);
+
         when(requestCache.getRequest(any(HttpServletRequest.class), any()))
                 .thenReturn(new DefaultSavedRequest(request, portResolver));
-    }
 
-    @Test
-    public void testSaml() {
-        HttpServletRequest request = new MockHttpServletRequest();
-        CustomSaml2AuthenticationRequestContext ctx = new CustomSaml2AuthenticationRequestContext(relyingParty, request);
         AuthnRequest authnRequest = subject.convert(ctx);
 
         assertTrue(authnRequest.isForceAuthn());
         assertEquals("loa1", authnRequest.getRequestedAuthnContext().getAuthnContextClassRefs().get(0).getAuthnContextClassRef());
+    }
+
+    @Test(expected = CookiesNotSupportedException.class)
+    public void noCookies() {
+        HttpServletRequest servletRequest = new MockHttpServletRequest();
+        CustomSaml2AuthenticationRequestContext ctx = new CustomSaml2AuthenticationRequestContext(relyingParty, servletRequest);
+        subject.convert(ctx);
     }
 
 }

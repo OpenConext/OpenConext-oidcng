@@ -3,6 +3,7 @@ package oidc.web;
 import com.nimbusds.jose.JOSEException;
 import lombok.SneakyThrows;
 import oidc.exceptions.BaseException;
+import oidc.exceptions.CookiesNotSupportedException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.boot.autoconfigure.web.ErrorProperties;
@@ -52,6 +53,9 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         Map<String, Object> result = errorAttributes.getErrorAttributes(webRequest, ErrorAttributeOptions.defaults());
 
         Throwable error = errorAttributes.getError(webRequest);
+        if (error instanceof CookiesNotSupportedException) {
+            return new ModelAndView("no_session_found", HttpStatus.OK);
+        }
         boolean status = result.containsKey("status") && !result.get("status").equals(999) && !result.get("status").equals(500);
         HttpStatus statusCode = status ? HttpStatus.resolve((Integer) result.get("status")) : BAD_REQUEST;
         if (error != null) {

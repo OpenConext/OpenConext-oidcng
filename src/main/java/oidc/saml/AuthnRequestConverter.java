@@ -8,6 +8,7 @@ import com.nimbusds.openid.connect.sdk.Prompt;
 import com.nimbusds.openid.connect.sdk.claims.ACR;
 import lombok.SneakyThrows;
 import oidc.endpoints.AuthorizationEndpoint;
+import oidc.exceptions.CookiesNotSupportedException;
 import oidc.log.MDCContext;
 import oidc.manage.ServiceProviderTranslation;
 import oidc.model.OpenIDClient;
@@ -84,6 +85,10 @@ public class AuthnRequestConverter implements
         CustomSaml2AuthenticationRequestContext context = (CustomSaml2AuthenticationRequestContext) ctx;
         HttpServletRequest request = context.getRequest();
         SavedRequest savedRequest = requestCache.getRequest(request, null);
+
+        if (savedRequest == null) {
+            throw new CookiesNotSupportedException();
+        }
 
         Map<String, String[]> parameterMap = savedRequest.getParameterMap();
         Map<String, List<String>> parameters = parameterMap.keySet().stream()
