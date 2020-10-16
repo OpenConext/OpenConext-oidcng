@@ -55,17 +55,22 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest {
 
         Saml2AuthenticationToken token = new Saml2AuthenticationToken(relyingParty, saml2Response);
 
+        OpenSamlAuthenticationProvider.ResponseToken responseToken = getResponseToken(response, token);
+
+        when(authenticationRequestRepository.findById(anyString())).thenReturn(Optional.of(
+                new AuthenticationRequest("id", new Date(), "clientId","http://some")));
+        OidcSamlAuthentication authentication = subject.convert(responseToken);
+
+        assertEquals("urn:collab:person:example.com:admin", authentication.getName());
+    }
+
+    private OpenSamlAuthenticationProvider.ResponseToken getResponseToken(Response response, Saml2AuthenticationToken token) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
         Class<?> c = Class.forName("org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider$ResponseToken");
         Constructor<?> declaredConstructor = c.getDeclaredConstructor(Response.class, Saml2AuthenticationToken.class);
 
         declaredConstructor.setAccessible(true);
-        Object o = declaredConstructor.newInstance(response, token);
-
-        when(authenticationRequestRepository.findById(anyString())).thenReturn(Optional.of(
-                new AuthenticationRequest("id", new Date(), "clientId","http://some")));
-        OidcSamlAuthentication authentication = subject.convert((OpenSamlAuthenticationProvider.ResponseToken) o);
-
-        assertEquals("urn:collab:person:example.com:admin", authentication.getName());
+        OpenSamlAuthenticationProvider.ResponseToken responseToken = (OpenSamlAuthenticationProvider.ResponseToken) declaredConstructor.newInstance(response, token);
+        return responseToken;
     }
 
     private Response unmarshall(String saml2Response) throws UnmarshallingException, XMLParserException {
