@@ -70,14 +70,14 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void invalidAcrValue() throws IOException, JOSEException, NoSuchAlgorithmException, NoSuchProviderException, ParseException {
+    public void invalidAcrValueIsAllowed() throws IOException, ParseException {
         User user = new User("sub", "unspecifiedNameId", "http://mockidp",
                 "clientId", getUserInfo(), Arrays.asList("http://test.surfconext.nl/assurance/loa3", "invalid_acr"));
         OpenIDClient client = openIDClient("mock-sp");
         String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList(), Optional.empty());
         SignedJWT jwt = SignedJWT.parse(idToken);
         Object acr = jwt.getJWTClaimsSet().getClaim("acr");
-        assertEquals("http://test.surfconext.nl/assurance/loa3", acr);
+        assertEquals("http://test.surfconext.nl/assurance/loa3 invalid_acr", acr);
     }
 
     @Test

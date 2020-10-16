@@ -122,8 +122,6 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private final SequenceRepository sequenceRepository;
 
-    private final List<String> acrValuesSupported;
-
     private final String defaultAcrValue;
 
     @Autowired
@@ -152,7 +150,6 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         this.associatedData = associatedData.getBytes(defaultCharset());
 
         Map<String, Object> wellKnownConfiguration = objectMapper.readValue(configurationPath.getInputStream(), mapTypeReference);
-        this.acrValuesSupported = (List<String>) wellKnownConfiguration.get("acr_values_supported");
         this.defaultAcrValue = defaultAcrValue;
 
     }
@@ -428,13 +425,11 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
             });
         }
         optionalUser.ifPresent(user -> {
-            List<String> validAcrValues = user.getAcrClaims().stream()
-                    .filter(acrClaim -> this.acrValuesSupported.contains(acrClaim))
-                    .collect(Collectors.toList());
-            if (CollectionUtils.isEmpty(validAcrValues)) {
+            List<String> acrClaims = user.getAcrClaims();
+            if (CollectionUtils.isEmpty(acrClaims)) {
                 builder.claim("acr", defaultAcrValue);
             } else {
-                builder.claim("acr", String.join(" ", validAcrValues));
+                builder.claim("acr", String.join(" ", acrClaims));
             }
         });
 
