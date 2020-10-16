@@ -61,7 +61,7 @@ public class FakeSamlAuthenticationFilter extends GenericFilterBean {
             userRepository.deleteAll();
             userRepository.insert(user);
 
-            request.getAttribute(REDIRECT_URI_VALID);
+            request.setAttribute(REDIRECT_URI_VALID, true);
 
             OidcSamlAuthentication samlAuthentication = new OidcSamlAuthentication(getAssertion(), user, "http://localhost");
             SecurityContextHolder.getContext().setAuthentication(samlAuthentication);

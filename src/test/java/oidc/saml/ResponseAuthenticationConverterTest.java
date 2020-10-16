@@ -1,32 +1,81 @@
 package oidc.saml;
 
-import oidc.AbstractIntegrationTest;
-import org.junit.jupiter.api.Test;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import net.shibboleth.utilities.java.support.xml.ParserPool;
+import net.shibboleth.utilities.java.support.xml.XMLParserException;
+import oidc.model.AuthenticationRequest;
+import oidc.repository.AuthenticationRequestRepository;
+import oidc.repository.UserRepository;
+import oidc.user.OidcSamlAuthentication;
+import org.apache.commons.io.IOUtils;
+import org.junit.Test;
+import org.opensaml.core.config.ConfigurationService;
+import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
+import org.opensaml.core.xml.io.UnmarshallingException;
+import org.opensaml.saml.saml2.core.Response;
+import org.opensaml.saml.saml2.core.impl.ResponseUnmarshaller;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider;
+import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationToken;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.Charset;
+import java.util.Date;
+import java.util.Optional;
 
-class ResponseAuthenticationConverterTest extends AbstractIntegrationTest {
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest {
+
+    private UserRepository userRepository = mock(UserRepository.class);
+    private AuthenticationRequestRepository authenticationRequestRepository = mock(AuthenticationRequestRepository.class);
+
+    private ResponseAuthenticationConverter subject = new ResponseAuthenticationConverter(
+            userRepository, authenticationRequestRepository, new ObjectMapper(), new ClassPathResource("oidc/saml_mapping.json")
+    );
+
+    public ResponseAuthenticationConverterTest() throws IOException {
+    }
 
     @Test
-    void convert() {
-        /*
-        /login/saml2/sso/oidcng
+    public void login() throws XMLParserException, UnmarshallingException, IOException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        InputStream inputStream = new ClassPathResource("saml/authn_response.xml").getInputStream();
+        String saml2Response = IOUtils.toString(inputStream, Charset.defaultCharset());
+        Response response = unmarshall(saml2Response);
 
-String saml2Response = request.getParameter("SAMLResponse");
-BASE64.decode(s); // do opposite
+        Saml2AuthenticationToken token = new Saml2AuthenticationToken(relyingParty, saml2Response);
 
-Document document = this.parserPool
-					.parse(new ByteArrayInputStream(response.getBytes(StandardCharsets.UTF_8)));
-			Element element = document.getDocumentElement();
-			return (Response) this.responseUnmarshaller.unmarshall(element);
+        Class<?> c = Class.forName("org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider$ResponseToken");
+        Constructor<?> declaredConstructor = c.getDeclaredConstructor(Response.class, Saml2AuthenticationToken.class);
 
+        declaredConstructor.setAccessible(true);
+        Object o = declaredConstructor.newInstance(response, token);
 
-ResponseUnmarshaller responseUnmarshaller;
+        when(authenticationRequestRepository.findById(anyString())).thenReturn(Optional.of(
+                new AuthenticationRequest("id", new Date(), "clientId","http://some")));
+        OidcSamlAuthentication authentication = subject.convert((OpenSamlAuthenticationProvider.ResponseToken) o);
 
+        assertEquals("urn:collab:person:example.com:admin", authentication.getName());
+    }
 
+    private Response unmarshall(String saml2Response) throws UnmarshallingException, XMLParserException {
+        XMLObjectProviderRegistry registry = ConfigurationService.get(XMLObjectProviderRegistry.class);
+        ResponseUnmarshaller responseUnmarshaller = (ResponseUnmarshaller) registry.getUnmarshallerFactory()
+                .getUnmarshaller(Response.DEFAULT_ELEMENT_NAME);
+        ParserPool parserPool = registry.getParserPool();
+        Document doc = parserPool.parse(new ByteArrayInputStream(saml2Response.getBytes()));
+        Element samlElement = doc.getDocumentElement();
 
-
-         */
-
+        return (Response) responseUnmarshaller.unmarshall(samlElement);
     }
 }

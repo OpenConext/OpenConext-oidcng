@@ -49,7 +49,7 @@ import static java.util.stream.Collectors.toList;
 public class ResponseAuthenticationConverter implements Converter<OpenSamlAuthenticationProvider.ResponseToken, OidcSamlAuthentication> {
 
     private static final Log LOG = LogFactory.getLog(ResponseAuthenticationConverter.class);
-    private static final Pattern inResponseToPattern = Pattern.compile("InResponseTo=\"(.+?)\">", Pattern.DOTALL);
+    private static final Pattern inResponseToPattern = Pattern.compile("InResponseTo=\"(.+?)\"", Pattern.DOTALL);
 
     private UserRepository userRepository;
     private List<UserAttribute> userAttributes;
@@ -98,7 +98,6 @@ public class ResponseAuthenticationConverter implements Converter<OpenSamlAuthen
         }
         OidcSamlAuthentication oidcSamlAuthentication =
                 new OidcSamlAuthentication(assertion, user, authenticationRequestID);
-//        SecurityContextHolder.getContext().setAuthentication(oidcSamlAuthentication);
         return oidcSamlAuthentication;
 
     }

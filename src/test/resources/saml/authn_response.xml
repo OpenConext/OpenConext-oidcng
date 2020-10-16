@@ -1,6 +1,7 @@
 <samlp:Response Destination="http://localhost:8080/oidc/SSO/alias/oidc-proxy"
                 ID="CORTO9f20cc5c1537c732bcdcf3e506d878512a37dd4a"
-                InResponseTo="ARQ20643c1-fc02-4885-920b-fcd21a9039f5" IssueInstant="2019-04-21T08:13:43Z"
+                InResponseTo="ARQ20643c1-fc02-4885-920b-fcd21a9039f5"
+                IssueInstant="2019-04-21T08:13:43Z"
                 Version="2.0" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
                 xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol">
     <saml:Issuer>https://engine.test2.surfconext.nl/authentication/idp/metadata</saml:Issuer>

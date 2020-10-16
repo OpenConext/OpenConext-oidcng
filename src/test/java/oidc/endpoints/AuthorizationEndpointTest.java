@@ -156,7 +156,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 .queryParams(queryParams)
                 .get("oidc/authorize")
                 .then()
-                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .statusCode(302)
                 .body(containsString("Missing \\\"client_id\\\" parameter"));
     }
 
@@ -174,7 +174,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 .queryParams(queryParams)
                 .get("oidc/authorize")
                 .then()
-                .statusCode(401)
+                .statusCode(302)
                 .body(containsString("not allowed"));
     }
 
