@@ -3,11 +3,13 @@ package oidc.saml;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.shibboleth.utilities.java.support.xml.ParserPool;
 import net.shibboleth.utilities.java.support.xml.XMLParserException;
+import oidc.SeedUtils;
 import oidc.model.AuthenticationRequest;
 import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.UserRepository;
 import oidc.user.OidcSamlAuthentication;
 import org.apache.commons.io.IOUtils;
+import org.junit.Before;
 import org.junit.Test;
 import org.opensaml.core.config.ConfigurationService;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
@@ -32,10 +34,12 @@ import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
-public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest {
+public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest implements SeedUtils {
 
     private UserRepository userRepository = mock(UserRepository.class);
     private AuthenticationRequestRepository authenticationRequestRepository = mock(AuthenticationRequestRepository.class);
@@ -47,8 +51,29 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest {
     public ResponseAuthenticationConverterTest() throws IOException {
     }
 
+    @Before
+    public void before() {
+        reset(userRepository, authenticationRequestRepository);
+    }
+
     @Test
     public void login() throws XMLParserException, UnmarshallingException, IOException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        when(authenticationRequestRepository.findById(anyString())).thenReturn(Optional.of(
+                new AuthenticationRequest("id", new Date(), "clientId","http://some")));
+
+        doLogin();
+    }
+
+    @Test
+    public void loginExistingUser() throws XMLParserException, UnmarshallingException, IOException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        when(authenticationRequestRepository.findById(anyString())).thenReturn(Optional.of(
+                new AuthenticationRequest("id", new Date(), "clientId","http://some")));
+        when(userRepository.findOptionalUserBySub(anyString())).thenReturn(Optional.of(user("key")));
+
+        doLogin();
+    }
+
+    private void doLogin() throws IOException, UnmarshallingException, XMLParserException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
         InputStream inputStream = new ClassPathResource("saml/authn_response.xml").getInputStream();
         String saml2Response = IOUtils.toString(inputStream, Charset.defaultCharset());
         Response response = unmarshall(saml2Response);
@@ -57,8 +82,6 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest {
 
         OpenSamlAuthenticationProvider.ResponseToken responseToken = getResponseToken(response, token);
 
-        when(authenticationRequestRepository.findById(anyString())).thenReturn(Optional.of(
-                new AuthenticationRequest("id", new Date(), "clientId","http://some")));
         OidcSamlAuthentication authentication = subject.convert(responseToken);
 
         assertEquals("urn:collab:person:example.com:admin", authentication.getName());

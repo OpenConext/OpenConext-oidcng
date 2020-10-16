@@ -4,9 +4,11 @@ import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
+import com.nimbusds.openid.connect.sdk.Prompt;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.InvalidScopeException;
 import oidc.exceptions.RedirectMismatchException;
+import oidc.exceptions.UnsupportedPromptValueException;
 import oidc.model.OpenIDClient;
 import oidc.model.ProvidedRedirectURI;
 import org.junit.Test;
@@ -70,6 +72,16 @@ public class AuthorizationEndpointUnitTest {
     @Test(expected = IllegalArgumentException.class)
     public void doValidateRedirectUriIllegal() throws IOException, ParseException {
         doValidateRedirectionUri(null, null);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void validatePrompt() {
+        AuthorizationEndpoint.validatePrompt(new Prompt("nope"));
+    }
+
+    @Test(expected = UnsupportedPromptValueException.class)
+    public void validatePromptInvalid() {
+        AuthorizationEndpoint.validatePrompt(new Prompt("select_account"));
     }
 
     @SuppressWarnings("unchecked")

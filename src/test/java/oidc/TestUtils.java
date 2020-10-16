@@ -22,8 +22,6 @@ public interface TestUtils {
         }
     }
 
-    Pattern uuidPattern = Pattern.compile("([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}){1}");
-
     TypeRef<Map<String, Object>> mapTypeRef = new TypeRef<Map<String, Object>>() {
     };
 

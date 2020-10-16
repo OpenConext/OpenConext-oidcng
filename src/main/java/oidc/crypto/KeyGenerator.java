@@ -136,13 +136,6 @@ public class KeyGenerator {
         return (X509Certificate) factory.generateCertificate(new ByteArrayInputStream(der));
     }
 
-    public static RSAPrivateKey getPrivateKey(byte[] der, String algorithm)
-            throws InvalidKeySpecException, NoSuchAlgorithmException {
-        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(der);
-        KeyFactory factory = KeyFactory.getInstance(algorithm);
-        return (RSAPrivateKey) factory.generatePrivate(spec);
-    }
-
     @SneakyThrows
     public static PrivateKey readPrivateKey(String pem) {
 

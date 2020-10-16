@@ -179,6 +179,27 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
+    public void validationScopeFormPost() throws UnsupportedEncodingException {
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("scope", "openid nopes");
+        queryParams.put("response_type", "code");
+        queryParams.put("client_id", "mock-sp");
+        queryParams.put("response_mode", "form_post");
+        queryParams.put("state", "example");
+        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", "UTF-8"));
+
+        given().redirects().follow(false)
+                .when()
+                .header("Content-type", "application/json")
+                .queryParams(queryParams)
+                .get("oidc/authorize")
+                .then()
+                .statusCode(401)
+                .body(containsString("example"))
+                .body(containsString("not allowed"));
+    }
+
+    @Test
     public void validationRedirectURI() {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", "openid");

@@ -1,5 +1,6 @@
 package oidc.model;
 
+import oidc.SeedUtils;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -12,7 +13,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.*;
 
-public class UserConsentTest {
+public class UserConsentTest implements SeedUtils {
 
     @Test
     public void renewConsentRequired() {
@@ -38,15 +39,4 @@ public class UserConsentTest {
         return new UserConsent(user, scopes, openIDClient);
     }
 
-    private User user(String key) {
-        return new User("sub", "unspecifiedNameId",
-                "authenticatingAuthority", "clientId",
-                attributes(key), Collections.singletonList("acr"));
-    }
-
-    private Map<String, Object> attributes(String key) {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(key, Collections.singletonList("value"));
-        return attributes;
-    }
 }

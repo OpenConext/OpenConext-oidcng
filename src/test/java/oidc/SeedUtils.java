@@ -2,8 +2,12 @@ package oidc;
 
 import oidc.model.AccessToken;
 import oidc.model.RefreshToken;
+import oidc.model.User;
 
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static java.util.Collections.singletonList;
@@ -34,4 +38,19 @@ public interface SeedUtils {
     default RefreshToken refreshTokenWithValue(String value) {
         return new RefreshToken(accessToken("value", "signingKey"), value, new Date());
     }
+
+    default User user(String key) {
+        return new User("sub", "unspecifiedNameId",
+                "authenticatingAuthority", "clientId",
+                attributes(key), Collections.singletonList("acr"));
+    }
+
+    default Map<String, Object> attributes(String key) {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(key, Collections.singletonList("value"));
+        return attributes;
+    }
+
+
+
 }
