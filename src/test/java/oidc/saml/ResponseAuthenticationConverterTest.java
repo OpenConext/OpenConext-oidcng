@@ -19,7 +19,6 @@ import org.opensaml.saml.saml2.core.impl.ResponseUnmarshaller;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationToken;
-import org.springframework.security.web.savedrequest.RequestCache;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -34,7 +33,6 @@ import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
@@ -59,7 +57,7 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
     @Test
     public void login() throws XMLParserException, UnmarshallingException, IOException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         when(authenticationRequestRepository.findById(anyString())).thenReturn(Optional.of(
-                new AuthenticationRequest("id", new Date(), "clientId","http://some")));
+                new AuthenticationRequest("id", new Date(), "clientId", "http://some")));
 
         doLogin();
     }
@@ -67,7 +65,7 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
     @Test
     public void loginExistingUser() throws XMLParserException, UnmarshallingException, IOException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         when(authenticationRequestRepository.findById(anyString())).thenReturn(Optional.of(
-                new AuthenticationRequest("id", new Date(), "clientId","http://some")));
+                new AuthenticationRequest("id", new Date(), "clientId", "http://some")));
         when(userRepository.findOptionalUserBySub(anyString())).thenReturn(Optional.of(user("key")));
 
         doLogin();
@@ -87,6 +85,7 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
         assertEquals("urn:collab:person:example.com:admin", authentication.getName());
     }
 
+    //See https://github.com/spring-projects/spring-security/issues/9004
     private OpenSamlAuthenticationProvider.ResponseToken getResponseToken(Response response, Saml2AuthenticationToken token) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
         Class<?> c = Class.forName("org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider$ResponseToken");
         Constructor<?> declaredConstructor = c.getDeclaredConstructor(Response.class, Saml2AuthenticationToken.class);

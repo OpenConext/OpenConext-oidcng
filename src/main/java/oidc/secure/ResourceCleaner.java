@@ -20,7 +20,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -37,7 +36,7 @@ public class ResourceCleaner {
     private AuthorizationCodeRepository authorizationCodeRepository;
     private UserRepository userRepository;
     private UserConsentRepository userConsentRepository;
-    private AuthenticationRequestRepository  authenticationRequestRepository;
+    private AuthenticationRequestRepository authenticationRequestRepository;
     private boolean cronJobResponsible;
     private long consentExpiryDurationDays;
 
@@ -47,7 +46,7 @@ public class ResourceCleaner {
                            AuthorizationCodeRepository authorizationCodeRepository,
                            UserRepository userRepository,
                            UserConsentRepository userConsentRepository,
-                           AuthenticationRequestRepository  authenticationRequestRepository,
+                           AuthenticationRequestRepository authenticationRequestRepository,
                            @Value("${cron.consent-expiry-duration-days}") long consentExpiryDurationDays,
                            @Value("${cron.node-cron-job-responsible}") boolean cronJobResponsible) {
         this.accessTokenRepository = accessTokenRepository;
@@ -55,7 +54,7 @@ public class ResourceCleaner {
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.userRepository = userRepository;
         this.authenticationRequestRepository = authenticationRequestRepository;
-        this.consentExpiryDurationDays =consentExpiryDurationDays;
+        this.consentExpiryDurationDays = consentExpiryDurationDays;
         this.userConsentRepository = userConsentRepository;
         this.cronJobResponsible = cronJobResponsible;
     }

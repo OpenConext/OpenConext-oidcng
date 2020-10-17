@@ -6,6 +6,6 @@ public abstract class BaseException extends RuntimeException {
         super(errorMsg);
     }
 
-    public abstract String getErrorCode() ;
+    public abstract String getErrorCode();
 
 }

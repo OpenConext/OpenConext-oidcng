@@ -16,8 +16,6 @@ import org.springframework.security.web.savedrequest.RequestCache;
 
 import javax.servlet.http.HttpServletRequest;
 
-import java.security.cert.CertificateException;
-
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -31,7 +29,7 @@ public class AuthnRequestConverterUnitTest extends AbstractSamlUnitTest implemen
     private AuthenticationRequestRepository authenticationRequestRepository = mock(AuthenticationRequestRepository.class);
     private RequestCache requestCache = mock(RequestCache.class);
 
-    private AuthnRequestConverter subject ;
+    private AuthnRequestConverter subject;
 
     @Before
     public void beforeTest() throws Exception {

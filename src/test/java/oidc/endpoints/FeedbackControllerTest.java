@@ -4,7 +4,6 @@ import oidc.AbstractIntegrationTest;
 import org.junit.Test;
 
 import static io.restassured.RestAssured.given;
-import static org.junit.Assert.*;
 
 public class FeedbackControllerTest extends AbstractIntegrationTest {
 

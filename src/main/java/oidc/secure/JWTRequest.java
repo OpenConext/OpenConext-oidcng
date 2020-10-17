@@ -12,7 +12,6 @@ import com.nimbusds.jose.util.JSONObjectUtils;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import com.nimbusds.oauth2.sdk.ResponseMode;
 import com.nimbusds.oauth2.sdk.ResponseType;
@@ -42,7 +41,6 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 

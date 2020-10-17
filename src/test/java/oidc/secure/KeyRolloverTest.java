@@ -12,8 +12,6 @@ import org.springframework.data.mongodb.core.query.Query;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Date;

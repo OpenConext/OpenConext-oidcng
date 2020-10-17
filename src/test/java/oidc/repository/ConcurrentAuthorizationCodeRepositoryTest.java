@@ -11,7 +11,8 @@ import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.Date;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class ConcurrentAuthorizationCodeRepositoryTest extends AbstractIntegrationTest {
 
@@ -23,9 +24,9 @@ public class ConcurrentAuthorizationCodeRepositoryTest extends AbstractIntegrati
 
     @Test
     public void findByCodeAndMarkUsed() throws URISyntaxException {
-        authorizationCodeRepository.save(new AuthorizationCode("code", "sub","client_id",
+        authorizationCodeRepository.save(new AuthorizationCode("code", "sub", "client_id",
                 Collections.singletonList("openid"), new URI("http://localhost"), null,
-                null,"nonce",null, true, new Date()));
+                null, "nonce", null, true, new Date()));
         assertNull(concurrentAuthorizationCodeRepository.findByCodeNotAlreadyUsedAndMarkAsUsed("nope"));
 
         AuthorizationCode authorizationCode = concurrentAuthorizationCodeRepository.findByCodeNotAlreadyUsedAndMarkAsUsed("code");

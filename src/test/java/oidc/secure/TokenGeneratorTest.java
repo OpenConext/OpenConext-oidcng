@@ -5,7 +5,6 @@ import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import oidc.AbstractIntegrationTest;
-
 import oidc.model.EncryptedTokenValue;
 import oidc.model.OpenIDClient;
 import oidc.model.SigningKey;

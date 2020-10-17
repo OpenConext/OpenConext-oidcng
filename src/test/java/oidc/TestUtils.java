@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 public interface TestUtils {
 

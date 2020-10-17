@@ -1,19 +1,15 @@
 package oidc.user;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import oidc.model.User;
 import org.opensaml.saml.saml2.core.Assertion;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 
 @Getter
 public class OidcSamlAuthentication extends AbstractAuthenticationToken {

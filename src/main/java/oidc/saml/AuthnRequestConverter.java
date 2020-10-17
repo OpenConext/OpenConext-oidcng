@@ -2,7 +2,6 @@ package oidc.saml;
 
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.openid.connect.sdk.Prompt;
 import com.nimbusds.openid.connect.sdk.claims.ACR;
@@ -35,10 +34,6 @@ import org.opensaml.saml.saml2.core.impl.ScopingBuilder;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationRequestContext;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
-import org.springframework.security.web.PortResolver;
-import org.springframework.security.web.PortResolverImpl;
-import org.springframework.security.web.savedrequest.DefaultSavedRequest;
-import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.util.CollectionUtils;

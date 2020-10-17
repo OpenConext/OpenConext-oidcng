@@ -225,12 +225,12 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     @SneakyThrows
-    private RSAKey parseEncryptedRsaKey(SigningKey signingKey)  {
+    private RSAKey parseEncryptedRsaKey(SigningKey signingKey) {
         return RSAKey.parse(decryptAead(signingKey.getJwk(), signingKey.getSymmetricKeyId()));
     }
 
     @SneakyThrows
-    private KeysetHandle parseKeysetHandle(SymmetricKey symmetricKey)  {
+    private KeysetHandle parseKeysetHandle(SymmetricKey symmetricKey) {
         byte[] decoded = Base64.getDecoder().decode(symmetricKey.getAead());
         return KeysetHandle.read(JsonKeysetReader.withBytes(decoded), AeadFactory.getPrimitive(primaryKeysetHandle));
     }

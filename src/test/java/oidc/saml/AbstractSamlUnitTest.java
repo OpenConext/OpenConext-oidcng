@@ -2,7 +2,6 @@ package oidc.saml;
 
 import lombok.SneakyThrows;
 import oidc.crypto.KeyGenerator;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.springframework.security.saml2.core.OpenSamlInitializationService;
 import org.springframework.security.saml2.core.Saml2X509Credential;

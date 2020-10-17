@@ -6,44 +6,31 @@ import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
-import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.OperatorCreationException;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.bouncycastle.util.encoders.Hex;
-import java.io.ByteArrayInputStream;
-import java.io.CharArrayReader;
-import java.io.IOException;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import javax.xml.bind.DatatypeConverter;
-
-
-
 import org.bouncycastle.openssl.PEMDecryptorProvider;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.util.encoders.Hex;
 
-import static java.util.Optional.ofNullable;
+import javax.xml.bind.DatatypeConverter;
+import java.io.ByteArrayInputStream;
+import java.io.CharArrayReader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
+import java.security.PrivateKey;
 import java.security.Security;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -63,7 +50,8 @@ public class KeyGenerator {
         Security.addProvider(bcProvider);
     }
 
-    private KeyGenerator() {}
+    private KeyGenerator() {
+    }
 
     public static String[] generateKeys() throws Exception {
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA", "BC");
@@ -131,7 +119,7 @@ public class KeyGenerator {
     }
 
     @SneakyThrows
-    public static X509Certificate getCertificate(byte[] der)  {
+    public static X509Certificate getCertificate(byte[] der) {
         CertificateFactory factory = CertificateFactory.getInstance("X.509");
         return (X509Certificate) factory.generateCertificate(new ByteArrayInputStream(der));
     }
@@ -139,24 +127,23 @@ public class KeyGenerator {
     @SneakyThrows
     public static PrivateKey readPrivateKey(String pem) {
 
-            PEMParser parser = new PEMParser(new CharArrayReader(pem.toCharArray()));
-            Object obj = parser.readObject();
-            parser.close();
-            JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
-            KeyPair kp;
-            if (obj instanceof PEMEncryptedKeyPair) {
-                // Encrypted key - we will use provided password
-                PEMEncryptedKeyPair ckp = (PEMEncryptedKeyPair) obj;
-                PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder().build("".toCharArray());
-                kp = converter.getKeyPair(ckp.decryptKeyPair(decProv));
-            }
-            else {
-                // Unencrypted key - no password needed
-                PEMKeyPair ukp = (PEMKeyPair) obj;
-                kp = converter.getKeyPair(ukp);
-            }
+        PEMParser parser = new PEMParser(new CharArrayReader(pem.toCharArray()));
+        Object obj = parser.readObject();
+        parser.close();
+        JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+        KeyPair kp;
+        if (obj instanceof PEMEncryptedKeyPair) {
+            // Encrypted key - we will use provided password
+            PEMEncryptedKeyPair ckp = (PEMEncryptedKeyPair) obj;
+            PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder().build("".toCharArray());
+            kp = converter.getKeyPair(ckp.decryptKeyPair(decProv));
+        } else {
+            // Unencrypted key - no password needed
+            PEMKeyPair ukp = (PEMKeyPair) obj;
+            kp = converter.getKeyPair(ukp);
+        }
 
-            return kp.getPrivate();
+        return kp.getPrivate();
     }
 
 }

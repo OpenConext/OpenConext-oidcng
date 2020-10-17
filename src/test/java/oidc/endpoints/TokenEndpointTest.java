@@ -38,7 +38,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
@@ -48,7 +47,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static com.nimbusds.oauth2.sdk.auth.JWTAuthentication.CLIENT_ASSERTION_TYPE;
 import static io.restassured.RestAssured.given;

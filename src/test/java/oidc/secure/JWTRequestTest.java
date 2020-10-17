@@ -21,7 +21,6 @@ import com.nimbusds.openid.connect.sdk.Display;
 import com.nimbusds.openid.connect.sdk.Nonce;
 import com.nimbusds.openid.connect.sdk.Prompt;
 import com.nimbusds.openid.connect.sdk.claims.ACR;
-import oidc.TestUtils;
 import oidc.endpoints.MapTypeReference;
 import oidc.exceptions.UnsupportedJWTException;
 import oidc.model.OpenIDClient;

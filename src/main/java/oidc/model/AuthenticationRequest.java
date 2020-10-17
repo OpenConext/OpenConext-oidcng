@@ -12,7 +12,7 @@ import java.util.Date;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-    public class AuthenticationRequest {
+public class AuthenticationRequest {
 
     @Id
     private String id;

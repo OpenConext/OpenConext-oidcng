@@ -17,7 +17,6 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -114,7 +113,7 @@ public class AuthorizationEndpointUnitTest {
         OpenIDClient client = openIDClient(clientRedirectUri, "open_id", "authorization_code");
         ProvidedRedirectURI redirectUri = AuthorizationEndpoint.validateRedirectionURI(authorizationRequest, client);
 
-        assertEquals(redirectUri.getRedirectURI(), requestRedirectUri != null ? requestRedirectUri : clientRedirectUri) ;
+        assertEquals(redirectUri.getRedirectURI(), requestRedirectUri != null ? requestRedirectUri : clientRedirectUri);
     }
 
     private OpenIDClient openIDClient(String redirectUrl, String scope, String grant) {

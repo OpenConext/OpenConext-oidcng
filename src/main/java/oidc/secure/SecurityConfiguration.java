@@ -214,7 +214,7 @@ public class SecurityConfiguration {
             http.csrf().disable();
             http
                     .requestMatchers()
-                    .antMatchers("/oidc/**","/saml2/**", "/login/**")
+                    .antMatchers("/oidc/**", "/saml2/**", "/login/**")
                     .and()
                     .authorizeRequests()
                     .antMatchers("/oidc/authorize")

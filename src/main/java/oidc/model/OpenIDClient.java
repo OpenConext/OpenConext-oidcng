@@ -2,11 +2,9 @@ package oidc.model;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.opensaml.saml.saml2.metadata.NameIDFormat;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;

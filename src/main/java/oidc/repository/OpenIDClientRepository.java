@@ -1,7 +1,6 @@
 package oidc.repository;
 
 import oidc.model.OpenIDClient;
-import oidc.model.User;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 

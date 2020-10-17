@@ -1,7 +1,5 @@
 package oidc.web;
 
-import org.junit.Test;
-
 public class FakeSamlAuthenticationFilterTest {
 
 //    @Test

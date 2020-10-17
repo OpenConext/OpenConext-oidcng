@@ -15,7 +15,7 @@ public interface AuthorizationCodeRepository extends MongoRepository<Authorizati
 
     Long deleteByExpiresInBefore(Date expiryDate);
 
-    @Query(value="{}", fields="{sub : 1, _id : 0}")
+    @Query(value = "{}", fields = "{sub : 1, _id : 0}")
     List<AuthorizationCode> findSub();
 
 }
