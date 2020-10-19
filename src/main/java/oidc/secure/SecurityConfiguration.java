@@ -57,12 +57,16 @@ import org.springframework.security.saml2.core.Saml2X509Credential;
 import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationRequestFactory;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationRequestFactory;
+import org.springframework.security.saml2.provider.service.metadata.OpenSamlMetadataResolver;
 import org.springframework.security.saml2.provider.service.registration.InMemoryRelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
+import org.springframework.security.saml2.provider.service.servlet.filter.Saml2WebSsoAuthenticationFilter;
 import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationRequestContextResolver;
+import org.springframework.security.saml2.provider.service.web.Saml2MetadataFilter;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationProvider;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
@@ -154,7 +158,7 @@ public class SecurityConfiguration {
 
         @Bean
         public RelyingPartyRegistrationRepository relyingPartyRegistrationRepository() {
-            String registrationId = "oidcng";//TODO from application.yml
+            String registrationId = "oidcng";
             //local signing (and local decryption key and remote encryption certificate)
             Saml2X509Credential signingCredential = getSigningCredential();
             //IDP certificate for verification of incoming messages
@@ -204,12 +208,23 @@ public class SecurityConfiguration {
             return new Saml2X509Credential(privateKey, x509Certificate, Saml2X509Credential.Saml2X509CredentialType.SIGNING);
         }
 
-        @Override
-        protected void configure(HttpSecurity http) throws Exception {
+        @Autowired
+        @Bean
+        public OpenSamlAuthenticationProvider configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+            //because Autowired this will end up in the global ProviderManager
             OpenSamlAuthenticationProvider authenticationProvider = new OpenSamlAuthenticationProvider();
             ResponseAuthenticationConverter responseAuthenticationConverter =
                     new ResponseAuthenticationConverter(userRepository, authenticationRequestRepository, objectMapper, oidcSamlMapping);
             authenticationProvider.setResponseAuthenticationConverter(responseAuthenticationConverter);
+
+            auth.authenticationProvider(authenticationProvider);
+            return authenticationProvider;
+        }
+
+
+
+        @Override
+        protected void configure(HttpSecurity http) throws Exception {
             http.cors().configurationSource(new OidcCorsConfigurationSource()).configure(http);
             http.csrf().disable();
             http
@@ -225,10 +240,15 @@ public class SecurityConfiguration {
                     .permitAll()
                     .and()
                     .saml2Login(saml2 -> {
-                        saml2.authenticationManager(new ProviderManager(authenticationProvider));
+                        OpenSamlAuthenticationProvider openSamlAuthenticationProvider =
+                                getApplicationContext().getBean(OpenSamlAuthenticationProvider.class);
+                        saml2.authenticationManager(new ProviderManager(openSamlAuthenticationProvider));
                         AuthenticationSuccessHandler bean = getApplicationContext().getBean(AuthenticationSuccessHandler.class);
                         saml2.successHandler(bean);
-                    });
+                    })
+                    .addFilterBefore(new Saml2MetadataFilter(
+                            req -> relyingPartyRegistrationRepository().findByRegistrationId("oidcng"),
+                            new OpenSamlMetadataResolver()), Saml2WebSsoAuthenticationFilter.class);
 
             http.addFilterBefore(new MDCContextFilter(), BasicAuthenticationFilter.class);
 
