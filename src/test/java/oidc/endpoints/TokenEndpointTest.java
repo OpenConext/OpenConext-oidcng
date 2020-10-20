@@ -87,18 +87,20 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
     }
 
     @Test
-    public void tokenTwice() throws IOException {
+    public void tokenTwice() throws IOException, ParseException {
         String code = doAuthorize();
         String accessToken = (String) doToken(code).get("access_token");
 
-        String accessTokenValue = AccessToken.computeInnerValueFromJWT(accessToken);
-        assertEquals(1, mongoTemplate.find(Query.query(Criteria.where("value").is(accessTokenValue)), AccessToken.class).size());
+        SignedJWT signedJWT = SignedJWT.parse(accessToken);
+        assertEquals(1, mongoTemplate.find(Query.query(Criteria.where("jwtId").is(signedJWT.getJWTClaimsSet().getJWTID())),
+                AccessToken.class).size());
 
         Map<String, Object> body = doToken(code);
         assertEquals(401, body.get("status"));
         assertEquals("Authorization code already used", body.get("message"));
 
-        assertEquals(0, mongoTemplate.find(Query.query(Criteria.where("value").is(accessTokenValue)), AccessToken.class).size());
+        assertEquals(0, mongoTemplate.find(Query.query(Criteria.where("jwtId").is(signedJWT.getJWTClaimsSet().getJWTID())),
+                AccessToken.class).size());
     }
 
     @Test

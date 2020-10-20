@@ -151,7 +151,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void introspectionWithExpiredAccessToken() throws IOException {
+    public void introspectionWithExpiredAccessToken() throws IOException, java.text.ParseException {
         String accessToken = getAccessToken();
         expireAccessToken(accessToken);
         Map<String, Object> result = callIntrospection("mock-sp", accessToken, "secret");

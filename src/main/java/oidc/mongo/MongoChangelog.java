@@ -15,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.index.IndexOperations;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,16 @@ public class MongoChangelog {
         mongoTemplate.indexOps(RefreshToken.class)
                 .ensureIndex(new Index("value", Sort.Direction.ASC).named(String.format("value_unique")).unique());
     }
+
+    @ChangeSet(order = "006", id = "dropValueIndexes", author = "Okke Harsta")
+    public void dropValueIndexes(MongockTemplate mongoTemplate) {
+        Arrays.asList("access_tokens", "refresh_tokens").forEach(collection -> {
+            IndexOperations indexOperations = mongoTemplate.indexOps(collection);
+            indexOperations.dropIndex("value_unique");
+            indexOperations.ensureIndex(new Index("jwtId", Sort.Direction.ASC).unique());
+        });
+    }
+
 
     private void ensureCollectionsAndIndexes(MongockTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {
         ensureCollectionsAndIndexes(mongoTemplate, indexInfo, true);

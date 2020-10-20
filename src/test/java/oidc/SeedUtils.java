@@ -14,12 +14,12 @@ import static java.util.Collections.singletonList;
 
 public interface SeedUtils {
 
-    default AccessToken accessToken(String value, Date expiresIn) {
-        return new AccessToken(value, "sub", "clientId", singletonList("openid"), "K0000001", expiresIn, false, null, null);
+    default AccessToken accessToken(String jwtId, Date expiresIn) {
+        return new AccessToken(jwtId, "sub", "clientId", singletonList("openid"), "K0000001", expiresIn, false, null, null);
     }
 
-    default AccessToken accessToken(String value, String signingKey) {
-        return new AccessToken(value, "sub", "clientId", singletonList("openid"), signingKey, new Date(), false, null, null);
+    default AccessToken accessToken(String jwtId, String signingKey) {
+        return new AccessToken(jwtId, "sub", "clientId", singletonList("openid"), signingKey, new Date(), false, null, null);
     }
 
     default AccessToken accessToken(String unspecifiedUrnHash) {
@@ -28,15 +28,15 @@ public interface SeedUtils {
     }
 
     default RefreshToken refreshToken(String signingKey) {
-        return new RefreshToken(accessToken("value", signingKey), UUID.randomUUID().toString(), new Date());
+        return new RefreshToken(UUID.randomUUID().toString(),accessToken(UUID.randomUUID().toString(), signingKey), new Date());
     }
 
     default RefreshToken refreshToken(Date expiresIn) {
-        return new RefreshToken(accessToken("value", "signingKey"), UUID.randomUUID().toString(), expiresIn);
+        return new RefreshToken(UUID.randomUUID().toString(),accessToken(UUID.randomUUID().toString(), "signingKey"), expiresIn);
     }
 
-    default RefreshToken refreshTokenWithValue(String value) {
-        return new RefreshToken(accessToken("value", "signingKey"), value, new Date());
+    default RefreshToken refreshTokenWithValue(String jwtId) {
+        return new RefreshToken(jwtId, accessToken(jwtId, "signingKey"), new Date());
     }
 
     default User user(String key) {

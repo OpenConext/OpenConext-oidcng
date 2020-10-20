@@ -24,17 +24,16 @@ public class AccessTokenRepositoryTest extends AbstractIntegrationTest implement
 
     @Test
     public void findByValueOptional() {
-        assertEquals(false, accessTokenRepository.findOptionalAccessTokenByValue("nope").isPresent());
+        assertEquals(false, accessTokenRepository.findByJwtId("nope").isPresent());
     }
 
     @Test
     public void findByValue() {
-        String value = RandomStringUtils.random(3200, true, true);
-        accessTokenRepository.insert(accessToken(value, new Date()));
+        String jwtId = UUID.randomUUID().toString();
+        accessTokenRepository.insert(accessToken(jwtId, new Date()));
 
-        AccessToken accessToken = accessTokenRepository.findOptionalAccessTokenByValue(value).get();
-        assertEquals(AccessToken.computeInnerValueFromJWT(value),
-                ReflectionTestUtils.getField(accessToken, "value"));
+        AccessToken accessToken = accessTokenRepository.findByJwtId(jwtId).get();
+        assertEquals(jwtId, accessToken.getJwtId());
     }
 
     @Test
@@ -53,7 +52,7 @@ public class AccessTokenRepositoryTest extends AbstractIntegrationTest implement
         String unspecifiedUrnHash = KeyGenerator.oneWayHash("urn:collab:person:eduid.nl:7d4fca9b-2169-4d55-8347-73cf29b955a2", UUID.randomUUID().toString());
         accessTokenRepository.insert(accessToken(unspecifiedUrnHash));
 
-        List<AccessToken> tokens = accessTokenRepository.findAccessTokenByUnspecifiedUrnHash(unspecifiedUrnHash);
+        List<AccessToken> tokens = accessTokenRepository.findByUnspecifiedUrnHash(unspecifiedUrnHash);
         assertEquals(1, tokens.size());
     }
 

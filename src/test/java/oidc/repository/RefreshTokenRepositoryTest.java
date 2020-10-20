@@ -12,6 +12,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -22,17 +23,17 @@ public class RefreshTokenRepositoryTest extends AbstractIntegrationTest implemen
     private RefreshTokenRepository subject;
 
     @Test
-    public void findByValue() {
-        String value = RandomStringUtils.random(3200, true, true);
-        subject.insert(refreshTokenWithValue(value));
+    public void findByJwtId() {
+        String jwtId = UUID.randomUUID().toString();
+        RefreshToken refreshToken = refreshTokenWithValue(jwtId);
+        subject.insert(refreshToken);
 
-        RefreshToken token = subject.findOptionalRefreshTokenByValue(value).get();
-        assertEquals(AccessToken.computeInnerValueFromJWT(value),
-                ReflectionTestUtils.getField(token, "value"));
+        RefreshToken token = subject.findByJwtId(jwtId).get();
+        assertEquals(jwtId, token.getJwtId());
     }
 
-    public void findByValueEmpty() {
-        assertFalse(subject.findOptionalRefreshTokenByValue("nope").isPresent());
+    public void findByJwtEmpty() {
+        assertFalse(subject.findByJwtId("nope").isPresent());
     }
 
     @Test

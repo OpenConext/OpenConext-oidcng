@@ -34,6 +34,7 @@ import oidc.model.EncryptedTokenValue;
 import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
 import oidc.model.Scope;
+import oidc.model.TokenValue;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
@@ -248,9 +249,16 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         return new ResponseEntity<>(body, responseHttpHeaders, HttpStatus.OK);
     }
 
-    private ResponseEntity handleRefreshCodeGrant(RefreshTokenGrant refreshTokenGrant, OpenIDClient client) {
+    private ResponseEntity handleRefreshCodeGrant(RefreshTokenGrant refreshTokenGrant, OpenIDClient client) throws java.text.ParseException {
         String refreshTokenValue = refreshTokenGrant.getRefreshToken().getValue();
-        RefreshToken refreshToken = refreshTokenRepository.findOptionalRefreshTokenByValue(refreshTokenValue)
+
+        Optional<SignedJWT> optionalSignedJWT = tokenGenerator.parseAndValidateSignedJWT(refreshTokenValue);
+        if (!optionalSignedJWT.isPresent()) {
+            throw new UnauthorizedException("Invalid refresh_token value");
+        }
+        SignedJWT signedJWT = optionalSignedJWT.get();
+        String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
+        RefreshToken refreshToken = refreshTokenRepository.findByJwtId(jwtId)
                 .orElseThrow(() -> new IllegalArgumentException("RefreshToken not found"));
 
         if (!refreshToken.getClientId().equals(client.getClientId())) {
@@ -267,7 +275,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         accessToken.ifPresent(token -> accessTokenRepository.delete(token));
 
         Optional<User> optionalUser = refreshToken.isClientCredentials() ? Optional.empty() :
-                Optional.of(tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(refreshTokenValue));
+                Optional.of(tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(signedJWT));
         Map<String, Object> body = tokenEndpointResponse(optionalUser, client, refreshToken.getScopes(),
                 Collections.emptyList(), false, null, optionalUser.map(User::getUpdatedAt), Optional.empty());
         return new ResponseEntity<>(body, responseHttpHeaders, HttpStatus.OK);
@@ -290,28 +298,29 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         EncryptedTokenValue encryptedAccessToken = user
                 .map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client))
                 .orElse(tokenGenerator.generateAccessToken(client));
-        String accessTokenValue = encryptedAccessToken.getValue();
+
         String sub = user.map(User::getSub).orElse(client.getClientId());
         String unspecifiedUrnHash = user.map(u -> KeyGenerator.oneWayHash(u.getUnspecifiedNameId(), this.salt)).orElse(null);
 
-        AccessToken accessToken = new AccessToken(accessTokenValue, sub, client.getClientId(), scopes,
+        AccessToken accessToken = new AccessToken(encryptedAccessToken.getJwtId(), sub, client.getClientId(), scopes,
                 encryptedAccessToken.getKeyId(), accessTokenValidity(client), !user.isPresent(),
                 authorizationCodeId.orElse(null), unspecifiedUrnHash);
         accessToken = accessTokenRepository.insert(accessToken);
 
-        map.put("access_token", accessTokenValue);
+        map.put("access_token", encryptedAccessToken.getValue());
         map.put("token_type", "Bearer");
         if (client.getGrants().contains(GrantType.REFRESH_TOKEN.getValue())) {
             EncryptedTokenValue encryptedRefreshToken = user
                     .map(u -> tokenGenerator.generateRefreshTokenWithEmbeddedUserInfo(u, client))
                     .orElse(tokenGenerator.generateRefreshToken(client));
             String refreshTokenValue = encryptedRefreshToken.getValue();
-            refreshTokenRepository.insert(new RefreshToken(accessToken, refreshTokenValue, refreshTokenValidity(client)));
+            refreshTokenRepository.insert(new RefreshToken(encryptedRefreshToken.getJwtId(), accessToken, refreshTokenValidity(client)));
             map.put("refresh_token", refreshTokenValue);
         }
         map.put("expires_in", client.getAccessTokenValidity());
         if (isOpenIDRequest(scopes) && !clientCredentials) {
-            map.put("id_token", tokenGenerator.generateIDTokenForTokenEndpoint(user, client, nonce, idTokenClaims, authorizationTime));
+            TokenValue tokenValue = tokenGenerator.generateIDTokenForTokenEndpoint(user, client, nonce, idTokenClaims, authorizationTime);
+            map.put("id_token", tokenValue.getValue());
         }
         return map;
     }

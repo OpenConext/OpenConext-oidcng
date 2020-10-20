@@ -1,5 +1,6 @@
 package oidc.endpoints;
 
+import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
@@ -36,16 +37,16 @@ public class UserInfoEndpoint implements OrderedMap {
     }
 
     @GetMapping("oidc/userinfo")
-    public ResponseEntity<Map<String, Object>> getUserInfo(HttpServletRequest request) throws IOException, ParseException {
+    public ResponseEntity<Map<String, Object>> getUserInfo(HttpServletRequest request) throws IOException, ParseException, java.text.ParseException {
         return userInfo(request);
     }
 
     @PostMapping(value = {"oidc/userinfo"}, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
-    public ResponseEntity<Map<String, Object>> postUserInfo(HttpServletRequest request) throws ParseException, IOException {
+    public ResponseEntity<Map<String, Object>> postUserInfo(HttpServletRequest request) throws ParseException, IOException, java.text.ParseException {
         return userInfo(request);
     }
 
-    private ResponseEntity<Map<String, Object>> userInfo(HttpServletRequest request) throws ParseException, IOException {
+    private ResponseEntity<Map<String, Object>> userInfo(HttpServletRequest request) throws ParseException, IOException, java.text.ParseException {
         HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
         UserInfoRequest userInfoRequest = UserInfoRequest.parse(httpRequest);
 
@@ -53,7 +54,14 @@ public class UserInfoEndpoint implements OrderedMap {
 
         MDCContext.mdcContext("action", "Userinfo", "accessTokenValue", accessTokenValue);
 
-        Optional<AccessToken> optionalAccessToken = accessTokenRepository.findOptionalAccessTokenByValue(accessTokenValue);
+        Optional<SignedJWT> optionalSignedJWT = tokenGenerator.parseAndValidateSignedJWT(accessTokenValue);
+        if (!optionalSignedJWT.isPresent()) {
+            return errorResponse("Access Token not found");
+        }
+        SignedJWT signedJWT = optionalSignedJWT.get();
+        String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
+        Optional<AccessToken> optionalAccessToken = accessTokenRepository.findByJwtId(jwtId);
+
         if (!optionalAccessToken.isPresent()) {
             return errorResponse("Access Token not found");
         }
@@ -64,7 +72,7 @@ public class UserInfoEndpoint implements OrderedMap {
         if (accessToken.isClientCredentials()) {
             throw new InvalidGrantException("UserEndpoint not allowed for Client Credentials");
         }
-        User user = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessTokenValue);
+        User user = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(signedJWT);
 
         MDCContext.mdcContext(user);
 

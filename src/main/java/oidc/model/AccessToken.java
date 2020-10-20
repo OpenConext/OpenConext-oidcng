@@ -20,7 +20,7 @@ public class AccessToken {
     @Id
     private String id;
 
-    private String value;
+    private String jwtId;
 
     private String sub;
 
@@ -40,9 +40,9 @@ public class AccessToken {
 
     private String unspecifiedUrnHash;
 
-    public AccessToken(String value, String sub, String clientId, List<String> scopes, String signingKeyId,
+    public AccessToken(String jwtId, String sub, String clientId, List<String> scopes, String signingKeyId,
                        Date expiresIn, boolean clientCredentials, String authorizationCodeId, String unspecifiedUrnHash) {
-        this.value = computeInnerValueFromJWT(value);
+        this.jwtId = jwtId;
         this.sub = sub;
         this.clientId = clientId;
         this.scopes = scopes;
@@ -66,6 +66,10 @@ public class AccessToken {
 
     public String getId() {
         return id;
+    }
+
+    public String getJwtId() {
+        return jwtId;
     }
 
     public String getSub() {

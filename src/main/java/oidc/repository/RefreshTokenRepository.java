@@ -12,16 +12,9 @@ import java.util.Optional;
 @Repository
 public interface RefreshTokenRepository extends MongoRepository<RefreshToken, String> {
 
-    default Optional<RefreshToken> findOptionalRefreshTokenByValue(String value) {
-        String newValue = AccessToken.computeInnerValueFromJWT(value);
-        return findRefreshTokenByValue(newValue);
-    }
+    Optional<RefreshToken> findByJwtId(String jwtId);
 
     Long deleteByExpiresInBefore(Date expiryDate);
 
-    List<RefreshToken> findRefreshTokenByUnspecifiedUrnHash(String unspecifiedUrnHash);
-
-    //Do not use
-    Optional<RefreshToken> findRefreshTokenByValue(String value);
-
+    List<RefreshToken> findByUnspecifiedUrnHash(String unspecifiedUrnHash);
 }

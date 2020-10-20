@@ -34,6 +34,7 @@ import oidc.model.EncryptedTokenValue;
 import oidc.model.OpenIDClient;
 import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
+import oidc.model.TokenValue;
 import oidc.model.User;
 import oidc.repository.SequenceRepository;
 import oidc.repository.SigningKeyRepository;
@@ -238,17 +239,17 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     @SneakyThrows
     public EncryptedTokenValue generateAccessToken(OpenIDClient client) {
         String currentSigningKeyId = ensureLatestSigningKey();
-        String accessToken = idToken(client, Optional.empty(), Collections.emptyMap(), Collections.emptyList(),
+        TokenValue tokenValue = idToken(client, Optional.empty(), Collections.emptyMap(), Collections.emptyList(),
                 false, currentSigningKeyId, true);
-        return new EncryptedTokenValue(accessToken, currentSigningKeyId);
+        return new EncryptedTokenValue(tokenValue, currentSigningKeyId);
     }
 
     @SneakyThrows
     public EncryptedTokenValue generateRefreshToken(OpenIDClient client) {
         String currentSigningKeyId = ensureLatestSigningKey();
-        String refreshToken = idToken(client, Optional.empty(), Collections.emptyMap(), Collections.emptyList(),
+        TokenValue tokenValue = idToken(client, Optional.empty(), Collections.emptyMap(), Collections.emptyList(),
                 false, currentSigningKeyId, false);
-        return new EncryptedTokenValue(refreshToken, currentSigningKeyId);
+        return new EncryptedTokenValue(tokenValue, currentSigningKeyId);
     }
 
     public String generateAuthorizationCode() {
@@ -264,7 +265,8 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     @SneakyThrows
     public EncryptedTokenValue generateAccessTokenWithEmbeddedUserInfo(User user, OpenIDClient client) {
         String currentSigningKeyId = this.ensureLatestSigningKey();
-        return new EncryptedTokenValue(doGenerateAccessTokenWithEmbeddedUser(user, client, currentSigningKeyId, true), currentSigningKeyId);
+        TokenValue tokenValue = doGenerateAccessTokenWithEmbeddedUser(user, client, currentSigningKeyId, true);
+        return new EncryptedTokenValue(tokenValue, currentSigningKeyId);
     }
 
     @SneakyThrows
@@ -273,35 +275,41 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         return new EncryptedTokenValue(doGenerateAccessTokenWithEmbeddedUser(user, client, currentSigningKeyId, false), currentSigningKeyId);
     }
 
-    private String doGenerateAccessTokenWithEmbeddedUser(User user, OpenIDClient client, String signingKey, boolean isAccessToken)
+    private TokenValue doGenerateAccessTokenWithEmbeddedUser(User user, OpenIDClient client, String signingKey, boolean isAccessToken)
             throws IOException, JOSEException, GeneralSecurityException, ParseException {
         String json = objectMapper.writeValueAsString(user);
-
-        EncryptedTokenValue encryptedTokenValue = encryptAead(json);
+        String currentSymmetricKeyId = this.ensureLatestSymmetricKey();
+        String value = encryptAead(json, currentSymmetricKeyId);
 
         Map<String, Object> additionalClaims = new HashMap<>();
-        additionalClaims.put("claims", encryptedTokenValue.getValue());
-        additionalClaims.put("claim_key_id", encryptedTokenValue.getKeyId());
+        additionalClaims.put("claims", value);
+        additionalClaims.put("claim_key_id", currentSymmetricKeyId);
 
         return idToken(client, Optional.empty(), additionalClaims, Collections.emptyList(),
                 true, signingKey, isAccessToken);
     }
 
-    private EncryptedTokenValue encryptAead(String s) throws GeneralSecurityException, IOException {
-        String currentSymmetricKeyId = this.ensureLatestSymmetricKey();
+    private String encryptAead(String s, String currentSymmetricKeyId) throws GeneralSecurityException, IOException {
         KeysetHandle keysetHandle = this.safeGet(currentSymmetricKeyId, this.keysetHandleMap);
         Aead aead = AeadFactory.getPrimitive(keysetHandle);
         byte[] src = aead.encrypt(s.getBytes(defaultCharset()), associatedData);
-        return new EncryptedTokenValue(Base64.getEncoder().encodeToString(src), currentSymmetricKeyId);
+        return Base64.getEncoder().encodeToString(src);
+    }
+
+    public Optional<SignedJWT> parseAndValidateSignedJWT(String accessToken)  {
+        try {
+            return Optional.of(SignedJWT.parse(accessToken));
+        } catch (ParseException e) {
+            return Optional.empty();
+        }
     }
 
     @SneakyThrows
-    public User decryptAccessTokenWithEmbeddedUserInfo(String accessToken) {
-        return doDecryptAccessTokenWithEmbeddedUserInfo(accessToken);
+    public User decryptAccessTokenWithEmbeddedUserInfo(SignedJWT signedJWT) {
+        return doDecryptAccessTokenWithEmbeddedUserInfo(signedJWT);
     }
 
-    private User doDecryptAccessTokenWithEmbeddedUserInfo(String accessToken) throws ParseException, JOSEException, IOException, GeneralSecurityException {
-        SignedJWT signedJWT = SignedJWT.parse(accessToken);
+    private User doDecryptAccessTokenWithEmbeddedUserInfo(SignedJWT signedJWT) throws ParseException, JOSEException, IOException, GeneralSecurityException {
         Map<String, Object> claims = verifyClaims(signedJWT);
         String encryptedClaims = (String) claims.get("claims");
         String keyId = (String) claims.get("claim_key_id");
@@ -320,8 +328,8 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     @SneakyThrows
-    public String generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, String nonce, List<String> idTokenClaims,
-                                                  Optional<Long> authorizationTime) {
+    public TokenValue generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, String nonce, List<String> idTokenClaims,
+                                                      Optional<Long> authorizationTime) {
         Map<String, Object> additionalClaims = new HashMap<>();
         authorizationTime.ifPresent(time -> additionalClaims.put("auth_time", time));
         if (StringUtils.hasText(nonce)) {
@@ -332,10 +340,10 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     @SneakyThrows
-    public String generateIDTokenForAuthorizationEndpoint(User user, OpenIDClient client, Nonce nonce,
-                                                          ResponseType responseType, String accessToken,
-                                                          List<String> claims, Optional<String> authorizationCode,
-                                                          State state) {
+    public TokenValue generateIDTokenForAuthorizationEndpoint(User user, OpenIDClient client, Nonce nonce,
+                                                              ResponseType responseType, String accessToken,
+                                                              List<String> claims, Optional<String> authorizationCode,
+                                                              State state) {
         Map<String, Object> additionalClaims = new HashMap<>();
         additionalClaims.put("auth_time", System.currentTimeMillis() / 1000L);
         if (nonce != null) {
@@ -380,8 +388,9 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         String keyId = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS").format(new Date());
         this.sequenceRepository.updateSigningKeyId(keyId);
         RSAKey rsaKey = generateRsaKey(String.format("key_%s", keyId));
-        EncryptedTokenValue encryptedTokenValue = encryptAead(rsaKey.toJSONString());
-        return new SigningKey(rsaKey.getKeyID(), encryptedTokenValue.getKeyId(), encryptedTokenValue.getValue(), new Date());
+        String currentSymmetricKeyId = this.ensureLatestSymmetricKey();
+        String value = encryptAead(rsaKey.toJSONString(), currentSymmetricKeyId);
+        return new SigningKey(rsaKey.getKeyID(), currentSymmetricKeyId, value, new Date());
     }
 
     private Map<String, Object> verifyClaims(SignedJWT signedJWT) throws ParseException, JOSEException, GeneralSecurityException, IOException {
@@ -394,9 +403,9 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         return signedJWT.getJWTClaimsSet().getClaims();
     }
 
-    private String idToken(OpenIDClient client, Optional<User> optionalUser, Map<String, Object> additionalClaims,
-                           List<String> idTokenClaims, boolean includeAllowedResourceServers, String signingKey,
-                           boolean isAccessToken) throws JOSEException, GeneralSecurityException, ParseException, IOException {
+    private TokenValue idToken(OpenIDClient client, Optional<User> optionalUser, Map<String, Object> additionalClaims,
+                               List<String> idTokenClaims, boolean includeAllowedResourceServers, String signingKey,
+                               boolean isAccessToken) throws JOSEException, GeneralSecurityException, ParseException, IOException {
         List<String> audiences = new ArrayList<>();
         audiences.add(client.getClientId());
         if (includeAllowedResourceServers && isAccessToken) {
@@ -405,10 +414,12 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
                     .collect(Collectors.toList()));
         }
         int tokenValidity = isAccessToken ? client.getAccessTokenValidity() : client.getRefreshTokenValidity();
+        String jti = UUID.randomUUID().toString();
+
         JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
                 .audience(audiences)
                 .expirationTime(Date.from(clock.instant().plus(tokenValidity, ChronoUnit.SECONDS)))
-                .jwtID(UUID.randomUUID().toString())
+                .jwtID(jti)
                 .issuer(issuer)
                 .issueTime(Date.from(clock.instant()))
                 .subject(optionalUser.map(User::getSub).orElse(client.getClientId()))
@@ -441,7 +452,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         this.ensureLatestSigningKey();
         JWSSigner jswsSigner = this.safeGet(signingKey, this.signers);
         signedJWT.sign(jswsSigner);
-        return signedJWT.serialize();
+        return new TokenValue(signedJWT.serialize(), jti);
     }
 
     private String ensureLatestSigningKey() throws GeneralSecurityException, ParseException, IOException {

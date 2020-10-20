@@ -320,21 +320,21 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
                 .collect(Collectors.toMap(s -> s[0], s -> s[1]));
     }
 
-    protected void expireAccessToken(String token) {
-        doExpire(token, AccessToken.class);
+    protected void expireAccessToken(String token) throws ParseException {
+        doExpireToken(token, AccessToken.class);
     }
 
-    protected void expireRefreshToken(String token) {
-        doExpire(token, RefreshToken.class);
+    protected void expireRefreshToken(String token) throws ParseException {
+        doExpireToken(token, RefreshToken.class);
     }
 
     protected void expireAuthorizationCode(String code) {
         doExpireWithFindProperty(code, AuthorizationCode.class, "code");
     }
 
-    private <T> void doExpire(String token, Class<T> clazz) {
-        String tokenValue = AccessToken.computeInnerValueFromJWT(token);
-        doExpireWithFindProperty(tokenValue, clazz, "value");
+    private <T> void doExpireToken(String token, Class<T> clazz) throws ParseException {
+        String jwtId = SignedJWT.parse(token).getJWTClaimsSet().getJWTID();
+        doExpireWithFindProperty(jwtId, clazz, "jwtId");
     }
 
     private <T> void doExpireWithFindProperty(String token, Class<T> clazz, String property) {

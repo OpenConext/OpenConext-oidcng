@@ -1,5 +1,6 @@
 package oidc.endpoints;
 
+import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.TokenIntrospectionRequest;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
@@ -66,7 +67,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
     }
 
     @PostMapping(value = {"oidc/introspect"}, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
-    public ResponseEntity<Map<String, Object>> introspect(HttpServletRequest request) throws ParseException, IOException {
+    public ResponseEntity<Map<String, Object>> introspect(HttpServletRequest request) throws ParseException, IOException, java.text.ParseException {
         HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
         TokenIntrospectionRequest tokenIntrospectionRequest = TokenIntrospectionRequest.parse(httpRequest);
         ClientAuthentication clientAuthentication = tokenIntrospectionRequest.getClientAuthentication();
@@ -89,7 +90,14 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
             throw new UnauthorizedException("Requires ResourceServer");
         }
 
-        Optional<AccessToken> optionalAccessToken = accessTokenRepository.findOptionalAccessTokenByValue(accessTokenValue);
+        Optional<SignedJWT> optionalSignedJWT = tokenGenerator.parseAndValidateSignedJWT(accessTokenValue);
+        if (!optionalSignedJWT.isPresent()) {
+            LOG.warn("Invalid access_token " + accessTokenValue);
+            return ResponseEntity.ok(Collections.singletonMap("active", false));
+        }
+        SignedJWT signedJWT = optionalSignedJWT.get();
+        String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
+        Optional<AccessToken> optionalAccessToken = accessTokenRepository.findByJwtId(jwtId);
         if (!optionalAccessToken.isPresent()) {
             LOG.warn("No access_token found " + accessTokenValue);
             return ResponseEntity.ok(Collections.singletonMap("active", false));
@@ -125,7 +133,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
                         String.format("RP %s is not allowed to use the API of resource server %s. Allowed resource servers are %s",
                                 accessToken.getClientId(), resourceServer.getClientId(), openIDClient.getAllowedResourceServers()));
             }
-            User user = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessTokenValue);
+            User user = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(signedJWT);
             result.put("updated_at", user.getUpdatedAt());
             if (resourceServer.isIncludeUnspecifiedNameID()) {
                 result.put("unspecified_id", user.getUnspecifiedNameId());

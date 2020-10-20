@@ -9,6 +9,7 @@ import oidc.model.EncryptedTokenValue;
 import oidc.model.OpenIDClient;
 import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
+import oidc.model.TokenValue;
 import oidc.model.User;
 import oidc.repository.SigningKeyRepository;
 import org.junit.Test;
@@ -36,7 +37,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
     private SigningKeyRepository signingKeyRepository;
 
     @Test
-    public void encryptAndDecryptAccessToken() throws IOException {
+    public void encryptAndDecryptAccessToken() throws IOException, ParseException {
         doEncryptAndDecryptAccessToken();
     }
 
@@ -47,7 +48,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         SignedJWT signedJWT = SignedJWT.parse(accessToken);
         SignedJWT tamperedJWT = new SignedJWT(signedJWT.getHeader(), signedJWT.getJWTClaimsSet());
         tamperedJWT.sign(new RSASSASigner(new RSAKeyGenerator(RSAKeyGenerator.MIN_KEY_SIZE_BITS).generate()));
-        tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(tamperedJWT.serialize());
+        tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(tamperedJWT);
     }
 
     @Test
@@ -73,8 +74,8 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         User user = new User("sub", "unspecifiedNameId", "http://mockidp",
                 "clientId", getUserInfo(), Arrays.asList("http://test.surfconext.nl/assurance/loa3", "invalid_acr"));
         OpenIDClient client = openIDClient("mock-sp");
-        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList(), Optional.empty());
-        SignedJWT jwt = SignedJWT.parse(idToken);
+        TokenValue tokenValue = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList(), Optional.empty());
+        SignedJWT jwt = SignedJWT.parse(tokenValue.getValue());
         Object acr = jwt.getJWTClaimsSet().getClaim("acr");
         assertEquals("http://test.surfconext.nl/assurance/loa3 invalid_acr", acr);
     }
@@ -84,8 +85,8 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         User user = new User("sub", "unspecifiedNameId", "http://mockidp",
                 "clientId", getUserInfo(), Collections.emptyList());
         OpenIDClient client = openIDClient("mock-sp");
-        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList(), Optional.empty());
-        SignedJWT jwt = SignedJWT.parse(idToken);
+        TokenValue tokenValue = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList(), Optional.empty());
+        SignedJWT jwt = SignedJWT.parse(tokenValue.getValue());
         Object acr = jwt.getJWTClaimsSet().getClaim("acr");
         assertEquals("http://test.surfconext.nl/assurance/loa1", acr);
     }
@@ -96,7 +97,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         assertEquals(12, authorizationCode.length());
     }
 
-    private String doEncryptAndDecryptAccessToken() throws IOException {
+    private String doEncryptAndDecryptAccessToken() throws IOException, ParseException {
         User user = new User("sub", "unspecifiedNameId", "http://mockidp",
                 "clientId", getUserInfo(), Collections.emptyList());
 
@@ -105,7 +106,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
 
         EncryptedTokenValue encryptedAccessToken = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client);
         String accessToken = encryptedAccessToken.getValue();
-        User convertedUser = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(accessToken);
+        User convertedUser = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(SignedJWT.parse(accessToken));
 
         assertEquals(user, convertedUser);
 

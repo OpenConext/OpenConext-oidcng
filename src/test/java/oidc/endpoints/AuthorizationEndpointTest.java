@@ -41,6 +41,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -242,7 +243,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         User user = mongoTemplate.findOne(Query.query(Criteria.where("sub").is(authorizationCode.getSub())), User.class);
         assertNotNull(user);
 
-        String accessToken = fragmentParameters.get("accessToken");
+        String accessToken = fragmentParameters.get("access_token");
         JWTClaimsSet claimsSet = assertImplicitFlowResponse(fragmentParameters);
 
         Map<String, Object> tokenResponse = doToken(code);
@@ -250,8 +251,15 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         List<User> users = mongoTemplate.find(Query.query(Criteria.where("sub").is(authorizationCode.getSub())), User.class);
         assertEquals(0, users.size());
 
-        String newAccessToken = (String) tokenResponse.get("accessToken");
-        assertEquals(accessToken, newAccessToken);
+        String newAccessToken = (String) tokenResponse.get("access_token");
+        /*
+         * If an Access Token is returned from both the Authorization Endpoint and from the Token Endpoint, which is
+         * the case for the response_type values code token and code id_token token, their values MAY be the same or
+         * they MAY be different. Note that different Access Tokens might be returned be due to the different
+         * security characteristics of the two endpoints and the lifetimes and the access to resources granted
+         * by them might also be different.
+         */
+        assertNotEquals(accessToken, newAccessToken);
 
         String idToken = (String) tokenResponse.get("id_token");
         JWTClaimsSet newClaimsSet = processToken(idToken, port);

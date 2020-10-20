@@ -11,17 +11,12 @@ import java.util.Optional;
 @Repository
 public interface AccessTokenRepository extends MongoRepository<AccessToken, String> {
 
-    default Optional<AccessToken> findOptionalAccessTokenByValue(String value) {
-        String newValue = AccessToken.computeInnerValueFromJWT(value);
-        return findAccessTokenByValue(newValue);
-    }
+    Optional<AccessToken> findByJwtId(String jwtId);
 
     Long deleteByExpiresInBefore(Date expiryDate);
 
     Long deleteByAuthorizationCodeId(String authorizationCodeId);
 
-    List<AccessToken> findAccessTokenByUnspecifiedUrnHash(String unspecifiedUrnHash);
+    List<AccessToken> findByUnspecifiedUrnHash(String unspecifiedUrnHash);
 
-    //Do not use
-    Optional<AccessToken> findAccessTokenByValue(String value);
 }

@@ -12,6 +12,7 @@ import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
@@ -31,7 +32,7 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void userInfoExpired() throws IOException {
+    public void userInfoExpired() throws IOException, ParseException {
         String token = getAccessToken();
         expireAccessToken(token);
 
