@@ -5,10 +5,10 @@ import com.google.crypto.tink.Aead;
 import com.google.crypto.tink.CleartextKeysetHandle;
 import com.google.crypto.tink.JsonKeysetReader;
 import com.google.crypto.tink.JsonKeysetWriter;
+import com.google.crypto.tink.KeyTemplate;
 import com.google.crypto.tink.KeysetHandle;
 import com.google.crypto.tink.aead.AeadConfig;
-import com.google.crypto.tink.aead.AeadFactory;
-import com.google.crypto.tink.aead.AeadKeyTemplates;
+import com.google.crypto.tink.aead.AesCtrHmacAeadKeyManager;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -206,9 +206,12 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     private SymmetricKey generateSymmetricKey() throws GeneralSecurityException, IOException {
-        KeysetHandle keysetHandle = KeysetHandle.generateNew(AeadKeyTemplates.AES256_CTR_HMAC_SHA256);
+        KeyTemplate keyTemplate = AesCtrHmacAeadKeyManager.aes256CtrHmacSha256Template();
+        KeysetHandle keysetHandle = KeysetHandle.generateNew(keyTemplate);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        keysetHandle.write(JsonKeysetWriter.withOutputStream(outputStream), AeadFactory.getPrimitive(primaryKeysetHandle));
+
+        Aead primitive = primaryKeysetHandle.getPrimitive(Aead.class);
+        keysetHandle.write(JsonKeysetWriter.withOutputStream(outputStream), primitive);
         int primaryKeyId = keysetHandle.getKeysetInfo().getPrimaryKeyId();
         String newKeyId = String.valueOf(primaryKeyId);
         sequenceRepository.updateSymmetricKeyId(newKeyId);
@@ -233,7 +236,8 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     @SneakyThrows
     private KeysetHandle parseKeysetHandle(SymmetricKey symmetricKey) {
         byte[] decoded = Base64.getDecoder().decode(symmetricKey.getAead());
-        return KeysetHandle.read(JsonKeysetReader.withBytes(decoded), AeadFactory.getPrimitive(primaryKeysetHandle));
+        Aead primitive = primaryKeysetHandle.getPrimitive(Aead.class);
+        return KeysetHandle.read(JsonKeysetReader.withBytes(decoded), primitive);
     }
 
     @SneakyThrows
@@ -291,12 +295,12 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private String encryptAead(String s, String currentSymmetricKeyId) throws GeneralSecurityException, IOException {
         KeysetHandle keysetHandle = this.safeGet(currentSymmetricKeyId, this.keysetHandleMap);
-        Aead aead = AeadFactory.getPrimitive(keysetHandle);
+        Aead aead = keysetHandle.getPrimitive(Aead.class);
         byte[] src = aead.encrypt(s.getBytes(defaultCharset()), associatedData);
         return Base64.getEncoder().encodeToString(src);
     }
 
-    public Optional<SignedJWT> parseAndValidateSignedJWT(String accessToken)  {
+    public Optional<SignedJWT> parseAndValidateSignedJWT(String accessToken) {
         try {
             return Optional.of(SignedJWT.parse(accessToken));
         } catch (ParseException e) {
@@ -322,7 +326,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     private String decryptAead(String s, String symmetricKeyId) throws GeneralSecurityException, IOException {
         this.ensureLatestSymmetricKey();
         KeysetHandle keysetHandle = safeGet(symmetricKeyId, this.keysetHandleMap);
-        Aead aead = AeadFactory.getPrimitive(keysetHandle);
+        Aead aead = keysetHandle.getPrimitive(Aead.class);
         byte[] decoded = Base64.getDecoder().decode(s);
         return new String(aead.decrypt(decoded, associatedData));
     }
