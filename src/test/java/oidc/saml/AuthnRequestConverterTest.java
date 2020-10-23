@@ -19,11 +19,6 @@ import java.util.Map;
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {
-                "cron.node-cron-job-responsible=false"
-        })
 @ActiveProfiles(value = "", inheritProfiles = false)
 public class AuthnRequestConverterTest extends AbstractIntegrationTest {
 

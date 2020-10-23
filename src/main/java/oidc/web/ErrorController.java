@@ -13,6 +13,10 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.web.savedrequest.DefaultSavedRequest;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -37,6 +41,7 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
 
     private static final Log LOG = LogFactory.getLog(ErrorController.class);
     private final DefaultErrorAttributes errorAttributes;
+    private RequestCache requestCache = new HttpSessionRequestCache();
 
     public ErrorController() {
         this.errorAttributes = new DefaultErrorAttributes();
@@ -79,11 +84,24 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         //https://openid.net/specs/openid-connect-core-1_0.html#AuthError
         Object redirectUriValid = request.getAttribute(REDIRECT_URI_VALID);
         String redirectUri = request.getParameter("redirect_uri");
+        Map<String, String[]> parameterMap = request.getParameterMap();
 
-        if (redirectUriValid != null && (boolean) redirectUriValid && (statusCode.is3xxRedirection() || ((String) result.getOrDefault("path", "")).contains("authorize"))
-                && StringUtils.hasText(redirectUri)) {
+        SavedRequest savedRequest = requestCache.getRequest(request, null);
+        boolean redirect = false;
+        if (savedRequest instanceof DefaultSavedRequest) {
+            parameterMap = savedRequest.getParameterMap();
+            String requestURI = ((DefaultSavedRequest) savedRequest).getRequestURI();
+            String[] redirectUris = parameterMap.get("redirect_uri");
+            if (requestURI != null && requestURI.contains("authorize") && redirectUris != null) {
+                redirectUri = redirectUris[0];
+                redirect = true;
+            }
+        }
 
-            return redirectErrorResponse(request, result, error, redirectUri);
+        if (redirectUriValid != null && (boolean) redirectUriValid &&
+                (statusCode.is3xxRedirection() || redirect || StringUtils.hasText(redirectUri))) {
+
+            return redirectErrorResponse(parameterMap, result, error, redirectUri);
         }
         return new ResponseEntity<>(result, statusCode);
     }
@@ -97,15 +115,15 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         return error == null ? "Unknown exception occurred" : error.getMessage();
     }
 
-    private Object redirectErrorResponse(HttpServletRequest request, Map<String, Object> result, Throwable error, String redirectUri) throws UnsupportedEncodingException {
+    private Object redirectErrorResponse(Map<String, String[]> parameterMap, Map<String, Object> result, Throwable error, String redirectUri) throws UnsupportedEncodingException {
         String url = URLDecoder.decode(redirectUri, "UTF-8");
 
-        String responseType = defaultValue(request, "response_type", "code");
-        String responseMode = defaultValue(request, "response_mode", "code".equals(responseType) ? "query" : "fragment");
+        String responseType = defaultValue(parameterMap, "response_type", "code");
+        String responseMode = defaultValue(parameterMap, "response_mode", "code".equals(responseType) ? "query" : "fragment");
 
         String errorCode = errorCode(error);
         String errorMessage = errorMessage(error);
-        String state = defaultValue(request, "state", null);
+        String state = defaultValue(parameterMap, "state", null);
 
         UriComponentsBuilder uriComponentsBuilder = UriComponentsBuilder.fromUriString(url);
 
@@ -152,9 +170,9 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         return new ResponseEntity<>(result, headers, statusCode);
     }
 
-    private String defaultValue(HttpServletRequest request, String key, String defaultValue) {
-        String value = request.getParameter(key);
-        return StringUtils.hasText(value) ? value : defaultValue;
+    private String defaultValue(Map<String, String[]> parameterMap, String key, String defaultValue) {
+        String[] value = parameterMap.get(key);
+        return value != null && value.length > 0 ? value[0] : defaultValue;
     }
 
     @Override

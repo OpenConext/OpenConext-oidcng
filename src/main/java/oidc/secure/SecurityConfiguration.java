@@ -66,7 +66,6 @@ import org.springframework.security.saml2.provider.service.servlet.filter.Saml2W
 import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationRequestContextResolver;
 import org.springframework.security.saml2.provider.service.web.Saml2MetadataFilter;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationProvider;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
@@ -220,8 +219,6 @@ public class SecurityConfiguration {
             auth.authenticationProvider(authenticationProvider);
             return authenticationProvider;
         }
-
-
 
         @Override
         protected void configure(HttpSecurity http) throws Exception {
