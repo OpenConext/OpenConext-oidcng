@@ -13,6 +13,7 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.RSASSASigner;
@@ -302,19 +303,25 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     public Optional<SignedJWT> parseAndValidateSignedJWT(String accessToken) {
         try {
-            return Optional.of(SignedJWT.parse(accessToken));
-        } catch (ParseException e) {
+            SignedJWT signedJWT = SignedJWT.parse(accessToken);
+            String keyID = signedJWT.getHeader().getKeyID();
+            this.ensureLatestSigningKey();
+            JWSVerifier verifier = this.safeGet(keyID, this.verifiers);
+            if (!signedJWT.verify(verifier)) {
+                throw new JOSEException("Tampered JWT");
+            }
+            return Optional.of(signedJWT);
+        } catch (ParseException | JOSEException | GeneralSecurityException | IOException e) {
             return Optional.empty();
         }
     }
 
     @SneakyThrows
     public User decryptAccessTokenWithEmbeddedUserInfo(SignedJWT signedJWT) {
-        return doDecryptAccessTokenWithEmbeddedUserInfo(signedJWT);
-    }
-
-    private User doDecryptAccessTokenWithEmbeddedUserInfo(SignedJWT signedJWT) throws ParseException, JOSEException, IOException, GeneralSecurityException {
-        Map<String, Object> claims = verifyClaims(signedJWT);
+        if (!signedJWT.getState().equals(JWSObject.State.VERIFIED)) {
+            throw new JOSEException("JWT is not verified");
+        }
+        Map<String, Object> claims = signedJWT.getJWTClaimsSet().getClaims();
         String encryptedClaims = (String) claims.get("claims");
         String keyId = (String) claims.get("claim_key_id");
 
@@ -395,16 +402,6 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         String currentSymmetricKeyId = this.ensureLatestSymmetricKey();
         String value = encryptAead(rsaKey.toJSONString(), currentSymmetricKeyId);
         return new SigningKey(rsaKey.getKeyID(), currentSymmetricKeyId, value, new Date());
-    }
-
-    private Map<String, Object> verifyClaims(SignedJWT signedJWT) throws ParseException, JOSEException, GeneralSecurityException, IOException {
-        String keyID = signedJWT.getHeader().getKeyID();
-        this.ensureLatestSigningKey();
-        JWSVerifier verifier = this.safeGet(keyID, this.verifiers);
-        if (!signedJWT.verify(verifier)) {
-            throw new JOSEException("Tampered JWT");
-        }
-        return signedJWT.getJWTClaimsSet().getClaims();
     }
 
     private TokenValue idToken(OpenIDClient client, Optional<User> optionalUser, Map<String, Object> additionalClaims,

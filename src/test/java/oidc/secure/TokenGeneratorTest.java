@@ -38,12 +38,17 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
 
     @Test
     public void encryptAndDecryptAccessToken() throws IOException, ParseException {
-        doEncryptAndDecryptAccessToken();
+        doEncryptAndDecryptAccessToken(true);
+    }
+
+    @Test(expected = JOSEException.class)
+    public void encryptAndDecryptAccessTokenWithoutVerification() throws IOException, ParseException {
+        doEncryptAndDecryptAccessToken(false);
     }
 
     @Test(expected = JOSEException.class)
     public void encryptAndDecryptAccessTokenTampered() throws IOException, ParseException, JOSEException {
-        String accessToken = doEncryptAndDecryptAccessToken();
+        String accessToken = doEncryptAndDecryptAccessToken(true);
 
         SignedJWT signedJWT = SignedJWT.parse(accessToken);
         SignedJWT tamperedJWT = new SignedJWT(signedJWT.getHeader(), signedJWT.getJWTClaimsSet());
@@ -97,7 +102,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         assertEquals(12, authorizationCode.length());
     }
 
-    private String doEncryptAndDecryptAccessToken() throws IOException, ParseException {
+    private String doEncryptAndDecryptAccessToken(boolean verify) throws IOException, ParseException {
         User user = new User("sub", "unspecifiedNameId", "http://mockidp",
                 "clientId", getUserInfo(), Collections.emptyList());
 
@@ -105,8 +110,10 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         OpenIDClient client = mongoTemplate.find(Query.query(Criteria.where("clientId").is(clientId)), OpenIDClient.class).get(0);
 
         EncryptedTokenValue encryptedAccessToken = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client);
+
         String accessToken = encryptedAccessToken.getValue();
-        User convertedUser = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(SignedJWT.parse(accessToken));
+        SignedJWT signedJWT = verify ? tokenGenerator.parseAndValidateSignedJWT(accessToken).get() : SignedJWT.parse(accessToken);
+        User convertedUser = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(signedJWT);
 
         assertEquals(user, convertedUser);
 
