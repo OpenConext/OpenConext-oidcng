@@ -1,6 +1,7 @@
 package oidc.endpoints;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.Scope;
@@ -8,8 +9,11 @@ import com.nimbusds.oauth2.sdk.TokenIntrospectionRequest;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
+import oidc.model.AccessToken;
+import org.bson.Document;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.springframework.data.mongodb.core.query.BasicQuery;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -159,7 +163,16 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void introspectionWithDeletedAccessToken() throws IOException {
+    public void introspectionWithDeletedAccessToken() throws IOException, java.text.ParseException {
+        String accessToken = getAccessToken();
+        String jwtid = SignedJWT.parse(accessToken).getJWTClaimsSet().getJWTID();
+        mongoTemplate.remove(new BasicQuery(new Document("jwtId", jwtid)), AccessToken.class);
+        Map<String, Object> result = callIntrospection("mock-sp", accessToken, "secret");
+        assertEquals(false, result.get("active"));
+    }
+
+    @Test
+    public void introspectionWithInvalidAccessToken() throws IOException {
         Map<String, Object> result = callIntrospection("mock-sp", "bogus", "secret");
         assertEquals(false, result.get("active"));
     }
