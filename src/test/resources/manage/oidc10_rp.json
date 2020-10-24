@@ -41,6 +41,12 @@
               "nl": "nl",
               "pt": "pt"
             }
+          },
+          {
+            "name": "weird",
+            "descriptions": {
+              "en": "Weird"
+            }
           }
         ],
         "grants": [

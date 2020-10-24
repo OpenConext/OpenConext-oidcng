@@ -80,7 +80,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
         assertEquals(eduPersonPrincipalName, result.get("eduperson_principal_name"));
     }
 
-    private Map<String, Object> doIntrospectionWithEduidUser(Map<String, String> eduIdAttributePseudonymisationresult) throws IOException {
+    private Map<String, Object> doIntrospectionWithEduidUser(Map<String, String> eduIdAttributePseudonymisationResult) throws IOException {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", "openid");
         queryParams.put("client_id", "mock-sp");
@@ -99,7 +99,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
 
         stubFor(get(urlPathMatching("/attribute-manipulation")).willReturn(aResponse()
                 .withHeader("Content-Type", "application/json")
-                .withBody(objectMapper.writeValueAsString(eduIdAttributePseudonymisationresult))));
+                .withBody(objectMapper.writeValueAsString(eduIdAttributePseudonymisationResult))));
 
         return callIntrospection("resource-server-playground-client", accessToken, "secret");
     }
@@ -143,7 +143,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
         String accessToken = (String) body.get("access_token");
         Map<String, Object> result = callIntrospection("mock-sp", accessToken, "secret");
         assertEquals(true, result.get("active"));
-        assertEquals(scopeToSortedList("openid groups"), scopeToSortedList((String) result.get("scope")));
+        assertEquals(scopeToSortedList("openid groups weird"), scopeToSortedList((String) result.get("scope")));
         assertEquals("mock-sp", result.get("sub"));
         assertFalse(result.containsKey("email"));
     }
@@ -200,6 +200,16 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     public void introspectionWrongSecret() throws IOException {
         Map<String, Object> result = doIntrospection("mock-sp", "nope");
         assertEquals("Invalid user / secret", result.get("error_description"));
+    }
+
+    @Test
+    public void introspectionWithWrongScopes() throws IOException {
+        String code = doAuthorizeWithScopes("mock-sp", "code", "code", "weird");
+        Map<String, Object> body = doToken(code);
+
+        String accessToken = (String) body.get("access_token");
+        Map<String, Object> result = callIntrospection("resource-server-playground-client", accessToken, "secret");
+        assertEquals(false, result.get("active"));
     }
 
     private Map<String, Object> doIntrospection(String clientId, String secret) throws IOException {
