@@ -66,6 +66,27 @@ public class AuthnRequestConverterUnitTest extends AbstractSamlUnitTest implemen
         assertEquals("loa1", authnRequest.getRequestedAuthnContext().getAuthnContextClassRefs().get(0).getAuthnContextClassRef());
     }
 
+    @Test
+    public void testSamlForceAuthn() throws Exception {
+        OpenIDClient openIDClient = new OpenIDClient("clientId", singletonList("http://redirect"), singletonList(new Scope("openid")), singletonList("authorization_code"));
+        when(openIDClientRepository.findByClientId("mock_sp")).thenReturn(openIDClient);
+
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "http://localhost/oidc/authorize");
+
+        request.addParameter("max_age", "-1");
+        request.addParameter("response_type", "code");
+        request.addParameter("client_id", "mock_sp");
+
+        HttpServletRequest servletRequest = new MockHttpServletRequest();
+        CustomSaml2AuthenticationRequestContext ctx = new CustomSaml2AuthenticationRequestContext(relyingParty, servletRequest);
+
+        when(requestCache.getRequest(any(HttpServletRequest.class), any()))
+                .thenReturn(new DefaultSavedRequest(request, portResolver));
+
+        AuthnRequest authnRequest = subject.convert(ctx);
+        assertTrue(authnRequest.isForceAuthn());
+    }
+
     @Test(expected = CookiesNotSupportedException.class)
     public void noCookies() {
         HttpServletRequest servletRequest = new MockHttpServletRequest();

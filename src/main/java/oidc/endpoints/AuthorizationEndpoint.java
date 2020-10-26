@@ -91,14 +91,12 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     private final AccessTokenRepository accessTokenRepository;
     private final UserRepository userRepository;
     private final UserConsentRepository userConsentRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
     private final OpenIDClientRepository openIDClientRepository;
     private final String salt;
 
     @Autowired
     public AuthorizationEndpoint(AuthorizationCodeRepository authorizationCodeRepository,
                                  AccessTokenRepository accessTokenRepository,
-                                 RefreshTokenRepository refreshTokenRepository,
                                  UserRepository userRepository,
                                  UserConsentRepository userConsentRepository,
                                  OpenIDClientRepository openIDClientRepository,
@@ -106,7 +104,6 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                                  @Value("${access_token_one_way_hash_salt}") String salt) {
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.accessTokenRepository = accessTokenRepository;
-        this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;
         this.userConsentRepository = userConsentRepository;
         this.openIDClientRepository = openIDClientRepository;
@@ -120,6 +117,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                                   HttpServletRequest request) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
         LOG.debug(String.format("/oidc/authorize %s %s", authentication.getDetails(), parameters));
 
+        //to enable consent, set consentRequired to true
         return doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, false, false);
     }
 

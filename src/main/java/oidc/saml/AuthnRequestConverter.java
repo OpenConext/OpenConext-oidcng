@@ -119,17 +119,15 @@ public class AuthnRequestConverter implements
     @SneakyThrows
     private void validateAuthorizationRequest(AuthorizationRequest authorizationRequest, HttpServletRequest request) {
         ClientID clientID = authorizationRequest.getClientID();
-        if (clientID != null) {
-            MDCContext.mdcContext("action", "Authorization", "clientId", clientID.getValue());
+        MDCContext.mdcContext("action", "Authorization", "clientId", clientID.getValue());
 
-            OpenIDClient openIDClient = openIDClientRepository.findByClientId(clientID.getValue());
-            AuthorizationEndpoint.validateRedirectionURI(authorizationRequest, openIDClient);
+        OpenIDClient openIDClient = openIDClientRepository.findByClientId(clientID.getValue());
+        AuthorizationEndpoint.validateRedirectionURI(authorizationRequest, openIDClient);
 
-            request.setAttribute(REDIRECT_URI_VALID, true);
+        request.setAttribute(REDIRECT_URI_VALID, true);
 
-            AuthorizationEndpoint.validateScopes(authorizationRequest, openIDClient);
-            AuthorizationEndpoint.validateGrantType(authorizationRequest, openIDClient);
-        }
+        AuthorizationEndpoint.validateScopes(authorizationRequest, openIDClient);
+        AuthorizationEndpoint.validateGrantType(authorizationRequest, openIDClient);
     }
 
     private String param(String name, Map<String, List<String>> request) {
@@ -141,10 +139,8 @@ public class AuthnRequestConverter implements
                                                       Map<String, List<String>> request) throws ParseException {
         String clientId = param("client_id", request);
 
-        if (StringUtils.hasText(clientId)) {
-            String entityId = ServiceProviderTranslation.translateClientId(clientId);
-            authnRequest.setScoping(getScoping(Arrays.asList(entityId)));
-        }
+        String entityId = ServiceProviderTranslation.translateClientId(clientId);
+        authnRequest.setScoping(getScoping(Arrays.asList(entityId)));
         String prompt = AuthorizationEndpoint.validatePrompt(request);
 
         authnRequest.setForceAuthn(prompt != null && prompt.contains("login"));
