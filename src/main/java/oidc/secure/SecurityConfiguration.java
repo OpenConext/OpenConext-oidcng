@@ -115,7 +115,7 @@ public class SecurityConfiguration {
                 @Value("${certificate_path}") Resource certificatePath,
                 @Value("${idp.entity_id}") String idpEntityId,
                 @Value("${idp.sso_location}") String idpSsoLocation,
-                @Value("${idp.metadata_signing_certificate_path}") Resource idpMetadataSigningCertificatePath,
+                @Value("${idp.saml_assertion_signing_key}") Resource idpMetadataSigningCertificatePath,
                 @Value("${sp.entity_id}") String spEntityId,
                 @Value("${sp.acs_location}") String spAcsLocation,
                 @Value("${oidc_saml_mapping_path}") Resource oidcSamlMapping) {

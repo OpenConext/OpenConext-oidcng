@@ -49,8 +49,8 @@ sp:
 idp:
   entity_id: https://engine.test2.surfconext.nl/authentication/idp/metadata
   sso_location: https://engine.test2.surfconext.nl/authentication/idp/single-sign-on
-  metadata_signing_certificate_path: classpath:/engine.test2.surfconext.nl.pem
-
+  saml_assertion_signing_key: classpath:/engine.test2.surfconext.nl.pem
+  saml_assertion_signing_key
 spring:
   data:
     mongodb:
