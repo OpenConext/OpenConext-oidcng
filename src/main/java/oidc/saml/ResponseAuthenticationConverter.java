@@ -23,6 +23,7 @@ import org.opensaml.saml.saml2.core.Assertion;
 import org.opensaml.saml.saml2.core.AttributeStatement;
 import org.opensaml.saml.saml2.core.AuthnContextClassRef;
 import org.opensaml.saml.saml2.core.AuthnStatement;
+import org.opensaml.saml.saml2.core.NameID;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.Resource;
 import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider;
@@ -172,7 +173,19 @@ public class ResponseAuthenticationConverter implements Converter<OpenSamlAuthen
 
     private Object getXmlObjectValue(XMLObject xmlObject) {
         if (xmlObject instanceof XSAny) {
-            return ((XSAny) xmlObject).getTextContent();
+            XSAny xsAny = (XSAny) xmlObject;
+            String textContent = xsAny.getTextContent();
+            if (StringUtils.hasText(textContent)) {
+                return textContent;
+            }
+            List<XMLObject> unknownXMLObjects = xsAny.getUnknownXMLObjects();
+            if (!CollectionUtils.isEmpty(unknownXMLObjects)) {
+                XMLObject unknownXMLObject = unknownXMLObjects.get(0);
+                if (unknownXMLObject instanceof NameID) {
+                    NameID nameID = (NameID) unknownXMLObject;
+                    return nameID.getValue();
+                }
+            }
         }
         if (xmlObject instanceof XSString) {
             return ((XSString) xmlObject).getValue();

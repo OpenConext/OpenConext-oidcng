@@ -59,7 +59,9 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
         when(authenticationRequestRepository.findById(anyString())).thenReturn(Optional.of(
                 new AuthenticationRequest("id", new Date(), "clientId", "http://some")));
 
-        doLogin();
+        OidcSamlAuthentication oidcSamlAuthentication = doLogin();
+        String sub = oidcSamlAuthentication.getUser().getSub();
+        assertEquals("270E4CB4-1C2A-4A96-9AD3-F28C39AD1110", sub);
     }
 
     @Test
@@ -71,7 +73,7 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
         doLogin();
     }
 
-    private void doLogin() throws IOException, UnmarshallingException, XMLParserException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
+    private OidcSamlAuthentication doLogin() throws IOException, UnmarshallingException, XMLParserException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
         InputStream inputStream = new ClassPathResource("saml/authn_response.xml").getInputStream();
         String saml2Response = IOUtils.toString(inputStream, Charset.defaultCharset());
         Response response = unmarshall(saml2Response);
@@ -83,6 +85,7 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
         OidcSamlAuthentication authentication = subject.convert(responseToken);
 
         assertEquals("urn:collab:person:example.com:admin", authentication.getName());
+        return authentication;
     }
 
     //See https://github.com/spring-projects/spring-security/issues/9004
