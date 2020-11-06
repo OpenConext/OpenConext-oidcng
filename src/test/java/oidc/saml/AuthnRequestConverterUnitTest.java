@@ -64,6 +64,7 @@ public class AuthnRequestConverterUnitTest extends AbstractSamlUnitTest implemen
 
         assertTrue(authnRequest.isForceAuthn());
         assertEquals("loa1", authnRequest.getRequestedAuthnContext().getAuthnContextClassRefs().get(0).getAuthnContextClassRef());
+        assertEquals("http://idp", authnRequest.getScoping().getIDPList().getIDPEntrys().get(0).getProviderID());
     }
 
     @Test

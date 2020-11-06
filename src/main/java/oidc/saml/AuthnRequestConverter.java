@@ -21,12 +21,16 @@ import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
 import org.opensaml.saml.saml2.core.AuthnContextClassRef;
 import org.opensaml.saml.saml2.core.AuthnContextComparisonTypeEnumeration;
 import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.IDPEntry;
+import org.opensaml.saml.saml2.core.IDPList;
 import org.opensaml.saml.saml2.core.Issuer;
 import org.opensaml.saml.saml2.core.RequestedAuthnContext;
 import org.opensaml.saml.saml2.core.RequesterID;
 import org.opensaml.saml.saml2.core.Scoping;
 import org.opensaml.saml.saml2.core.impl.AuthnContextClassRefBuilder;
 import org.opensaml.saml.saml2.core.impl.AuthnRequestBuilder;
+import org.opensaml.saml.saml2.core.impl.IDPEntryBuilder;
+import org.opensaml.saml.saml2.core.impl.IDPListBuilder;
 import org.opensaml.saml.saml2.core.impl.IssuerBuilder;
 import org.opensaml.saml.saml2.core.impl.RequestedAuthnContextBuilder;
 import org.opensaml.saml.saml2.core.impl.RequesterIDBuilder;
@@ -181,17 +185,27 @@ public class AuthnRequestConverter implements
         }
         String loginHint = param("login_hint", request);
         if (StringUtils.hasText(loginHint)) {
+            IDPList idpList = addIdpEntries(authnRequest, loginHint);
             Scoping scoping = authnRequest.getScoping();
-            if (scoping == null) {
-                ScopingBuilder scopingBuilder = (ScopingBuilder) registry.getBuilderFactory()
-                        .getBuilder(Issuer.DEFAULT_ELEMENT_NAME);
-                scoping = scopingBuilder.buildObject();
-                authnRequest.setScoping(scoping);
-            }
-            List<String> requesterIds = Stream.of(loginHint.split(",")).map(String::trim).filter(this::isValidURI).collect(Collectors.toList());
-            addRequesterIds(requesterIds, scoping);
+            scoping.setIDPList(idpList);
         }
         return authnRequest;
+    }
+
+    private IDPList addIdpEntries(AuthnRequest authnRequest, String loginHint) {
+        IDPEntryBuilder idpEntryBuilder = (IDPEntryBuilder) registry.getBuilderFactory().getBuilder(IDPEntry.DEFAULT_ELEMENT_NAME);
+        List<IDPEntry> idpEntries = Stream.of(loginHint.split(","))
+                .map(String::trim)
+                .filter(this::isValidURI)
+                .map(s -> {
+                    IDPEntry idpEntry = idpEntryBuilder.buildObject();
+                    idpEntry.setProviderID(s);
+                    return idpEntry;
+                })
+                .collect(Collectors.toList());
+        IDPList idpList = ((IDPListBuilder) registry.getBuilderFactory().getBuilder(IDPList.DEFAULT_ELEMENT_NAME)).buildObject();
+        idpList.getIDPEntrys().addAll(idpEntries);
+        return idpList;
     }
 
     private Scoping getScoping(List<String> entityIds) {
