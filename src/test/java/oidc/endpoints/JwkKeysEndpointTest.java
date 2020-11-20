@@ -22,9 +22,6 @@ import static org.junit.Assert.assertTrue;
 
 public class JwkKeysEndpointTest extends AbstractIntegrationTest {
 
-    @Value("${sp.entity_id}")
-    private String issuer;
-
     @Test
     public void publishClientJwk() throws ParseException, IOException, GeneralSecurityException {
         resetAndCreateSigningKeys(3);
@@ -38,7 +35,7 @@ public class JwkKeysEndpointTest extends AbstractIntegrationTest {
         given().when().get("oidc/.well-known/openid-configuration")
                 .then()
                 .header("Cache-control", "max-age=14400, no-transform")
-                .body("issuer", equalTo(issuer));
+                .body("issuer", equalTo("http://localhost:8080"));
     }
 
     @Test

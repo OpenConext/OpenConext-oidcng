@@ -52,7 +52,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     @Test
     public void authorize() throws IOException {
         String code = doAuthorize();
-        assertEquals(12, code.length());
+        assertEquals(16, code.length());
     }
 
     @Test
@@ -64,7 +64,6 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         assertEquals("example", nodeList.item(1).getAttributes().getNamedItem("value").getNodeValue());
 
         String code = nodeList.item(0).getAttributes().getNamedItem("value").getNodeValue();
-        assertEquals(12, code.length());
 
         Map<String, Object> tokenResponse = doToken(code);
         assertTrue(tokenResponse.containsKey("id_token"));
@@ -81,8 +80,6 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         Map<String, String> fragmentParameters = fragmentToMap(fragment);
         String code = fragmentParameters.get("code");
 
-        assertEquals(12, code.length());
-
         Map<String, Object> tokenResponse = doToken(code);
         assertTrue(tokenResponse.containsKey("id_token"));
         assertTrue(tokenResponse.containsKey("access_token"));
@@ -93,7 +90,6 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     @Test
     public void oauth2NonOidcCodeFlow() throws IOException {
         String code = doAuthorizeWithScopes("mock-sp", "code", "code", "groups");
-        assertEquals(12, code.length());
         Map<String, Object> tokenResponse = doToken(code);
         assertFalse(tokenResponse.containsKey("id_token"));
     }
@@ -141,7 +137,6 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void noScopeNoState() throws IOException {
         String code = getCode(doAuthorizeWithClaimsAndScopes("mock-sp", "code",
                 null, null, null, null, null, null));
-        assertEquals(12, code.length());
         Map<String, Object> tokenResponse = doToken(code);
         assertFalse(tokenResponse.containsKey("id_token"));
     }
