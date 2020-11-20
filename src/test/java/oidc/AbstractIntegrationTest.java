@@ -13,6 +13,7 @@ import com.nimbusds.jose.jwk.source.RemoteJWKSet;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jose.proc.JWSKeySelector;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
+import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
@@ -223,7 +224,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
     }
 
     protected Response doAuthorizeWithJWTRequest(String clientId, String responseType, String responseMode,
-                                                 SignedJWT signedJWT, String requestURL) throws IOException {
+                                                 JWT signedJWT, String requestURL) throws IOException {
         return doAuthorizeQueryParameters(clientId, responseType, responseMode, "nonce", null,
                 null, "openid", "state", null, signedJWT, requestURL);
     }
@@ -231,7 +232,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
     protected Response doAuthorizeQueryParameters(String clientId, String responseType, String responseMode,
                                                   String nonce, String codeChallenge, List<String> claims,
                                                   String scopes, String state, String codeChallengeMethod,
-                                                  SignedJWT signedJWT, String requestURL) throws IOException {
+                                                  JWT signedJWT, String requestURL) throws IOException {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", scopes);
         queryParams.put("response_type", responseType);

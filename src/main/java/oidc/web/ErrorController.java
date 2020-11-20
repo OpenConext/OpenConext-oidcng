@@ -1,6 +1,7 @@
 package oidc.web;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.oauth2.sdk.ParseException;
 import lombok.SneakyThrows;
 import oidc.exceptions.BaseException;
 import oidc.exceptions.CookiesNotSupportedException;
@@ -107,8 +108,16 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
     }
 
     private String errorCode(Throwable error) {
-        return error == null ? "unknown_exception" : error instanceof BaseException ?
-                ((BaseException) error).getErrorCode() : error.getMessage();
+        if (error == null) {
+            return "unknown_exception";
+        }
+        if (error instanceof BaseException) {
+            return ((BaseException) error).getErrorCode();
+        }
+        if (error instanceof ParseException && "Missing \"response_type\" parameter".equals(error.getMessage())) {
+            return "invalid_request";
+        }
+        return error.getMessage();
     }
 
     private String errorMessage(Throwable error) {

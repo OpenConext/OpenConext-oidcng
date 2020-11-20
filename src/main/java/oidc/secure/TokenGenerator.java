@@ -257,8 +257,9 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         return new EncryptedTokenValue(tokenValue, currentSigningKeyId);
     }
 
+    //https://tools.ietf.org/html/rfc6819#section-5.1.4.2
     public String generateAuthorizationCode() {
-        byte[] verifierBytes = new byte[12];
+        byte[] verifierBytes = new byte[16];
         random.nextBytes(verifierBytes);
         char[] chars = new char[verifierBytes.length];
         for (int i = 0; i < verifierBytes.length; i++) {

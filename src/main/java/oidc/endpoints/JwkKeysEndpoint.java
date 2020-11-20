@@ -52,7 +52,7 @@ public class JwkKeysEndpoint implements MapTypeReference {
         return objectMapper.readValue(outputStream.toString(), mapTypeReference);
     }
 
-    @GetMapping("oidc/.well-known/openid-configuration")
+    @GetMapping({"oidc/.well-known/openid-configuration", ".well-known/openid-configuration"})
     public ResponseEntity<Map<String, Object>> wellKnownConfiguration() {
         return ResponseEntity.status(HttpStatus.OK)
                 .cacheControl(CacheControl.maxAge(4, TimeUnit.HOURS).noTransform())

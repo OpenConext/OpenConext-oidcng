@@ -3,6 +3,7 @@ package oidc.endpoints;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ResponseMode;
@@ -18,6 +19,7 @@ import org.junit.Test;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -178,6 +180,25 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
+    public void noResponseType() throws UnsupportedEncodingException {
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("scope", "openid");
+        queryParams.put("client_id", "mock-sp");
+        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", "UTF-8"));
+
+        Response response = given().redirects().follow(false)
+                .when()
+                .header("Content-type", "application/json")
+                .queryParams(queryParams)
+                .get("oidc/authorize");
+        assertEquals(302, response.getStatusCode());
+        String location = response.getHeader("Location");
+        MultiValueMap<String, String> params = UriComponentsBuilder.fromHttpUrl(location).build().getQueryParams();
+        assertEquals(params.getFirst("error"), "invalid_request");
+
+    }
+
+    @Test
     public void validationScopeFormPost() throws UnsupportedEncodingException {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", "openid nopes");
@@ -321,8 +342,17 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         assertEquals("123456", claimsSet.getClaim("nonce"));
         assertEquals("john.doe@example.org", claimsSet.getClaim("email"));
         assertEquals("loa1 loa2 loa3", claimsSet.getClaim("acr"));
-
     }
+
+    @Test
+    public void unSignedJwtAuthorization() throws Exception {
+        OpenIDClient client = openIDClient("mock-sp");
+        PlainJWT plainJWT = plainJWT(client.getClientId(), client.getRedirectUrls().get(0));
+        String location = doAuthorizeWithJWTRequest("mock-sp", "code", null, plainJWT, null).getHeader("Location");
+        MultiValueMap<String, String> params = UriComponentsBuilder.fromHttpUrl(location).build().getQueryParams();
+        assertEquals(params.getFirst("error"), "request_not_supported");
+    }
+
 
     @Test
     @Ignore

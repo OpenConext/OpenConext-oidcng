@@ -26,6 +26,7 @@ import oidc.exceptions.CodeVerifierMissingException;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.JWTAuthorizationGrantsException;
 import oidc.exceptions.RedirectMismatchException;
+import oidc.exceptions.TokenAlreadyUsedException;
 import oidc.exceptions.UnauthorizedException;
 import oidc.log.MDCContext;
 import oidc.model.AccessToken;
@@ -201,7 +202,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
              */
             AuthorizationCode byCode = authorizationCodeRepository.findByCode(code);
             accessTokenRepository.deleteByAuthorizationCodeId(byCode.getId());
-            throw new UnauthorizedException("Authorization code already used");
+            throw new TokenAlreadyUsedException("Authorization code already used");
         }
 
         if (!authorizationCode.getClientId().equals(client.getClientId())) {

@@ -89,6 +89,8 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
     @Test
     public void tokenTwice() throws IOException, ParseException {
         String code = doAuthorize();
+        assertTrue(code.getBytes().length >= 16);
+
         String accessToken = (String) doToken(code).get("access_token");
 
         SignedJWT signedJWT = SignedJWT.parse(accessToken);
@@ -96,8 +98,8 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
                 AccessToken.class).size());
 
         Map<String, Object> body = doToken(code);
-        assertEquals(401, body.get("status"));
-        assertEquals("Authorization code already used", body.get("message"));
+        assertEquals(400, body.get("status"));
+        assertEquals("invalid_grant", body.get("error"));
 
         assertEquals(0, mongoTemplate.find(Query.query(Criteria.where("jwtId").is(signedJWT.getJWTClaimsSet().getJWTID())),
                 AccessToken.class).size());

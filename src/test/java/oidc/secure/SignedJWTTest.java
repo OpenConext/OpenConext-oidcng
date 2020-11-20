@@ -5,6 +5,7 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.openid.connect.sdk.ClaimsRequest;
 import oidc.TestUtils;
@@ -58,10 +59,19 @@ public interface SignedJWTTest extends TestUtils {
     }
 
     default SignedJWT signedJWT(String clientId, String keyID, String redirectURI) throws Exception {
+        JWTClaimsSet claimsSet = getJwtClaimsSet(clientId, redirectURI);
+        JWSHeader header = new JWSHeader.Builder(TokenGenerator.signingAlg).type(JOSEObjectType.JWT).keyID(keyID).build();
+        SignedJWT signedJWT = new SignedJWT(header, claimsSet);
+        JWSSigner jswsSigner = new RSASSASigner(privateKey());
+        signedJWT.sign(jswsSigner);
+        return signedJWT;
+    }
+
+    default JWTClaimsSet getJwtClaimsSet(String clientId, String redirectURI) {
+        Instant instant = Clock.systemDefaultZone().instant();
         ClaimsRequest claimsRequest = new ClaimsRequest();
         claimsRequest.addIDTokenClaim("email");
 
-        Instant instant = Clock.systemDefaultZone().instant();
         JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
                 .audience("audience")
                 .expirationTime(Date.from(instant.plus(3600, ChronoUnit.SECONDS)))
@@ -78,11 +88,12 @@ public interface SignedJWTTest extends TestUtils {
                 .claim("claims", claimsRequest.toString())
                 .claim("acr_values", "loa1 loa2 loa3");
         JWTClaimsSet claimsSet = builder.build();
-        JWSHeader header = new JWSHeader.Builder(TokenGenerator.signingAlg).type(JOSEObjectType.JWT).keyID(keyID).build();
-        SignedJWT signedJWT = new SignedJWT(header, claimsSet);
-        JWSSigner jswsSigner = new RSASSASigner(privateKey());
-        signedJWT.sign(jswsSigner);
-        return signedJWT;
+        return claimsSet;
+    }
+
+    default PlainJWT plainJWT(String clientId, String redirectURI) {
+        JWTClaimsSet jwtClaimsSet = getJwtClaimsSet(clientId, redirectURI);
+        return new PlainJWT(jwtClaimsSet);
     }
 
     default String getStrippedCertificate() {
