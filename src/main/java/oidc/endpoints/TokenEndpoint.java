@@ -297,8 +297,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                                                       Optional<String> authorizationCodeId) {
         Map<String, Object> map = new LinkedHashMap<>();
         EncryptedTokenValue encryptedAccessToken = user
-                .map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client, scopes))
-                .orElse(tokenGenerator.generateAccessToken(client, scopes));
+                .map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client))
+                .orElse(tokenGenerator.generateAccessToken(client));
 
         String sub = user.map(User::getSub).orElse(client.getClientId());
         String unspecifiedUrnHash = user.map(u -> KeyGenerator.oneWayHash(u.getUnspecifiedNameId(), this.salt)).orElse(null);
@@ -312,8 +312,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         map.put("token_type", "Bearer");
         if (client.getGrants().contains(GrantType.REFRESH_TOKEN.getValue())) {
             EncryptedTokenValue encryptedRefreshToken = user
-                    .map(u -> tokenGenerator.generateRefreshTokenWithEmbeddedUserInfo(u, client, scopes))
-                    .orElse(tokenGenerator.generateRefreshToken(client, scopes));
+                    .map(u -> tokenGenerator.generateRefreshTokenWithEmbeddedUserInfo(u, client))
+                    .orElse(tokenGenerator.generateRefreshToken(client));
             String refreshTokenValue = encryptedRefreshToken.getValue();
             refreshTokenRepository.insert(new RefreshToken(encryptedRefreshToken.getJwtId(), accessToken, refreshTokenValidity(client)));
             map.put("refresh_token", refreshTokenValue);

@@ -109,7 +109,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         String clientId = "mock-sp";
         OpenIDClient client = mongoTemplate.find(Query.query(Criteria.where("clientId").is(clientId)), OpenIDClient.class).get(0);
 
-        EncryptedTokenValue encryptedAccessToken = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client, Arrays.asList("openid", "groups"));
+        EncryptedTokenValue encryptedAccessToken = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client);
 
         String accessToken = encryptedAccessToken.getValue();
         SignedJWT signedJWT = verify ? tokenGenerator.parseAndValidateSignedJWT(accessToken).get() : SignedJWT.parse(accessToken);
