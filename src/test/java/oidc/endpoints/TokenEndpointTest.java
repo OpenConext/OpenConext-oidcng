@@ -77,13 +77,16 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
         assertNotNull(accessToken);
         JWTClaimsSet accessTokenClaimsSet = processToken(accessToken, port);
         List<String> audience = accessTokenClaimsSet.getAudience();
+
         assertEquals(Arrays.asList("mock-sp", "resource-server-playground-client"), audience);
+        assertEquals("openid", accessTokenClaimsSet.getStringClaim("scope"));
 
         String idToken = (String) body.get("id_token");
         verifySignedJWT(idToken, port);
         JWTClaimsSet claimsSet = processToken(idToken, port);
 
         assertEquals(Collections.singletonList("mock-sp"), claimsSet.getAudience());
+        assertNull(claimsSet.getStringClaim("scope"));
     }
 
     @Test
