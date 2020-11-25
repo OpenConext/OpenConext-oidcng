@@ -3,11 +3,11 @@ package oidc.endpoints;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 import oidc.AbstractIntegrationTest;
 import oidc.secure.TokenGenerator;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -55,6 +55,7 @@ public class JwkKeysEndpointTest extends AbstractIntegrationTest {
         jwkList.forEach(jwk -> {
             RSAKey rsaKey = (RSAKey) jwk;
             assertEquals(isPrivate, rsaKey.isPrivate());
+            assertEquals(KeyUse.SIGNATURE, rsaKey.getKeyUse());
             assertEquals(TokenGenerator.signingAlg, rsaKey.getAlgorithm());
             assertTrue(jwk.getKeyID().startsWith(prefix));
         });
