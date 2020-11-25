@@ -8,6 +8,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import oidc.AbstractIntegrationTest;
 import oidc.secure.TokenGenerator;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
