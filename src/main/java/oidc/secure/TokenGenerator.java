@@ -19,6 +19,7 @@ import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -392,6 +393,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         return new RSAKey.Builder(publicKey)
                 .privateKey(privateKey)
                 .algorithm(signingAlg)
+                .keyUse(KeyUse.SIGNATURE)
                 .keyID(keyID)
                 .build();
     }
