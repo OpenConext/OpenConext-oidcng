@@ -26,6 +26,7 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -58,6 +59,9 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         Throwable error = errorAttributes.getError(webRequest);
         if (error instanceof CookiesNotSupportedException) {
             return new ModelAndView("no_session_found", HttpStatus.OK);
+        }
+        if (error != null && error.getCause() != null) {
+            error = error.getCause();
         }
         boolean status = result.containsKey("status") && !result.get("status").equals(999) && !result.get("status").equals(500);
         HttpStatus statusCode = status ? HttpStatus.resolve((Integer) result.get("status")) : BAD_REQUEST;
@@ -114,7 +118,7 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         if (error instanceof BaseException) {
             return ((BaseException) error).getErrorCode();
         }
-        if (error instanceof ParseException && "Missing \"response_type\" parameter".equals(error.getMessage())) {
+        if (error instanceof ParseException) {
             return "invalid_request";
         }
         return error.getMessage();

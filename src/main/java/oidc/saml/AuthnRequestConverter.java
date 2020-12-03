@@ -49,6 +49,7 @@ import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -92,9 +93,20 @@ public class AuthnRequestConverter implements
         Map<String, String[]> parameterMap = savedRequest.getParameterMap();
         Map<String, List<String>> parameters = parameterMap.keySet().stream()
                 .collect(Collectors.toMap(key -> key, key -> Arrays.asList(parameterMap.get(key))));
+
+        List<String> redirectUris = parameters.get("redirect_uri");
+        URI redirectURI = CollectionUtils.isEmpty(redirectUris) ? null : new URI(redirectUris.get(0));
+
+        List<String> clientIds = parameters.get("client_id");
+        String clientId = CollectionUtils.isEmpty(clientIds) ? null : clientIds.get(0);
+
+        OpenIDClient openIDClient = openIDClientRepository.findByClientId(clientId);
+        AuthorizationEndpoint.validateRedirectionURI(redirectURI, openIDClient);
+        request.setAttribute(REDIRECT_URI_VALID, true);
+
         AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(parameters);
 
-        validateAuthorizationRequest(authorizationRequest, request);
+        validateAuthorizationRequest(authorizationRequest, openIDClient);
 
         RelyingPartyRegistration relyingParty = context.getRelyingPartyRegistration();
         AuthnRequestBuilder authnRequestBuilder = (AuthnRequestBuilder) registry.getBuilderFactory()
@@ -121,14 +133,9 @@ public class AuthnRequestConverter implements
     }
 
     @SneakyThrows
-    private void validateAuthorizationRequest(AuthorizationRequest authorizationRequest, HttpServletRequest request) {
+    private void validateAuthorizationRequest(AuthorizationRequest authorizationRequest, OpenIDClient openIDClient) {
         ClientID clientID = authorizationRequest.getClientID();
         MDCContext.mdcContext("action", "Authorization", "clientId", clientID.getValue());
-
-        OpenIDClient openIDClient = openIDClientRepository.findByClientId(clientID.getValue());
-        AuthorizationEndpoint.validateRedirectionURI(authorizationRequest, openIDClient);
-
-        request.setAttribute(REDIRECT_URI_VALID, true);
 
         AuthorizationEndpoint.validateScopes(authorizationRequest, openIDClient);
         AuthorizationEndpoint.validateGrantType(authorizationRequest, openIDClient);

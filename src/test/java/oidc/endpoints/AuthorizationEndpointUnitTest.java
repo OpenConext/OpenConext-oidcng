@@ -111,7 +111,7 @@ public class AuthorizationEndpointUnitTest {
                         .p("response_type", "code")
                         .p("redirect_uri", requestRedirectUri));
         OpenIDClient client = openIDClient(clientRedirectUri, "open_id", "authorization_code");
-        ProvidedRedirectURI redirectUri = AuthorizationEndpoint.validateRedirectionURI(authorizationRequest, client);
+        ProvidedRedirectURI redirectUri = AuthorizationEndpoint.validateRedirectionURI(authorizationRequest.getRedirectionURI(), client);
 
         assertEquals(redirectUri.getRedirectURI(), requestRedirectUri != null ? requestRedirectUri : clientRedirectUri);
     }

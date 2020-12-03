@@ -154,7 +154,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             authenticationRequest = oidcAuthenticationRequest;
         }
         State state = authenticationRequest.getState();
-        String redirectURI = validateRedirectionURI(authenticationRequest, client).getRedirectURI();
+        String redirectURI = validateRedirectionURI(authenticationRequest.getRedirectionURI(), client).getRedirectURI();
 
         List<String> scopes = validateScopes(authenticationRequest, client);
         ResponseType responseType = validateGrantType(authenticationRequest, client);
@@ -352,8 +352,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         return authorizationCode;
     }
 
-    public static ProvidedRedirectURI validateRedirectionURI(AuthorizationRequest authenticationRequest, OpenIDClient client) throws UnsupportedEncodingException {
-        URI redirectionURI = authenticationRequest.getRedirectionURI();
+    public static ProvidedRedirectURI validateRedirectionURI(URI redirectionURI, OpenIDClient client) throws UnsupportedEncodingException {
         List<String> registeredRedirectUrls = client.getRedirectUrls();
         if (redirectionURI == null) {
             return registeredRedirectUrls.stream().findFirst().map(s -> new ProvidedRedirectURI(s, false))
