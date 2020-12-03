@@ -260,7 +260,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     //https://tools.ietf.org/html/rfc6819#section-5.1.4.2
     public String generateAuthorizationCode() {
-        byte[] verifierBytes = new byte[16];
+        byte[] verifierBytes = new byte[22];
         random.nextBytes(verifierBytes);
         char[] chars = new char[verifierBytes.length];
         for (int i = 0; i < verifierBytes.length; i++) {

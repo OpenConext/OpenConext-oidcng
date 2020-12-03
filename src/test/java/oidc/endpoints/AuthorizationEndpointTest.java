@@ -52,7 +52,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     @Test
     public void authorize() throws IOException {
         String code = doAuthorize();
-        assertEquals(16, code.length());
+        assertEquals(22, code.length());
     }
 
     @Test
