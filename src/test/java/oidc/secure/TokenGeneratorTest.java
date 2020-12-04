@@ -99,7 +99,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
     @Test
     public void generateAuthorizationCode() {
         String authorizationCode = tokenGenerator.generateAuthorizationCode();
-        assertEquals(22, authorizationCode.length());
+        assertEquals(32, authorizationCode.length());
     }
 
     private String doEncryptAndDecryptAccessToken(boolean verify) throws IOException, ParseException {

@@ -50,12 +50,6 @@ import static org.junit.Assert.assertTrue;
 public class AuthorizationEndpointTest extends AbstractIntegrationTest implements SignedJWTTest {
 
     @Test
-    public void authorize() throws IOException {
-        String code = doAuthorize();
-        assertEquals(22, code.length());
-    }
-
-    @Test
     public void authorizeFormPost() throws IOException, ParserConfigurationException, SAXException, XPathExpressionException {
         Response response = doAuthorize("mock-sp", "code", ResponseMode.FORM_POST.getValue(), null, null);
         assertEquals(200, response.getStatusCode());

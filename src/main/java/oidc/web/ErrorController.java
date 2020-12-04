@@ -125,7 +125,14 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
     }
 
     private String errorMessage(Throwable error) {
-        return error == null ? "Unknown exception occurred" : error.getMessage();
+        if (error == null) {
+            return "Unknown exception occurred";
+        }
+        String message = error.getMessage();
+        if (StringUtils.isEmpty(message)) {
+            return "Unknown exception occurred";
+        }
+        return message.replaceAll("\"", "");
     }
 
     private Object redirectErrorResponse(Map<String, String[]> parameterMap, Map<String, Object> result, Throwable error, String redirectUri) throws UnsupportedEncodingException {
