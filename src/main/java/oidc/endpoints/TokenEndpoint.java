@@ -23,6 +23,7 @@ import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import oidc.crypto.KeyGenerator;
 import oidc.exceptions.CodeVerifierMissingException;
+import oidc.exceptions.InvalidClientException;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.JWTAuthorizationGrantsException;
 import oidc.exceptions.RedirectMismatchException;
@@ -263,7 +264,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                 .orElseThrow(() -> new IllegalArgumentException("RefreshToken not found"));
 
         if (!refreshToken.getClientId().equals(client.getClientId())) {
-            throw new UnauthorizedException("Client is not authorized for the refresh token");
+            throw new InvalidClientException("Client is not authorized for the refresh token");
         }
         if (refreshToken.isExpired(Clock.systemDefaultZone())) {
             throw new UnauthorizedException("Refresh token expired");
