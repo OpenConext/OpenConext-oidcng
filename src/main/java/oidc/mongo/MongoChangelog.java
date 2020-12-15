@@ -73,8 +73,9 @@ public class MongoChangelog {
     public void dropValueIndexes(MongockTemplate mongoTemplate) {
         Arrays.asList("access_tokens", "refresh_tokens").forEach(collection -> {
             IndexOperations indexOperations = mongoTemplate.indexOps(collection);
-            indexOperations.dropIndex("value_unique");
-            indexOperations.ensureIndex(new Index("jwtId", Sort.Direction.ASC).unique());
+            //This will not drop the '_id' index
+            indexOperations.dropAllIndexes();
+            indexOperations.ensureIndex(new Index("jwtId", Sort.Direction.ASC));
         });
     }
 
