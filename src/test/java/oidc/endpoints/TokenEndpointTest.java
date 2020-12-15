@@ -6,6 +6,7 @@ import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
+import com.nimbusds.oauth2.sdk.RefreshTokenGrant;
 import com.nimbusds.oauth2.sdk.assertions.jwt.JWTAssertionDetails;
 import com.nimbusds.oauth2.sdk.assertions.jwt.JWTAssertionFactory;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretJWT;
@@ -19,6 +20,7 @@ import com.nimbusds.oauth2.sdk.id.Subject;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
+import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
@@ -232,8 +234,8 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
         assertEquals(0, mongoTemplate.find(Query.query(Criteria.where("value").is(accessToken)), AccessToken.class).size());
         assertEquals(0, mongoTemplate.find(Query.query(Criteria.where("value").is(refreshToken)), RefreshToken.class).size());
 
-        assertNotNull(body.get("refresh_token"));
-        assertNotNull(body.get("access_token"));
+        assertNotNull(result.get("refresh_token"));
+        assertNotNull(result.get("access_token"));
         return result;
     }
 
@@ -267,6 +269,20 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
         Map<String, Object> body = doToken(code, "mock-rp", "secret", GrantType.AUTHORIZATION_CODE, null);
 
         assertEquals("Client is not authorized for the authorization code", body.get("error_description"));
+    }
+
+    @Test
+    public void refreshTokenMissing() {
+        Map<String, Object> result = given()
+                .when()
+                .auth().preemptive().basic("mock-sp", "secret")
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .formParam("grant_type", GrantType.REFRESH_TOKEN.getValue())
+                .formParam(GrantType.REFRESH_TOKEN.getValue(), "")
+                .formParams(Collections.emptyMap())
+                .post("oidc/token")
+                .as(Map.class);
+        assertEquals("Missing or empty \"refresh_token\" parameter", result.get("error_description"));
     }
 
     @Test
