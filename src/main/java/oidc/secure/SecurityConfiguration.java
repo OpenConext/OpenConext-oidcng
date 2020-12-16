@@ -245,9 +245,8 @@ public class SecurityConfiguration {
                     })
                     .addFilterBefore(new Saml2MetadataFilter(
                             req -> relyingPartyRegistrationRepository().findByRegistrationId("oidcng"),
-                            new OpenSamlMetadataResolver()), Saml2WebSsoAuthenticationFilter.class);
-
-            http.addFilterBefore(new MDCContextFilter(), BasicAuthenticationFilter.class);
+                            new OpenSamlMetadataResolver()), Saml2WebSsoAuthenticationFilter.class)
+                    .addFilterBefore(new MDCContextFilter(), BasicAuthenticationFilter.class);
 
             if (environment.acceptsProfiles(Profiles.of("dev"))) {
                 http.addFilterBefore(new FakeSamlAuthenticationFilter(userRepository, objectMapper),
