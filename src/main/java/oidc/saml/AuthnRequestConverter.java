@@ -57,6 +57,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding.POST;
 import static org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding.REDIRECT;
 
 
@@ -114,8 +115,8 @@ public class AuthnRequestConverter implements
         AuthnRequest authnRequest = authnRequestBuilder.buildObject();
         authnRequest.setID("ARQ" + UUID.randomUUID().toString().substring(1));
         authnRequest.setIssueInstant(new DateTime());
-        authnRequest.setIsPassive(Boolean.FALSE);
-        authnRequest.setProtocolBinding(REDIRECT.getUrn());
+
+        authnRequest.setProtocolBinding(POST.getUrn());
 
         IssuerBuilder issuerBuilder = (IssuerBuilder) registry.getBuilderFactory()
                 .getBuilder(Issuer.DEFAULT_ELEMENT_NAME);
