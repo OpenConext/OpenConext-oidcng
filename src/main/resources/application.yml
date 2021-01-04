@@ -41,6 +41,8 @@ features:
   enforce-eduid-resource-server-linked-account: true
   # Do we enforce that the scopes granted to an access_token are configured with the RS?
   enforce-scope-resource-server: true
+  # Do we show consent if configured for a RP in manage
+  consent-enabled: true
 
 sp:
   entity_id: https://org.openconext.local.oidc.ng

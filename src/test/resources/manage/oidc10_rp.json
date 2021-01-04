@@ -21,6 +21,7 @@
         "name:nl": "OpenConext Mock SP",
         "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
         "clientSecretJWT": "very-long-long-long-long-long-secret",
+        "logo:0:url": "https://static.surfconext.nl/logos/idp/tue.png",
         "redirectUrls": [
           "http://localhost:3006/redirect",
           "http://localhost:3006/oidc/api/redirect"
@@ -46,6 +47,13 @@
             "name": "weird",
             "descriptions": {
               "en": "Weird"
+            }
+          },
+          {
+            "name": "https://voot.surfconext.nl/groups",
+            "descriptions": {
+              "en": "Request and receive all your group membership information",
+              "nl": " Vraag en ontvang al je groepslidmaatschappen informatie"
             }
           }
         ],
@@ -116,12 +124,13 @@
       "state": "testaccepted",
       "allowedall": true,
       "metaDataFields": {
-        "coin:institution_guid" :"ad93daef-0911-e511-80d0-005056956c1a",
+        "coin:institution_guid": "ad93daef-0911-e511-80d0-005056956c1a",
         "name:en": "ResourceServer",
         "name:nl": "ResourceServer",
         "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
         "scopes": [
-          "openid", "groups"
+          "openid",
+          "groups"
         ],
         "grants": [
           "client_credentials"
@@ -153,13 +162,13 @@
         {
           "name": "mock-sp"
         }
-
       ],
       "metaDataFields": {
         "name:en": "Playground Client",
         "name:nl": "Playground Client",
         "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
         "clientSecretJWT": "very-long-long-long-long-long-secret",
+        "logo:0:url": "https://static.surfconext.nl/logos/idp/wur.png",
         "scopes": [
           {
             "name": "openid",

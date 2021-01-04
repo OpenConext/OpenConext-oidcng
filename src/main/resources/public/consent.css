@@ -1,0 +1,102 @@
+body {
+    font-family: Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    font-size: 16px;
+    background-color: #235fb0;
+}
+
+div.container {
+    max-width: 780px;
+    margin: 0 auto;
+    min-height: 100vh;
+}
+
+form {
+    margin-top: 15px;
+    border-radius: 4px;
+    border: 1px solid #c9c9c9;
+    background-color: white;
+}
+
+div.header {
+    padding: 35px;
+    background-color: #fadc00;
+    font-size: 24px;
+}
+
+div.content {
+    display: flex;
+    flex-direction: column;
+    padding: 35px 50px;
+}
+
+div.client {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+div.client span {
+    font-size: 28px;
+    line-height: 42px;
+}
+
+span.client {
+    color: #0062b0;
+    font-weight: bold;
+}
+
+ul {
+    margin-bottom: 40px;
+}
+
+ul li {
+    line-height: 28px;
+}
+
+div.actions {
+    display: flex;
+    padding: 20px 122px;
+    flex-direction: column;
+}
+
+button {
+    background-color: #0062b0;
+    width: 100%;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 8px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+button.cancel {
+    color: #0062b0;
+    background-color: white;
+    border: 1px solid #f1f0f0;
+    margin-top: 15px;
+}
+
+.footer {
+    display: flex;
+    align-content: center;
+}
+
+.inner-footer {
+    margin: auto auto 0 auto;
+}
+
+@media only screen and (max-width: 780px) {
+    div.container {
+        max-width: 100%
+    }
+
+    div.actions {
+        padding: 20px 20px;
+    }
+}
+
+

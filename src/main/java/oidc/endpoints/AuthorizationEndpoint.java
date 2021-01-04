@@ -32,7 +32,6 @@ import oidc.model.UserConsent;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.OpenIDClientRepository;
-import oidc.repository.RefreshTokenRepository;
 import oidc.repository.UserConsentRepository;
 import oidc.repository.UserRepository;
 import oidc.secure.JWTRequest;
@@ -75,7 +74,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -84,7 +85,7 @@ import static java.util.stream.Collectors.toMap;
 public class AuthorizationEndpoint implements OidcEndpoint {
 
     private static final Log LOG = LogFactory.getLog(AuthorizationEndpoint.class);
-    private static final List<String> forFreeOpenIDScopes = Arrays.asList("profile", "email", "address", "phone");
+    private static final List<String> forFreeOpenIDScopes = Arrays.asList("openid", "profile", "email", "address", "phone");
 
     private final TokenGenerator tokenGenerator;
     private final AuthorizationCodeRepository authorizationCodeRepository;
@@ -93,6 +94,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     private final UserConsentRepository userConsentRepository;
     private final OpenIDClientRepository openIDClientRepository;
     private final String salt;
+    private final boolean consentEnabled;
 
     @Autowired
     public AuthorizationEndpoint(AuthorizationCodeRepository authorizationCodeRepository,
@@ -101,7 +103,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                                  UserConsentRepository userConsentRepository,
                                  OpenIDClientRepository openIDClientRepository,
                                  TokenGenerator tokenGenerator,
-                                 @Value("${access_token_one_way_hash_salt}") String salt) {
+                                 @Value("${access_token_one_way_hash_salt}") String salt,
+                                 @Value("${features.consent-enabled}") boolean consentEnabled) {
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.accessTokenRepository = accessTokenRepository;
         this.userRepository = userRepository;
@@ -109,6 +112,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         this.openIDClientRepository = openIDClientRepository;
         this.tokenGenerator = tokenGenerator;
         this.salt = salt;
+        this.consentEnabled = consentEnabled;
     }
 
     @GetMapping("/oidc/authorize")
@@ -118,7 +122,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         LOG.debug(String.format("/oidc/authorize %s %s", authentication.getDetails(), parameters));
 
         //to enable consent, set consentRequired to true
-        return doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, false, false);
+        return doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, consentEnabled, false);
     }
 
     @PostMapping(value = "/oidc/consent", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -157,7 +161,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         State state = authenticationRequest.getState();
         String redirectURI = validateRedirectionURI(authenticationRequest.getRedirectionURI(), client).getRedirectURI();
 
-        List<String> scopes = validateScopes(authenticationRequest, client);
+        List<String> scopes = validateScopes(openIDClientRepository, authenticationRequest, client);
         ResponseType responseType = validateGrantType(authenticationRequest, client);
 
         User user = samlAuthentication.getUser();
@@ -165,8 +169,13 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         Prompt prompt = authenticationRequest.getPrompt();
         boolean consentFromPrompt = prompt != null && prompt.toStringList().contains("consent");
+        boolean apiScopeRequested = false;
+        if (scope != null) {
+            List<String> scopeList = scope.toStringList();
+            apiScopeRequested = !(scopeList.size() == 1 && scopeList.get(0).equalsIgnoreCase("openid"));
+        }
 
-        if (consentRequired && (consentFromPrompt || client.isConsentRequired())) {
+        if (consentRequired && apiScopeRequested && (consentFromPrompt || client.isConsentRequired())) {
             Optional<UserConsent> userConsentOptional = this.userConsentRepository.findUserConsentBySub(user.getSub());
             boolean userConsentRequired = consentFromPrompt || userConsentOptional
                     .map(userConsent -> userConsent.renewConsentRequired(user, scopes))
@@ -174,7 +183,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
             if (userConsentRequired) {
                 LOG.debug("Asking for consent for User " + user + " and scopes " + scopes);
-                return doConsent(parameters, client, scopes, user);
+                return doConsent(parameters, client, scopes);
             }
         }
         if (createConsent) {
@@ -245,39 +254,24 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         userConsentRepository.save(userConsent);
     }
 
-    private ModelAndView doConsent(MultiValueMap<String, String> parameters, OpenIDClient client, List<String> scopes, User user) {
+    private ModelAndView doConsent(MultiValueMap<String, String> parameters, OpenIDClient client, List<String> scopes) {
         Map<String, Object> body = new HashMap<>();
         body.put("parameters", parameters.entrySet().stream().collect(Collectors.toMap(
-                entry -> entry.getKey(),
+                Map.Entry::getKey,
                 entry -> entry.getValue().get(0)
         )));
-        String authenticatingAuthority = user.getAuthenticatingAuthority();
-        body.put("scopes", client.getScopes().stream().filter(scope -> scopes.contains(scope.getName())).collect(toList()));
-        body.put("client", client.getName());
+        body.put("client", client);
+
         List<String> allowedResourceServers = client.getAllowedResourceServers();
         List<OpenIDClient> resourceServers = this.openIDClientRepository.findByClientIdIn(allowedResourceServers);
-        Map<String, String> audiences = allowedResourceServers.stream().collect(Collectors.toMap(
-                name -> name,
-                name -> resourceServers.stream().filter(rs -> rs.getClientId().equals(name)).findFirst().map(OpenIDClient::getName).orElse(name)
-        ));
+        List<String> relevantScopes = scopes.stream().filter(s -> "openid".equals(s.toLowerCase())).map(String::toLowerCase).collect(toList());
+        Map<String, OpenIDClient> audiences = resourceServers.stream()
+                .filter(rs -> rs.getScopes().stream().anyMatch(s -> relevantScopes.contains(s.getName().toLowerCase())))
+                .collect(toMap(OpenIDClient::getName, rs -> rs));
         body.put("audiences", audiences);
-        Map<String, Object> attributes = user.getAttributes();
-        Map<String, String> claims = attributes.keySet()
-                .stream().collect(toMap(key -> key, key -> attributeValueForConsent(attributes.get(key))));
-        body.put("claims", claims);
-        body.put("email", attributes.get("email"));
+        //Do we want to translate and display the authenticatingAuthority?
+        //String authenticatingAuthority = user.getAuthenticatingAuthority();
         return new ModelAndView("consent", body);
-    }
-
-    @SuppressWarnings("unchecked")
-    private String attributeValueForConsent(Object object) {
-        if (object == null) {
-            return "";
-        }
-        if (object instanceof Collection) {
-            return ((Collection) object).stream().collect(Collectors.joining(", ")).toString();
-        }
-        return object.toString();
     }
 
     public static ResponseType validateGrantType(AuthorizationRequest authorizationRequest, OpenIDClient client) {
@@ -426,13 +420,17 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         }
     }
 
-    public static List<String> validateScopes(AuthorizationRequest authorizationRequest, OpenIDClient client) {
+    public static List<String> validateScopes(OpenIDClientRepository openIDClientRepository, AuthorizationRequest authorizationRequest, OpenIDClient client) {
         Scope scope = authorizationRequest.getScope();
         List<String> requestedScopes = scope != null ? scope.toStringList() : Collections.emptyList();
-        List<String> scopes = client.getScopes().stream().map(oidc.model.Scope::getName).collect(toList());
-        scopes.addAll(forFreeOpenIDScopes);
-        if (!scopes.containsAll(requestedScopes)) {
-            List<String> missingScopes = requestedScopes.stream().filter(s -> !scopes.contains(s)).collect(toList());
+
+        List<OpenIDClient> resourceServers = openIDClientRepository.findByClientIdIn(client.getAllowedResourceServers());
+        List<String> grantedScopes = resourceServers.stream()
+                .flatMap(rs -> rs.getScopes().stream().map(oidc.model.Scope::getName))
+                .collect(toList());
+        grantedScopes.addAll(forFreeOpenIDScopes);
+        if (!grantedScopes.containsAll(requestedScopes)) {
+            List<String> missingScopes = requestedScopes.stream().filter(s -> !grantedScopes.contains(s)).collect(toList());
             throw new InvalidScopeException(
                     String.format("Scope(s) %s are not allowed for %s. Allowed scopes: %s",
                             missingScopes, client.getClientId(), client.getScopes()));

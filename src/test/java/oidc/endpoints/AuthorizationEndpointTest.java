@@ -90,7 +90,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void authorizeWithNoImplicitGrant() throws IOException {
-        Response response = doAuthorizeWithClaimsAndScopes("mock-rp", "token", "fragment", "nonce", null, Collections.emptyList(), "groups", "state");
+        Response response = doAuthorizeWithClaimsAndScopes("mock-rp", "token id_token", "fragment", "nonce", null, Collections.emptyList(), "openid", "state");
         Map<String, Object> result = response.as(mapTypeRef);
         assertEquals("Grant types [authorization_code] does not allow for implicit / hybrid flow", result.get("message"));
         assertEquals(401, result.get("status"));
@@ -344,7 +344,6 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
 
     @Test
-    @Ignore
     public void consent() throws IOException {
         doConsent();
         //consent only once
@@ -360,11 +359,12 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         doConsent();
 
         userConsent = mongoTemplate.findAll(UserConsent.class).get(0);
-        assertEquals("[openid]", userConsent.getScopes().toString());
+        assertEquals("[https://voot.surfconext.nl/groups]", userConsent.getScopes().toString());
     }
 
     private void doConsent() throws IOException {
-        Response response = doAuthorize("playground_client", "code", ResponseMode.QUERY.getValue(), "nonce", null);
+        Response response = doAuthorizeWithClaimsAndScopes("playground_client", "code", ResponseMode.QUERY.getValue(), "nonce", null,
+                Collections.emptyList(),"https://voot.surfconext.nl/groups", "state");
         String html = response.getBody().asString();
         assertTrue(html.contains("<form method=\"post\" action=\"/oidc/consent\">"));
 

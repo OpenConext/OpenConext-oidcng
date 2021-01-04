@@ -1,151 +1,29 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Consent</title>
-    <style>
-        body {
-            font-family: Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            font-size: 16px;
-            background-color: #235fb0;
-        }
-
-        div.container {
-            max-width: 1024px;
-            margin: 0    auto;
-        }
-
-        form {
-            border-radius: 4px;
-            border: 1px solid #c9c9c9;
-            background-color: white;
-        }
-
-        div.top {
-            max-width: 1024px;
-            margin: 0 auto;
-            display: flex;
-            color: #b9e3fe;
-            padding: 15px 25px;
-            background-color: #235fb0;
-        }
-
-        div.top p {
-            display: inline-block;
-            margin-left: 20px;
-            font-size: 22px;
-        }
-
-        div.top img {
-            width: 48px;
-        }
-
-        div.header {
-            padding: 35px;
-            background-color: #fadc00;
-            font-size: 22px;
-            font-weight: bold;
-        }
-
-        div.content {
-            display: flex;
-            flex-direction: column;
-            padding: 25px 40px;
-        }
-
-        div.client {
-            display: flex;
-            flex-direction: column;
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        div.client span {
-            font-size: 28px;
-            line-height: 42px;
-        }
-
-        span.client {
-            color: #0062b0;
-            font-weight: bold;
-        }
-
-        ul {
-            margin-bottom: 40px;
-        }
-
-        ul li {
-            line-height: 28px;
-        }
-
-        div.claims {
-            overflow-x: auto;
-            margin-top: 25px;
-        }
-
-        div.claims a {
-            text-decoration: none;
-        }
-
-        div.claims a.hide, table.hide {
-            display: none;
-        }
-
-        table {
-            width: 100%;
-            margin: 25px 0;
-        }
-
-        table td {
-            padding: 8px 5px;
-        }
-
-        table tr:nth-child(even) {
-            background: #f1f0f0
-        }
-
-        div.actions {
-            display: flex;
-            padding: 40px;
-        }
-
-        button {
-            background-color: #0062b0;
-            width: 165px;
-            color: white;
-            margin-left: auto;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            font-size: 20px;
-            cursor: pointer;
-        }
-
-        button.cancel {
-            color: #0062b0;
-            background-color: white;
-            border: 1px solid #f1f0f0;
-            margin-left: 0;
-        }
-    </style>
+    <meta name="robots" content="noindex, nofollow">
+    <meta content="ie=edge,chrome=1" http-equiv="x-ua-compatible">
+    <meta content="initial-scale=1.0,user-scalable=no,maximum-scale=1,width=device-width" name="viewport">
+    <meta content="yes" name="apple-mobile-web-app-capable">
+    <meta content="translucent-black" name="apple-mobile-web-app-status-bar-style">
+    <link href="/favicon.ico" rel="shortcut icon">
+    <link th:href="@{/consent.css}" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div class="container">
-    <div class="top">
-        <img src="https://static.surfconext.nl/media/conext_logo.png" alt="conext">
-    </div>
-
     <form method="post" action="/oidc/consent">
         <div class="header">
-            <span>Please give consent to share your information</span>
+            <span>Do you give permission to share your information?</span>
         </div>
         <div class="content">
             <div class="client">
-                <span class="client" th:text="${client}"/>
-                <span th:text="${email}"/>
+                <img th:src="${client.logoUrl}" alt=""/>
             </div>
+            <span>&larr;</span>
+            <span>&rarr;</span>
+            <span>&check;</span>
             <div class="allow">
-                <span>This will allow <span class="client" th:text="${client}"/> to:</span>
+                <span><span class="client" th:text="${client.name}"/> needs</span>
                 <ul>
                     <li th:each="scope : ${scopes}" th:text="${scope.descriptions.get('en')}"/>
                 </ul>
@@ -156,64 +34,30 @@
                     <li th:each="audience : ${audiences}" th:text="${audience.value}"/>
                 </ul>
             </div>
-            <div class="disclaimer">
-            <span>Make sure you trust <span class="client" th:text="${client}"/>.
-                <a href="https://wiki.surfnet.nl/display/conextsupport/Het+Consent-scherm" target="_blank"> Find out about the risks.</a>
-            </span>
-            </div>
-            <div class="claims">
-                <a id="show" class="show" href="#">Show me the information that will be shared with <span
-                        th:text="${client}"/></a>
-
-                <a id="hide" class="hide" href="#">Hide the information that will be shared with
-                    <span th:text="${client}"/>
-                </a>
-                <table id="attributes" class="hide">
-                    <tbody>
-                    <th:block th:each="claim : ${claims}">
-                        <tr>
-                            <td th:text="${claim.key}"></td>
-                            <td th:text="${claim.value}"></td>
-                        </tr>
-                    </th:block>
-                    </tbody>
-
-                </table>
-            </div>
-
         </div>
         <input th:each="parameter : ${parameters}" type="hidden" th:name="${parameter.key}"
                th:value="${parameter.value}"/>
-
         <div class="actions">
-            <button class="cancel" name="no" value="no" type="submit">Cancel</button>
             <button name="yes" value="yes" type="submit">Allow</button>
+            <button class="cancel" name="no" value="no" type="submit">No, I don't agree</button>
         </div>
     </form>
+    <div class="footer">
+        <div class="inner-footer">
+            <a href="/nl" onclick="switchLang('nl'); return false;">NL</a>
+            <span>EN</span>
+        </div>
+    </div>
 
 </div>
 </body>
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    var toggleHide = function (el, other) {
-      el.addEventListener("click", function (e) {
-        e.stopPropagation();
-        e.preventDefault();
-        el.classList.toggle("hide");
-        document.getElementById("attributes").classList.toggle("hide");
-        document.getElementById(other).classList.toggle("hide");
-        return false;
-      });
-    }
-    toggleHide(document.getElementById("show"), "hide");
-    toggleHide(document.getElementById("hide"), "show");
-  });
 
   function switchLang(lang) {
     var searchParams = new URLSearchParams(window.location.search);
     searchParams.set("lang", lang);
     window.location.search = searchParams.toString();
-
   }
+
 </script>
 </html>
