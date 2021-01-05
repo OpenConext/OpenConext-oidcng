@@ -3,6 +3,7 @@ body {
     display: flex;
     flex-direction: column;
     font-size: 16px;
+    line-height: 22px;
     background-color: #235fb0;
 }
 
@@ -28,44 +29,89 @@ div.header {
 div.content {
     display: flex;
     flex-direction: column;
-    padding: 35px 50px;
+    padding: 35px 75px 0 75px;
 }
 
-div.client {
+div.data-transfer {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+    margin-bottom: 35px;
+}
+
+div.arrows svg {
+    width: 52px;
+    height: auto;
+}
+
+div.client img {
+    width: 200px;
+    height: auto;
+}
+
+div.resource-server {
     display: flex;
     flex-direction: column;
-    text-align: center;
-    margin-bottom: 40px;
 }
 
-div.client span {
-    font-size: 28px;
-    line-height: 42px;
+div.image-container {
+    padding: 10px;
+    box-shadow: 1px 1px 5px 1px grey;
 }
 
-span.client {
-    color: #0062b0;
+div.image-container:not(:first-child) {
+    margin-top: 15px;
+}
+
+div.resource-server img {
+    width: 200px;
+    height: auto;
+}
+
+span.strong {
     font-weight: bold;
 }
 
+div.grant {
+    padding: 20px 0 40px 0;
+    border-bottom: 1px solid grey;
+}
+
 ul {
-    margin-bottom: 40px;
+    list-style: none;
+    margin: 0;
+    margin-block-start: 0;
+    margin-block-end: 0;
+    margin-inline-start: 0;
+    margin-inline-end: 0;
+    padding-inline-start: 0;
 }
 
 ul li {
     line-height: 28px;
+    margin-top: 15px;
 }
+
+ul li:before {
+    content: "✓";
+    font-size: 28px;
+    color: #0062b0;
+    margin-right: 22px;
+}
+
 
 div.actions {
     display: flex;
-    padding: 20px 122px;
+    padding: 40px 122px 20px 122px;
     flex-direction: column;
 }
 
-button {
-    background-color: #0062b0;
+button, .button {
+    background-color: #0077c8;
     width: 100%;
     color: white;
+    text-decoration: none;
     border: none;
     padding: 15px 30px;
     border-radius: 8px;
@@ -73,11 +119,22 @@ button {
     cursor: pointer;
 }
 
-button.cancel {
-    color: #0062b0;
+button:hover {
+    background-color: #004c97;
+}
+
+.button.cancel {
+    color: #0077c8;
+    border: 1px solid #0077c8;
     background-color: white;
-    border: 1px solid #f1f0f0;
     margin-top: 15px;
+    width: auto;
+    text-align: center;
+}
+
+.button.cancel:hover {
+    background-color: #ddf2fd;
+    color: #004c97;
 }
 
 .footer {
@@ -89,14 +146,103 @@ button.cancel {
     margin: auto auto 0 auto;
 }
 
+.modal:before {
+    content: "";
+    display: none;
+    background: rgba(0, 0, 0, .6);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+}
+
+.modal:target {
+    display: block;
+}
+
+.modal:target:before {
+    display: block;
+}
+
+.modal:target .modal-dialog {
+    transform: translate(0, 0);
+    top: 20%;
+}
+
+.modal-dialog {
+    background: #fefefe;
+    border: grey solid 1px;
+    border-radius: 5px;
+    margin-left: -330px;
+    position: fixed;
+    left: 50%;
+    top: -100%;
+    z-index: 11;
+    width: 660px;
+    transform: translate(0, -500%);
+    overflow-y: auto;
+}
+
+.modal-body {
+    padding: 30px;
+}
+
+.modal-header,
+.modal-footer {
+    padding: 10px 20px;
+}
+
+.modal-header {
+    border-bottom: lightgray solid 1px;
+}
+
+.modal-header h2 {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.modal-footer {
+    border-top: lightgray solid 1px;
+    text-align: right;
+    padding: 30px 20px;
+}
+
 @media only screen and (max-width: 780px) {
     div.container {
         max-width: 100%
     }
 
+    div.content {
+        padding: 35px 15px 0 15px;
+    }
+
+    div.data-transfer {
+        flex-direction: column;
+    }
+
+    div.arrows {
+        transform: rotate(90deg);
+        margin: 50px 0;
+    }
+
     div.actions {
         padding: 20px 20px;
     }
+
+    .modal-dialog {
+        margin-left: 0;
+        width: 90%;
+        left: 5%;
+        transform: translate(0, -500%);
+    }
+
+    .modal:target .modal-dialog {
+        top: 2%;
+    }
+
 }
+
 
 

@@ -352,9 +352,8 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
         assertTrue(body.containsKey("access_token"));
 
-        //consent again if hash changes
-        UserConsent userConsent = mongoTemplate.findAll(UserConsent.class).get(0).updateHash(new User("nope", "unspecifiedNameId", "authenticatingAuthority", "clientId",
-                Collections.emptyMap(), Collections.emptyList()), Collections.singletonList("openid"));
+        //consent again if scope changes
+        UserConsent userConsent = mongoTemplate.findAll(UserConsent.class).get(0).updateScopes(Collections.singletonList("groups"));
         mongoTemplate.save(userConsent);
         doConsent();
 

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.crypto.tink.CleartextKeysetHandle;
 import com.google.crypto.tink.JsonKeysetWriter;
 import com.google.crypto.tink.KeysetHandle;
-import com.google.crypto.tink.aead.AeadKeyTemplates;
+import com.google.crypto.tink.aead.AesCtrHmacAeadKeyManager;
 import com.nimbusds.jose.jwk.JWKSet;
 import oidc.secure.TokenGenerator;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,7 +45,7 @@ public class JwkKeysEndpoint implements MapTypeReference {
 
     @GetMapping("oidc/generate-secret-key-set")
     public Map<String, Object> generateSymmetricSecretKey() throws GeneralSecurityException, IOException {
-        KeysetHandle keysetHandle = KeysetHandle.generateNew(AeadKeyTemplates.AES256_CTR_HMAC_SHA256);
+        KeysetHandle keysetHandle = KeysetHandle.generateNew(AesCtrHmacAeadKeyManager.aes256CtrHmacSha256Template());
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         CleartextKeysetHandle.write(keysetHandle, JsonKeysetWriter.withOutputStream(outputStream));

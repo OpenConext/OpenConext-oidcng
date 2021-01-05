@@ -63,23 +63,20 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 
 @Controller
 public class AuthorizationEndpoint implements OidcEndpoint {
@@ -118,7 +115,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     @GetMapping("/oidc/authorize")
     public ModelAndView authorize(@RequestParam MultiValueMap<String, String> parameters,
                                   Authentication authentication,
-                                  HttpServletRequest request) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
+                                  HttpServletRequest request) throws ParseException, JOSEException, IOException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
         LOG.debug(String.format("/oidc/authorize %s %s", authentication.getDetails(), parameters));
 
         //to enable consent, set consentRequired to true
@@ -128,7 +125,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     @PostMapping(value = "/oidc/consent", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ModelAndView consent(@RequestParam Map<String, String> body,
                                 Authentication authentication,
-                                HttpServletRequest request) throws ParseException, JOSEException, IOException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
+                                HttpServletRequest request) throws ParseException, JOSEException, IOException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
         LOG.debug(String.format("/oidc/consent %s %s", authentication.getDetails(), body));
 
         LinkedMultiValueMap<String, String> parameters = new LinkedMultiValueMap<>();
@@ -140,7 +137,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                                          OidcSamlAuthentication samlAuthentication,
                                          HttpServletRequest request,
                                          boolean consentRequired,
-                                         boolean createConsent) throws ParseException, CertificateException, JOSEException, IOException, BadJOSEException, java.text.ParseException, URISyntaxException, NoSuchProviderException, NoSuchAlgorithmException {
+                                         boolean createConsent) throws ParseException, CertificateException, JOSEException, IOException, BadJOSEException, java.text.ParseException, URISyntaxException {
         AuthorizationRequest authenticationRequest = AuthorizationRequest.parse(parameters);
 
         Scope scope = authenticationRequest.getScope();
@@ -169,21 +166,20 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         Prompt prompt = authenticationRequest.getPrompt();
         boolean consentFromPrompt = prompt != null && prompt.toStringList().contains("consent");
-        boolean apiScopeRequested = false;
         if (scope != null) {
             List<String> scopeList = scope.toStringList();
-            apiScopeRequested = !(scopeList.size() == 1 && scopeList.get(0).equalsIgnoreCase("openid"));
-        }
-
-        if (consentRequired && apiScopeRequested && (consentFromPrompt || client.isConsentRequired())) {
-            Optional<UserConsent> userConsentOptional = this.userConsentRepository.findUserConsentBySub(user.getSub());
-            boolean userConsentRequired = consentFromPrompt || userConsentOptional
-                    .map(userConsent -> userConsent.renewConsentRequired(user, scopes))
-                    .orElse(true);
-
-            if (userConsentRequired) {
-                LOG.debug("Asking for consent for User " + user + " and scopes " + scopes);
-                return doConsent(parameters, client, scopes);
+            boolean apiScopeRequested = !(scopeList.size() == 1 && scopeList.get(0).equalsIgnoreCase("openid"));
+            Set<String> filteredScopes = scopeList.stream().filter(s -> !s.equalsIgnoreCase("openid")).collect(toSet());
+            List<OpenIDClient> resourceServers = openIDClientRepository.findByScopes_NameIn(filteredScopes);
+            if (consentRequired && apiScopeRequested && (consentFromPrompt || client.isConsentRequired()) && resourceServers.size() > 0) {
+                Optional<UserConsent> userConsentOptional = this.userConsentRepository.findUserConsentBySub(user.getSub());
+                boolean userConsentRequired = consentFromPrompt || userConsentOptional
+                        .map(userConsent -> userConsent.renewConsentRequired(scopes))
+                        .orElse(true);
+                if (userConsentRequired) {
+                    LOG.debug("Asking for consent for User " + user + " and scopes " + scopes);
+                    return doConsent(parameters, client, filteredScopes, resourceServers);
+                }
             }
         }
         if (createConsent) {
@@ -248,13 +244,15 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
     private void createConsent(List<String> scopes, User user, OpenIDClient openIDClient) {
         LOG.info("Creating consent for User " + user + " and scopes " + scopes);
-        UserConsent userConsent = userConsentRepository.findUserConsentBySub(user.getSub())
-                .map(uc -> uc.updateHash(user, scopes)).orElse(new UserConsent(user, scopes, openIDClient));
+        UserConsent userConsent = userConsentRepository
+                .findUserConsentBySub(user.getSub())
+                .map(uc -> uc.updateScopes(scopes))
+                .orElse(new UserConsent(user, scopes, openIDClient));
 
         userConsentRepository.save(userConsent);
     }
 
-    private ModelAndView doConsent(MultiValueMap<String, String> parameters, OpenIDClient client, List<String> scopes) {
+    private ModelAndView doConsent(MultiValueMap<String, String> parameters, OpenIDClient client, Set<String> scopes, List<OpenIDClient> resourceServers) {
         Map<String, Object> body = new HashMap<>();
         body.put("parameters", parameters.entrySet().stream().collect(Collectors.toMap(
                 Map.Entry::getKey,
@@ -262,13 +260,17 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         )));
         body.put("client", client);
 
-        List<String> allowedResourceServers = client.getAllowedResourceServers();
-        List<OpenIDClient> resourceServers = this.openIDClientRepository.findByClientIdIn(allowedResourceServers);
-        List<String> relevantScopes = scopes.stream().filter(s -> "openid".equals(s.toLowerCase())).map(String::toLowerCase).collect(toList());
-        Map<String, OpenIDClient> audiences = resourceServers.stream()
-                .filter(rs -> rs.getScopes().stream().anyMatch(s -> relevantScopes.contains(s.getName().toLowerCase())))
-                .collect(toMap(OpenIDClient::getName, rs -> rs));
-        body.put("audiences", audiences);
+        body.put("resourceServers", resourceServers.stream().filter(rs -> StringUtils.hasText(rs.getLogoUrl())).collect(toList()));
+        String names = resourceServers.stream().map(rs -> rs.getName()).collect(joining(", "));
+        names = resourceServers.size() == 1 ? names : names.substring(0, names.lastIndexOf(", ")).concat(" and ").concat(names.substring(names.lastIndexOf(", ") + 2, names.length() - 1));
+        body.put("resourceServerNames", names);
+
+        Set<String> scopeDescriptions = resourceServers.stream()
+                .flatMap(rs -> rs.getScopes().stream().filter(s -> scopes.contains(s.getName()))
+                .map(s -> s.getDescriptions().get("en")))
+                .filter(s -> StringUtils.hasText(s))
+                .collect(toSet());
+        body.put("scopes", scopeDescriptions);
         //Do we want to translate and display the authenticatingAuthority?
         //String authenticatingAuthority = user.getAuthenticatingAuthority();
         return new ModelAndView("consent", body);
