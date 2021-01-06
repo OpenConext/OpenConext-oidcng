@@ -78,7 +78,7 @@ public class AuthorizationEndpointIntegrationTest extends AbstractIntegrationTes
         assertEquals(params.getFirst("error"), "invalid_request");
 
         //'error_description' field MUST NOT include characters outside the set %09-0A (Tab and LF) / %x0D (CR) / %x20-21 / %x23-5B / %x5D-7E
-        assertEquals(params.getFirst("error_description"), "Missing%20response_type%20parameter");
+        assertEquals("Missing+response_type+parameter", params.getFirst("error_description"));
     }
 
     private Response doAuthorize(Map<String, String> queryParams) {

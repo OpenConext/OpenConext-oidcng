@@ -205,7 +205,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 .then()
                 .statusCode(401)
                 .body(containsString("example"))
-                .body(containsString("not allowed"));
+                .body(containsString("not+allowed"));
     }
 
     @Test
