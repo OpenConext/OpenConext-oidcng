@@ -164,13 +164,21 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         User user = samlAuthentication.getUser();
         MDCContext.mdcContext(user);
 
-        Prompt prompt = authenticationRequest.getPrompt();
-        boolean consentFromPrompt = prompt != null && prompt.toStringList().contains("consent");
         if (scope != null) {
             List<String> scopeList = scope.toStringList();
             boolean apiScopeRequested = !(scopeList.size() == 1 && scopeList.get(0).equalsIgnoreCase("openid"));
             Set<String> filteredScopes = scopeList.stream().filter(s -> !s.equalsIgnoreCase("openid")).collect(toSet());
             List<OpenIDClient> resourceServers = openIDClientRepository.findByScopes_NameIn(filteredScopes);
+            Prompt prompt = authenticationRequest.getPrompt();
+            boolean consentFromPrompt = prompt != null && prompt.toStringList().contains("consent");
+            /*
+             * We prompt for consent when the following conditions are met:
+             *   Consent feature toggle is on
+             *   The RP has requested scope(s) other then openid
+             *   Manage attribute "oidc:consentRequired" is true for the RP or the RP has explicitly asked for consent
+             *   There is at least one ResourceServer that has the requested scope(s) configured in manage
+             *   There is no previous consent or the scope(s) of the existing consent is not sufficient
+             */
             if (consentRequired && apiScopeRequested && (consentFromPrompt || client.isConsentRequired()) && resourceServers.size() > 0) {
                 Optional<UserConsent> userConsentOptional = this.userConsentRepository.findUserConsentBySub(user.getSub());
                 boolean userConsentRequired = consentFromPrompt || userConsentOptional
@@ -267,7 +275,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         Set<String> scopeDescriptions = resourceServers.stream()
                 .flatMap(rs -> rs.getScopes().stream().filter(s -> scopes.contains(s.getName()))
-                .map(s -> s.getDescriptions().get("en")))
+                        .map(s -> s.getDescriptions().get("en")))
                 .filter(s -> StringUtils.hasText(s))
                 .collect(toSet());
         body.put("scopes", scopeDescriptions);
