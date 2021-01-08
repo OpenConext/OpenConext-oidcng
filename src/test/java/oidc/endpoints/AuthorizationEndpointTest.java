@@ -358,14 +358,15 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         doConsent();
 
         userConsent = mongoTemplate.findAll(UserConsent.class).get(0);
-        assertEquals("[https://voot.surfconext.nl/groups]", userConsent.getScopes().toString());
+        assertEquals("[https://voot.surfconext.nl/groups, groups]", userConsent.getScopes().toString());
     }
 
     private void doConsent() throws IOException {
         Response response = doAuthorizeWithClaimsAndScopes("playground_client", "code", ResponseMode.QUERY.getValue(), "nonce", null,
-                Collections.emptyList(),"https://voot.surfconext.nl/groups", "state");
+                Collections.emptyList(),"https://voot.surfconext.nl/groups groups", "state");
         String html = response.getBody().asString();
         assertTrue(html.contains("<form method=\"post\" action=\"/oidc/consent\">"));
+        assertTrue(html.contains("OpenConext Mock SP, OpenConext Mock RP, ResourceServer, Playground Client, RP JWT authentication and Student Mobility"));
 
         Map<String, String> formParams = new HashMap<>();
         Matcher matcher = Pattern.compile("<input type=\"hidden\" name=\"(.+?)\"/>", Pattern.DOTALL).matcher(html);
