@@ -270,7 +270,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         body.put("resourceServers", resourceServers.stream().filter(rs -> StringUtils.hasText(rs.getLogoUrl())).collect(toList()));
         String names = resourceServers.stream().map(rs -> rs.getName()).collect(joining(", "));
-        names = resourceServers.size() == 1 ? names : names.substring(0, names.lastIndexOf(", ")).concat(" and ").concat(names.substring(names.lastIndexOf(", ") + 2, names.length() - 1));
+        names = resourceServers.size() == 1 ? names : names.substring(0, names.lastIndexOf(", ")).concat(" and ").concat(names.substring(names.lastIndexOf(", ") + 2, names.length()));
         body.put("resourceServerNames", names);
 
         Set<String> scopeDescriptions = resourceServers.stream()
