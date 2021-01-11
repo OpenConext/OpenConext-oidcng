@@ -39,7 +39,8 @@ public class MetadataController {
 
         List<OpenIDClient> newClients = connections.stream()
                 .filter(connection -> connection.get("type").equals("oidc10_rp"))
-                .map(OpenIDClient::new).collect(Collectors.toList());
+                .map(OpenIDClient::new)
+                .collect(Collectors.toList());
 
         mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, OpenIDClient.class)
                 .remove(new Query())
