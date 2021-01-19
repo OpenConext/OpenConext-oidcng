@@ -38,7 +38,7 @@ public class MetadataController {
         LOG.debug("Starting to provision OIDC clients from push: " + name);
 
         List<OpenIDClient> newClients = connections.stream()
-                .filter(connection -> connection.get("type").equals("oidc10_rp"))
+                .filter(connection -> connection.get("type").equals("oidc10_rp") || connection.get("type").equals("oauth20_rs"))
                 .map(OpenIDClient::new)
                 .collect(Collectors.toList());
 
