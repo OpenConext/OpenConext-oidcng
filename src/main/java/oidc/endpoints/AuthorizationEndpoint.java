@@ -359,6 +359,10 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
     public static ProvidedRedirectURI validateRedirectionURI(URI redirectionURI, OpenIDClient client) throws UnsupportedEncodingException {
         List<String> registeredRedirectUrls = client.getRedirectUrls();
+        if (registeredRedirectUrls == null) {
+            throw new IllegalArgumentException(String.format("Client %s must have at least one redirectURI configured to use the Authorization flow",
+                    client.getClientId()));
+        }
         if (redirectionURI == null) {
             return registeredRedirectUrls.stream().findFirst().map(s -> new ProvidedRedirectURI(s, false))
                     .orElseThrow(() ->
