@@ -31,11 +31,7 @@ import com.nimbusds.openid.connect.sdk.claims.CodeHash;
 import com.nimbusds.openid.connect.sdk.claims.StateHash;
 import lombok.SneakyThrows;
 import oidc.endpoints.MapTypeReference;
-import oidc.model.EncryptedTokenValue;
-import oidc.model.OpenIDClient;
-import oidc.model.SigningKey;
-import oidc.model.SymmetricKey;
-import oidc.model.User;
+import oidc.model.*;
 import oidc.repository.SequenceRepository;
 import oidc.repository.SigningKeyRepository;
 import oidc.repository.SymmetricKeyRepository;
@@ -240,8 +236,8 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     @SneakyThrows
     public EncryptedTokenValue generateAccessToken(OpenIDClient client) {
         String currentSigningKeyId = ensureLatestSigningKey();
-        String accessToken = idToken(client, Optional.empty(), Collections.emptyMap(), Collections.emptyList(), false, currentSigningKeyId);
-        return new EncryptedTokenValue(accessToken, currentSigningKeyId);
+        TokenValue tokenValue = idToken(client, Optional.empty(), Collections.emptyMap(), Collections.emptyList(), false, currentSigningKeyId);
+        return new EncryptedTokenValue(tokenValue, currentSigningKeyId);
     }
 
     public String generateRefreshToken() {
@@ -264,24 +260,24 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         return new EncryptedTokenValue(doGenerateAccessTokenWithEmbeddedUser(user, client, currentSigningKeyId), currentSigningKeyId);
     }
 
-    private String doGenerateAccessTokenWithEmbeddedUser(User user, OpenIDClient client, String signingKey) throws IOException, JOSEException, GeneralSecurityException, ParseException {
+    private TokenValue doGenerateAccessTokenWithEmbeddedUser(User user, OpenIDClient client, String signingKey) throws IOException, JOSEException, GeneralSecurityException, ParseException {
         String json = objectMapper.writeValueAsString(user);
+        String currentSymmetricKeyId = this.ensureLatestSymmetricKey();
 
-        EncryptedTokenValue encryptedTokenValue = encryptAead(json);
+        String claims = encryptAead(json, currentSymmetricKeyId);
 
         Map<String, Object> additionalClaims = new HashMap<>();
-        additionalClaims.put("claims", encryptedTokenValue.getValue());
-        additionalClaims.put("claim_key_id", encryptedTokenValue.getKeyId());
+        additionalClaims.put("claims", claims);
+        additionalClaims.put("claim_key_id", currentSymmetricKeyId);
 
         return idToken(client, Optional.empty(), additionalClaims, Collections.emptyList(), true, signingKey);
     }
 
-    private EncryptedTokenValue encryptAead(String s) throws GeneralSecurityException, IOException {
-        String currentSymmetricKeyId = this.ensureLatestSymmetricKey();
+    private String encryptAead(String s, String currentSymmetricKeyId) throws GeneralSecurityException, IOException {
         KeysetHandle keysetHandle = this.safeGet(currentSymmetricKeyId, this.keysetHandleMap);
         Aead aead = AeadFactory.getPrimitive(keysetHandle);
         byte[] src = aead.encrypt(s.getBytes(defaultCharset()), associatedData);
-        return new EncryptedTokenValue(Base64.getEncoder().encodeToString(src), currentSymmetricKeyId);
+        return Base64.getEncoder().encodeToString(src);
     }
 
     @SneakyThrows
@@ -309,8 +305,8 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     @SneakyThrows
-    public String generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, String nonce, List<String> idTokenClaims,
-                                                  Optional<Long> authorizationTime) {
+    public TokenValue generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, String nonce, List<String> idTokenClaims,
+                                                      Optional<Long> authorizationTime) {
         Map<String, Object> additionalClaims = new HashMap<>();
         authorizationTime.ifPresent(time -> additionalClaims.put("auth_time", time));
         if (StringUtils.hasText(nonce)) {
@@ -321,10 +317,10 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     @SneakyThrows
-    public String generateIDTokenForAuthorizationEndpoint(User user, OpenIDClient client, Nonce nonce,
-                                                          ResponseType responseType, String accessToken,
-                                                          List<String> claims, Optional<String> authorizationCode,
-                                                          State state) {
+    public TokenValue generateIDTokenForAuthorizationEndpoint(User user, OpenIDClient client, Nonce nonce,
+                                                              ResponseType responseType, String accessToken,
+                                                              List<String> claims, Optional<String> authorizationCode,
+                                                              State state) {
         Map<String, Object> additionalClaims = new HashMap<>();
         additionalClaims.put("auth_time", System.currentTimeMillis() / 1000L);
         if (nonce != null) {
@@ -366,11 +362,12 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     private SigningKey generateEncryptedRsaKey() throws GeneralSecurityException, IOException {
+        String currentSymmetricKeyId = this.ensureLatestSymmetricKey();
         String keyId = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS").format(new Date());
         this.sequenceRepository.updateSigningKeyId(keyId);
         RSAKey rsaKey = generateRsaKey(String.format("key_%s", keyId));
-        EncryptedTokenValue encryptedTokenValue = encryptAead(rsaKey.toJSONString());
-        return new SigningKey(rsaKey.getKeyID(), encryptedTokenValue.getKeyId(), encryptedTokenValue.getValue(), new Date());
+        String jwk = encryptAead(rsaKey.toJSONString(), currentSymmetricKeyId);
+        return new SigningKey(rsaKey.getKeyID(), currentSymmetricKeyId, jwk, new Date());
     }
 
     private Map<String, Object> verifyClaims(SignedJWT signedJWT) throws ParseException, JOSEException, GeneralSecurityException, IOException {
@@ -383,8 +380,8 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         return signedJWT.getJWTClaimsSet().getClaims();
     }
 
-    private String idToken(OpenIDClient client, Optional<User> optionalUser, Map<String, Object> additionalClaims,
-                           List<String> idTokenClaims, boolean includeAllowedResourceServers, String signingKey) throws JOSEException, GeneralSecurityException, ParseException, IOException {
+    private TokenValue idToken(OpenIDClient client, Optional<User> optionalUser, Map<String, Object> additionalClaims,
+                               List<String> idTokenClaims, boolean includeAllowedResourceServers, String signingKey) throws JOSEException, GeneralSecurityException, ParseException, IOException {
         List<String> audiences = new ArrayList<>();
         audiences.add(client.getClientId());
         if (includeAllowedResourceServers) {
@@ -392,10 +389,11 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
                     .filter(rsEntityId -> !client.getClientId().equals(rsEntityId))
                     .collect(Collectors.toList()));
         }
+        String jti = UUID.randomUUID().toString();
         JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
                 .audience(audiences)
                 .expirationTime(Date.from(clock.instant().plus(client.getAccessTokenValidity(), ChronoUnit.SECONDS)))
-                .jwtID(UUID.randomUUID().toString())
+                .jwtID(jti)
                 .issuer(issuer)
                 .issueTime(Date.from(clock.instant()))
                 .subject(optionalUser.map(User::getSub).orElse(client.getClientId()))
@@ -430,7 +428,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         this.ensureLatestSigningKey();
         JWSSigner jswsSigner = this.safeGet(signingKey, this.signers);
         signedJWT.sign(jswsSigner);
-        return signedJWT.serialize();
+        return new TokenValue(signedJWT.serialize(), jti) ;
     }
 
     private String ensureLatestSigningKey() throws GeneralSecurityException, ParseException, IOException {

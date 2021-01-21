@@ -11,20 +11,20 @@ import static java.util.Collections.singletonList;
 public interface SeedUtils {
 
     default AccessToken accessToken(String value, Date expiresIn) {
-        return new AccessToken(value, "sub", "clientId", singletonList("openid"), "K0000001", expiresIn, false, null, null);
+        return new AccessToken(UUID.randomUUID().toString(), value, "sub", "clientId", singletonList("openid"), "K0000001", expiresIn, false, null, null);
     }
 
     default AccessToken accessToken(String value, String signingKey) {
-        return new AccessToken(value, "sub", "clientId", singletonList("openid"), signingKey, new Date(), false, null, null);
+        return new AccessToken(UUID.randomUUID().toString(), value, "sub", "clientId", singletonList("openid"), signingKey, new Date(), false, null, null);
     }
 
     default AccessToken accessToken(String unspecifiedUrnHash) {
-        return new AccessToken(UUID.randomUUID().toString(), "sub", "clientId", singletonList("openid"),
+        return new AccessToken(UUID.randomUUID().toString(), UUID.randomUUID().toString(), "sub", "clientId", singletonList("openid"),
                 "K0000001", new Date(), false, null, unspecifiedUrnHash);
     }
 
     default RefreshToken refreshToken(String signingKey) {
-        return new RefreshToken(UUID.randomUUID().toString(), "sub", "clientId", singletonList("openid"),
+        return new RefreshToken(UUID.randomUUID().toString(), UUID.randomUUID().toString(), "sub", "clientId", singletonList("openid"),
                 signingKey, new Date(), "access_token_value", false, null);
     }
 }

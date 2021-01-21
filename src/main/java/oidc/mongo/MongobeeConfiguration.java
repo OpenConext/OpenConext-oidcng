@@ -129,6 +129,11 @@ public class MongobeeConfiguration {
         ensureCollectionsAndIndexes(mongoTemplate, indexInfo);
     }
 
+    @ChangeSet(order = "008", id = "migrateTokens", author = "Okke Harsta")
+    public void migrateTokens(MongoTemplate mongoTemplate) {
+//        mongoTemplate.find()
+    }
+
     private void ensureCollectionsAndIndexes(MongoTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {
         ensureCollectionsAndIndexes(mongoTemplate, indexInfo, true);
     }

@@ -20,6 +20,8 @@ public class AccessToken {
     @Id
     private String id;
 
+    private String jwtId;
+
     private String innerValue;
 
     private String value;
@@ -42,8 +44,9 @@ public class AccessToken {
 
     private String unspecifiedUrnHash;
 
-    public AccessToken(String value, String sub, String clientId, List<String> scopes, String signingKeyId,
+    public AccessToken(String jwtId, String value, String sub, String clientId, List<String> scopes, String signingKeyId,
                        Date expiresIn, boolean clientCredentials, String authorizationCodeId, String unspecifiedUrnHash) {
+        this.jwtId = jwtId;
         this.innerValue = value;
         this.value = UUID.nameUUIDFromBytes(value.getBytes(Charset.defaultCharset())).toString();
         this.sub = sub;

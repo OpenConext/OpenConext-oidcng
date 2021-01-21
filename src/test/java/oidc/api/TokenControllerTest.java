@@ -73,7 +73,7 @@ public class TokenControllerTest extends AbstractIntegrationTest {
     }
 
     private AccessToken accessToken(String clientId) {
-        return new AccessToken(UUID.randomUUID().toString(), "sub", clientId, Arrays.asList("openid", "groups", "nope"),
+        return new AccessToken(UUID.randomUUID().toString(), UUID.randomUUID().toString(), "sub", clientId, Arrays.asList("openid", "groups", "nope"),
                 null, Date.from(Instant.now().minus(90, ChronoUnit.DAYS)), false,
                 null, unspecifiedIdHash);
     }

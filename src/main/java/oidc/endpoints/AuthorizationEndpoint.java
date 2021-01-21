@@ -21,14 +21,7 @@ import oidc.exceptions.InvalidScopeException;
 import oidc.exceptions.RedirectMismatchException;
 import oidc.exceptions.UnsupportedPromptValueException;
 import oidc.log.MDCContext;
-import oidc.model.AccessToken;
-import oidc.model.AuthorizationCode;
-import oidc.model.EncryptedTokenValue;
-import oidc.model.IdentityProvider;
-import oidc.model.OpenIDClient;
-import oidc.model.ProvidedRedirectURI;
-import oidc.model.User;
-import oidc.model.UserConsent;
+import oidc.model.*;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
 
@@ -300,7 +293,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         String accessTokenValue = encryptedAccessToken.getValue();
         if (responseType.contains(ResponseType.Value.TOKEN.getValue()) || !isOpenIDRequest(authorizationRequest)) {
             String unspecifiedUrnHash = KeyGenerator.oneWayHash(user.getUnspecifiedNameId(), this.salt);
-            AccessToken accessToken = new AccessToken(accessTokenValue, user.getSub(), client.getClientId(), scopes,
+            String jwtId = encryptedAccessToken.getJwtId();
+            AccessToken accessToken = new AccessToken(jwtId, accessTokenValue, user.getSub(), client.getClientId(), scopes,
                     encryptedAccessToken.getKeyId(), accessTokenValidity(client), false, null, unspecifiedUrnHash);
             getAccessTokenRepository().insert(accessToken);
             result.put("access_token", accessTokenValue);
@@ -313,10 +307,10 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         if (responseType.contains(OIDCResponseTypeValue.ID_TOKEN.getValue()) && isOpenIDRequest(scopes) && isOpenIDRequest(authorizationRequest)) {
             AuthenticationRequest authenticationRequest = (AuthenticationRequest) authorizationRequest;
             List<String> claims = getClaims(authorizationRequest);
-            String idToken = getTokenGenerator().generateIDTokenForAuthorizationEndpoint(
+            TokenValue tokenValue = getTokenGenerator().generateIDTokenForAuthorizationEndpoint(
                     user, client, authenticationRequest.getNonce(), responseType, accessTokenValue, claims,
                     Optional.ofNullable((String) result.get("code")), state);
-            result.put("id_token", idToken);
+            result.put("id_token", tokenValue.getValue());
         }
         result.put("expires_in", client.getAccessTokenValidity());
         if (state != null) {
