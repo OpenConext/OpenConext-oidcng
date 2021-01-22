@@ -79,7 +79,8 @@ public class TokenControllerTest extends AbstractIntegrationTest {
     }
 
     private RefreshToken refreshToken(String clientId) {
-        return new RefreshToken(UUID.randomUUID().toString(), "sub", clientId, Arrays.asList("openid", "groups", "nope"),
+        String s = UUID.randomUUID().toString();
+        return new RefreshToken(s, s, "sub", clientId, Arrays.asList("openid", "groups", "nope"),
                 "singing_key_id", Date.from(Instant.now().minus(90, ChronoUnit.DAYS)), "accessTokenValue",
                 false, unspecifiedIdHash);
     }

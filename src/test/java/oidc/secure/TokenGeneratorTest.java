@@ -6,11 +6,7 @@ import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import oidc.AbstractIntegrationTest;
 
-import oidc.model.EncryptedTokenValue;
-import oidc.model.OpenIDClient;
-import oidc.model.SigningKey;
-import oidc.model.SymmetricKey;
-import oidc.model.User;
+import oidc.model.*;
 import oidc.repository.SigningKeyRepository;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,8 +70,8 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         User user = new User("sub", "unspecifiedNameId", "http://mockidp",
                 "clientId", getUserInfo(), Arrays.asList("http://test.surfconext.nl/assurance/loa3", "invalid_acr"));
         OpenIDClient client = openIDClient("mock-sp");
-        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList(), Optional.empty());
-        SignedJWT jwt = SignedJWT.parse(idToken);
+        TokenValue tokenValue = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList(), Optional.empty());
+        SignedJWT jwt = SignedJWT.parse(tokenValue.getValue());
         Object acr = jwt.getJWTClaimsSet().getClaim("acr");
         assertEquals("http://test.surfconext.nl/assurance/loa3", acr);
     }
@@ -85,8 +81,8 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         User user = new User("sub", "unspecifiedNameId", "http://mockidp",
                 "clientId", getUserInfo(), Collections.emptyList());
         OpenIDClient client = openIDClient("mock-sp");
-        String idToken = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList(), Optional.empty());
-        SignedJWT jwt = SignedJWT.parse(idToken);
+        TokenValue tokenValue = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList(), Optional.empty());
+        SignedJWT jwt = SignedJWT.parse(tokenValue.getValue());
         Object acr = jwt.getJWTClaimsSet().getClaim("acr");
         assertEquals("http://test.surfconext.nl/assurance/loa1", acr);
     }

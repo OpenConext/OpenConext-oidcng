@@ -28,13 +28,7 @@ import oidc.exceptions.JWTAuthorizationGrantsException;
 import oidc.exceptions.RedirectMismatchException;
 import oidc.exceptions.UnauthorizedException;
 import oidc.log.MDCContext;
-import oidc.model.AccessToken;
-import oidc.model.AuthorizationCode;
-import oidc.model.EncryptedTokenValue;
-import oidc.model.OpenIDClient;
-import oidc.model.RefreshToken;
-import oidc.model.Scope;
-import oidc.model.User;
+import oidc.model.*;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.OpenIDClientRepository;
@@ -312,7 +306,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         }
         map.put("expires_in", client.getAccessTokenValidity());
         if (isOpenIDRequest(scopes) && !clientCredentials) {
-            map.put("id_token", tokenGenerator.generateIDTokenForTokenEndpoint(user, client, nonce, idTokenClaims, authorizationTime));
+            TokenValue tokenValue = tokenGenerator.generateIDTokenForTokenEndpoint(user, client, nonce, idTokenClaims, authorizationTime);
+            map.put("id_token", tokenValue.getValue());
         }
         return map;
     }

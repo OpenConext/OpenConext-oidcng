@@ -24,7 +24,7 @@ public class RefreshTokenRepositoryTest extends AbstractIntegrationTest {
     public void findByInnerValue() {
         String value = RandomStringUtils.random(3200, true, true);
         String uuid = UUID.randomUUID().toString();
-        subject.insert(new RefreshToken(uuid, "sub", "clientId", singletonList("openid"), "singing_key_id", new Date(), value, false, null));
+        subject.insert(new RefreshToken(uuid, uuid, "sub", "clientId", singletonList("openid"), "singing_key_id", new Date(), value, false, null));
         assertEquals(value, subject.findByInnerValue(uuid).getAccessTokenValue());
     }
 
@@ -37,7 +37,7 @@ public class RefreshTokenRepositoryTest extends AbstractIntegrationTest {
     public void deleteByExpiresInBefore() {
         subject.deleteAll();
         Date expiresIn = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
-        subject.insert(new RefreshToken("value", "sub", "clientId", singletonList("openid"),"singing_key_id", expiresIn, "value", false, null));
+        subject.insert(new RefreshToken(UUID.randomUUID().toString(), "value", "sub", "clientId", singletonList("openid"),"singing_key_id", expiresIn, "value", false, null));
 
         long count = subject.deleteByExpiresInBefore(new Date());
 

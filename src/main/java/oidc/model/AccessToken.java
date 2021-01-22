@@ -93,4 +93,16 @@ public class AccessToken {
     public Date getCreatedAt() {
         return createdAt;
     }
+
+    public String getInnerValue() {
+        return innerValue;
+    }
+
+    public String getJwtId() {
+        return jwtId;
+    }
+
+    public void setJwtId(String jwtId) {
+        this.jwtId = jwtId;
+    }
 }

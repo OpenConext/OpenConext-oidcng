@@ -49,7 +49,7 @@ public class ResourceCleanerTest extends AbstractIntegrationTest implements Seed
         Date expiresIn = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
         Stream.of(
                 accessToken("value", expiresIn),
-                new RefreshToken("value", "sub", "clientId", singletonList("openid"), "singing_key_id", expiresIn, "value", false, null),
+                new RefreshToken(UUID.randomUUID().toString(),"value", "sub", "clientId", singletonList("openid"), "singing_key_id", expiresIn, "value", false, null),
                 new AuthorizationCode("code", "sub", "clientId", emptyList(), new URI("http://redirectURI"),
                         "codeChallenge", "codeChallengeMethod", "nonce", emptyList(), true, expiresIn),
                 new User("nope", "unspecifiedNameId", "authenticatingAuthority", "clientId",

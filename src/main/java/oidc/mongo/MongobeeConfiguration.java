@@ -5,6 +5,7 @@ import com.github.mongobee.changeset.ChangeLog;
 import com.github.mongobee.changeset.ChangeSet;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import com.nimbusds.jwt.SignedJWT;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.IdentityProvider;
@@ -23,8 +24,11 @@ import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.index.IndexOperations;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.CriteriaDefinition;
 import org.springframework.data.mongodb.core.query.Query;
 
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +45,6 @@ public class MongobeeConfiguration {
 
     @Value("${mongodb_db}")
     private String databaseName;
-
 
     @Value("${spring.data.mongodb.uri}")
     private String mongobdUri;
@@ -129,9 +132,32 @@ public class MongobeeConfiguration {
         ensureCollectionsAndIndexes(mongoTemplate, indexInfo);
     }
 
-    @ChangeSet(order = "008", id = "migrateTokens", author = "Okke Harsta")
+    @ChangeSet(order = "008", id = "migrateTokens", author = "Okke Harsta", runAlways = true)
     public void migrateTokens(MongoTemplate mongoTemplate) {
-//        mongoTemplate.find()
+        Query accessTokensQuery = Query.query(Criteria.where("jwtId").exists(false).and("innerValue").exists(true));
+        List<AccessToken> accessTokens = mongoTemplate.find(accessTokensQuery, AccessToken.class);
+        accessTokens.forEach(accessToken -> {
+            String innerValue = accessToken.getInnerValue();
+            convertJwtID(mongoTemplate, accessToken, innerValue);
+        });
+        Query refreshTokensQuery = Query.query(Criteria.where("jwtId").exists(false).and("accessTokenValue").exists(true));
+        List<RefreshToken> refreshTokens = mongoTemplate.find(refreshTokensQuery, RefreshToken.class);
+        refreshTokens.forEach(refreshToken -> {
+            String accessTokenValue = refreshToken.getAccessTokenValue();
+            convertJwtID(mongoTemplate, refreshToken, accessTokenValue);
+        });
+
+    }
+
+    private void convertJwtID(MongoTemplate mongoTemplate, AccessToken accessToken, String innerValue) {
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(innerValue);
+            String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
+            accessToken.setJwtId(jwtId);
+            mongoTemplate.save(accessToken);
+        } catch (ParseException e) {
+            //Ignore in this specific use-case
+        }
     }
 
     private void ensureCollectionsAndIndexes(MongoTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {
