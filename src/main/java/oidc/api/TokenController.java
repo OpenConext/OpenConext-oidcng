@@ -26,11 +26,15 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 @RestController
 public class TokenController {
@@ -70,7 +74,7 @@ public class TokenController {
                 .map(this::convertToken)
                 //No use returning tokens without RP
                 .filter(map -> map.containsKey("clientName"))
-                .collect(Collectors.toList());
+                .collect(toList());
 
         LOG.debug(String.format("Returning tokens for %s with unspecified %s: %s", name, unspecifiedId, result));
 
@@ -97,29 +101,39 @@ public class TokenController {
         result.put("id", token.getId());
 
         Optional<OpenIDClient> optionalClient = openIDClientRepository.findOptionalByClientId(token.getClientId());
-        optionalClient.ifPresent(openIDClient -> {
-            result.put("clientId", openIDClient.getClientId());
-            result.put("clientName", openIDClient.getName());
-            result.put("audiences", openIDClient.getAllowedResourceServers().stream()
-                    .map(rs -> openIDClientRepository.findOptionalByClientId(rs))
-                    .filter(Optional::isPresent)
-                    .map(opt -> opt.get().getName()));
-        });
+        if (!optionalClient.isPresent()) {
+            return result;
+        }
+        OpenIDClient openIDClient = optionalClient.get();
+        result.put("clientId", openIDClient.getClientId());
+        result.put("clientName", openIDClient.getName());
+        List<OpenIDClient> resourceServers = openIDClient.getAllowedResourceServers().stream()
+                .map(rs -> openIDClientRepository.findOptionalByClientId(rs))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(toList());
+        result.put("audiences", resourceServers.stream().map(OpenIDClient::getName));
+
         result.put("createdAt", token.getCreatedAt());
         result.put("expiresIn", token.getExpiresIn());
         result.put("type", token instanceof RefreshToken ? TokenType.REFRESH : TokenType.ACCESS);
 
-        List<Scope> scopes = token.getScopes().stream().map(scope -> scope(scope, optionalClient)).collect(Collectors.toList());
+        Map<String, Scope> allScopes = resourceServers.stream().map(OpenIDClient::getScopes)
+                .flatMap(List::stream)
+                .filter(distinctByKey(Scope::getName))
+                .collect(toMap(Scope::getName, s -> s));
+        List<Scope> scopes = token.getScopes().stream()
+                .filter(name -> !name.equalsIgnoreCase("openid"))
+                .map(allScopes::get)
+                .filter(Objects::nonNull)
+                .collect(toList());
         result.put("scopes", scopes);
         return result;
     }
 
-    private Scope scope(String name, Optional<OpenIDClient> clientOptional) {
-        Scope scope = new Scope(name);
-        clientOptional.ifPresent(openIDClient -> openIDClient.getScopes().stream()
-                .filter(s -> s.getName().equals(name)).findFirst()
-                .ifPresent(s -> scope.setDescriptions(s.getDescriptions())));
-        return scope;
+    private <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
+        Set<Object> seen = ConcurrentHashMap.newKeySet();
+        return t -> seen.add(keyExtractor.apply(t));
     }
 
 }
