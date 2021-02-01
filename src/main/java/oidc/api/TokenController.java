@@ -90,7 +90,7 @@ public class TokenController {
         LOG.debug(String.format("Deleting tokens for %s with token(s) %s", name, tokenIdentifiers));
 
         tokenIdentifiers.stream().forEach(tokenRepresentation ->
-                (tokenRepresentation.getTokenType().equals(TokenType.ACCESS) ? accessTokenRepository : refreshTokenRepository)
+                (tokenRepresentation.getType().equals(TokenType.ACCESS) ? accessTokenRepository : refreshTokenRepository)
                         .deleteById(tokenRepresentation.getId()));
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
