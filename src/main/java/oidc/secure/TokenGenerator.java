@@ -32,6 +32,7 @@ import com.nimbusds.openid.connect.sdk.claims.CodeHash;
 import com.nimbusds.openid.connect.sdk.claims.StateHash;
 import lombok.SneakyThrows;
 import oidc.endpoints.MapTypeReference;
+import oidc.exceptions.UnauthorizedException;
 import oidc.model.EncryptedTokenValue;
 import oidc.model.OpenIDClient;
 import oidc.model.SigningKey;
@@ -316,6 +317,12 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         } catch (ParseException | JOSEException | GeneralSecurityException | IOException e) {
             return Optional.empty();
         }
+    }
+
+    public User decryptAccessTokenWithEmbeddedUserInfo(String accessToken) {
+        Optional<SignedJWT> optionalSignedJWT = parseAndValidateSignedJWT(accessToken);
+        SignedJWT signedJWT = optionalSignedJWT.orElseThrow(() -> new UnauthorizedException("Invalid refresh_token value"));
+        return this.decryptAccessTokenWithEmbeddedUserInfo(signedJWT);
     }
 
     @SneakyThrows
