@@ -52,12 +52,15 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.cert.CertificateException;
 import java.time.Clock;
 import java.util.Collections;
@@ -66,6 +69,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
@@ -74,6 +78,8 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
     private static final Log LOG = LogFactory.getLog(TokenEndpoint.class);
+
+    private static final Pattern uuidPattern = Pattern.compile("[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{12}");
 
     private final ConcurrentAuthorizationCodeRepository concurrentAuthorizationCodeRepository;
     private final AuthorizationCodeRepository authorizationCodeRepository;
@@ -253,15 +259,19 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
     private ResponseEntity handleRefreshCodeGrant(RefreshTokenGrant refreshTokenGrant, OpenIDClient client) throws java.text.ParseException {
         String refreshTokenValue = refreshTokenGrant.getRefreshToken().getValue();
-
-        Optional<SignedJWT> optionalSignedJWT = tokenGenerator.parseAndValidateSignedJWT(refreshTokenValue);
-        if (!optionalSignedJWT.isPresent()) {
-            throw new UnauthorizedException("Invalid refresh_token value");
+        RefreshToken refreshToken;
+        SignedJWT signedJWT = null;
+        boolean oldFormat = uuidPattern.matcher(refreshTokenValue).matches();
+        if (oldFormat) {
+            //Old refreshToken
+            refreshToken = refreshTokenRepository.findByInnerValue(refreshTokenValue);
+        } else {
+            Optional<SignedJWT> optionalSignedJWT = tokenGenerator.parseAndValidateSignedJWT(refreshTokenValue);
+            signedJWT = optionalSignedJWT.orElseThrow(() -> new UnauthorizedException("Invalid refresh_token value"));
+            String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
+            refreshToken = refreshTokenRepository.findByJwtId(jwtId)
+                    .orElseThrow(() -> new IllegalArgumentException("RefreshToken not found"));
         }
-        SignedJWT signedJWT = optionalSignedJWT.get();
-        String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
-        RefreshToken refreshToken = refreshTokenRepository.findByJwtId(jwtId)
-                .orElseThrow(() -> new IllegalArgumentException("RefreshToken not found"));
 
         if (!refreshToken.getClientId().equals(client.getClientId())) {
             throw new InvalidClientException("Client is not authorized for the refresh token");
@@ -273,16 +283,27 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         //New tokens will be issued
         refreshTokenRepository.delete(refreshToken);
         //It is possible that the access token is already removed by cron cleanup actions
-        Optional<AccessToken> accessToken = accessTokenRepository.findById(refreshToken.getAccessTokenId());
-        accessToken.ifPresent(token -> accessTokenRepository.delete(token));
+        Optional<AccessToken> accessToken;
+        if (oldFormat) {
+            //It is possible that the access token is already removed by cron cleanup actions
+            accessToken = accessTokenRepository.findOptionalAccessTokenByValue(refreshToken.getAccessTokenValue());
+        } else {
+            accessToken = accessTokenRepository.findById(refreshToken.getAccessTokenId());
+        }
+        accessToken.ifPresent(accessTokenRepository::delete);
 
-        Optional<User> optionalUser = refreshToken.isClientCredentials() ? Optional.empty() :
-                Optional.of(tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(signedJWT));
+        Optional<User> optionalUser;
+        if (refreshToken.isClientCredentials()) {
+            optionalUser = Optional.empty();
+        } else if (oldFormat) {
+            optionalUser = Optional.of(tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(refreshToken.getAccessTokenValue()));
+        } else {
+            optionalUser = Optional.of(tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(signedJWT));
+        }
         Map<String, Object> body = tokenEndpointResponse(optionalUser, client, refreshToken.getScopes(),
                 Collections.emptyList(), false, null, optionalUser.map(User::getUpdatedAt), Optional.empty());
         return new ResponseEntity<>(body, responseHttpHeaders, HttpStatus.OK);
     }
-
 
     private ResponseEntity handleClientCredentialsGrant(OpenIDClient client) {
         Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes().stream().map(Scope::getName).collect(Collectors.toList()),

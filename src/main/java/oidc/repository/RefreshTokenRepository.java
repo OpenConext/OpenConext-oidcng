@@ -17,4 +17,6 @@ public interface RefreshTokenRepository extends MongoRepository<RefreshToken, St
     Long deleteByExpiresInBefore(Date expiryDate);
 
     List<RefreshToken> findByUnspecifiedUrnHash(String unspecifiedUrnHash);
+
+    RefreshToken findByInnerValue(String refreshTokenValue);
 }

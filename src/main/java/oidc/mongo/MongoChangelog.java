@@ -69,7 +69,7 @@ public class MongoChangelog {
                 .ensureIndex(new Index("value", Sort.Direction.ASC).named(String.format("value_unique")).unique());
     }
 
-    @ChangeSet(order = "006", id = "dropValueIndexes", author = "Okke Harsta")
+    @ChangeSet(order = "006", id = "dropValueIndexes", author = "Okke Harsta", runAlways = true)
     public void dropValueIndexes(MongockTemplate mongoTemplate) {
         Arrays.asList("access_tokens", "refresh_tokens").forEach(collection -> {
             IndexOperations indexOperations = mongoTemplate.indexOps(collection);

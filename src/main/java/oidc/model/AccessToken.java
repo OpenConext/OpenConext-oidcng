@@ -40,6 +40,9 @@ public class AccessToken {
 
     private String unspecifiedUrnHash;
 
+    //Backward compatibility
+    private String value;
+
     public AccessToken(String jwtId, String sub, String clientId, List<String> scopes, String signingKeyId,
                        Date expiresIn, boolean clientCredentials, String authorizationCodeId, String unspecifiedUrnHash) {
         this.jwtId = jwtId;
@@ -102,5 +105,10 @@ public class AccessToken {
 
     public String getUnspecifiedUrnHash() {
         return unspecifiedUrnHash;
+    }
+
+    //Backward compatibility
+    public String getValue() {
+        return value;
     }
 }

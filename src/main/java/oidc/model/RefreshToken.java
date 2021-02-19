@@ -11,6 +11,10 @@ import java.util.Date;
 @Getter
 public class RefreshToken extends AccessToken {
 
+    //Backward compatiblity
+    private String accessTokenValue;
+    private String innerValue;
+
     private String accessTokenId;
 
     public RefreshToken(String jwtId, AccessToken accessToken, Date expiresIn) {
@@ -20,5 +24,12 @@ public class RefreshToken extends AccessToken {
         this.accessTokenId = accessToken.getId();
     }
 
+    public String getAccessTokenValue() {
+        return accessTokenValue;
+    }
+
+    public String getInnerValue() {
+        return innerValue;
+    }
 }
 
