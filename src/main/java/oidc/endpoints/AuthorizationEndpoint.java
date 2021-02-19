@@ -145,7 +145,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         OpenIDClient client = openIDClientRepository.findByClientId(authenticationRequest.getClientID().getValue());
         MDCContext.mdcContext("action", "Authorize", "rp", client.getClientId());
-        //Is this correct? Do we also need to check the reponse type containing id_token?
+        //Is this correct? Do we also need to check the response type containing id_token?
         if (isOpenIdClient) {
             AuthenticationRequest oidcAuthenticationRequest = AuthenticationRequest.parse(parameters);
             if (oidcAuthenticationRequest.specifiesRequestObject()) {
