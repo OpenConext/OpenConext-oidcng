@@ -28,7 +28,7 @@ public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
     CookieSerializer cookieSerializer(@Value("${secure_cookie}") boolean secureCookie) {
         DefaultCookieSerializer defaultCookieSerializer = new DefaultCookieSerializer();
         //We don't need None as we don't set cross-origin
-        defaultCookieSerializer.setSameSite("Lax");
+//        defaultCookieSerializer.setSameSite("Lax");
         defaultCookieSerializer.setUseSecureCookie(secureCookie);
         return defaultCookieSerializer;
     }

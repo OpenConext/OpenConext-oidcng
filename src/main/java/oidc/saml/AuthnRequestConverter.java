@@ -15,6 +15,8 @@ import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.OpenIDClientRepository;
 import oidc.secure.JWTRequest;
 import oidc.web.URLCoding;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.joda.time.DateTime;
 import org.opensaml.core.config.ConfigurationService;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
@@ -44,6 +46,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
@@ -51,6 +54,7 @@ import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -58,13 +62,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding.POST;
-import static org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding.REDIRECT;
 
 
 public class AuthnRequestConverter implements
         Converter<Saml2AuthenticationRequestContext, AuthnRequest>, URLCoding {
 
     public final static String REDIRECT_URI_VALID = "REDIRECT_URI_VALID";
+
+    private static final Log LOG = LogFactory.getLog(AuthnRequestConverter.class);
 
     private final OpenIDClientRepository openIDClientRepository;
     private final AuthenticationRequestRepository authenticationRequestRepository;
@@ -85,6 +90,18 @@ public class AuthnRequestConverter implements
     public AuthnRequest convert(Saml2AuthenticationRequestContext ctx) {
         CustomSaml2AuthenticationRequestContext context = (CustomSaml2AuthenticationRequestContext) ctx;
         HttpServletRequest request = context.getRequest();
+
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            LOG.warn("There is no session in the HttpServletRequest. CookiesNotSupportedException will be thrown");
+        } else {
+            Enumeration<String> attributeNames = session.getAttributeNames();
+            List<String> list = Collections.list(attributeNames);
+            if (!list.contains("SPRING_SECURITY_SAVED_REQUEST")) {
+                LOG.info("There is a session in the HttpServletRequest with ID " + session.getId() + " which does not contain a saved request. Attribute names are: " + list.toString());
+            }
+        }
+
         SavedRequest savedRequest = requestCache.getRequest(request, null);
 
         if (savedRequest == null) {
