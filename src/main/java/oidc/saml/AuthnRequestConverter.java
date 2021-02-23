@@ -47,8 +47,11 @@ import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
@@ -165,7 +168,7 @@ public class AuthnRequestConverter implements
     }
 
     private AuthnRequest enhanceAuthenticationRequest(AuthnRequest authnRequest,
-                                                      Map<String, List<String>> request) throws ParseException {
+                                                      Map<String, List<String>> request) throws ParseException, UnsupportedEncodingException {
         String clientId = param("client_id", request);
 
         String entityId = ServiceProviderTranslation.translateClientId(clientId);
@@ -210,14 +213,15 @@ public class AuthnRequestConverter implements
         }
         String loginHint = param("login_hint", request);
         if (StringUtils.hasText(loginHint)) {
-            IDPList idpList = addIdpEntries(authnRequest, loginHint);
+            loginHint = URLDecoder.decode(loginHint, Charset.defaultCharset().name());
+            IDPList idpList = addIdpEntries(loginHint);
             Scoping scoping = authnRequest.getScoping();
             scoping.setIDPList(idpList);
         }
         return authnRequest;
     }
 
-    private IDPList addIdpEntries(AuthnRequest authnRequest, String loginHint) {
+    private IDPList addIdpEntries(String loginHint) {
         IDPEntryBuilder idpEntryBuilder = (IDPEntryBuilder) registry.getBuilderFactory().getBuilder(IDPEntry.DEFAULT_ELEMENT_NAME);
         List<IDPEntry> idpEntries = Stream.of(loginHint.split(","))
                 .map(String::trim)
