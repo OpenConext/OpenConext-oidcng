@@ -33,10 +33,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @RestController
-public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
+public class IntrospectEndpoint extends SecureEndpoint {
 
     private static final Log LOG = LogFactory.getLog(IntrospectEndpoint.class);
 
@@ -121,7 +122,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
             }
         }
 
-        Map<String, Object> result = new HashMap<>();
+        Map<String, Object> result = new TreeMap<>();
 
         boolean isUserAccessToken = !accessToken.isClientCredentials();
 
@@ -159,7 +160,7 @@ public class IntrospectEndpoint extends SecureEndpoint implements OrderedMap {
 
         LOG.debug(String.format("Returning introspect active %s for RS %s", true, resourceServer.getClientId()));
 
-        return ResponseEntity.ok(sortMap(result));
+        return ResponseEntity.ok(result);
     }
 
     @SuppressWarnings("unchecked")

@@ -26,9 +26,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 @RestController
-public class UserInfoEndpoint implements OrderedMap {
+public class UserInfoEndpoint {
 
     private AccessTokenRepository accessTokenRepository;
     private TokenGenerator tokenGenerator;
@@ -85,7 +86,7 @@ public class UserInfoEndpoint implements OrderedMap {
         }
         attributes.put("updated_at", user.getUpdatedAt());
         attributes.put("sub", user.getSub());
-        return ResponseEntity.ok(sortMap(attributes));
+        return ResponseEntity.ok(new TreeMap(attributes));
     }
 
     private ResponseEntity<Map<String, Object>> errorResponse(String errorDescription) {
