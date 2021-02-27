@@ -14,6 +14,7 @@ import oidc.secure.TokenGenerator;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -77,6 +79,10 @@ public class UserInfoEndpoint implements OrderedMap {
         MDCContext.mdcContext(user);
 
         Map<String, Object> attributes = user.getAttributes();
+        List<String> acrClaims = user.getAcrClaims();
+        if (!CollectionUtils.isEmpty(acrClaims)) {
+            attributes.put("acr", String.join(" ", acrClaims));
+        }
         attributes.put("updated_at", user.getUpdatedAt());
         attributes.put("sub", user.getSub());
         return ResponseEntity.ok(sortMap(attributes));
