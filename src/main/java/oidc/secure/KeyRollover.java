@@ -14,6 +14,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,29 +46,31 @@ public class KeyRollover {
         doSigningKeyRollover();
     }
 
-    public void doSigningKeyRollover() {
+    public List<String> doSigningKeyRollover() {
         try {
             SigningKey signingKey = tokenGenerator.rolloverSigningKeys();
             LOG.info("Successful signing key rollover. New signing key: " + signingKey.getKeyId());
 
-            cleanUpSigningKeys();
+            return cleanUpSigningKeys();
         } catch (Exception e) {
             LOG.error("Rollover exception", e);
+            return Collections.emptyList();
         }
     }
 
-    public void doSymmetricKeyRollover() {
+    public List<String> doSymmetricKeyRollover() {
         try {
             SymmetricKey symmetricKey = tokenGenerator.rolloverSymmetricKeys();
             LOG.info("Successful symmetric key rollover. New symmetric key: " + symmetricKey.getKeyId());
 
-            cleanUpSymmetricKeys();
+            return cleanUpSymmetricKeys();
         } catch (Exception e) {
             LOG.error("Rollover exception", e);
+            return Collections.emptyList();
         }
     }
 
-    private void cleanUpSigningKeys() {
+    public List<String> cleanUpSigningKeys() {
         List<String> signingKeyValues = mongoTemplate.findDistinct("signingKeyId", AccessToken.class, String.class);
         List<String> signingKeyValuesRefreshToken = mongoTemplate.findDistinct("signingKeyId", RefreshToken.class, String.class);
         signingKeyValues.addAll(signingKeyValuesRefreshToken);
@@ -80,9 +83,11 @@ public class KeyRollover {
         List<String> deleted = signingKeys.stream().map(SigningKey::getKeyId).collect(Collectors.toList());
         LOG.info("Deleted signing keys that are no longer referenced by access_tokens and refresh_token: "
                 + String.join(", ", deleted));
+
+        return deleted;
     }
 
-    private void cleanUpSymmetricKeys() {
+    public List<String> cleanUpSymmetricKeys() {
         List<String> symmetricKeyValues = mongoTemplate.findDistinct("symmetricKeyId", SigningKey.class, String.class);
         symmetricKeyValues.add(sequenceRepository.currentSymmetricKeyId());
 
@@ -91,5 +96,7 @@ public class KeyRollover {
 
         List<String> deleted = symmetricKeys.stream().map(SymmetricKey::getKeyId).collect(Collectors.toList());
         LOG.info("Deleted symmetric keys that are no longer referenced by signing keys: " + String.join(", ", deleted));
+
+        return deleted;
     }
 }
