@@ -165,7 +165,10 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         if (scope != null) {
             List<String> scopeList = scope.toStringList();
             boolean apiScopeRequested = !(scopeList.size() == 0 || (scopeList.size() == 1 && scopeList.contains("openid")));
-            Set<String> filteredScopes = scopeList.stream().filter(s -> !s.equalsIgnoreCase("openid")).collect(toSet());
+            Set<String> filteredScopes = scopeList.stream()
+                    .filter(s -> !s.equalsIgnoreCase("openid"))
+                    .map(s -> s.toLowerCase())
+                    .collect(toSet());
             List<OpenIDClient> resourceServers = openIDClientRepository.findByScopes_NameIn(filteredScopes);
             Prompt prompt = authenticationRequest.getPrompt();
             boolean consentFromPrompt = prompt != null && prompt.toStringList().contains("consent");
@@ -249,7 +252,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         body.put("scopes", resourceServers.stream()
                 .map(OpenIDClient::getScopes)
                 .flatMap(List::stream)
-                .filter(scopes::contains)
+                .filter(scope -> scopes.contains(scope.getName().toLowerCase()))
                 .collect(Collectors.toSet()));
         Locale locale = LocaleContextHolder.getLocale();
         body.put("lang", locale.getLanguage());
