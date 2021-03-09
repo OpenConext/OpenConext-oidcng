@@ -12,14 +12,11 @@ import oidc.AbstractIntegrationTest;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
 import oidc.model.User;
-import oidc.model.UserConsent;
 import oidc.secure.SignedJWTTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -345,28 +342,10 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void consent() throws IOException {
-        doConsent();
-        //consent only once
-        String code = doAuthorizeWithScopes("playground_client", "code", ResponseMode.QUERY.getValue(), "openid");
-        Map<String, Object> body = doToken(code, "playground_client", "secret", GrantType.AUTHORIZATION_CODE);
-
-        assertTrue(body.containsKey("access_token"));
-
-        //consent again if scope changes
-        UserConsent userConsent = mongoTemplate.findAll(UserConsent.class).get(0).updateScopes(Collections.singletonList("groups"));
-        mongoTemplate.save(userConsent);
-        doConsent();
-
-        userConsent = mongoTemplate.findAll(UserConsent.class).get(0);
-        assertEquals("[https://voot.surfconext.nl/groups, groups]", userConsent.getScopes().toString());
-    }
-
-    private void doConsent() throws IOException {
         Response response = doAuthorizeWithClaimsAndScopes("playground_client", "code", ResponseMode.QUERY.getValue(), "nonce", null,
-                Collections.emptyList(),"https://voot.surfconext.nl/groups groups", "state");
+                Collections.emptyList(), "https://voot.surfconext.nl/groups groups", "state");
         String html = response.getBody().asString();
         assertTrue(html.contains("<form method=\"post\" action=\"/oidc/consent\">"));
-        assertTrue(html.contains("OpenConext Mock SP, OpenConext Mock RP, ResourceServer, Playground Client, RP JWT authentication and Student Mobility"));
 
         Map<String, String> formParams = new HashMap<>();
         Matcher matcher = Pattern.compile("<input type=\"hidden\" name=\"(.+?)\"/>", Pattern.DOTALL).matcher(html);

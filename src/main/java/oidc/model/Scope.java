@@ -1,5 +1,6 @@
 package oidc.model;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -10,6 +11,7 @@ import java.util.Map;
 
 @Getter
 @NoArgsConstructor
+@EqualsAndHashCode(of = "name")
 @ToString(of = "name")
 public class Scope implements Serializable {
 

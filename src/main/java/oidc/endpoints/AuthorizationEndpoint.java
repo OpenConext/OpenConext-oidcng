@@ -28,7 +28,6 @@ import oidc.model.OpenIDClient;
 import oidc.model.ProvidedRedirectURI;
 import oidc.model.TokenValue;
 import oidc.model.User;
-import oidc.model.UserConsent;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.OpenIDClientRepository;
@@ -41,6 +40,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -69,12 +69,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -119,7 +119,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         LOG.debug(String.format("/oidc/authorize %s %s", authentication.getDetails(), parameters));
 
         //to enable consent, set consentRequired to true
-        return doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, consentEnabled, false);
+        return doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, consentEnabled);
     }
 
     @PostMapping(value = "/oidc/consent", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -130,14 +130,13 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         LinkedMultiValueMap<String, String> parameters = new LinkedMultiValueMap<>();
         parameters.setAll(body);
-        return this.doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, false, true);
+        return this.doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, false);
     }
 
     private ModelAndView doAuthorization(MultiValueMap<String, String> parameters,
                                          OidcSamlAuthentication samlAuthentication,
                                          HttpServletRequest request,
-                                         boolean consentRequired,
-                                         boolean createConsent) throws ParseException, CertificateException, JOSEException, IOException, BadJOSEException, java.text.ParseException, URISyntaxException {
+                                         boolean consentRequired) throws ParseException, CertificateException, JOSEException, IOException, BadJOSEException, java.text.ParseException, URISyntaxException {
         AuthorizationRequest authenticationRequest = AuthorizationRequest.parse(parameters);
 
         Scope scope = authenticationRequest.getScope();
@@ -145,7 +144,6 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         OpenIDClient client = openIDClientRepository.findByClientId(authenticationRequest.getClientID().getValue());
         MDCContext.mdcContext("action", "Authorize", "rp", client.getClientId());
-        //Is this correct? Do we also need to check the response type containing id_token?
         if (isOpenIdClient) {
             AuthenticationRequest oidcAuthenticationRequest = AuthenticationRequest.parse(parameters);
             if (oidcAuthenticationRequest.specifiesRequestObject()) {
@@ -166,7 +164,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         if (scope != null) {
             List<String> scopeList = scope.toStringList();
-            boolean apiScopeRequested = !(scopeList.size() == 1 && scopeList.get(0).equalsIgnoreCase("openid"));
+            boolean apiScopeRequested = !(scopeList.size() == 0 || (scopeList.size() == 1 && scopeList.contains("openid")));
             Set<String> filteredScopes = scopeList.stream().filter(s -> !s.equalsIgnoreCase("openid")).collect(toSet());
             List<OpenIDClient> resourceServers = openIDClientRepository.findByScopes_NameIn(filteredScopes);
             Prompt prompt = authenticationRequest.getPrompt();
@@ -177,21 +175,11 @@ public class AuthorizationEndpoint implements OidcEndpoint {
              *   The RP has requested scope(s) other then openid
              *   Manage attribute "oidc:consentRequired" is true for the RP or the RP has explicitly asked for consent
              *   There is at least one ResourceServer that has the requested scope(s) configured in manage
-             *   There is no previous consent or the scope(s) of the existing consent is not sufficient
              */
             if (consentRequired && apiScopeRequested && (consentFromPrompt || client.isConsentRequired()) && resourceServers.size() > 0) {
-                Optional<UserConsent> userConsentOptional = this.userConsentRepository.findUserConsentBySub(user.getSub());
-                boolean userConsentRequired = consentFromPrompt || userConsentOptional
-                        .map(userConsent -> userConsent.renewConsentRequired(scopes))
-                        .orElse(true);
-                if (userConsentRequired) {
-                    LOG.debug("Asking for consent for User " + user + " and scopes " + scopes);
-                    return doConsent(parameters, client, filteredScopes, resourceServers);
-                }
+                LOG.info("Asking for consent for User " + user + " and scopes " + scopes);
+                return doConsent(parameters, client, filteredScopes, resourceServers);
             }
-        }
-        if (createConsent) {
-            createConsent(scopes, user, client);
         }
         //We do not provide SSO as does EB not - up to the identity provider
         logout(request);
@@ -250,16 +238,6 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         }
     }
 
-    private void createConsent(List<String> scopes, User user, OpenIDClient openIDClient) {
-        LOG.info("Creating consent for User " + user + " and scopes " + scopes);
-        UserConsent userConsent = userConsentRepository
-                .findUserConsentBySub(user.getSub())
-                .map(uc -> uc.updateScopes(scopes))
-                .orElse(new UserConsent(user, scopes, openIDClient));
-
-        userConsentRepository.save(userConsent);
-    }
-
     private ModelAndView doConsent(MultiValueMap<String, String> parameters, OpenIDClient client, Set<String> scopes, List<OpenIDClient> resourceServers) {
         Map<String, Object> body = new HashMap<>();
         body.put("parameters", parameters.entrySet().stream().collect(Collectors.toMap(
@@ -267,20 +245,10 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 entry -> entry.getValue().get(0)
         )));
         body.put("client", client);
-
         body.put("resourceServers", resourceServers.stream().filter(rs -> StringUtils.hasText(rs.getLogoUrl())).collect(toList()));
-        String names = resourceServers.stream().map(rs -> rs.getName()).collect(joining(", "));
-        names = resourceServers.size() == 1 ? names : names.substring(0, names.lastIndexOf(", ")).concat(" and ").concat(names.substring(names.lastIndexOf(", ") + 2));
-        body.put("resourceServerNames", names);
-
-        Set<String> scopeDescriptions = resourceServers.stream()
-                .flatMap(rs -> rs.getScopes().stream().filter(s -> scopes.contains(s.getName()))
-                        .map(s -> s.getDescriptions().get("en")))
-                .filter(s -> StringUtils.hasText(s))
-                .collect(toSet());
-        body.put("scopes", scopeDescriptions);
-        //Do we want to translate and display the authenticatingAuthority?
-        //String authenticatingAuthority = user.getAuthenticatingAuthority();
+        body.put("scopes", resourceServers.stream().map(OpenIDClient::getScopes).flatMap(List::stream).collect(Collectors.toSet()));
+        Locale locale = LocaleContextHolder.getLocale();
+        body.put("lang", locale.getLanguage());
         return new ModelAndView("consent", body);
     }
 
