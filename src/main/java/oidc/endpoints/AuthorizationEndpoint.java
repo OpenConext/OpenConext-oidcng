@@ -246,7 +246,11 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         )));
         body.put("client", client);
         body.put("resourceServers", resourceServers.stream().filter(rs -> StringUtils.hasText(rs.getLogoUrl())).collect(toList()));
-        body.put("scopes", resourceServers.stream().map(OpenIDClient::getScopes).flatMap(List::stream).collect(Collectors.toSet()));
+        body.put("scopes", resourceServers.stream()
+                .map(OpenIDClient::getScopes)
+                .flatMap(List::stream)
+                .filter(scopes::contains)
+                .collect(Collectors.toSet()));
         Locale locale = LocaleContextHolder.getLocale();
         body.put("lang", locale.getLanguage());
         return new ModelAndView("consent", body);
