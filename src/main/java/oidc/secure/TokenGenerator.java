@@ -293,7 +293,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         additionalClaims.put("claims", value);
         additionalClaims.put("claim_key_id", currentSymmetricKeyId);
 
-        return idToken(client, Optional.of(user), additionalClaims, Collections.emptyList(),
+        return idToken(client, Optional.empty(), additionalClaims, Collections.emptyList(),
                 true, signingKey, scopes, isAccessToken);
     }
 
@@ -452,16 +452,14 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
             });
         }
 
-        if (!isAccessToken) {
-            optionalUser.ifPresent(user -> {
-                List<String> acrClaims = user.getAcrClaims();
-                if (CollectionUtils.isEmpty(acrClaims)) {
-                    builder.claim("acr", defaultAcrValue);
-                } else {
-                    builder.claim("acr", String.join(" ", acrClaims));
-                }
-            });
-        }
+        optionalUser.ifPresent(user -> {
+            List<String> acrClaims = user.getAcrClaims();
+            if (CollectionUtils.isEmpty(acrClaims)) {
+                builder.claim("acr", defaultAcrValue);
+            } else {
+                builder.claim("acr", String.join(" ", acrClaims));
+            }
+        });
 
         additionalClaims.forEach(builder::claim);
 
