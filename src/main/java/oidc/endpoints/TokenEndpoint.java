@@ -319,8 +319,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                                                       Optional<String> authorizationCodeId) {
         Map<String, Object> map = new LinkedHashMap<>();
         EncryptedTokenValue encryptedAccessToken = user
-                .map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client))
-                .orElse(tokenGenerator.generateAccessToken(client));
+                .map(u -> tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(u, client, scopes))
+                .orElse(tokenGenerator.generateAccessToken(client, scopes));
 
         String sub = user.map(User::getSub).orElse(client.getClientId());
         String unspecifiedUrnHash = user.map(u -> KeyGenerator.oneWayHash(u.getUnspecifiedNameId(), this.salt)).orElse(null);
@@ -342,7 +342,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         }
         map.put("expires_in", client.getAccessTokenValidity());
         if (isOpenIDRequest(scopes) && !clientCredentials) {
-            TokenValue tokenValue = tokenGenerator.generateIDTokenForTokenEndpoint(user, client, nonce, idTokenClaims, authorizationTime);
+            TokenValue tokenValue = tokenGenerator.generateIDTokenForTokenEndpoint(user, client, nonce, idTokenClaims, scopes, authorizationTime);
             map.put("id_token", tokenValue.getValue());
         }
         return map;

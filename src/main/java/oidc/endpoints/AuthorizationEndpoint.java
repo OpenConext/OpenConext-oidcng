@@ -274,7 +274,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     private Map<String, Object> authorizationEndpointResponse(User user, OpenIDClient client, AuthorizationRequest authorizationRequest,
                                                               List<String> scopes, ResponseType responseType, State state) {
         Map<String, Object> result = new LinkedHashMap<>();
-        EncryptedTokenValue encryptedAccessToken = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client);
+        EncryptedTokenValue encryptedAccessToken = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client, scopes);
         if (responseType.contains(ResponseType.Value.TOKEN.getValue()) || !isOpenIDRequest(authorizationRequest)) {
             String unspecifiedUrnHash = KeyGenerator.oneWayHash(user.getUnspecifiedNameId(), this.salt);
             AccessToken accessToken = new AccessToken(encryptedAccessToken.getJwtId(), user.getSub(), client.getClientId(), scopes,

@@ -51,19 +51,12 @@ div.data-transfer {
 div.image-container img {
     width: 180px;
     height: auto;
-}
-
-div.image-container.client {
-    padding-left: 25px;
+    padding: 0 25px;
 }
 
 div.resource-servers {
     display: flex;
     flex-direction: column;
-}
-
-div.image-container.resource-server {
-    padding-right: 25px;
 }
 
 div.image-container.resource-server img:not(:first-child) {

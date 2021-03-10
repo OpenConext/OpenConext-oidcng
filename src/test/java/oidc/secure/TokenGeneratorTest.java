@@ -24,10 +24,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.text.ParseException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
+import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -79,7 +79,7 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
         User user = new User("sub", "unspecifiedNameId", "http://mockidp",
                 "clientId", getUserInfo(), Arrays.asList("http://test.surfconext.nl/assurance/loa3", "invalid_acr"));
         OpenIDClient client = openIDClient("mock-sp");
-        TokenValue tokenValue = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList(), Optional.empty());
+        TokenValue tokenValue = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", emptyList(), emptyList(), Optional.empty());
         SignedJWT jwt = SignedJWT.parse(tokenValue.getValue());
         Object acr = jwt.getJWTClaimsSet().getClaim("acr");
         assertEquals("http://test.surfconext.nl/assurance/loa3 invalid_acr", acr);
@@ -88,9 +88,9 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
     @Test
     public void defaultAcrValue() throws IOException, JOSEException, NoSuchAlgorithmException, NoSuchProviderException, ParseException {
         User user = new User("sub", "unspecifiedNameId", "http://mockidp",
-                "clientId", getUserInfo(), Collections.emptyList());
+                "clientId", getUserInfo(), emptyList());
         OpenIDClient client = openIDClient("mock-sp");
-        TokenValue tokenValue = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", Collections.emptyList(), Optional.empty());
+        TokenValue tokenValue = tokenGenerator.generateIDTokenForTokenEndpoint(Optional.of(user), client, "nonce", emptyList(), emptyList(), Optional.empty());
         SignedJWT jwt = SignedJWT.parse(tokenValue.getValue());
         Object acr = jwt.getJWTClaimsSet().getClaim("acr");
         assertEquals("http://test.surfconext.nl/assurance/loa1", acr);
@@ -104,19 +104,19 @@ public class TokenGeneratorTest extends AbstractIntegrationTest {
 
     private String doEncryptAndDecryptAccessToken(boolean verify) throws IOException, ParseException {
         User user = new User("sub", "unspecifiedNameId", "http://mockidp",
-                "clientId", getUserInfo(), Collections.emptyList());
+                "clientId", getUserInfo(), emptyList());
 
         String clientId = "mock-sp";
         OpenIDClient client = mongoTemplate.find(Query.query(Criteria.where("clientId").is(clientId)), OpenIDClient.class).get(0);
 
-        EncryptedTokenValue encryptedAccessToken = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client);
+        EncryptedTokenValue encryptedAccessToken = tokenGenerator.generateAccessTokenWithEmbeddedUserInfo(user, client, Arrays.asList("openid", "groups"));
 
         String accessToken = encryptedAccessToken.getValue();
         SignedJWT signedJWT = verify ? tokenGenerator.parseAndValidateSignedJWT(accessToken).get() : SignedJWT.parse(accessToken);
         User convertedUser = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(signedJWT);
 
         assertEquals(user, convertedUser);
-
+        assertEquals("openid groups", signedJWT.getJWTClaimsSet().getStringClaim("scope"));
         return accessToken;
     }
 

@@ -244,10 +244,10 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     @SneakyThrows
-    public EncryptedTokenValue generateAccessToken(OpenIDClient client) {
+    public EncryptedTokenValue generateAccessToken(OpenIDClient client, List<String> scopes) {
         String currentSigningKeyId = ensureLatestSigningKey();
         TokenValue tokenValue = idToken(client, Optional.empty(), Collections.emptyMap(), Collections.emptyList(),
-                false, currentSigningKeyId, true);
+                false, currentSigningKeyId, scopes, true);
         return new EncryptedTokenValue(tokenValue, currentSigningKeyId);
     }
 
@@ -255,7 +255,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     public EncryptedTokenValue generateRefreshToken(OpenIDClient client) {
         String currentSigningKeyId = ensureLatestSigningKey();
         TokenValue tokenValue = idToken(client, Optional.empty(), Collections.emptyMap(), Collections.emptyList(),
-                false, currentSigningKeyId, false);
+                false, currentSigningKeyId, Collections.emptyList(), false);
         return new EncryptedTokenValue(tokenValue, currentSigningKeyId);
     }
 
@@ -271,19 +271,19 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     @SneakyThrows
-    public EncryptedTokenValue generateAccessTokenWithEmbeddedUserInfo(User user, OpenIDClient client) {
+    public EncryptedTokenValue generateAccessTokenWithEmbeddedUserInfo(User user, OpenIDClient client, List<String> scopes) {
         String currentSigningKeyId = this.ensureLatestSigningKey();
-        TokenValue tokenValue = doGenerateAccessTokenWithEmbeddedUser(user, client, currentSigningKeyId, true);
+        TokenValue tokenValue = doGenerateAccessTokenWithEmbeddedUser(user, client, currentSigningKeyId, scopes, true);
         return new EncryptedTokenValue(tokenValue, currentSigningKeyId);
     }
 
     @SneakyThrows
     public EncryptedTokenValue generateRefreshTokenWithEmbeddedUserInfo(User user, OpenIDClient client) {
         String currentSigningKeyId = this.ensureLatestSigningKey();
-        return new EncryptedTokenValue(doGenerateAccessTokenWithEmbeddedUser(user, client, currentSigningKeyId, false), currentSigningKeyId);
+        return new EncryptedTokenValue(doGenerateAccessTokenWithEmbeddedUser(user, client, currentSigningKeyId, Collections.emptyList(), false), currentSigningKeyId);
     }
 
-    private TokenValue doGenerateAccessTokenWithEmbeddedUser(User user, OpenIDClient client, String signingKey, boolean isAccessToken)
+    private TokenValue doGenerateAccessTokenWithEmbeddedUser(User user, OpenIDClient client, String signingKey, List<String> scopes, boolean isAccessToken)
             throws IOException, JOSEException, GeneralSecurityException, ParseException {
         String json = objectMapper.writeValueAsString(user);
         String currentSymmetricKeyId = this.ensureLatestSymmetricKey();
@@ -294,7 +294,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         additionalClaims.put("claim_key_id", currentSymmetricKeyId);
 
         return idToken(client, Optional.empty(), additionalClaims, Collections.emptyList(),
-                true, signingKey, isAccessToken);
+                true, signingKey, scopes, isAccessToken);
     }
 
     private String encryptAead(String s, String currentSymmetricKeyId) throws GeneralSecurityException, IOException {
@@ -348,7 +348,8 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     @SneakyThrows
-    public TokenValue generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, String nonce, List<String> idTokenClaims,
+    public TokenValue generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, String nonce,
+                                                      List<String> idTokenClaims, List<String> scopes,
                                                       Optional<Long> authorizationTime) {
         Map<String, Object> additionalClaims = new HashMap<>();
         authorizationTime.ifPresent(time -> additionalClaims.put("auth_time", time));
@@ -356,13 +357,14 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
             additionalClaims.put("nonce", nonce);
         }
         String currentSigningKeyId = ensureLatestSigningKey();
-        return idToken(client, user, additionalClaims, idTokenClaims, false, currentSigningKeyId, true);
+        return idToken(client, user, additionalClaims, idTokenClaims, false, currentSigningKeyId, scopes, true);
     }
 
     @SneakyThrows
     public TokenValue generateIDTokenForAuthorizationEndpoint(User user, OpenIDClient client, Nonce nonce,
                                                               ResponseType responseType, String accessToken,
-                                                              List<String> claims, Optional<String> authorizationCode,
+                                                              List<String> claims,
+                                                              Optional<String> authorizationCode,
                                                               State state) {
         Map<String, Object> additionalClaims = new HashMap<>();
         additionalClaims.put("auth_time", System.currentTimeMillis() / 1000L);
@@ -382,7 +384,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         }
         String currentSigningKeyId = ensureLatestSigningKey();
         return idToken(client, Optional.of(user), additionalClaims, claims, false,
-                currentSigningKeyId, true);
+                currentSigningKeyId, Collections.emptyList(), true);
     }
 
     public List<JWK> getAllPublicKeys() throws GeneralSecurityException, ParseException, IOException {
@@ -416,7 +418,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private TokenValue idToken(OpenIDClient client, Optional<User> optionalUser, Map<String, Object> additionalClaims,
                                List<String> idTokenClaims, boolean includeAllowedResourceServers, String signingKey,
-                               boolean isAccessToken) throws JOSEException, GeneralSecurityException, ParseException, IOException {
+                               List<String> scopes, boolean isAccessToken) throws JOSEException, GeneralSecurityException, ParseException, IOException {
         List<String> audiences = new ArrayList<>();
         audiences.add(client.getClientId());
         if (includeAllowedResourceServers && isAccessToken) {
@@ -436,6 +438,9 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
                 .subject(optionalUser.map(User::getSub).orElse(client.getClientId()))
                 .notBeforeTime(new Date(System.currentTimeMillis()));
 
+        if (!CollectionUtils.isEmpty(scopes)) {
+            builder.claim("scope", String.join(" ", scopes));
+        }
 
         if (!CollectionUtils.isEmpty(idTokenClaims) && optionalUser.isPresent() && isAccessToken) {
             User user = optionalUser.get();
