@@ -7,13 +7,14 @@
     <meta content="yes" name="apple-mobile-web-app-capable">
     <meta content="translucent-black" name="apple-mobile-web-app-status-bar-style">
     <link href="/favicon.ico" rel="shortcut icon">
+    <link th:href="@{/styles.css}" rel="stylesheet" type="text/css"/>
     <link th:href="@{/consent.css}" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div class="container">
     <form method="post" action="/oidc/consent">
         <div class="header">
-            <span th:text="#{permission}"></span>
+            <h1 th:text="#{permission}"></h1>
         </div>
         <div class="content-container">
             <div class="content">
@@ -149,12 +150,12 @@
 <div class="modal" id="modal-one" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-header">
-            <h2 th:text="#{footerTitle}"></h2>
+            <h1 th:text="#{footerTitle}"></h1>
         </div>
         <div class="modal-body">
-            <p th:utext="#{modelIntro}">
+            <p class="modal-text" th:utext="#{modelIntro}">
             </p>
-            <p th:utext="#{modelSub}"></p>
+            <p class="modal-text" th:utext="#{modelSub}"></p>
         </div>
         <div class="modal-footer">
             <a href="#" th:text="#{close}" class="button cancel"></a>
