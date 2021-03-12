@@ -72,6 +72,7 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static oidc.endpoints.AuthorizationEndpoint.validateScopes;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 @RestController
@@ -153,7 +154,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         if (authorizationGrant instanceof AuthorizationCodeGrant) {
             return handleAuthorizationCodeGrant((AuthorizationCodeGrant) authorizationGrant, client);
         } else if (authorizationGrant instanceof ClientCredentialsGrant) {
-            return handleClientCredentialsGrant(client);
+            return handleClientCredentialsGrant(client, tokenRequest);
         } else if (authorizationGrant instanceof RefreshTokenGrant) {
             return handleRefreshCodeGrant((RefreshTokenGrant) authorizationGrant, client);
         }
@@ -305,8 +306,9 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         return new ResponseEntity<>(body, responseHttpHeaders, HttpStatus.OK);
     }
 
-    private ResponseEntity handleClientCredentialsGrant(OpenIDClient client) {
-        Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, client.getScopes().stream().map(Scope::getName).collect(Collectors.toList()),
+    private ResponseEntity handleClientCredentialsGrant(OpenIDClient client, TokenRequest tokenRequest) {
+        List<String> scopes = validateScopes(openIDClientRepository, tokenRequest.getScope(), client);
+        Map<String, Object> body = tokenEndpointResponse(Optional.empty(), client, scopes,
                 Collections.emptyList(), true, null, Optional.empty(), Optional.empty());
         LOG.debug("Returning client_credentials access_token for RS " + client.getClientId());
         return new ResponseEntity<>(body, responseHttpHeaders, HttpStatus.OK);

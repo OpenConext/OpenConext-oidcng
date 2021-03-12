@@ -3,6 +3,7 @@ package oidc.endpoints;
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseType;
+import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.openid.connect.sdk.Prompt;
 import oidc.exceptions.InvalidGrantException;
@@ -110,7 +111,7 @@ public class AuthorizationEndpointUnitTest {
         OpenIDClientRepository openIDClientRepository = mock(OpenIDClientRepository.class);
         when(openIDClientRepository.findByClientIdIn(null)).thenReturn(Collections.singletonList(openIDClient("http://redirect", clientScope, "authorization_code")));
 
-        List<String> scopes = AuthorizationEndpoint.validateScopes(openIDClientRepository, authorizationRequest, client);
+        List<String> scopes = AuthorizationEndpoint.validateScopes(openIDClientRepository, new Scope(requestResponseScope), client);
 
         assertEquals(singletonList(requestResponseScope), scopes);
     }

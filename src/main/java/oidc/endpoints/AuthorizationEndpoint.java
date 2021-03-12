@@ -64,6 +64,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.security.cert.CertificateException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -156,7 +157,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         State state = authenticationRequest.getState();
         String redirectURI = validateRedirectionURI(authenticationRequest.getRedirectionURI(), client).getRedirectURI();
 
-        List<String> scopes = validateScopes(openIDClientRepository, authenticationRequest, client);
+        List<String> scopes = validateScopes(openIDClientRepository, authenticationRequest.getScope(), client);
         ResponseType responseType = validateGrantType(authenticationRequest, client);
 
         User user = samlAuthentication.getUser();
@@ -409,15 +410,21 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         }
     }
 
-    public static List<String> validateScopes(OpenIDClientRepository openIDClientRepository, AuthorizationRequest authorizationRequest, OpenIDClient client) {
-        Scope scope = authorizationRequest.getScope();
+    public static List<String> validateScopes(OpenIDClientRepository openIDClientRepository, Scope scope, OpenIDClient client) {
         List<String> requestedScopes = scope != null ? scope.toStringList() : Collections.emptyList();
 
-        List<OpenIDClient> resourceServers = openIDClientRepository.findByClientIdIn(client.getAllowedResourceServers());
-        List<String> grantedScopes = resourceServers.stream()
-                .flatMap(rs -> rs.getScopes().stream().map(oidc.model.Scope::getName))
-                .collect(toList());
+        List<String> allowedResourceServers = client.getAllowedResourceServers();
+        List<String> grantedScopes = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(allowedResourceServers)) {
+            List<OpenIDClient> resourceServers = openIDClientRepository.findByClientIdIn(allowedResourceServers);
+            grantedScopes.addAll(resourceServers.stream()
+                    .flatMap(rs -> rs.getScopes().stream().map(oidc.model.Scope::getName))
+                    .collect(toList()));
+        }
         grantedScopes.addAll(forFreeOpenIDScopes);
+        //backward compatibility
+        grantedScopes.addAll(client.getScopes().stream().map(oidc.model.Scope::getName).collect(toList()));
+
         if (!grantedScopes.containsAll(requestedScopes)) {
             List<String> missingScopes = requestedScopes.stream().filter(s -> !grantedScopes.contains(s)).collect(toList());
             throw new InvalidScopeException(

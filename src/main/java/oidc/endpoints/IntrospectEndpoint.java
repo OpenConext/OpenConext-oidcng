@@ -46,7 +46,6 @@ public class IntrospectEndpoint extends SecureEndpoint {
     private final String issuer;
     private final TokenGenerator tokenGenerator;
     private final AttributePseudonymisation attributePseudonymisation;
-    private final boolean enforceScopeResourceServer;
     private final boolean enforceEduidResourceServerLinkedAccount;
 
 
@@ -55,14 +54,12 @@ public class IntrospectEndpoint extends SecureEndpoint {
                               TokenGenerator tokenGenerator,
                               AttributePseudonymisation attributePseudonymisation,
                               @Value("${sp.entity_id}") String issuer,
-                              @Value("${features.enforce-scope-resource-server}") boolean enforceScopeResourceServer,
                               @Value("${features.enforce-eduid-resource-server-linked-account}") boolean enforceEduidResourceServerLinkedAccount) {
         this.accessTokenRepository = accessTokenRepository;
         this.openIDClientRepository = openIDClientRepository;
         this.tokenGenerator = tokenGenerator;
         this.attributePseudonymisation = attributePseudonymisation;
         this.issuer = issuer;
-        this.enforceScopeResourceServer = enforceScopeResourceServer;
         this.enforceEduidResourceServerLinkedAccount = enforceEduidResourceServerLinkedAccount;
 
     }
@@ -110,20 +107,7 @@ public class IntrospectEndpoint extends SecureEndpoint {
         }
 
         List<String> scopes = accessToken.getScopes();
-
-        if (enforceScopeResourceServer) {
-            List<String> configuredScopes = resourceServer.getScopes().stream().map(Scope::getName).collect(Collectors.toList());
-            //The openid scope is a freebee for all RS
-            List<String> scopesRequiredForResourceServer = scopes.stream().filter(scope -> !scope.equals("openid")).collect(Collectors.toList());
-            if (!configuredScopes.containsAll(scopesRequiredForResourceServer)) {
-                LOG.warn(String.format("Resource server %s has configured scopes %s, but granted to access_token are scopes %s",
-                        resourceServer.getClientId(), resourceServer.getScopes(), scopesRequiredForResourceServer));
-                return ResponseEntity.ok(Collections.singletonMap("active", false));
-            }
-        }
-
         Map<String, Object> result = new TreeMap<>();
-
         boolean isUserAccessToken = !accessToken.isClientCredentials();
 
         if (isUserAccessToken) {

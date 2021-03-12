@@ -39,8 +39,6 @@ features:
   # Do we enforce that the RS - if eduID pseudonymisation is required - belongs to the SURF IdP linked to the eduID user account?
   # We link RS's and SURF IdP's using the coin:institution-guid
   enforce-eduid-resource-server-linked-account: true
-  # Do we enforce that the scopes granted to an access_token are configured with the RS?
-  enforce-scope-resource-server: true
   # Do we show consent if configured for a RP in manage
   consent-enabled: true
 

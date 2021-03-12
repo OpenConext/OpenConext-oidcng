@@ -143,7 +143,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
         String accessToken = (String) body.get("access_token");
         Map<String, Object> result = callIntrospection("mock-sp", accessToken, "secret");
         assertEquals(true, result.get("active"));
-        assertEquals(scopeToSortedList("groups https://voot.surfconext.nl/groups openid weird"), scopeToSortedList((String) result.get("scope")));
+        assertEquals("", result.get("scope"));
         assertEquals("mock-sp", result.get("sub"));
         assertFalse(result.containsKey("email"));
     }
@@ -200,16 +200,6 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     public void introspectionWrongSecret() throws IOException {
         Map<String, Object> result = doIntrospection("mock-sp", "nope");
         assertEquals("Invalid user / secret", result.get("error_description"));
-    }
-
-    @Test
-    public void introspectionWithWrongScopes() throws IOException {
-        String code = doAuthorizeWithScopes("mock-sp", "code", "code", "weird");
-        Map<String, Object> body = doToken(code);
-
-        String accessToken = (String) body.get("access_token");
-        Map<String, Object> result = callIntrospection("resource-server-playground-client", accessToken, "secret");
-        assertEquals(false, result.get("active"));
     }
 
     private Map<String, Object> doIntrospection(String clientId, String secret) throws IOException {

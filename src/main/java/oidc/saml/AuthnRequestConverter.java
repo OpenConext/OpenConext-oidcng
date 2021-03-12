@@ -138,7 +138,7 @@ public class AuthnRequestConverter implements
         ClientID clientID = authorizationRequest.getClientID();
         MDCContext.mdcContext("action", "Authorization", "clientId", clientID.getValue());
 
-        AuthorizationEndpoint.validateScopes(openIDClientRepository, authorizationRequest, openIDClient);
+        AuthorizationEndpoint.validateScopes(openIDClientRepository, authorizationRequest.getScope(), openIDClient);
         AuthorizationEndpoint.validateGrantType(authorizationRequest, openIDClient);
     }
 
