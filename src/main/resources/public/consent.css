@@ -173,7 +173,7 @@ ul li.eduid a:visited {
 
 div.actions {
     display: flex;
-    padding: 40px 0;
+    padding: 10px 0 0 0;
     flex-direction: column;
 
 }
@@ -191,6 +191,10 @@ button, .button {
     width: 100%;
     border: none;
     cursor: pointer;
+}
+
+a.button {
+    margin-bottom: 0;
 }
 
 button:hover {
