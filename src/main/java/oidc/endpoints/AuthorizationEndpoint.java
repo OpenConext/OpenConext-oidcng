@@ -89,27 +89,27 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     private final AuthorizationCodeRepository authorizationCodeRepository;
     private final AccessTokenRepository accessTokenRepository;
     private final UserRepository userRepository;
-    private final UserConsentRepository userConsentRepository;
     private final OpenIDClientRepository openIDClientRepository;
     private final String salt;
+    private final String environment;
     private final boolean consentEnabled;
 
     @Autowired
     public AuthorizationEndpoint(AuthorizationCodeRepository authorizationCodeRepository,
                                  AccessTokenRepository accessTokenRepository,
                                  UserRepository userRepository,
-                                 UserConsentRepository userConsentRepository,
                                  OpenIDClientRepository openIDClientRepository,
                                  TokenGenerator tokenGenerator,
                                  @Value("${access_token_one_way_hash_salt}") String salt,
+                                 @Value("${environment}") String environment,
                                  @Value("${features.consent-enabled}") boolean consentEnabled) {
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.accessTokenRepository = accessTokenRepository;
         this.userRepository = userRepository;
-        this.userConsentRepository = userConsentRepository;
         this.openIDClientRepository = openIDClientRepository;
         this.tokenGenerator = tokenGenerator;
         this.salt = salt;
+        this.environment = environment;
         this.consentEnabled = consentEnabled;
     }
 
@@ -257,6 +257,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 .collect(Collectors.toSet()));
         Locale locale = LocaleContextHolder.getLocale();
         body.put("lang", locale.getLanguage());
+        body.put("environment", environment);
         return new ModelAndView("consent", body);
     }
 

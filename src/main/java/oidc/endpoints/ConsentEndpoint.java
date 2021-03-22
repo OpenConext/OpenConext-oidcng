@@ -28,6 +28,7 @@ public class ConsentEndpoint {
         Map<String, Object> body = new HashMap<>();
         body.put("resourceServers", Arrays.asList(rs));
         body.put("client", client);
+        body.put("environment", "SURFconext TEST2");
         body.put("scopes", rs.getScopes());
         Locale locale = LocaleContextHolder.getLocale();
         body.put("lang", locale.getLanguage());
