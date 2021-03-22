@@ -1,6 +1,7 @@
 logging:
   level:
-    root: INFO
+    root: OFF
+    org.springframework: OFF
     oidc: INFO
 
 cron:
