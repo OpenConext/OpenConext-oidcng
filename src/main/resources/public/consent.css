@@ -124,7 +124,17 @@ ul li {
     line-height: 1.63;
     display: flex;
     align-items: center;
+}
+
+div.scope-info {
+    display: flex;
+    flex-direction: column;
+}
+
+div.scope-info span.title {
+    font-size: 18px;
     font-weight: bold;
+    margin-bottom: 2px;
 }
 
 ul li:last-child {

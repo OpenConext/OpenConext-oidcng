@@ -29,6 +29,11 @@
         "scopes": [
           {
             "name": "groups",
+            "titles": {
+              "en": "English title",
+              "nl": "NL titel",
+              "pt": "pt"
+            },
             "descriptions": {
               "en": "English description",
               "nl": "nl",
@@ -37,6 +42,11 @@
           },
           {
             "name": "openid",
+            "titles": {
+              "en": "English title",
+              "nl": "Dutch title",
+              "pt": "pt"
+            },
             "descriptions": {
               "en": "English description vhvhgv",
               "nl": "nl",
@@ -179,6 +189,11 @@
         "scopes": [
           {
             "name": "openid",
+            "titles": {
+              "en": "Account information EN",
+              "nl": "Account information NL",
+              "pt": "pt"
+            },
             "descriptions": {
               "en": "See all your account information.",
               "nl": "nl",
@@ -187,6 +202,11 @@
           },
           {
             "name": "groups",
+            "titles": {
+              "en": "GroupsEN",
+              "nl": "Groups NL",
+              "pt": "pt"
+            },
             "descriptions": {
               "en": "Have access to all your group memberships.",
               "nl": "nl",
