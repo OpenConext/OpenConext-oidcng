@@ -3,6 +3,7 @@ package oidc.endpoints;
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseType;
+import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.openid.connect.sdk.Prompt;
 import oidc.exceptions.InvalidGrantException;
@@ -11,6 +12,7 @@ import oidc.exceptions.RedirectMismatchException;
 import oidc.exceptions.UnsupportedPromptValueException;
 import oidc.model.OpenIDClient;
 import oidc.model.ProvidedRedirectURI;
+import oidc.repository.OpenIDClientRepository;
 import org.junit.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -18,6 +20,7 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,6 +28,9 @@ import java.util.stream.Collectors;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class AuthorizationEndpointUnitTest {
 
@@ -96,9 +102,16 @@ public class AuthorizationEndpointUnitTest {
     @SuppressWarnings("unchecked")
     private void doValidateScope(String clientScope, String requestResponseScope) throws IOException, ParseException {
         AuthorizationRequest authorizationRequest = authorizationRequest(
-                new FluentMap<String, String>().p("client_id", "http://oidc-rp").p("response_type", "code").p("scope", requestResponseScope));
+                new FluentMap<String, String>()
+                        .p("client_id", "http://oidc-rp")
+                        .p("response_type", "code")
+                        .p("scope", requestResponseScope));
         OpenIDClient client = openIDClient("http://redirect", clientScope, "authorization_code");
-        List<String> scopes = AuthorizationEndpoint.validateScopes(authorizationRequest, client);
+
+        OpenIDClientRepository openIDClientRepository = mock(OpenIDClientRepository.class);
+        when(openIDClientRepository.findByClientIdIn(null)).thenReturn(Collections.singletonList(openIDClient("http://redirect", clientScope, "authorization_code")));
+
+        List<String> scopes = AuthorizationEndpoint.validateScopes(openIDClientRepository, new Scope(requestResponseScope), client);
 
         assertEquals(singletonList(requestResponseScope), scopes);
     }

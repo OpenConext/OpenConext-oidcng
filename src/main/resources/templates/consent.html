@@ -1,219 +1,182 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Consent</title>
-    <style>
-        body {
-            font-family: Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            font-size: 16px;
-            background-color: #235fb0;
-        }
-
-        div.container {
-            max-width: 1024px;
-            margin: 0    auto;
-        }
-
-        form {
-            border-radius: 4px;
-            border: 1px solid #c9c9c9;
-            background-color: white;
-        }
-
-        div.top {
-            max-width: 1024px;
-            margin: 0 auto;
-            display: flex;
-            color: #b9e3fe;
-            padding: 15px 25px;
-            background-color: #235fb0;
-        }
-
-        div.top p {
-            display: inline-block;
-            margin-left: 20px;
-            font-size: 22px;
-        }
-
-        div.top img {
-            width: 48px;
-        }
-
-        div.header {
-            padding: 35px;
-            background-color: #fadc00;
-            font-size: 22px;
-            font-weight: bold;
-        }
-
-        div.content {
-            display: flex;
-            flex-direction: column;
-            padding: 25px 40px;
-        }
-
-        div.client {
-            display: flex;
-            flex-direction: column;
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        div.client span {
-            font-size: 28px;
-            line-height: 42px;
-        }
-
-        span.client {
-            color: #0062b0;
-            font-weight: bold;
-        }
-
-        ul {
-            margin-bottom: 40px;
-        }
-
-        ul li {
-            line-height: 28px;
-        }
-
-        div.claims {
-            overflow-x: auto;
-            margin-top: 25px;
-        }
-
-        div.claims a {
-            text-decoration: none;
-        }
-
-        div.claims a.hide, table.hide {
-            display: none;
-        }
-
-        table {
-            width: 100%;
-            margin: 25px 0;
-        }
-
-        table td {
-            padding: 8px 5px;
-        }
-
-        table tr:nth-child(even) {
-            background: #f1f0f0
-        }
-
-        div.actions {
-            display: flex;
-            padding: 40px;
-        }
-
-        button {
-            background-color: #0062b0;
-            width: 165px;
-            color: white;
-            margin-left: auto;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            font-size: 20px;
-            cursor: pointer;
-        }
-
-        button.cancel {
-            color: #0062b0;
-            background-color: white;
-            border: 1px solid #f1f0f0;
-            margin-left: 0;
-        }
-    </style>
+    <meta name="robots" content="noindex, nofollow">
+    <meta content="ie=edge,chrome=1" http-equiv="x-ua-compatible">
+    <meta content="initial-scale=1.0,user-scalable=no,maximum-scale=1,width=device-width" name="viewport">
+    <meta content="yes" name="apple-mobile-web-app-capable">
+    <meta content="translucent-black" name="apple-mobile-web-app-status-bar-style">
+    <link href="/favicon.ico" rel="shortcut icon">
+    <link th:href="@{/styles.css}" rel="stylesheet" type="text/css"/>
+    <link th:href="@{/consent.css}" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div class="container">
-    <div class="top">
-        <img src="https://static.surfconext.nl/media/conext_logo.png" alt="conext">
+    <div class="top-header">
+        <h1 th:text="#{login(${environment})}"></h1>
     </div>
-
     <form method="post" action="/oidc/consent">
         <div class="header">
-            <span>Please give consent to share your information</span>
+            <h1 th:text="#{permission}"></h1>
         </div>
-        <div class="content">
-            <div class="client">
-                <span class="client" th:text="${client}"/>
-                <span th:text="${email}"/>
-            </div>
-            <div class="allow">
-                <span>This will allow <span class="client" th:text="${client}"/> to:</span>
-                <ul>
-                    <li th:each="scope : ${scopes}" th:text="${scope.descriptions.get('en')}"/>
-                </ul>
-            </div>
-            <div class="audiences">
-                <span><span class="client" th:text="${client}"/> will also grant other services access to your account information:</span>
-                <ul>
-                    <li th:each="audience : ${audiences}" th:text="${audience.value}"/>
-                </ul>
-            </div>
-            <div class="disclaimer">
-            <span>Make sure you trust <span class="client" th:text="${client}"/>.
-                <a href="https://wiki.surfnet.nl/display/conextsupport/Het+Consent-scherm" target="_blank"> Find out about the risks.</a>
-            </span>
-            </div>
-            <div class="claims">
-                <a id="show" class="show" href="#">Show me the information that will be shared with <span
-                        th:text="${client}"/></a>
+        <div class="content-container">
+            <div class="content">
+                <div class="data-transfer">
+                    <div class="image-container client">
+                        <img th:src="${client.logoUrl}" alt=""/>
+                    </div>
+                    <div class="arrows">
+                        <svg width="72px" height="46px" viewBox="0 0 72 46" version="1.1"
+                             xmlns="http://www.w3.org/2000/svg">
+                            <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"
+                               stroke-linecap="round" stroke-linejoin="round">
+                                <g id="Scoped-consent" transform="translate(-358.000000, -213.000000)" stroke="#000000"
+                                   stroke-width="2">
+                                    <g id="Group" transform="translate(359.000000, 214.000000)">
+                                        <g id="data-transfer-horizontal" transform="translate(20.000000, 20.000000)">
+                                            <line x1="0" y1="11.7285068" x2="49.8461538" y2="11.7285068"
+                                                  id="Path"></line>
+                                            <polyline id="Path"
+                                                      points="38.1176471 0 49.8461538 11.7285068 38.1176471 23.4570136"></polyline>
+                                        </g>
+                                        <g id="data-transfer-horizontal"
+                                           transform="translate(25.000000, 12.000000) scale(-1, 1) translate(-25.000000, -12.000000) ">
+                                            <line x1="0" y1="11.7285068" x2="49.8461538" y2="11.7285068"
+                                                  id="Path"></line>
+                                            <polyline id="Path"
+                                                      points="38.1176471 0 49.8461538 11.7285068 38.1176471 23.4570136"></polyline>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="resource-servers">
+                        <div th:each="resourceServer : ${resourceServers}" class="image-container resource-server">
+                            <img th:src="${resourceServer.logoUrl}" alt=""/>
+                        </div>
+                    </div>
+                </div>
+                <div class="permission-container">
+                    <h2 class="permission" th:text="#{grant(${client.name})}"></h2>
+                </div>
+                <div class="scopes">
+                    <ul>
+                        <li th:each="scope : ${scopes}">
+                            <svg width="43px" height="43px" viewBox="0 0 43 43" version="1.1"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <g id="Symbols" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"
+                                   stroke-linecap="round" stroke-linejoin="round">
+                                    <g id="Scoped-consent" transform="translate(1.000000, -16.000000)" stroke="#0062B0"
+                                       stroke-width="2">
+                                        <g id="data-transfer-check" transform="translate(0.000000, 17.000000)">
+                                            <path d="M12.3651316,35.2648026 L2.93585526,35.2648026 C1.44795655,35.2648026 0.241776316,34.0586224 0.241776316,32.5707237 L0.241776316,2.93585526 C0.241776316,1.44795655 1.44795655,0.241776316 2.93585526,0.241776316 L22.0260987,0.241776316 C22.7401144,0.241776316 23.4248674,0.525519857 23.9299145,1.03024342 L29.0881776,6.18850658 C29.5929012,6.69355369 29.8766447,7.37830666 29.8766447,8.09232237 L29.8766447,12.3651316"
+                                                  id="Path"></path>
+                                            <g id="Group-8" transform="translate(5.629934, 6.527961)">
+                                                <line x1="3.30636962" y1="4.40849282" x2="15.4297249" y2="4.40849282"
+                                                      id="Path"></line>
+                                                <polyline id="Path"
+                                                          points="11.0212321 0 15.4297249 4.40849282 11.0212321 8.81698565"></polyline>
+                                                <line x1="12.1233553" y1="15.4297249" x2="0" y2="15.4297249"
+                                                      id="Path"></line>
+                                                <polyline id="Path"
+                                                          points="4.40849282 19.8382177 0 15.4297249 4.40849282 11.0212321"></polyline>
+                                            </g>
+                                            <g id="Group-7" transform="translate(19.100329, 19.094941)">
+                                                <circle id="Oval" cx="10.7763158" cy="10.7763158"
+                                                        r="10.7763158"></circle>
+                                                <path d="M15.5789605,7.63861184 L10.3614276,14.5965197 C10.1266881,14.9087168 9.76813945,15.1038253 9.3785113,15.1313852 C8.98888315,15.1589451 8.60644029,15.0162498 8.33009211,14.7402039 L5.63601316,12.046125"
+                                                      id="Path"></path>
+                                            </g>
+                                        </g>
+                                    </g>
+                                </g>
+                            </svg>
+                            <div class="scope-info">
+                                <span class="title" th:if="${lang == 'en'}" th:text="${scope.titles.get('en')}"/></span>
+                                <span class="title" th:if="${lang == 'nl'}" th:text="${scope.titles.get('nl')}"/></span>
+                                <span class="description" th:if="${lang == 'en'}" th:text="${scope.descriptions.get('en')}"/></span>
+                                <span class="description" th:if="${lang == 'nl'}" th:text="${scope.descriptions.get('nl')}"/></span>
+                            </div>
+                        </li>
+<!--                        <li class="eduid">-->
+<!--                            <svg width="105px" height="44px" viewBox="0 0 105 44" version="1.1"-->
+<!--                                 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">-->
+<!--                                <defs>-->
+<!--                                    <polygon id="eduid-logo-path-1"-->
+<!--                                             points="0 0.0005 104.9995 0.0005 104.9995 44 0 44"></polygon>-->
+<!--                                </defs>-->
+<!--                                <g id="logo_eduID" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">-->
+<!--                                    <g id="eduID">-->
+<!--                                        <g id="Group-3">-->
+<!--                                            <mask id="eduid-logo-mask-2" fill="white">-->
+<!--                                                <use xlink:href="#eduid-logo-path-1"></use>-->
+<!--                                            </mask>-->
+<!--                                            <g id="Clip-2"></g>-->
+<!--                                            <path d="M92.9995,44.0005 L11.9995,44.0005 C5.3725,44.0005 -0.0005,38.6275 -0.0005,32.0005 L-0.0005,12.0005 C-0.0005,5.3725 5.3725,0.0005 11.9995,0.0005 L92.9995,0.0005 C99.6275,0.0005 104.9995,5.3725 104.9995,12.0005 L104.9995,32.0005 C104.9995,38.6275 99.6275,44.0005 92.9995,44.0005"-->
+<!--                                                  id="Fill-1" fill="#002568" mask="url(#eduid-logo-mask-2)"></path>-->
+<!--                                        </g>-->
+<!--                                        <path d="M17.7329,18.2612 C14.9169,18.2612 13.6049,20.5002 13.4449,22.3572 L22.0199,22.3572 C21.9569,20.5652 20.7409,18.2612 17.7329,18.2612 M23.6519,24.7252 L13.4769,24.7252 C13.7009,27.0292 15.4609,28.9802 18.3399,28.9802 C19.4609,28.9802 20.7409,28.6282 21.7959,27.9562 C22.0199,27.8282 22.2759,27.7642 22.5009,27.7642 C23.2049,27.7642 23.9399,28.3402 23.9399,29.1722 C23.9399,30.9322 19.9719,31.7322 17.9889,31.7322 C13.3489,31.7322 9.8929,28.5002 9.8929,23.6052 C9.8929,19.1252 13.1569,15.5092 17.7329,15.5092 C21.3479,15.5092 23.9719,17.6852 24.9319,21.0132 C25.1249,21.6532 25.3159,22.3892 25.3159,23.0612 C25.3159,23.9562 24.5809,24.7252 23.6519,24.7252"-->
+<!--                                              id="Fill-4" fill="#FFFFFF"></path>-->
+<!--                                        <path d="M39.5249,20.5972 C38.7559,19.4452 37.1569,18.5492 35.5569,18.5492 C32.9329,18.5492 31.2369,20.6602 31.2369,23.6362 C31.2369,26.5802 32.9329,28.6922 35.5569,28.6922 C37.1569,28.6922 38.7559,27.7962 39.5249,26.6762 L39.5249,20.5972 Z M41.2199,31.5402 C40.2599,31.5402 39.5249,30.7722 39.5249,29.8442 L39.5249,29.2362 C38.3089,30.8042 36.5479,31.7322 34.5649,31.7322 C30.6289,31.7322 27.7169,28.7242 27.7169,23.6362 C27.7169,18.6452 30.5969,15.5092 34.5649,15.5092 C36.4849,15.5092 38.2769,16.4052 39.5249,18.0052 L39.5249,11.5092 C39.5249,10.5812 40.2599,9.8142 41.2849,9.8142 C42.1799,9.8142 42.9489,10.5812 42.9489,11.5092 L42.9489,29.8442 C42.9489,30.7722 42.1799,31.5402 41.2199,31.5402 L41.2199,31.5402 Z"-->
+<!--                                              id="Fill-6" fill="#FFFFFF"></path>-->
+<!--                                        <path d="M58.7876,31.5405 C57.8276,31.5405 57.0926,30.7715 57.0926,29.8445 L57.0926,29.3005 C55.9726,30.5485 54.0526,31.7315 51.6206,31.7315 C48.2926,31.7315 46.6606,29.9725 46.6606,26.8365 L46.6606,17.3645 C46.6606,16.4695 47.3966,15.7015 48.4206,15.7015 C49.3166,15.7015 50.0846,16.4695 50.0846,17.3645 L50.0846,25.5885 C50.0846,27.9565 51.3006,28.6915 53.1556,28.6915 C54.8516,28.6915 56.2926,27.7315 57.0926,26.7085 L57.0926,17.3645 C57.0926,16.4695 57.8276,15.7015 58.8516,15.7015 C59.7476,15.7015 60.5166,16.4695 60.5166,17.3645 L60.5166,29.8445 C60.5166,30.7715 59.7476,31.5405 58.7876,31.5405"-->
+<!--                                              id="Fill-8" fill="#FFFFFF"></path>-->
+<!--                                        <path d="M68.7085,31.5405 C67.6845,31.5405 66.8525,30.6765 66.8525,29.6515 L66.8525,11.6695 C66.8525,10.6775 67.6845,9.8135 68.7715,9.8135 C69.7965,9.8135 70.6595,10.6775 70.6595,11.6695 L70.6595,29.6515 C70.6595,30.6765 69.7965,31.5405 68.7085,31.5405"-->
+<!--                                              id="Fill-10" fill="#53A6F0"></path>-->
+<!--                                        <path d="M83.8111,13.3657 L79.6511,13.3657 L79.6511,27.9887 L83.8111,27.9887 C88.4181,27.9887 91.0751,24.6927 91.0751,20.6927 C91.0751,16.5967 88.5461,13.3657 83.8111,13.3657 M83.8111,31.3477 L78.1471,31.3477 C76.8681,31.3477 75.8431,30.2927 75.8431,29.0447 L75.8431,12.3087 C75.8431,11.0617 76.8681,10.0057 78.1471,10.0057 L83.8111,10.0057 C90.4661,10.0057 95.0101,14.4217 95.0101,20.6927 C95.0101,26.9967 90.4661,31.3477 83.8111,31.3477"-->
+<!--                                              id="Fill-12" fill="#53A6F0"></path>-->
+<!--                                    </g>-->
+<!--                                </g>-->
+<!--                            </svg>-->
+<!--                            <span th:utext="#{eduID}"/></span>-->
 
-                <a id="hide" class="hide" href="#">Hide the information that will be shared with
-                    <span th:text="${client}"/>
-                </a>
-                <table id="attributes" class="hide">
-                    <tbody>
-                    <th:block th:each="claim : ${claims}">
-                        <tr>
-                            <td th:text="${claim.key}"></td>
-                            <td th:text="${claim.value}"></td>
-                        </tr>
-                    </th:block>
-                    </tbody>
-
-                </table>
+<!--                        </li>-->
+                    </ul>
+                </div>
+                <div class="actions">
+                    <button th:text="#{allow}" name="yes" value="yes" type="submit"></button>
+                    <a href="#modal-one" th:text="#{noAllow}" class="button cancel"></a>
+                </div>
+                <input th:each="parameter : ${parameters}" type="hidden" th:name="${parameter.key}"
+                       th:value="${parameter.value}"/>
             </div>
-
-        </div>
-        <input th:each="parameter : ${parameters}" type="hidden" th:name="${parameter.key}"
-               th:value="${parameter.value}"/>
-
-        <div class="actions">
-            <button class="cancel" name="no" value="no" type="submit">Cancel</button>
-            <button name="yes" value="yes" type="submit">Allow</button>
         </div>
     </form>
+    <div class="footer">
+        <div class="inner-footer">
+            <a th:if="${lang == 'en'}" href="/nl" onclick="switchLang('nl'); return false;">NL</a>
+            <a th:if="${lang == 'en'}" class="active" href="#" onclick="return false;">EN</a>
 
+            <a th:if="${lang == 'nl'}" class="active" href="#" onclick="return false;">NL</a>
+            <a th:if="${lang == 'nl'}" href="/en" onclick="switchLang('en');return false;">EN</a>
+        </div>
+    </div>
+
+</div>
+<div class="modal" id="modal-one" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h1 th:text="#{footerTitle}"></h1>
+        </div>
+        <div class="modal-body">
+            <p class="modal-text" th:utext="#{modelIntro}">
+            </p>
+            <p class="modal-text" th:utext="#{modelSub}"></p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" th:text="#{close}" class="button cancel"></a>
+        </div>
+    </div>
 </div>
 </body>
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    var toggleHide = function (el, other) {
-      el.addEventListener("click", function (e) {
-        e.stopPropagation();
-        e.preventDefault();
-        el.classList.toggle("hide");
-        document.getElementById("attributes").classList.toggle("hide");
-        document.getElementById(other).classList.toggle("hide");
-        return false;
-      });
-    }
-    toggleHide(document.getElementById("show"), "hide");
-    toggleHide(document.getElementById("hide"), "show");
-  });
 
   function switchLang(lang) {
-    var searchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams(window.location.search);
     searchParams.set("lang", lang);
     window.location.search = searchParams.toString();
-
   }
+
 </script>
 </html>

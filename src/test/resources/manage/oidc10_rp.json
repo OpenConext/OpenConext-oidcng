@@ -21,6 +21,7 @@
         "name:nl": "OpenConext Mock SP",
         "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
         "clientSecretJWT": "very-long-long-long-long-long-secret",
+        "logo:0:url": "https://static.surfconext.nl/logos/idp/tue.png",
         "redirectUrls": [
           "http://localhost:3006/redirect",
           "http://localhost:3006/oidc/api/redirect"
@@ -28,6 +29,11 @@
         "scopes": [
           {
             "name": "groups",
+            "titles": {
+              "en": "English title",
+              "nl": "NL titel",
+              "pt": "pt"
+            },
             "descriptions": {
               "en": "English description",
               "nl": "nl",
@@ -36,6 +42,11 @@
           },
           {
             "name": "openid",
+            "titles": {
+              "en": "English title",
+              "nl": "Dutch title",
+              "pt": "pt"
+            },
             "descriptions": {
               "en": "English description vhvhgv",
               "nl": "nl",
@@ -46,6 +57,13 @@
             "name": "weird",
             "descriptions": {
               "en": "Weird"
+            }
+          },
+          {
+            "name": "https://voot.surfconext.nl/groups",
+            "descriptions": {
+              "en": "Request and receive all your group membership information",
+              "nl": " Vraag en ontvang al je groepslidmaatschappen informatie"
             }
           }
         ],
@@ -116,12 +134,20 @@
       "state": "testaccepted",
       "allowedall": true,
       "metaDataFields": {
-        "coin:institution_guid" :"ad93daef-0911-e511-80d0-005056956c1a",
+        "coin:institution_guid": "ad93daef-0911-e511-80d0-005056956c1a",
+        "logo:0:url": "https://static.surfconext.nl/logos/idp/uu.png",
         "name:en": "ResourceServer",
         "name:nl": "ResourceServer",
         "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
         "scopes": [
-          "openid", "groups"
+          {
+            "name": "groups",
+            "descriptions": {
+              "en": "English description",
+              "nl": "nl",
+              "pt": "pt"
+            }
+          }
         ],
         "grants": [
           "client_credentials"
@@ -153,16 +179,21 @@
         {
           "name": "mock-sp"
         }
-
       ],
       "metaDataFields": {
         "name:en": "Playground Client",
         "name:nl": "Playground Client",
         "secret": "$2a$10$oR7n6HSPjTPlNxkUAlk9a.fVRyU0LPihrjghWQ39Z8ICdtrnwnhIa",
         "clientSecretJWT": "very-long-long-long-long-long-secret",
+        "logo:0:url": "https://static.surfconext.nl/logos/idp/wur.png",
         "scopes": [
           {
             "name": "openid",
+            "titles": {
+              "en": "Account information EN",
+              "nl": "Account information NL",
+              "pt": "pt"
+            },
             "descriptions": {
               "en": "See all your account information.",
               "nl": "nl",
@@ -171,6 +202,11 @@
           },
           {
             "name": "groups",
+            "titles": {
+              "en": "GroupsEN",
+              "nl": "Groups NL",
+              "pt": "pt"
+            },
             "descriptions": {
               "en": "Have access to all your group memberships.",
               "nl": "nl",
@@ -192,7 +228,7 @@
         "refreshTokenValidity": 3600,
         "isResourceServer": "1",
         "isPublicClient": "1",
-        "oidc:signingCertificateUrl": "http://localhost:8081/oidc/api/certs",
+        "oidc:signingCertificateUrl": "http://localhost:8079/oidc/api/certs",
         "oidc:consentRequired": true
       }
     }

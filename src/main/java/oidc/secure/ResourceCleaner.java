@@ -29,8 +29,9 @@ import java.util.stream.Collectors;
 @Component
 public class ResourceCleaner {
 
-    private static final Log LOG = LogFactory.getLog(ResourceCleaner.class);
+    private static Log LOG = LogFactory.getLog(ResourceCleaner.class);
 
+    private KeyRollover keyRollover;
     private AccessTokenRepository accessTokenRepository;
     private RefreshTokenRepository refreshTokenRepository;
     private AuthorizationCodeRepository authorizationCodeRepository;
@@ -47,6 +48,7 @@ public class ResourceCleaner {
                            UserRepository userRepository,
                            UserConsentRepository userConsentRepository,
                            AuthenticationRequestRepository authenticationRequestRepository,
+                           KeyRollover keyRollover,
                            @Value("${cron.consent-expiry-duration-days}") long consentExpiryDurationDays,
                            @Value("${cron.node-cron-job-responsible}") boolean cronJobResponsible) {
         this.accessTokenRepository = accessTokenRepository;
@@ -57,6 +59,7 @@ public class ResourceCleaner {
         this.consentExpiryDurationDays = consentExpiryDurationDays;
         this.userConsentRepository = userConsentRepository;
         this.cronJobResponsible = cronJobResponsible;
+        this.keyRollover = keyRollover;
     }
 
     @Scheduled(cron = "${cron.token-cleaner-expression}")
@@ -75,6 +78,9 @@ public class ResourceCleaner {
 
         Date userConsentExpiryDate = Date.from(now.toInstant().minus(consentExpiryDurationDays, ChronoUnit.DAYS).atZone(ZoneId.systemDefault()).toInstant());
         info(UserConsent.class, userConsentRepository.deleteByLastAccessedBefore(userConsentExpiryDate));
+
+        keyRollover.cleanUpSigningKeys();
+        keyRollover.cleanUpSymmetricKeys();
     }
 
     private void info(Class clazz, long count) {

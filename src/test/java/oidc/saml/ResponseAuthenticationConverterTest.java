@@ -29,6 +29,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
@@ -59,7 +60,7 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
         when(authenticationRequestRepository.findById(anyString())).thenReturn(Optional.of(
                 new AuthenticationRequest("id", new Date(), "clientId", "http://some")));
 
-        OidcSamlAuthentication oidcSamlAuthentication = doLogin();
+        OidcSamlAuthentication oidcSamlAuthentication = doLogin("saml/authn_response.xml");
         String sub = oidcSamlAuthentication.getUser().getSub();
         assertEquals("270E4CB4-1C2A-4A96-9AD3-F28C39AD1110", sub);
     }
@@ -70,11 +71,23 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
                 new AuthenticationRequest("id", new Date(), "clientId", "http://some")));
         when(userRepository.findOptionalUserBySub(anyString())).thenReturn(Optional.of(user("key")));
 
-        doLogin();
+        doLogin("saml/authn_response.xml");
     }
 
-    private OidcSamlAuthentication doLogin() throws IOException, UnmarshallingException, XMLParserException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        InputStream inputStream = new ClassPathResource("saml/authn_response.xml").getInputStream();
+    @Test
+    public void loginWithNoAuthnContext() throws XMLParserException, UnmarshallingException, IOException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        when(authenticationRequestRepository.findById(anyString())).thenReturn(Optional.of(
+                new AuthenticationRequest("id", new Date(), "clientId", "http://some")));
+
+        OidcSamlAuthentication oidcSamlAuthentication = doLogin("saml/no_authn_context_response.xml");
+        List<String> acrClaims = oidcSamlAuthentication.getUser().getAcrClaims();
+
+        assertEquals(1,acrClaims.size());
+        assertEquals("urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified", acrClaims.get(0));
+    }
+
+    private OidcSamlAuthentication doLogin(String path) throws IOException, UnmarshallingException, XMLParserException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
+        InputStream inputStream = new ClassPathResource(path).getInputStream();
         String saml2Response = IOUtils.toString(inputStream, Charset.defaultCharset());
         Response response = unmarshall(saml2Response);
 

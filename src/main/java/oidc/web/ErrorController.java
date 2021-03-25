@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -123,15 +124,9 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         return error.getMessage();
     }
 
-    private String errorMessage(Throwable error) {
-        if (error == null) {
-            return "Unknown exception occurred";
-        }
-        String message = error.getMessage();
-        if (StringUtils.isEmpty(message)) {
-            return "Unknown exception occurred";
-        }
-        return message.replaceAll("\"", "");
+    private String errorMessage(Throwable error) throws UnsupportedEncodingException {
+        String errorMsg = error != null ? error.getMessage() : "Unknown exception occurred";
+        return URLEncoder.encode(errorMsg.replaceAll("\"", ""), "UTF-8");
     }
 
     private Object redirectErrorResponse(Map<String, String[]> parameterMap, Map<String, Object> result, Throwable error, String redirectUri) throws UnsupportedEncodingException {
@@ -185,8 +180,7 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
 
         HttpHeaders headers = new HttpHeaders();
         headers.setLocation(uri);
-        HttpStatus statusCode = HttpStatus.FOUND;
-        return new ResponseEntity<>(result, headers, statusCode);
+        return new ResponseEntity<>(result, headers, HttpStatus.FOUND);
     }
 
     private String defaultValue(Map<String, String[]> parameterMap, String key, String defaultValue) {

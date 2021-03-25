@@ -17,6 +17,7 @@ import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class UserInfoEndpointTest extends AbstractIntegrationTest {
 
@@ -128,6 +129,7 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
     private void assertResponse(Response response) {
         Map<String, Object> result = response.as(mapTypeRef);
         assertEquals("john.doe@example.org", result.get("email"));
-        assertEquals(true, result.containsKey("sub"));
+        assertTrue( result.containsKey("sub"));
+        assertTrue(result.containsKey("acr"));
     }
 }

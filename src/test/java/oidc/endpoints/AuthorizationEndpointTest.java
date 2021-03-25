@@ -12,14 +12,11 @@ import oidc.AbstractIntegrationTest;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
 import oidc.model.User;
-import oidc.model.UserConsent;
 import oidc.secure.SignedJWTTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -90,7 +87,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void authorizeWithNoImplicitGrant() throws IOException {
-        Response response = doAuthorizeWithClaimsAndScopes("mock-rp", "token", "fragment", "nonce", null, Collections.emptyList(), "groups", "state");
+        Response response = doAuthorizeWithClaimsAndScopes("mock-rp", "token id_token", "fragment", "nonce", null, Collections.emptyList(), "openid", "state");
         Map<String, Object> result = response.as(mapTypeRef);
         assertEquals("Grant types [authorization_code] does not allow for implicit / hybrid flow", result.get("message"));
         assertEquals(401, result.get("status"));
@@ -205,7 +202,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 .then()
                 .statusCode(401)
                 .body(containsString("example"))
-                .body(containsString("not allowed"));
+                .body(containsString("not+allowed"));
     }
 
     @Test
@@ -344,27 +341,9 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
 
     @Test
-    @Ignore
     public void consent() throws IOException {
-        doConsent();
-        //consent only once
-        String code = doAuthorizeWithScopes("playground_client", "code", ResponseMode.QUERY.getValue(), "openid");
-        Map<String, Object> body = doToken(code, "playground_client", "secret", GrantType.AUTHORIZATION_CODE);
-
-        assertTrue(body.containsKey("access_token"));
-
-        //consent again if hash changes
-        UserConsent userConsent = mongoTemplate.findAll(UserConsent.class).get(0).updateHash(new User("nope", "unspecifiedNameId", "authenticatingAuthority", "clientId",
-                Collections.emptyMap(), Collections.emptyList()), Collections.singletonList("openid"));
-        mongoTemplate.save(userConsent);
-        doConsent();
-
-        userConsent = mongoTemplate.findAll(UserConsent.class).get(0);
-        assertEquals("[openid]", userConsent.getScopes().toString());
-    }
-
-    private void doConsent() throws IOException {
-        Response response = doAuthorize("playground_client", "code", ResponseMode.QUERY.getValue(), "nonce", null);
+        Response response = doAuthorizeWithClaimsAndScopes("playground_client", "code", ResponseMode.QUERY.getValue(), "nonce", null,
+                Collections.emptyList(), "https://voot.surfconext.nl/groups groups", "state");
         String html = response.getBody().asString();
         assertTrue(html.contains("<form method=\"post\" action=\"/oidc/consent\">"));
 
