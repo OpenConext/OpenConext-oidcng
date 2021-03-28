@@ -18,11 +18,6 @@ public class OpenIDClientRepositoryTest extends AbstractIntegrationTest {
     @Autowired
     private OpenIDClientRepository subject;
 
-    @Test(expected = EmptyResultDataAccessException.class)
-    public void findByClientId() {
-        subject.findByClientId("nope");
-    }
-
     @Test
     public void findByClientIdIn() {
         assertEquals(3, subject.findByClientIdIn(

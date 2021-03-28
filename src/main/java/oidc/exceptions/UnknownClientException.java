@@ -4,16 +4,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(HttpStatus.UNAUTHORIZED)
-public class UnauthorizedException extends BaseException {
+public class UnknownClientException extends BaseException {
 
-    public UnauthorizedException(String message) {
-        super(message);
+    public UnknownClientException() {
+        super("ClientID or secret is not correct ");
     }
 
     @Override
     public String getErrorCode() {
-        return "access_denied";
+        return "unauthorized";
     }
-
-
 }

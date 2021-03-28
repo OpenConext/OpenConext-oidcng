@@ -11,8 +11,6 @@ import java.util.Set;
 @Repository
 public interface OpenIDClientRepository extends MongoRepository<OpenIDClient, String> {
 
-    OpenIDClient findByClientId(String clientId);
-
     Optional<OpenIDClient> findOptionalByClientId(String clientId);
 
     List<OpenIDClient> findByClientIdIn(List<String> clientIdentifiers);

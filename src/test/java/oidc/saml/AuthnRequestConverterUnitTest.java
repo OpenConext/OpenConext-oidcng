@@ -16,6 +16,8 @@ import org.springframework.security.web.savedrequest.RequestCache;
 
 import javax.servlet.http.HttpServletRequest;
 
+import java.util.Optional;
+
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -41,7 +43,7 @@ public class AuthnRequestConverterUnitTest extends AbstractSamlUnitTest implemen
         OpenIDClient openIDClient = new OpenIDClient("clientId", singletonList("http://redirect"), singletonList(new Scope("openid")), singletonList("authorization_code"));
         String cert = readFile("keys/certificate.crt");
         setCertificateFields(openIDClient, cert, null, null);
-        when(openIDClientRepository.findByClientId("mock_sp")).thenReturn(openIDClient);
+        when(openIDClientRepository.findOptionalByClientId("mock_sp")).thenReturn(Optional.of(openIDClient));
 
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "http://localhost/oidc/authorize");
         request.addParameter("client_id", "mock_sp");
@@ -70,7 +72,7 @@ public class AuthnRequestConverterUnitTest extends AbstractSamlUnitTest implemen
     @Test
     public void testSamlForceAuthn() throws Exception {
         OpenIDClient openIDClient = new OpenIDClient("clientId", singletonList("http://redirect"), singletonList(new Scope("openid")), singletonList("authorization_code"));
-        when(openIDClientRepository.findByClientId("mock_sp")).thenReturn(openIDClient);
+        when(openIDClientRepository.findOptionalByClientId("mock_sp")).thenReturn(Optional.of(openIDClient));
 
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "http://localhost/oidc/authorize");
 

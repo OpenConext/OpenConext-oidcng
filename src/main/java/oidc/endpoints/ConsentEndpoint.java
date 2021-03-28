@@ -1,5 +1,6 @@
 package oidc.endpoints;
 
+import oidc.exceptions.UnknownClientException;
 import oidc.model.OpenIDClient;
 import oidc.repository.OpenIDClientRepository;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -23,8 +24,8 @@ public class ConsentEndpoint {
 
     @GetMapping("/consent")
     public ModelAndView consent() {
-        OpenIDClient rs = openIDClientRepository.findByClientId("mock-sp");
-        OpenIDClient client = openIDClientRepository.findByClientId("playground_client");
+        OpenIDClient rs = openIDClientRepository.findOptionalByClientId("mock-sp").orElseThrow(UnknownClientException::new);
+        OpenIDClient client = openIDClientRepository.findOptionalByClientId("playground_client").orElseThrow(UnknownClientException::new);
         Map<String, Object> body = new HashMap<>();
         body.put("resourceServers", Arrays.asList(rs));
         body.put("client", client);

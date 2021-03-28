@@ -19,6 +19,7 @@ import oidc.crypto.KeyGenerator;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.InvalidScopeException;
 import oidc.exceptions.RedirectMismatchException;
+import oidc.exceptions.UnknownClientException;
 import oidc.exceptions.UnsupportedPromptValueException;
 import oidc.log.MDCContext;
 import oidc.model.AccessToken;
@@ -31,7 +32,6 @@ import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.OpenIDClientRepository;
-import oidc.repository.UserConsentRepository;
 import oidc.repository.UserRepository;
 import oidc.secure.JWTRequest;
 import oidc.secure.TokenGenerator;
@@ -143,7 +143,9 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         Scope scope = authenticationRequest.getScope();
         boolean isOpenIdClient = scope != null && isOpenIDRequest(scope.toStringList());
 
-        OpenIDClient client = openIDClientRepository.findByClientId(authenticationRequest.getClientID().getValue());
+        OpenIDClient client = openIDClientRepository
+                .findOptionalByClientId(authenticationRequest.getClientID().getValue())
+                .orElseThrow(UnknownClientException::new);
         MDCContext.mdcContext("action", "Authorize", "rp", client.getClientId());
         if (isOpenIdClient) {
             AuthenticationRequest oidcAuthenticationRequest = AuthenticationRequest.parse(parameters);
@@ -168,7 +170,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             boolean apiScopeRequested = !(scopeList.size() == 0 || (scopeList.size() == 1 && scopeList.contains("openid")));
             Set<String> filteredScopes = scopeList.stream()
                     .filter(s -> !s.equalsIgnoreCase("openid"))
-                    .map(s -> s.toLowerCase())
+                    .map(String::toLowerCase)
                     .collect(toSet());
             List<OpenIDClient> resourceServers = openIDClientRepository.findByScopes_NameIn(filteredScopes);
             Prompt prompt = authenticationRequest.getPrompt();

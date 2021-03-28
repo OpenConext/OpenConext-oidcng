@@ -9,6 +9,7 @@ import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import oidc.eduid.AttributePseudonymisation;
 import oidc.exceptions.UnauthorizedException;
+import oidc.exceptions.UnknownClientException;
 import oidc.log.MDCContext;
 import oidc.model.AccessToken;
 import oidc.model.OpenIDClient;
@@ -76,7 +77,7 @@ public class IntrospectEndpoint extends SecureEndpoint {
             LOG.warn("No authentication present");
             throw new UnauthorizedException("Invalid user / secret");
         }
-        OpenIDClient resourceServer = openIDClientRepository.findByClientId(clientAuthentication.getClientID().getValue());
+        OpenIDClient resourceServer = openIDClientRepository.findOptionalByClientId(clientAuthentication.getClientID().getValue()).orElseThrow(UnknownClientException::new);
         MDCContext.mdcContext("action", "Introspect", "rp", resourceServer.getClientId(), "accessTokenValue", accessTokenValue);
 
         if (!secretsMatch((PlainClientSecret) clientAuthentication, resourceServer)) {
@@ -111,7 +112,8 @@ public class IntrospectEndpoint extends SecureEndpoint {
         boolean isUserAccessToken = !accessToken.isClientCredentials();
 
         if (isUserAccessToken) {
-            OpenIDClient openIDClient = openIDClientRepository.findByClientId(accessToken.getClientId());
+            OpenIDClient openIDClient = openIDClientRepository.findOptionalByClientId(accessToken.getClientId())
+                    .orElseThrow(UnknownClientException::new);
             if (!openIDClient.getClientId().equals(resourceServer.getClientId()) &&
                     !openIDClient.getAllowedResourceServers().contains(resourceServer.getClientId())) {
                 throw new UnauthorizedException(

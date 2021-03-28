@@ -29,6 +29,7 @@ import oidc.exceptions.JWTAuthorizationGrantsException;
 import oidc.exceptions.RedirectMismatchException;
 import oidc.exceptions.TokenAlreadyUsedException;
 import oidc.exceptions.UnauthorizedException;
+import oidc.exceptions.UnknownClientException;
 import oidc.log.MDCContext;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
@@ -132,7 +133,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
             throw new CodeVerifierMissingException("code_verifier required without client authentication");
         }
         String clientId = clientAuthentication != null ? clientAuthentication.getClientID().getValue() : tokenRequest.getClientID().getValue();
-        OpenIDClient client = openIDClientRepository.findByClientId(clientId);
+        OpenIDClient client = openIDClientRepository.findOptionalByClientId(clientId).orElseThrow(UnknownClientException::new);
 
         if (clientAuthentication == null && !client.isPublicClient()) {
             throw new UnauthorizedException("Non-public client requires authentication");
