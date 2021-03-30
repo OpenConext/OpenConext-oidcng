@@ -2,7 +2,7 @@ logging:
   level:
     root: OFF
     org.springframework: OFF
-    oidc: INFO
+    oidc: DEBUG
 
 cron:
   node-cron-job-responsible: true
