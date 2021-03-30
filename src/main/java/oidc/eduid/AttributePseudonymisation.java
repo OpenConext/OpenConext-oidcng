@@ -63,16 +63,17 @@ public class AttributePseudonymisation {
         boolean eduIdMissing = StringUtils.isEmpty(eduId);
         boolean resourceServerEquals = resourceServer.getClientId().equals(openIDClient.getClientId());
 
-        LOG.debug(String.format("Starting to pseudonymise for RS %s and openIDclient %s. Enabled is %s, eduIdMissing is %s, resourceServerEquals is %s",
-                resourceServer.getClientId(), openIDClient.getClientId(), enabled, eduIdMissing, resourceServerEquals));
-        if (!enabled || eduIdMissing || resourceServerEquals) {
+        LOG.debug(String.format("Starting to pseudonymise for RS %s and openIDclient %s. " +
+                        "Enabled is %s, eduIdMissing is %s, resourceServerEquals is %s, uids  is %s",
+                resourceServer.getClientId(), openIDClient.getClientId(), enabled, eduIdMissing, resourceServerEquals, uids));
+
+        if (!enabled || eduIdMissing || resourceServerEquals || CollectionUtils.isEmpty(uids)) {
+            LOG.debug("Returning empty result for 'pseudonymise'");
             return Optional.empty();
         }
         Map<String, String> result = new HashMap<>();
         HttpEntity<?> requestEntity = new HttpEntity<>(headers);
-        if (CollectionUtils.isEmpty(uids)) {
-            throw new IllegalArgumentException("Required user attribute 'uids' not presen");
-        }
+
         String uriString = UriComponentsBuilder.fromUri(eduIdUri)
                 .queryParam("uid", uids.get(0))
                 .queryParam("sp_entity_id", resourceServer.getClientId())
