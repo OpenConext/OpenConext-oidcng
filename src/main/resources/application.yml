@@ -59,6 +59,8 @@ spring:
       uri: mongodb://127.0.0.1:27017/${mongodb_db}
   thymeleaf:
     cache: false
+  main:
+    banner-mode: off
 
 manage:
   user: oidcng
