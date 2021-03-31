@@ -43,7 +43,7 @@ public class AttributePseudonymisationTest extends AbstractIntegrationTest {
 
         OpenIDClient resourceServer = openIDClient("resource-server-playground-client");
         OpenIDClient openIDClient = openIDClient("mock-sp");
-        Map<String, String> pseudonymisedAttributes = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, "rs-eduid", Collections.singletonList("uid")).get();
+        Map<String, String> pseudonymisedAttributes = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, "rs-eduid").get();
 
         assertEquals(pseudoEduid, pseudonymisedAttributes.get("eduid"));
         assertEquals(eduPersonPrincipalName, pseudonymisedAttributes.get("eduperson_principal_name"));
@@ -60,7 +60,7 @@ public class AttributePseudonymisationTest extends AbstractIntegrationTest {
 
         OpenIDClient resourceServer = openIDClient("mock-sp");
         OpenIDClient openIDClient = openIDClient("playground_client");
-        Map<String, String> pseudonymisedAttributes = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, "rs-eduid", Collections.singletonList("uid")).get();
+        Map<String, String> pseudonymisedAttributes = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, "rs-eduid").get();
 
         assertEquals(pseudoEduid, pseudonymisedAttributes.get("eduid"));
     }
@@ -68,7 +68,7 @@ public class AttributePseudonymisationTest extends AbstractIntegrationTest {
     @Test
     public void pseudonymiseRpIsRs() throws IOException {
         OpenIDClient resourceServer = openIDClient("resource-server-playground-client");
-        Optional<Map<String, String>> pseudonymisedAttributes = attributePseudonymisation.pseudonymise(resourceServer, resourceServer, "rs-eduid", Collections.singletonList("uid"));
+        Optional<Map<String, String>> pseudonymisedAttributes = attributePseudonymisation.pseudonymise(resourceServer, resourceServer, "rs-eduid");
 
         assertFalse(pseudonymisedAttributes.isPresent());
     }
@@ -78,7 +78,7 @@ public class AttributePseudonymisationTest extends AbstractIntegrationTest {
     public void pseudonymiseNoEduid() throws IOException {
         OpenIDClient resourceServer = openIDClient("resource-server-playground-client");
         OpenIDClient openIDClient = openIDClient("mock-sp");
-        Optional<Map<String, String>> pseudonymisedAttributes = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, null, Collections.singletonList("uid"));
+        Optional<Map<String, String>> pseudonymisedAttributes = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, null);
 
         assertFalse(pseudonymisedAttributes.isPresent());
     }
@@ -92,7 +92,7 @@ public class AttributePseudonymisationTest extends AbstractIntegrationTest {
 
         OpenIDClient resourceServer = openIDClient("resource-server-playground-client");
         OpenIDClient openIDClient = openIDClient("mock-sp");
-        Optional<Map<String, String>> pseudonymisedAttributes = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, "rs-eduid", Collections.singletonList("uid"));
+        Optional<Map<String, String>> pseudonymisedAttributes = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, "rs-eduid");
 
         assertFalse(pseudonymisedAttributes.isPresent());
     }

@@ -55,19 +55,17 @@ public class AttributePseudonymisation {
      *
      * @param resourceServer the API owner RS
      * @param openIDClient   the owner of the access token who is calling an API endpoint of the resourceServer
-     * @param eduId          the user eduID
-     * @param uids           the user identifiers
+     * @param eduId          the user eduID scoped for openIDClient
      * @return the manipulated attributes
      */
-    public Optional<Map<String, String>> pseudonymise(OpenIDClient resourceServer, OpenIDClient openIDClient, String eduId, List<String> uids) {
-        boolean eduIdMissing = StringUtils.isEmpty(eduId);
+    public Optional<Map<String, String>> pseudonymise(OpenIDClient resourceServer, OpenIDClient openIDClient, String eduId) {
         boolean resourceServerEquals = resourceServer.getClientId().equals(openIDClient.getClientId());
 
         LOG.debug(String.format("Starting to pseudonymise for RS %s and openIDclient %s. " +
-                        "Enabled is %s, eduIdMissing is %s, resourceServerEquals is %s, uids  is %s",
-                resourceServer.getClientId(), openIDClient.getClientId(), enabled, eduIdMissing, resourceServerEquals, uids));
+                        "Enabled is %s, eduId is %s, resourceServerEquals is %s",
+                resourceServer.getClientId(), openIDClient.getClientId(), enabled, eduId, resourceServerEquals));
 
-        if (!enabled || eduIdMissing || resourceServerEquals || CollectionUtils.isEmpty(uids)) {
+        if (!enabled || StringUtils.isEmpty(eduId) || resourceServerEquals) {
             LOG.debug("Returning empty result for 'pseudonymise'");
             return Optional.empty();
         }
@@ -75,7 +73,7 @@ public class AttributePseudonymisation {
         HttpEntity<?> requestEntity = new HttpEntity<>(headers);
 
         String uriString = UriComponentsBuilder.fromUri(eduIdUri)
-                .queryParam("uid", uids.get(0))
+                .queryParam("eduid", eduId)
                 .queryParam("sp_entity_id", resourceServer.getClientId())
                 .queryParam("sp_institution_guid", resourceServer.getInstitutionGuid())
                 .toUriString();
