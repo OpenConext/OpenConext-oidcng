@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static oidc.model.EntityType.OAUTH_RS;
+import static oidc.model.EntityType.OIDC_RP;
+
 @RestController
 public class MetadataController {
 
@@ -38,7 +41,7 @@ public class MetadataController {
         LOG.debug("Starting to provision OIDC clients from push: " + name);
 
         List<OpenIDClient> newClients = connections.stream()
-                .filter(connection -> connection.get("type").equals("oidc10_rp") || connection.get("type").equals("oauth20_rs"))
+                .filter(connection -> connection.get("type").equals(OIDC_RP.getType()) || connection.get("type").equals(OAUTH_RS.getType()))
                 .map(OpenIDClient::new)
                 .collect(Collectors.toList());
 

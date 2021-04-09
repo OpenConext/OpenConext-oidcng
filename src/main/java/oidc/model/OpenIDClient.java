@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static oidc.manage.ServiceProviderTranslation.translateServiceProviderEntityId;
+import static oidc.model.EntityType.OAUTH_RS;
 
 @Getter
 @Document(collection = "clients")
@@ -76,7 +77,7 @@ public class OpenIDClient {
         this.grants = (List) metaDataFields.getOrDefault("grants", Collections.singletonList("authorization_code"));
         this.allowedResourceServers = ((List<Map<String, String>>) data.getOrDefault("allowedResourceServers", new ArrayList<>()))
                 .stream().map(e -> e.get("name")).collect(Collectors.toList());
-        this.resourceServer = parseBoolean(metaDataFields.get("isResourceServer"));
+        this.resourceServer = parseBoolean(metaDataFields.get("isResourceServer")) || root.get("type").equals(OAUTH_RS.getType());
         this.scopes = (List<Scope>) ((List) metaDataFields.getOrDefault("scopes", new ArrayList<>())).stream()
                 .map(val -> val instanceof String ? new Scope((String) val) : new Scope((Map<String, Object>) val))
                 .collect(Collectors.toList());
