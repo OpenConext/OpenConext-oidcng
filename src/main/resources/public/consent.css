@@ -21,7 +21,7 @@ div.top-header {
 div.top-header h1 {
     font-size: 1.375rem;
     font-weight: 600;
-    color: #b3e5ff;
+    color: #004c97;
 }
 
 div.header {
@@ -86,7 +86,11 @@ div.permission-container h2 {
     font-size: 1.625rem;
     font-weight: 600;
     line-height: 1.15;
-    margin: 1.5rem 0 2.125rem;
+    margin: 1.5rem 0 1.5rem 0;
+}
+
+div.permission-container p.consent-info {
+    margin-bottom: 1.125rem;;
 }
 
 div.grant {
