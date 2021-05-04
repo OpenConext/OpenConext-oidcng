@@ -61,6 +61,8 @@ public class RedirectAuthenticationFailureHandler implements AuthenticationFailu
             OpenIDClient openIDClient = openIDClientRepository.findOptionalByClientId(clientId).orElseThrow(UnknownClientException::new);
             AuthorizationEndpoint.validateRedirectionURI(redirectURI, openIDClient);
             request.setAttribute(REDIRECT_URI_VALID, true);
+        } else {
+            request.setAttribute(REDIRECT_URI_VALID, true);
         }
         //Will be picked up by the ErrorController
         throw exception;

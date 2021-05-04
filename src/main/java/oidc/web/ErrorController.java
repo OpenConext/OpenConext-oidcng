@@ -94,6 +94,11 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
 
         SavedRequest savedRequest = requestCache.getRequest(request, null);
         boolean redirect = false;
+
+        if (savedRequest == null) {
+            LOG.warn("No saved request found. Check the cookie flow");
+        }
+
         if (savedRequest instanceof DefaultSavedRequest) {
             parameterMap = savedRequest.getParameterMap();
             String requestURI = ((DefaultSavedRequest) savedRequest).getRequestURI();
@@ -106,7 +111,6 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
 
         if (redirectUriValid != null && (boolean) redirectUriValid &&
                 (statusCode.is3xxRedirection() || redirect || StringUtils.hasText(redirectUri))) {
-
             return redirectErrorResponse(parameterMap, result, error, redirectUri);
         }
         return new ResponseEntity<>(result, statusCode);
