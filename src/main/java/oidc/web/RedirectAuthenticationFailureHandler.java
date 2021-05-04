@@ -6,8 +6,10 @@ import oidc.exceptions.UnknownClientException;
 import oidc.model.OpenIDClient;
 import oidc.repository.OpenIDClientRepository;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.saml2.core.Saml2Error;
+import org.springframework.security.saml2.core.Saml2ErrorCodes;
+import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
@@ -61,10 +63,20 @@ public class RedirectAuthenticationFailureHandler implements AuthenticationFailu
             OpenIDClient openIDClient = openIDClientRepository.findOptionalByClientId(clientId).orElseThrow(UnknownClientException::new);
             AuthorizationEndpoint.validateRedirectionURI(redirectURI, openIDClient);
             request.setAttribute(REDIRECT_URI_VALID, true);
-        } else {
-            request.setAttribute(REDIRECT_URI_VALID, true);
         }
-        //Will be picked up by the ErrorController
+        /*
+         * Will be picked up by the ErrorController. Do note that if the user has stepped up his account in eduID, then
+         * the initial session is no longer around. Ideally we would have access to the SAML response to get the
+         * original authentication request, but there is no hook for this.
+         * See https://github.com/spring-projects/spring-security/issues/9718
+         */
+        if (exception instanceof Saml2AuthenticationException) {
+            throw new Saml2AuthenticationException(
+                    new Saml2Error(Saml2ErrorCodes.INTERNAL_VALIDATION_ERROR,
+                            "The requesting service has indicated that the authenticated user is required to have validated attributes. Your institution has not provided this."),
+                    "The requesting service has indicated that the authenticated user is required to have validated attributes. Your institution has not provided this.",
+                    exception);
+        }
         throw exception;
     }
 }
