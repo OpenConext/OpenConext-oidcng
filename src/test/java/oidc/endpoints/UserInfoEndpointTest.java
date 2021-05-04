@@ -65,7 +65,7 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
                 .as(mapTypeRef);
         assertEquals("UserEndpoint not allowed for Client Credentials", body.get("message"));
 
-        assertEquals(1, listAppender.list.size());
+        assertEquals(2, listAppender.list.size());
     }
 
     @Test
