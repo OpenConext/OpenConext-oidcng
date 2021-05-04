@@ -8,11 +8,15 @@ import oidc.repository.OpenIDClientRepository;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.savedrequest.DefaultSavedRequest;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.util.CollectionUtils;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
@@ -25,6 +29,7 @@ import static oidc.saml.AuthnRequestConverter.REDIRECT_URI_VALID;
 public class RedirectAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
     private final OpenIDClientRepository openIDClientRepository;
+    private RequestCache requestCache = new HttpSessionRequestCache();
 
     public RedirectAuthenticationFailureHandler(OpenIDClientRepository openIDClientRepository) {
         this.openIDClientRepository = openIDClientRepository;
@@ -34,7 +39,14 @@ public class RedirectAuthenticationFailureHandler implements AuthenticationFailu
     @SneakyThrows
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
-        DefaultSavedRequest savedRequest = (DefaultSavedRequest) request.getSession(false).getAttribute("SPRING_SECURITY_SAVED_REQUEST");
+        HttpSession session = request.getSession(false);
+        SavedRequest savedRequest = null;
+        if (session != null) {
+            savedRequest = (SavedRequest) session.getAttribute("SPRING_SECURITY_SAVED_REQUEST");
+        }
+        if (savedRequest == null) {
+            savedRequest = requestCache.getRequest(request, response);
+        }
         if (savedRequest != null) {
             Map<String, String[]> parameterMap = savedRequest.getParameterMap();
             Map<String, List<String>> parameters = parameterMap.keySet().stream()
