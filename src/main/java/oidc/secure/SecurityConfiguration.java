@@ -31,6 +31,7 @@ import oidc.saml.AuthnRequestConverter;
 import oidc.saml.ResponseAuthenticationConverter;
 import oidc.web.ConcurrentSavedRequestAwareAuthenticationSuccessHandler;
 import oidc.web.FakeSamlAuthenticationFilter;
+import oidc.web.RedirectAuthenticationFailureHandler;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -242,6 +243,7 @@ public class SecurityConfiguration {
                         saml2.authenticationManager(new ProviderManager(openSamlAuthenticationProvider));
                         AuthenticationSuccessHandler bean = getApplicationContext().getBean(AuthenticationSuccessHandler.class);
                         saml2.successHandler(bean);
+                        saml2.failureHandler(new RedirectAuthenticationFailureHandler(openIDClientRepository));
                     })
                     .addFilterBefore(new Saml2MetadataFilter(
                             req -> relyingPartyRegistrationRepository().findByRegistrationId("oidcng"),

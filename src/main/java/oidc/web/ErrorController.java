@@ -14,6 +14,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationException;
 import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
@@ -121,11 +122,18 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         if (error instanceof ParseException) {
             return "invalid_request";
         }
+        if (error instanceof Saml2AuthenticationException) {
+            return "access_denied";
+        }
         return error.getMessage();
     }
 
     private String errorMessage(Throwable error) throws UnsupportedEncodingException {
         String errorMsg = error != null ? error.getMessage() : "Unknown exception occurred";
+        if (error instanceof Saml2AuthenticationException) {
+            //Remove this after the 5.5 release of Spring Security
+            errorMsg = "The requesting service has indicated that the authenticated user is required to have validated attributes. Your institution has not provided this.";
+        }
         return URLEncoder.encode(errorMsg.replaceAll("\"", ""), "UTF-8");
     }
 
