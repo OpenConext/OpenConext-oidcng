@@ -60,7 +60,8 @@ public class RedirectAuthenticationFailureHandler implements AuthenticationFailu
             List<String> clientIds = parameters.get("client_id");
             String clientId = CollectionUtils.isEmpty(clientIds) ? null : clientIds.get(0);
 
-            OpenIDClient openIDClient = openIDClientRepository.findOptionalByClientId(clientId).orElseThrow(UnknownClientException::new);
+            OpenIDClient openIDClient = openIDClientRepository.findOptionalByClientId(clientId)
+                    .orElseThrow(() -> new UnknownClientException(clientId));
             AuthorizationEndpoint.validateRedirectionURI(redirectURI, openIDClient);
             request.setAttribute(REDIRECT_URI_VALID, true);
         }

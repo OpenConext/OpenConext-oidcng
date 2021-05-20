@@ -143,9 +143,10 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         Scope scope = authenticationRequest.getScope();
         boolean isOpenIdClient = scope != null && isOpenIDRequest(scope.toStringList());
 
+        String clientId = authenticationRequest.getClientID().getValue();
         OpenIDClient client = openIDClientRepository
-                .findOptionalByClientId(authenticationRequest.getClientID().getValue())
-                .orElseThrow(UnknownClientException::new);
+                .findOptionalByClientId(clientId)
+                .orElseThrow(() -> new UnknownClientException(clientId));
         MDCContext.mdcContext("action", "Authorize", "rp", client.getClientId());
         if (isOpenIdClient) {
             AuthenticationRequest oidcAuthenticationRequest = AuthenticationRequest.parse(parameters);

@@ -122,7 +122,8 @@ public class AuthnRequestConverter implements
         List<String> clientIds = parameters.get("client_id");
         String clientId = CollectionUtils.isEmpty(clientIds) ? null : clientIds.get(0);
 
-        OpenIDClient openIDClient = openIDClientRepository.findOptionalByClientId(clientId).orElseThrow(UnknownClientException::new);
+        OpenIDClient openIDClient = openIDClientRepository.findOptionalByClientId(clientId)
+                .orElseThrow(() -> new UnknownClientException(clientId));
         AuthorizationEndpoint.validateRedirectionURI(redirectURI, openIDClient);
         request.setAttribute(REDIRECT_URI_VALID, true);
 
@@ -193,7 +194,8 @@ public class AuthnRequestConverter implements
         String requestP = param("request", request);
         String requestUrlP = param("request_uri", request);
         if (StringUtils.hasText(requestP) || StringUtils.hasText(requestUrlP)) {
-            OpenIDClient openIDClient = openIDClientRepository.findOptionalByClientId(clientId).orElseThrow(UnknownClientException::new);
+            OpenIDClient openIDClient = openIDClientRepository.findOptionalByClientId(clientId)
+                    .orElseThrow(() -> new UnknownClientException(clientId));
             try {
                 com.nimbusds.openid.connect.sdk.AuthenticationRequest authRequest =
                         com.nimbusds.openid.connect.sdk.AuthenticationRequest.parse(request);

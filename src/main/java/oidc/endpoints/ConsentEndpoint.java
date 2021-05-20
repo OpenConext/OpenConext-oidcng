@@ -24,8 +24,8 @@ public class ConsentEndpoint {
 
     @GetMapping("/consent")
     public ModelAndView consent() {
-        OpenIDClient rs = openIDClientRepository.findOptionalByClientId("mock-sp").orElseThrow(UnknownClientException::new);
-        OpenIDClient client = openIDClientRepository.findOptionalByClientId("playground_client").orElseThrow(UnknownClientException::new);
+        OpenIDClient rs = openIDClientRepository.findOptionalByClientId("mock-sp").orElseThrow(() -> new UnknownClientException("mock-sp"));
+        OpenIDClient client = openIDClientRepository.findOptionalByClientId("playground_client").orElseThrow(() -> new UnknownClientException("playground_client"));
         Map<String, Object> body = new HashMap<>();
         body.put("resourceServers", Arrays.asList(rs));
         body.put("client", client);

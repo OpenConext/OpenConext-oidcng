@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(HttpStatus.UNAUTHORIZED)
 public class UnknownClientException extends BaseException {
 
-    public UnknownClientException() {
-        super("ClientID or secret is not correct ");
+    public UnknownClientException(String clientID) {
+        super(String.format("ClientID %s or secret is not correct ", clientID));
     }
 
     @Override

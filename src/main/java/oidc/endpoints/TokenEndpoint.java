@@ -133,7 +133,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
             throw new CodeVerifierMissingException("code_verifier required without client authentication");
         }
         String clientId = clientAuthentication != null ? clientAuthentication.getClientID().getValue() : tokenRequest.getClientID().getValue();
-        OpenIDClient client = openIDClientRepository.findOptionalByClientId(clientId).orElseThrow(UnknownClientException::new);
+        OpenIDClient client = openIDClientRepository.findOptionalByClientId(clientId).orElseThrow(() -> new UnknownClientException(clientId));
 
         if (clientAuthentication == null && !client.isPublicClient()) {
             throw new UnauthorizedException("Non-public client requires authentication");
