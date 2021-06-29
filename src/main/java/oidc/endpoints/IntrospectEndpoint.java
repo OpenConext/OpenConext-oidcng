@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -130,6 +131,10 @@ public class IntrospectEndpoint extends SecureEndpoint {
             result.put("authenticating_authority", user.getAuthenticatingAuthority());
             result.put("sub", user.getSub());
             result.putAll(user.getAttributes());
+            List<String> acrClaims = user.getAcrClaims();
+            if (!CollectionUtils.isEmpty(acrClaims)) {
+                result.put("acr", String.join(" ", acrClaims));
+            }
 
             boolean validPseudonymisation = validPseudonymisation(result, resourceServer, openIDClient);
             if (!validPseudonymisation && enforceEduidResourceServerLinkedAccount) {
