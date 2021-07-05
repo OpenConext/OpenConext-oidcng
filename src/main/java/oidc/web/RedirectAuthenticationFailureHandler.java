@@ -69,7 +69,7 @@ public class RedirectAuthenticationFailureHandler implements AuthenticationFailu
          * Will be picked up by the ErrorController. Do note that if the user has stepped up his account in eduID, then
          * the initial session is no longer around. Ideally we would have access to the SAML response to get the
          * original authentication request, but there is no hook for this.
-         * See https://github.com/spring-projects/spring-security/issues/9718
+         * See https://github.com/spring-projects/spring-security/issues/9721
          */
         if (exception instanceof Saml2AuthenticationException) {
             throw new Saml2AuthenticationException(
