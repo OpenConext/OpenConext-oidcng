@@ -5,6 +5,7 @@ import net.shibboleth.utilities.java.support.xml.ParserPool;
 import net.shibboleth.utilities.java.support.xml.XMLParserException;
 import oidc.SeedUtils;
 import oidc.model.AuthenticationRequest;
+import oidc.model.User;
 import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.UserRepository;
 import oidc.user.OidcSamlAuthentication;
@@ -61,8 +62,10 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
                 new AuthenticationRequest("id", new Date(), "clientId", "http://some")));
 
         OidcSamlAuthentication oidcSamlAuthentication = doLogin("saml/authn_response.xml");
-        String sub = oidcSamlAuthentication.getUser().getSub();
+        User user = oidcSamlAuthentication.getUser();
+        String sub = user.getSub();
         assertEquals("270E4CB4-1C2A-4A96-9AD3-F28C39AD1110", sub);
+        assertEquals(3, ((List) user.getAttributes().get("eduperson_affiliation")).size());
     }
 
     @Test
@@ -82,7 +85,7 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
         OidcSamlAuthentication oidcSamlAuthentication = doLogin("saml/no_authn_context_response.xml");
         List<String> acrClaims = oidcSamlAuthentication.getUser().getAcrClaims();
 
-        assertEquals(1,acrClaims.size());
+        assertEquals(1, acrClaims.size());
         assertEquals("urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified", acrClaims.get(0));
     }
 

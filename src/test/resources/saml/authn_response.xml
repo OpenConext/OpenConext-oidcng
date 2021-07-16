@@ -91,6 +91,12 @@
                             NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
                 <saml:AttributeValue xsi:type="xs:string">John Doe</saml:AttributeValue>
             </saml:Attribute>
+            <saml:Attribute Name="urn:mace:dir:attribute-def:eduPersonAffiliation"
+                            NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
+                <saml:AttributeValue xsi:type="xs:string">aff1</saml:AttributeValue>
+                <saml:AttributeValue xsi:type="xs:string">aff2</saml:AttributeValue>
+                <saml:AttributeValue xsi:type="xs:string">aff3</saml:AttributeValue>
+            </saml:Attribute>
             <saml:Attribute Name="urn:mace:dir:attribute-def:uid"
                             NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
                 <saml:AttributeValue xsi:type="xs:string">admin</saml:AttributeValue>
