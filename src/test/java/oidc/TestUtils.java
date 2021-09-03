@@ -21,14 +21,14 @@ public interface TestUtils {
         }
     }
 
-    TypeRef<Map<String, Object>> mapTypeRef = new TypeRef<Map<String, Object>>() {
+    TypeRef<Map<String, Object>> mapTypeRef = new TypeRef<>() {
     };
 
     ObjectMapper objectMapper = ObjectMapperWrapper.init();
 
     default List<Map<String, Object>> relyingParties() throws IOException {
         return objectMapper.readValue(new ClassPathResource("manage/oidc10_rp.json").getInputStream(),
-                new TypeReference<List<Map<String, Object>>>() {
+                new TypeReference<>() {
                 });
     }
 

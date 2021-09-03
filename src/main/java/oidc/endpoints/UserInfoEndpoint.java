@@ -86,7 +86,7 @@ public class UserInfoEndpoint {
         }
         attributes.put("updated_at", user.getUpdatedAt());
         attributes.put("sub", user.getSub());
-        return ResponseEntity.ok(new TreeMap(attributes));
+        return ResponseEntity.ok(new TreeMap<>(attributes));
     }
 
     private ResponseEntity<Map<String, Object>> errorResponse(String errorDescription) {

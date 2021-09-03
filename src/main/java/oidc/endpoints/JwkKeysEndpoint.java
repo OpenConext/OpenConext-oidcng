@@ -40,7 +40,8 @@ public class JwkKeysEndpoint implements MapTypeReference {
 
     @GetMapping(value = {"/oidc/certs"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String publishClientJwk() throws GeneralSecurityException, ParseException, IOException {
-        return new JWKSet(tokenGenerator.getAllPublicKeys()).toJSONObject().toString();
+        String s = new JWKSet(tokenGenerator.getAllPublicKeys()).toString();
+        return s;
     }
 
     @GetMapping("oidc/generate-secret-key-set")

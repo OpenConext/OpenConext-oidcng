@@ -26,6 +26,7 @@ import org.opensaml.saml.saml2.core.AuthnStatement;
 import org.opensaml.saml.saml2.core.NameID;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.Resource;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.Saml2Authentication;
 import org.springframework.security.web.authentication.session.SessionAuthenticationException;
@@ -47,7 +48,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
-public class ResponseAuthenticationConverter implements Converter<OpenSamlAuthenticationProvider.ResponseToken, OidcSamlAuthentication> {
+public class ResponseAuthenticationConverter implements Converter<OpenSaml4AuthenticationProvider.ResponseToken, OidcSamlAuthentication> {
 
     private static final Log LOG = LogFactory.getLog(ResponseAuthenticationConverter.class);
     private static final Pattern inResponseToPattern = Pattern.compile("InResponseTo=\"(.+?)\"", Pattern.DOTALL);
@@ -68,8 +69,8 @@ public class ResponseAuthenticationConverter implements Converter<OpenSamlAuthen
     }
 
     @Override
-    public OidcSamlAuthentication convert(OpenSamlAuthenticationProvider.ResponseToken responseToken) {
-        Saml2Authentication authentication = OpenSamlAuthenticationProvider
+    public OidcSamlAuthentication convert(OpenSaml4AuthenticationProvider.ResponseToken responseToken) {
+        Saml2Authentication authentication = OpenSaml4AuthenticationProvider
                 .createDefaultResponseAuthenticationConverter()
                 .convert(responseToken);
         Assertion assertion = responseToken.getResponse().getAssertions().get(0);
@@ -97,10 +98,7 @@ public class ResponseAuthenticationConverter implements Converter<OpenSamlAuthen
             LOG.debug("Provisioning new user : " + user);
             userRepository.insert(user);
         }
-        OidcSamlAuthentication oidcSamlAuthentication =
-                new OidcSamlAuthentication(assertion, user, authenticationRequestID);
-        return oidcSamlAuthentication;
-
+        return new OidcSamlAuthentication(assertion, user, authenticationRequestID);
     }
 
     private User buildUser(Assertion assertion, String authenticationRequestID) {
@@ -164,9 +162,9 @@ public class ResponseAuthenticationConverter implements Converter<OpenSamlAuthen
                 .map(AttributeStatement::getAttributes).flatMap(Collection::stream)
                 .filter(attribute -> attribute.getName().equals(samlAttributeName))
                 .findAny()
-                .map(attribute -> attribute.getAttributeValues().stream().map(xmlObject -> getXmlObjectValue(xmlObject))
+                .map(attribute -> attribute.getAttributeValues().stream().map(this::getXmlObjectValue)
                         .filter(Objects::nonNull)
-                        .map(val -> val.toString())
+                        .map(Object::toString)
                         .collect(toList()));
         return values.orElse(null);
     }

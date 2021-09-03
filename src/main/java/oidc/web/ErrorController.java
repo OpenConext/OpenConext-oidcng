@@ -200,8 +200,4 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         return value != null && value.length > 0 ? value[0] : defaultValue;
     }
 
-    @Override
-    public String getErrorPath() {
-        return null;
-    }
 }

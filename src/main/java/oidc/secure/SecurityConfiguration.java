@@ -45,6 +45,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -55,8 +56,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.saml2.core.Saml2X509Credential;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationRequestFactory;
 import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider;
-import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationRequestFactory;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationRequestFactory;
 import org.springframework.security.saml2.provider.service.metadata.OpenSamlMetadataResolver;
 import org.springframework.security.saml2.provider.service.registration.InMemoryRelyingPartyRegistrationRepository;
@@ -92,19 +94,19 @@ public class SecurityConfiguration {
     @Order(1)
     public static class SamlSecurity extends WebSecurityConfigurerAdapter {
 
-        private String idpEntityId;
-        private String idpSsoLocation;
-        private Resource idpMetadataSigningCertificatePath;
-        private String spEntityId;
-        private String spAcsLocation;
-        private Environment environment;
-        private ObjectMapper objectMapper;
-        private OpenIDClientRepository openIDClientRepository;
-        private UserRepository userRepository;
-        private AuthenticationRequestRepository authenticationRequestRepository;
-        private Resource privateKeyPath;
-        private Resource certificatePath;
-        private Resource oidcSamlMapping;
+        private final String idpEntityId;
+        private final String idpSsoLocation;
+        private final Resource idpMetadataSigningCertificatePath;
+        private final String spEntityId;
+        private final String spAcsLocation;
+        private final Environment environment;
+        private final ObjectMapper objectMapper;
+        private final OpenIDClientRepository openIDClientRepository;
+        private final UserRepository userRepository;
+        private final AuthenticationRequestRepository authenticationRequestRepository;
+        private final Resource privateKeyPath;
+        private final Resource certificatePath;
+        private final Resource oidcSamlMapping;
 
         public SamlSecurity(
                 Environment environment,
@@ -147,8 +149,8 @@ public class SecurityConfiguration {
 
         @Bean
         public Saml2AuthenticationRequestFactory authenticationRequestFactory() {
-            OpenSamlAuthenticationRequestFactory authenticationRequestFactory =
-                    new OpenSamlAuthenticationRequestFactory();
+            OpenSaml4AuthenticationRequestFactory authenticationRequestFactory =
+                    new OpenSaml4AuthenticationRequestFactory();
 
             AuthnRequestConverter authnRequestConverter =
                     new AuthnRequestConverter(openIDClientRepository, authenticationRequestRepository, new HttpSessionRequestCache());
@@ -210,9 +212,9 @@ public class SecurityConfiguration {
 
         @Autowired
         @Bean
-        public OpenSamlAuthenticationProvider configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        public OpenSaml4AuthenticationProvider configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
             //because Autowired this will end up in the global ProviderManager
-            OpenSamlAuthenticationProvider authenticationProvider = new OpenSamlAuthenticationProvider();
+            OpenSaml4AuthenticationProvider authenticationProvider = new OpenSaml4AuthenticationProvider();
             ResponseAuthenticationConverter responseAuthenticationConverter =
                     new ResponseAuthenticationConverter(userRepository, authenticationRequestRepository, objectMapper, oidcSamlMapping);
             authenticationProvider.setResponseAuthenticationConverter(responseAuthenticationConverter);
@@ -238,8 +240,8 @@ public class SecurityConfiguration {
                     .permitAll()
                     .and()
                     .saml2Login(saml2 -> {
-                        OpenSamlAuthenticationProvider openSamlAuthenticationProvider =
-                                getApplicationContext().getBean(OpenSamlAuthenticationProvider.class);
+                        OpenSaml4AuthenticationProvider openSamlAuthenticationProvider =
+                                getApplicationContext().getBean(OpenSaml4AuthenticationProvider.class);
                         saml2.authenticationManager(new ProviderManager(openSamlAuthenticationProvider));
                         AuthenticationSuccessHandler bean = getApplicationContext().getBean(AuthenticationSuccessHandler.class);
                         saml2.successHandler(bean);
