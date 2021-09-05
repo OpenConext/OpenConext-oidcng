@@ -144,7 +144,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 .get("oidc/authorize")
                 .then()
                 .statusCode(302)
-                .body(containsString("Missing \\\"client_id\\\" parameter"));
+                .body(containsString("Missing client_id parameter"));
     }
 
     @Test
