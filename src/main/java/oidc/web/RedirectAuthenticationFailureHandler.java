@@ -31,7 +31,7 @@ import static oidc.saml.AuthnRequestConverter.REDIRECT_URI_VALID;
 public class RedirectAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
     private final OpenIDClientRepository openIDClientRepository;
-    private RequestCache requestCache = new HttpSessionRequestCache();
+    private final RequestCache requestCache = new HttpSessionRequestCache();
 
     public RedirectAuthenticationFailureHandler(OpenIDClientRepository openIDClientRepository) {
         this.openIDClientRepository = openIDClientRepository;
