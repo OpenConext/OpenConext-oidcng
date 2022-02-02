@@ -12,21 +12,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.joda.time.DateTime;
 import org.opensaml.core.xml.XMLObject;
-import org.opensaml.core.xml.schema.XSAny;
-import org.opensaml.core.xml.schema.XSBoolean;
-import org.opensaml.core.xml.schema.XSBooleanValue;
-import org.opensaml.core.xml.schema.XSDateTime;
-import org.opensaml.core.xml.schema.XSInteger;
-import org.opensaml.core.xml.schema.XSString;
-import org.opensaml.core.xml.schema.XSURI;
-import org.opensaml.saml.saml2.core.Assertion;
-import org.opensaml.saml.saml2.core.AttributeStatement;
-import org.opensaml.saml.saml2.core.AuthnContextClassRef;
-import org.opensaml.saml.saml2.core.AuthnStatement;
-import org.opensaml.saml.saml2.core.NameID;
+import org.opensaml.core.xml.schema.*;
+import org.opensaml.saml.saml2.core.*;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.Resource;
-import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.Saml2Authentication;
 import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 import org.springframework.util.CollectionUtils;
@@ -34,12 +24,7 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,7 +32,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
-public class ResponseAuthenticationConverter implements Converter<OpenSamlAuthenticationProvider.ResponseToken, OidcSamlAuthentication> {
+public class ResponseAuthenticationConverter implements Converter<OpenSaml4AuthenticationProvider.ResponseToken, OidcSamlAuthentication> {
 
     private static final Log LOG = LogFactory.getLog(ResponseAuthenticationConverter.class);
     private static final Pattern inResponseToPattern = Pattern.compile("InResponseTo=\"(.+?)\"", Pattern.DOTALL);
@@ -68,8 +53,8 @@ public class ResponseAuthenticationConverter implements Converter<OpenSamlAuthen
     }
 
     @Override
-    public OidcSamlAuthentication convert(OpenSamlAuthenticationProvider.ResponseToken responseToken) {
-        Saml2Authentication authentication = OpenSamlAuthenticationProvider
+    public OidcSamlAuthentication convert(OpenSaml4AuthenticationProvider.ResponseToken responseToken) {
+        Saml2Authentication authentication = OpenSaml4AuthenticationProvider
                 .createDefaultResponseAuthenticationConverter()
                 .convert(responseToken);
         Assertion assertion = responseToken.getResponse().getAssertions().get(0);

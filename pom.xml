@@ -5,35 +5,39 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.3.4.RELEASE</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <version>2.6.3</version>
+        <relativePath />
     </parent>
-    <groupId>org.openconext</groupId>
-    <artifactId>oidcng</artifactId>
-    <version>5.0.6-SNAPSHOT</version>
-    <name>oidcng</name>
 
     <properties>
-        <java.version>1.8</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.version>11</java.version>
     </properties>
+
+    <groupId>org.openconext</groupId>
+    <artifactId>oidcng</artifactId>
+    <version>6.0.0</version>
+    <name>oidcng</name>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>org.springframework.session</groupId>
                 <artifactId>spring-session-bom</artifactId>
-                <version>Dragonfruit-SR1</version>
+                <version>2021.1.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>com.github.cloudyrock.mongock</groupId>
                 <artifactId>mongock-bom</artifactId>
-                <version>4.1.17</version>
+                <version>4.3.8</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -64,17 +68,14 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-web</artifactId>
-            <version>5.4.6</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-config</artifactId>
-            <version>5.4.6</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-saml2-service-provider</artifactId>
-            <version>5.4.6</version>
         </dependency>
         <dependency>
             <groupId>com.github.cloudyrock.mongock</groupId>
@@ -87,12 +88,12 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15on</artifactId>
-            <version>1.67</version>
+            <version>1.70</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
-            <version>1.67</version>
+            <version>1.70</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -107,7 +108,7 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.7</version>
+            <version>2.11.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.crypto.tink</groupId>
@@ -117,7 +118,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.9</version>
+            <version>3.12.0</version>
         </dependency>
         <dependency>
             <groupId>com.sun.mail</groupId>
@@ -126,38 +127,38 @@
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured-common</artifactId>
-            <version>4.1.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-            <version>4.1.2</version>
+            <version>4.5.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>json-path</artifactId>
-            <version>4.1.2</version>
+            <version>4.5.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>xml-path</artifactId>
-            <version>4.1.2</version>
+            <version>4.5.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.github.tomakehurst</groupId>
             <artifactId>wiremock</artifactId>
-            <version>2.26.0</version>
+            <version>2.27.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <version>5.8.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>3.2.4</version>
+            <version>4.2.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -170,12 +171,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.skyscreamer</groupId>
-                    <artifactId>jsonassert</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.openconext</groupId>
@@ -185,19 +180,18 @@
         <dependency>
             <groupId>net.logstash.logback</groupId>
             <artifactId>logstash-logback-encoder</artifactId>
-            <version>6.4</version>
+            <version>7.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
-            <version>5.4.6</version>
             <scope>test</scope>
         </dependency>
         <!-- API, java.xml.bind module -->
         <dependency>
             <groupId>jakarta.xml.bind</groupId>
             <artifactId>jakarta.xml.bind-api</artifactId>
-            <version>2.3.2</version>
+            <version>3.0.1</version>
         </dependency>
     </dependencies>
 
@@ -208,9 +202,21 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
             <plugin>
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.9.0</version>
+                <configuration>
+                    <release>11</release>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.5</version>
+                <version>0.8.7</version>
                 <executions>
                     <execution>
                         <goals>
@@ -226,16 +232,37 @@
                     </execution>
                 </executions>
             </plugin>
-
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <id>enforce-versions</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>3.8.4</version>
+                                </requireMavenVersion>
+                                <requireJavaVersion>
+                                    <version>11</version>
+                                </requireJavaVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
         <extensions>
             <extension>
                 <groupId>org.apache.maven.wagon</groupId>
                 <artifactId>wagon-webdav-jackrabbit</artifactId>
-                <version>3.3.4</version>
+                <version>3.5.1</version>
             </extension>
         </extensions>
-
     </build>
 
     <repositories>

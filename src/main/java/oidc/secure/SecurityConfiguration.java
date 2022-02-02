@@ -45,6 +45,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -55,8 +56,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.saml2.core.Saml2X509Credential;
-import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider;
-import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationRequestFactory;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationRequestFactory;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationRequestFactory;
 import org.springframework.security.saml2.provider.service.metadata.OpenSamlMetadataResolver;
 import org.springframework.security.saml2.provider.service.registration.InMemoryRelyingPartyRegistrationRepository;
@@ -147,8 +148,8 @@ public class SecurityConfiguration {
 
         @Bean
         public Saml2AuthenticationRequestFactory authenticationRequestFactory() {
-            OpenSamlAuthenticationRequestFactory authenticationRequestFactory =
-                    new OpenSamlAuthenticationRequestFactory();
+            OpenSaml4AuthenticationRequestFactory authenticationRequestFactory =
+                    new OpenSaml4AuthenticationRequestFactory();
 
             AuthnRequestConverter authnRequestConverter =
                     new AuthnRequestConverter(openIDClientRepository, authenticationRequestRepository, new HttpSessionRequestCache());
@@ -210,9 +211,9 @@ public class SecurityConfiguration {
 
         @Autowired
         @Bean
-        public OpenSamlAuthenticationProvider configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        public OpenSaml4AuthenticationProvider configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
             //because Autowired this will end up in the global ProviderManager
-            OpenSamlAuthenticationProvider authenticationProvider = new OpenSamlAuthenticationProvider();
+            OpenSaml4AuthenticationProvider authenticationProvider = new OpenSaml4AuthenticationProvider();
             ResponseAuthenticationConverter responseAuthenticationConverter =
                     new ResponseAuthenticationConverter(userRepository, authenticationRequestRepository, objectMapper, oidcSamlMapping);
             authenticationProvider.setResponseAuthenticationConverter(responseAuthenticationConverter);
@@ -223,13 +224,16 @@ public class SecurityConfiguration {
 
         @Override
         protected void configure(HttpSecurity http) throws Exception {
-            http.cors().configurationSource(new OidcCorsConfigurationSource()).configure(http);
-            http.csrf().disable();
-            http
+            http.cors()
+                    .configurationSource(new OidcCorsConfigurationSource()).configure(http);
+
+            http.csrf().disable()
                     .requestMatchers()
                     .antMatchers("/oidc/**", "/saml2/**", "/login/**")
                     .and()
                     .authorizeRequests()
+                    .antMatchers(HttpMethod.OPTIONS, "/oidc/authorize")
+                    .permitAll()
                     .antMatchers("/oidc/authorize")
                     .authenticated()
                     .and()
@@ -238,8 +242,8 @@ public class SecurityConfiguration {
                     .permitAll()
                     .and()
                     .saml2Login(saml2 -> {
-                        OpenSamlAuthenticationProvider openSamlAuthenticationProvider =
-                                getApplicationContext().getBean(OpenSamlAuthenticationProvider.class);
+                        OpenSaml4AuthenticationProvider openSamlAuthenticationProvider =
+                                getApplicationContext().getBean(OpenSaml4AuthenticationProvider.class);
                         saml2.authenticationManager(new ProviderManager(openSamlAuthenticationProvider));
                         AuthenticationSuccessHandler bean = getApplicationContext().getBean(AuthenticationSuccessHandler.class);
                         saml2.successHandler(bean);

@@ -15,14 +15,14 @@ public class OidcCorsConfigurationSourceTest extends AbstractIntegrationTest {
 
         HashMap<String, Object> expectedHeaders = new HashMap<>();
         expectedHeaders.put("Access-Control-Allow-Origin", allowdOrigin);
-        expectedHeaders.put("Access-Control-Allow-Methods", "GET,HEAD,POST");
+        expectedHeaders.put("Access-Control-Allow-Methods", "GET");
         expectedHeaders.put("Access-Control-Allow-Credentials", "true");
 
         given().redirects().follow(false)
                 .when()
                 .header(HttpHeaders.ORIGIN, allowdOrigin)
                 .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET", "POST")
-                .options("oidc/authorize")
+                .options("/oidc/authorize")
                 .then()
                 .statusCode(200)
                 .headers(expectedHeaders);

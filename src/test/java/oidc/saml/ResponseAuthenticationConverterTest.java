@@ -18,6 +18,7 @@ import org.opensaml.core.xml.io.UnmarshallingException;
 import org.opensaml.saml.saml2.core.Response;
 import org.opensaml.saml.saml2.core.impl.ResponseUnmarshaller;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationToken;
 import org.w3c.dom.Document;
@@ -96,7 +97,7 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
 
         Saml2AuthenticationToken token = new Saml2AuthenticationToken(relyingParty, saml2Response);
 
-        OpenSamlAuthenticationProvider.ResponseToken responseToken = getResponseToken(response, token);
+        OpenSaml4AuthenticationProvider.ResponseToken responseToken = getResponseToken(response, token);
 
         OidcSamlAuthentication authentication = subject.convert(responseToken);
 
@@ -105,12 +106,12 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
     }
 
     //See https://github.com/spring-projects/spring-security/issues/9004
-    private OpenSamlAuthenticationProvider.ResponseToken getResponseToken(Response response, Saml2AuthenticationToken token) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        Class<?> c = Class.forName("org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider$ResponseToken");
+    private OpenSaml4AuthenticationProvider.ResponseToken getResponseToken(Response response, Saml2AuthenticationToken token) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
+        Class<?> c = Class.forName("org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider$ResponseToken");
         Constructor<?> declaredConstructor = c.getDeclaredConstructor(Response.class, Saml2AuthenticationToken.class);
 
         declaredConstructor.setAccessible(true);
-        OpenSamlAuthenticationProvider.ResponseToken responseToken = (OpenSamlAuthenticationProvider.ResponseToken) declaredConstructor.newInstance(response, token);
+        OpenSaml4AuthenticationProvider.ResponseToken responseToken = (OpenSaml4AuthenticationProvider.ResponseToken) declaredConstructor.newInstance(response, token);
         return responseToken;
     }
 

@@ -18,17 +18,12 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.util.encoders.Hex;
 
-import javax.xml.bind.DatatypeConverter;
 import java.io.ByteArrayInputStream;
 import java.io.CharArrayReader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.math.BigInteger;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
-import java.security.PrivateKey;
-import java.security.Security;
+import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -104,8 +99,7 @@ public class KeyGenerator {
 
     public static byte[] getDER(String pem) {
         String data = keyCleanup(pem);
-
-        return DatatypeConverter.parseBase64Binary(data);
+        return Base64.getDecoder().decode(data);
     }
 
     public static String keyCleanup(String pem) {
