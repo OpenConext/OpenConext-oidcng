@@ -82,12 +82,17 @@ eduid:
   enabled: true
 
 management:
+  health:
+    mail:
+      enabled: false
   endpoints:
-    enabled-by-default: false
+    web:
+      exposure:
+        include: "health,info"
+      base-path: "/internal"
   endpoint:
-    health:
-      enabled: true
-      show-details: when_authorized
     info:
       enabled: true
-      show-details: when_authorized
+  info:
+    git:
+      mode: full
