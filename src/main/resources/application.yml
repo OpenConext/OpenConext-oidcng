@@ -2,6 +2,7 @@ logging:
   level:
     root: OFF
     org.springframework: OFF
+    org.springframework.security: TRACE
     oidc: DEBUG
 
 cron:

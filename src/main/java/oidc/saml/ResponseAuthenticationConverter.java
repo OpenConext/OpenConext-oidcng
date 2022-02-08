@@ -10,7 +10,6 @@ import oidc.user.OidcSamlAuthentication;
 import oidc.user.UserAttribute;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.joda.time.DateTime;
 import org.opensaml.core.xml.XMLObject;
 import org.opensaml.core.xml.schema.*;
 import org.opensaml.saml.saml2.core.*;
@@ -23,7 +22,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -135,7 +133,7 @@ public class ResponseAuthenticationConverter implements Converter<OpenSaml4Authe
 
     private Optional<String> authenticationContextClassReference(AuthnContextClassRef authnContextClassRef) {
         return Optional.ofNullable(authnContextClassRef)
-                .map(AuthnContextClassRef::getAuthnContextClassRef);
+                .map(AuthnContextClassRef::getURI);
     }
 
     private String getAttributeValue(String samlAttributeName, Assertion assertion) {
@@ -179,15 +177,14 @@ public class ResponseAuthenticationConverter implements Converter<OpenSaml4Authe
             return ((XSInteger) xmlObject).getValue();
         }
         if (xmlObject instanceof XSURI) {
-            return ((XSURI) xmlObject).getValue();
+            return ((XSURI) xmlObject).getURI();
         }
         if (xmlObject instanceof XSBoolean) {
             XSBooleanValue xsBooleanValue = ((XSBoolean) xmlObject).getValue();
             return (xsBooleanValue != null) ? xsBooleanValue.getValue() : null;
         }
         if (xmlObject instanceof XSDateTime) {
-            DateTime dateTime = ((XSDateTime) xmlObject).getValue();
-            return (dateTime != null) ? Instant.ofEpochMilli(dateTime.getMillis()) : null;
+            return ((XSDateTime) xmlObject).getValue();
         }
         return null;
     }

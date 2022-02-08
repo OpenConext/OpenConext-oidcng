@@ -65,7 +65,7 @@ public class AttributePseudonymisation {
                         "Enabled is %s, eduId is %s, resourceServerEquals is %s",
                 resourceServer.getClientId(), openIDClient.getClientId(), enabled, eduId, resourceServerEquals));
 
-        if (!enabled || StringUtils.isEmpty(eduId) || resourceServerEquals) {
+        if (!enabled || !StringUtils.hasText(eduId) || resourceServerEquals) {
             LOG.debug("Returning empty result for 'pseudonymise'");
             return Optional.empty();
         }

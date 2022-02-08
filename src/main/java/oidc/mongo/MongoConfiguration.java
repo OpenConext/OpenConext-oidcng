@@ -17,7 +17,7 @@ public class MongoConfiguration {
 
     @Bean
     public MongoTransactionManager transactionManager() {
-        return new MongoTransactionManager(mongoTemplate.getMongoDbFactory());
+        return new MongoTransactionManager(mongoTemplate.getMongoDatabaseFactory());
     }
 
     @Bean

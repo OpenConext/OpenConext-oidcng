@@ -18,26 +18,10 @@ import oidc.secure.JWTRequest;
 import oidc.web.URLCoding;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.joda.time.DateTime;
 import org.opensaml.core.config.ConfigurationService;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
-import org.opensaml.saml.saml2.core.AuthnContextClassRef;
-import org.opensaml.saml.saml2.core.AuthnContextComparisonTypeEnumeration;
-import org.opensaml.saml.saml2.core.AuthnRequest;
-import org.opensaml.saml.saml2.core.IDPEntry;
-import org.opensaml.saml.saml2.core.IDPList;
-import org.opensaml.saml.saml2.core.Issuer;
-import org.opensaml.saml.saml2.core.RequestedAuthnContext;
-import org.opensaml.saml.saml2.core.RequesterID;
-import org.opensaml.saml.saml2.core.Scoping;
-import org.opensaml.saml.saml2.core.impl.AuthnContextClassRefBuilder;
-import org.opensaml.saml.saml2.core.impl.AuthnRequestBuilder;
-import org.opensaml.saml.saml2.core.impl.IDPEntryBuilder;
-import org.opensaml.saml.saml2.core.impl.IDPListBuilder;
-import org.opensaml.saml.saml2.core.impl.IssuerBuilder;
-import org.opensaml.saml.saml2.core.impl.RequestedAuthnContextBuilder;
-import org.opensaml.saml.saml2.core.impl.RequesterIDBuilder;
-import org.opensaml.saml.saml2.core.impl.ScopingBuilder;
+import org.opensaml.saml.saml2.core.*;
+import org.opensaml.saml.saml2.core.impl.*;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationRequestContext;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
@@ -53,15 +37,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -136,7 +115,7 @@ public class AuthnRequestConverter implements
                 .getBuilder(AuthnRequest.DEFAULT_ELEMENT_NAME);
         AuthnRequest authnRequest = authnRequestBuilder.buildObject();
         authnRequest.setID("ARQ" + UUID.randomUUID().toString().substring(1));
-        authnRequest.setIssueInstant(new DateTime());
+        authnRequest.setIssueInstant(Instant.now());
 
         authnRequest.setProtocolBinding(POST.getUrn());
 
@@ -254,7 +233,7 @@ public class AuthnRequestConverter implements
                 .getBuilder(RequesterID.DEFAULT_ELEMENT_NAME);
         List<RequesterID> requesterIDS = entityIds.stream().map(entityId -> {
             RequesterID requesterID = requesterIDBuilder.buildObject();
-            requesterID.setRequesterID(entityId);
+            requesterID.setURI(entityId);
             return requesterID;
         }).collect(Collectors.toList());
 
@@ -293,7 +272,7 @@ public class AuthnRequestConverter implements
 
             List<AuthnContextClassRef> authnContextClassRefs = acrValuesObjects.stream().map(acr -> {
                 AuthnContextClassRef authnContextClassRef = authnContextClassRefBuilder.buildObject();
-                authnContextClassRef.setAuthnContextClassRef(acr.getValue());
+                authnContextClassRef.setURI(acr.getValue());
                 return authnContextClassRef;
             }).collect(Collectors.toList());
             requestedAuthnContext.getAuthnContextClassRefs().addAll(authnContextClassRefs);
