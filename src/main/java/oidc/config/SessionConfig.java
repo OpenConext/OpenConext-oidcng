@@ -54,7 +54,6 @@ public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
                 context.setMixInAnnotations(Saml2PostAuthenticationRequest.class, Saml2PostAuthenticationRequestMixin.class);
             }
         };
-
         List<Module> modules = new ArrayList<>();
         modules.add(module);
 
