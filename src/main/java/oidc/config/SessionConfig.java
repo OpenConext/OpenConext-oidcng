@@ -11,6 +11,8 @@ import org.springframework.security.jackson2.CoreJackson2Module;
 import org.springframework.security.saml2.core.Saml2Error;
 import org.springframework.security.saml2.provider.service.authentication.Saml2Authentication;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationException;
+import org.springframework.security.saml2.provider.service.authentication.Saml2PostAuthenticationRequest;
+import org.springframework.security.saml2.provider.service.authentication.Saml2RedirectAuthenticationRequest;
 import org.springframework.session.data.mongo.JacksonMongoSessionConverter;
 import org.springframework.session.data.mongo.config.annotation.web.http.EnableMongoHttpSession;
 import org.springframework.session.web.context.AbstractHttpSessionApplicationInitializer;
@@ -48,6 +50,8 @@ public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
                 context.setMixInAnnotations(Saml2Error.class, Saml2ErrorMixin.class);
                 context.setMixInAnnotations(User.class, UserMixin.class);
                 context.setMixInAnnotations(Saml2Authentication.class, Saml2AuthenticationMixin.class);
+                context.setMixInAnnotations(Saml2RedirectAuthenticationRequest.class, Saml2RedirectAuthenticationRequestMixin.class);
+                context.setMixInAnnotations(Saml2PostAuthenticationRequest.class, Saml2PostAuthenticationRequestMixin.class);
             }
         };
 
@@ -79,5 +83,10 @@ public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
     private static class UserMixin {
     }
 
+    private static class Saml2RedirectAuthenticationRequestMixin {
+    }
+
+    private static class Saml2PostAuthenticationRequestMixin {
+    }
 
 }
