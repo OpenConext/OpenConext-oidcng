@@ -10,6 +10,7 @@ import org.springframework.session.web.http.CookieSerializer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableMongoHttpSession
@@ -26,7 +27,7 @@ public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
 
     @Bean
     JacksonMongoSessionConverter mongoSessionConverter() {
-        return new JacksonMongoSessionConverter(Arrays.asList(new ExtendedCoreJackson2Module()));
+        return new JacksonMongoSessionConverter(List.of(new AuthenticationMixinModule()));
     }
 
 
