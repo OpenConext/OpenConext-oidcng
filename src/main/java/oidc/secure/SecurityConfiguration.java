@@ -285,12 +285,12 @@ public class SecurityConfiguration {
         protected void configure(HttpSecurity http) throws Exception {
             http
                     .requestMatchers()
-                    .antMatchers("/actuator/**", "/manage/**", "/tokens")
+                    .antMatchers("/internal/**", "/manage/**", "/tokens")
                     .and()
                     .csrf()
                     .disable()
                     .authorizeRequests()
-                    .antMatchers("/actuator/health", "/actuator/info")
+                    .antMatchers("/internal/health", "/internal/info")
                     .permitAll()
                     .and()
                     .authorizeRequests()

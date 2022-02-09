@@ -2,7 +2,7 @@ logging:
   level:
     root: OFF
     org.springframework: OFF
-    org.springframework.security: TRACE
+    org.springframework.security: OFF
     oidc: DEBUG
 
 cron:
@@ -18,12 +18,6 @@ server:
   tomcat:
     max-http-form-post-size: 10000000
     max-swallow-size: 10000000
-
-# used by the git plugin
-info:
-  build:
-    artifact: "@project.artifactId@"
-    version: "@project.version@"
 
 mongodb_db: oidc_test
 oidc_saml_mapping_path: classpath:/oidc/saml_mapping.json
@@ -97,3 +91,10 @@ management:
   info:
     git:
       mode: full
+
+# used by the git plugin
+info:
+  build:
+    artifact: "@project.artifactId@"
+    version: "@project.version@"
+
