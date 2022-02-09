@@ -7,6 +7,7 @@ import oidc.user.OidcSamlAuthentication;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.jackson2.CoreJackson2Module;
 import org.springframework.security.saml2.core.Saml2Error;
 import org.springframework.security.saml2.provider.service.authentication.Saml2Authentication;
@@ -25,8 +26,8 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 import java.util.*;
 
 @Configuration
-//@EnableMongoHttpSession
-@EnableSpringHttpSession
+@EnableMongoHttpSession
+//@EnableSpringHttpSession
 public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
 
     @Bean
@@ -38,60 +39,16 @@ public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
         return defaultCookieSerializer;
     }
 
-    @Bean
-    SessionRepository sessionRepository() {
-        return new MapSessionRepository(new HashMap<>());
-    }
+//    @Bean
+//    @Primary
+//    SessionRepository sessionRepository() {
+//        return new MapSessionRepository(new HashMap<>());
+//    }
 
     @Bean
     JacksonMongoSessionConverter mongoSessionConverter() {
-        SimpleModule module = new CoreJackson2Module() {
-            @Override
-            public void setupModule(SetupContext context) {
-                super.setupModule(context);
-                context.setMixInAnnotations(OidcSamlAuthentication.class, OidcSamlAuthenticationMixin.class);
-                context.setMixInAnnotations(HashSet.class, HashSetMixin.class);
-                context.setMixInAnnotations(LinkedHashMap.class, LinkedHashMapMixin.class);
-                context.setMixInAnnotations(Saml2AuthenticationException.class, Saml2AuthenticationExceptionMixin.class);
-                context.setMixInAnnotations(Saml2Error.class, Saml2ErrorMixin.class);
-                context.setMixInAnnotations(User.class, UserMixin.class);
-                context.setMixInAnnotations(Saml2Authentication.class, Saml2AuthenticationMixin.class);
-                context.setMixInAnnotations(Saml2RedirectAuthenticationRequest.class, Saml2RedirectAuthenticationRequestMixin.class);
-                context.setMixInAnnotations(Saml2PostAuthenticationRequest.class, Saml2PostAuthenticationRequestMixin.class);
-            }
-        };
-        List<Module> modules = new ArrayList<>();
-        modules.add(module);
-
-        return new JacksonMongoSessionConverter(modules);
+        return new ConfigurableJacksonMongoSessionConverter();
     }
 
-    private static class Saml2AuthenticationMixin {
-
-    }
-
-    private static class OidcSamlAuthenticationMixin {
-    }
-
-    private static class HashSetMixin {
-    }
-
-    private static class Saml2AuthenticationExceptionMixin {
-    }
-
-    private static class Saml2ErrorMixin {
-    }
-
-    private static class LinkedHashMapMixin {
-    }
-
-    private static class UserMixin {
-    }
-
-    private static class Saml2RedirectAuthenticationRequestMixin {
-    }
-
-    private static class Saml2PostAuthenticationRequestMixin {
-    }
 
 }
