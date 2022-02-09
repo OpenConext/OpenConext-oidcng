@@ -13,28 +13,34 @@ import org.springframework.security.saml2.provider.service.authentication.Saml2A
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationException;
 import org.springframework.security.saml2.provider.service.authentication.Saml2PostAuthenticationRequest;
 import org.springframework.security.saml2.provider.service.authentication.Saml2RedirectAuthenticationRequest;
+import org.springframework.session.MapSessionRepository;
+import org.springframework.session.SessionRepository;
+import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession;
 import org.springframework.session.data.mongo.JacksonMongoSessionConverter;
 import org.springframework.session.data.mongo.config.annotation.web.http.EnableMongoHttpSession;
 import org.springframework.session.web.context.AbstractHttpSessionApplicationInitializer;
 import org.springframework.session.web.http.CookieSerializer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 
 @Configuration
-@EnableMongoHttpSession
+//@EnableMongoHttpSession
+@EnableSpringHttpSession
 public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
 
     @Bean
     CookieSerializer cookieSerializer(@Value("${secure_cookie}") boolean secureCookie) {
         DefaultCookieSerializer defaultCookieSerializer = new DefaultCookieSerializer();
         //We don't need same-site as the load-balancer takes care of this
-        defaultCookieSerializer.setSameSite(null);
+        defaultCookieSerializer.setSameSite("Lax");
         defaultCookieSerializer.setUseSecureCookie(secureCookie);
         return defaultCookieSerializer;
+    }
+
+    @Bean
+    SessionRepository sessionRepository() {
+        return new MapSessionRepository(new HashMap<>());
     }
 
     @Bean
