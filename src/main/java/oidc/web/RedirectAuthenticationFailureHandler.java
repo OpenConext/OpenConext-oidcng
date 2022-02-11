@@ -3,8 +3,10 @@ package oidc.web;
 import lombok.SneakyThrows;
 import oidc.endpoints.AuthorizationEndpoint;
 import oidc.exceptions.UnknownClientException;
+import oidc.model.AuthenticationRequest;
 import oidc.model.OpenIDClient;
 import oidc.repository.OpenIDClientRepository;
+import oidc.saml.ContextSaml2AuthenticationException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.saml2.core.Saml2Error;
 import org.springframework.security.saml2.core.Saml2ErrorCodes;
@@ -64,12 +66,13 @@ public class RedirectAuthenticationFailureHandler implements AuthenticationFailu
                     .orElseThrow(() -> new UnknownClientException(clientId));
             AuthorizationEndpoint.validateRedirectionURI(redirectURI, openIDClient);
             request.setAttribute(REDIRECT_URI_VALID, true);
+        } else if (exception instanceof ContextSaml2AuthenticationException) {
+            request.setAttribute(REDIRECT_URI_VALID, true);
+            throw exception;
         }
         /*
          * Will be picked up by the ErrorController. Do note that if the user has stepped up his account in eduID, then
-         * the initial session is no longer around. Ideally we would have access to the SAML response to get the
-         * original authentication request, but there is no hook for this.
-         * See https://github.com/spring-projects/spring-security/issues/9721
+         * the initial session is no longer around.
          */
         if (exception instanceof Saml2AuthenticationException) {
             throw new Saml2AuthenticationException(

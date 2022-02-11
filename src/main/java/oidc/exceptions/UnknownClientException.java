@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 public class UnknownClientException extends BaseException {
 
     public UnknownClientException(String clientID) {
-        super(String.format("ClientID %s or secret is not correct ", clientID));
+        super(String.format("ClientID %s or secret is not correct", clientID));
     }
 
     @Override

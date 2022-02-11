@@ -29,6 +29,7 @@ import oidc.repository.UserRepository;
 import oidc.saml.AuthenticationRequestContextResolver;
 import oidc.saml.AuthnRequestConverter;
 import oidc.saml.ResponseAuthenticationConverter;
+import oidc.saml.ResponseAuthenticationValidator;
 import oidc.web.ConcurrentSavedRequestAwareAuthenticationSuccessHandler;
 import oidc.web.FakeSamlAuthenticationFilter;
 import oidc.web.RedirectAuthenticationFailureHandler;
@@ -42,6 +43,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.core.io.Resource;
@@ -55,6 +57,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.saml2.core.Saml2ResponseValidatorResult;
 import org.springframework.security.saml2.core.Saml2X509Credential;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationRequestFactory;
@@ -214,9 +217,13 @@ public class SecurityConfiguration {
         public OpenSaml4AuthenticationProvider configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
             //because Autowired this will end up in the global ProviderManager
             OpenSaml4AuthenticationProvider authenticationProvider = new OpenSaml4AuthenticationProvider();
+
             ResponseAuthenticationConverter responseAuthenticationConverter =
                     new ResponseAuthenticationConverter(userRepository, authenticationRequestRepository, objectMapper, oidcSamlMapping);
             authenticationProvider.setResponseAuthenticationConverter(responseAuthenticationConverter);
+
+            ResponseAuthenticationValidator responseValidator = new ResponseAuthenticationValidator(authenticationRequestRepository);
+            authenticationProvider.setResponseValidator(responseValidator);
 
             auth.authenticationProvider(authenticationProvider);
             return authenticationProvider;

@@ -5,6 +5,7 @@ import com.nimbusds.oauth2.sdk.ParseException;
 import lombok.SneakyThrows;
 import oidc.exceptions.BaseException;
 import oidc.exceptions.CookiesNotSupportedException;
+import oidc.saml.ContextSaml2AuthenticationException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
@@ -95,10 +97,15 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         SavedRequest savedRequest = requestCache.getRequest(request, null);
         boolean redirect = false;
 
-        if (savedRequest == null) {
+        if (error instanceof ContextSaml2AuthenticationException) {
+            ContextSaml2AuthenticationException ctxE = (ContextSaml2AuthenticationException) error;
+            String originalRequestUrl = ctxE.getAuthenticationRequest().getOriginalRequestUrl();
+            UriComponents uriComponent = UriComponentsBuilder.fromUriString(originalRequestUrl).build();
+            redirectUri = uriComponent.getQueryParams().getFirst("redirect_uri");
+            redirect = true;
+        } else if (savedRequest == null) {
             LOG.warn("No saved request found. Check the cookie flow");
         }
-
         if (savedRequest instanceof DefaultSavedRequest) {
             parameterMap = savedRequest.getParameterMap();
             String requestURI = ((DefaultSavedRequest) savedRequest).getRequestURI();
@@ -134,10 +141,6 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
 
     private String errorMessage(Throwable error) throws UnsupportedEncodingException {
         String errorMsg = error != null ? error.getMessage() : "Unknown exception occurred";
-        if (error instanceof Saml2AuthenticationException) {
-            //Remove this after the 5.5 release of Spring Security
-            errorMsg = "The requesting service has indicated that the authenticated user is required to have validated attributes. Your institution has not provided this.";
-        }
         return URLEncoder.encode(errorMsg.replaceAll("\"", ""), "UTF-8");
     }
 

@@ -1,7 +1,6 @@
 package oidc.saml;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.shibboleth.utilities.java.support.xml.ParserPool;
 import net.shibboleth.utilities.java.support.xml.XMLParserException;
 import oidc.SeedUtils;
 import oidc.model.AuthenticationRequest;
@@ -9,36 +8,21 @@ import oidc.model.User;
 import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.UserRepository;
 import oidc.user.OidcSamlAuthentication;
-import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
-import org.opensaml.core.config.ConfigurationService;
-import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
 import org.opensaml.core.xml.io.UnmarshallingException;
-import org.opensaml.saml.saml2.core.Response;
-import org.opensaml.saml.saml2.core.impl.ResponseUnmarshaller;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
-import org.springframework.security.saml2.provider.service.authentication.OpenSamlAuthenticationProvider;
-import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationToken;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest implements SeedUtils {
 
@@ -66,6 +50,7 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
         User user = oidcSamlAuthentication.getUser();
         String sub = user.getSub();
         assertEquals("270E4CB4-1C2A-4A96-9AD3-F28C39AD1110", sub);
+        assertEquals("urn:collab:person:example.com:admin", oidcSamlAuthentication.getName());
         assertEquals(3, ((List) user.getAttributes().get("eduperson_affiliation")).size());
     }
 
@@ -75,7 +60,23 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
                 new AuthenticationRequest("id", new Date(), "clientId", "http://some")));
         when(userRepository.findOptionalUserBySub(anyString())).thenReturn(Optional.of(user("key")));
 
-        doLogin("saml/authn_response.xml");
+        OidcSamlAuthentication oidcSamlAuthentication = doLogin("saml/authn_response.xml");
+        assertEquals("urn:collab:person:example.com:admin", oidcSamlAuthentication.getName());
+    }
+
+    @Test
+    public void loginExistingUserWithCollab() throws XMLParserException, UnmarshallingException, IOException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        when(authenticationRequestRepository.findById(anyString())).thenReturn(Optional.of(
+                new AuthenticationRequest("id", new Date(), "clientId", "http://some")));
+        when(userRepository.findOptionalUserBySub(anyString())).thenReturn(Optional.of(user("key")));
+
+        OidcSamlAuthentication oidcSamlAuthentication = doLogin("saml/authn_response_collab_person.xml");
+
+        String unspecifiedNameId = oidcSamlAuthentication.getUser().getUnspecifiedNameId();
+        assertEquals("internal-collabPersonId", unspecifiedNameId);
+
+        String sub = oidcSamlAuthentication.getUser().getSub();
+        assertEquals("persistent", sub);
     }
 
     @Test
@@ -84,45 +85,16 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
                 new AuthenticationRequest("id", new Date(), "clientId", "http://some")));
 
         OidcSamlAuthentication oidcSamlAuthentication = doLogin("saml/no_authn_context_response.xml");
-        List<String> acrClaims = oidcSamlAuthentication.getUser().getAcrClaims();
+        assertEquals("urn:collab:person:example.com:admin", oidcSamlAuthentication.getName());
 
+        List<String> acrClaims = oidcSamlAuthentication.getUser().getAcrClaims();
         assertEquals(1, acrClaims.size());
         assertEquals("urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified", acrClaims.get(0));
     }
 
     private OidcSamlAuthentication doLogin(String path) throws IOException, UnmarshallingException, XMLParserException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        InputStream inputStream = new ClassPathResource(path).getInputStream();
-        String saml2Response = IOUtils.toString(inputStream, Charset.defaultCharset());
-        Response response = unmarshall(saml2Response);
-
-        Saml2AuthenticationToken token = new Saml2AuthenticationToken(relyingParty, saml2Response);
-
-        OpenSaml4AuthenticationProvider.ResponseToken responseToken = getResponseToken(response, token);
-
-        OidcSamlAuthentication authentication = subject.convert(responseToken);
-
-        assertEquals("urn:collab:person:example.com:admin", authentication.getName());
-        return authentication;
+        OpenSaml4AuthenticationProvider.ResponseToken responseToken = getResponseToken(path);
+        return subject.convert(responseToken);
     }
 
-    //See https://github.com/spring-projects/spring-security/issues/9004
-    private OpenSaml4AuthenticationProvider.ResponseToken getResponseToken(Response response, Saml2AuthenticationToken token) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        Class<?> c = Class.forName("org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider$ResponseToken");
-        Constructor<?> declaredConstructor = c.getDeclaredConstructor(Response.class, Saml2AuthenticationToken.class);
-
-        declaredConstructor.setAccessible(true);
-        OpenSaml4AuthenticationProvider.ResponseToken responseToken = (OpenSaml4AuthenticationProvider.ResponseToken) declaredConstructor.newInstance(response, token);
-        return responseToken;
-    }
-
-    private Response unmarshall(String saml2Response) throws UnmarshallingException, XMLParserException {
-        XMLObjectProviderRegistry registry = ConfigurationService.get(XMLObjectProviderRegistry.class);
-        ResponseUnmarshaller responseUnmarshaller = (ResponseUnmarshaller) registry.getUnmarshallerFactory()
-                .getUnmarshaller(Response.DEFAULT_ELEMENT_NAME);
-        ParserPool parserPool = registry.getParserPool();
-        Document doc = parserPool.parse(new ByteArrayInputStream(saml2Response.getBytes()));
-        Element samlElement = doc.getDocumentElement();
-
-        return (Response) responseUnmarshaller.unmarshall(samlElement);
-    }
 }

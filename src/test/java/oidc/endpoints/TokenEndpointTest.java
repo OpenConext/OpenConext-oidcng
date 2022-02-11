@@ -6,7 +6,6 @@ import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
-import com.nimbusds.oauth2.sdk.RefreshTokenGrant;
 import com.nimbusds.oauth2.sdk.assertions.jwt.JWTAssertionDetails;
 import com.nimbusds.oauth2.sdk.assertions.jwt.JWTAssertionFactory;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretJWT;
@@ -20,7 +19,6 @@ import com.nimbusds.oauth2.sdk.id.Subject;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
-import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
@@ -44,18 +42,11 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.text.ParseException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.nimbusds.oauth2.sdk.auth.JWTAuthentication.CLIENT_ASSERTION_TYPE;
 import static io.restassured.RestAssured.given;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @SuppressWarnings("unchecked")
 public class TokenEndpointTest extends AbstractIntegrationTest implements SignedJWTTest {
@@ -179,6 +170,22 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
 
         Map<String, Object> result = doRefreshToken(body, "secret");
         assertEquals("Refresh token expired", result.get("message"));
+    }
+
+    @Test
+    public void refreshTokenWrongClient() throws ParseException, JOSEException, IOException {
+        String code = doAuthorize();
+        Map<String, Object> body = doToken(code);
+        String refreshToken = (String) body.get("refresh_token");
+
+        String jwtId = SignedJWT.parse(refreshToken).getJWTClaimsSet().getJWTID();
+
+        RefreshToken refreshTokenFromDB = mongoTemplate.find(Query.query(Criteria.where("jwtId").is(jwtId)), RefreshToken.class).get(0);
+        ReflectionTestUtils.setField(refreshTokenFromDB, "clientId", "Nopen");
+        mongoTemplate.save(refreshTokenFromDB);
+
+        Map<String, Object> result = doRefreshToken(body, "secret");
+        assertEquals("Client is not authorized for the refresh token", result.get("message"));
     }
 
     @Test

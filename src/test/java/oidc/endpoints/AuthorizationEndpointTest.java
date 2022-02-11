@@ -28,21 +28,14 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URLEncoder;
 import java.text.ParseException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class AuthorizationEndpointTest extends AbstractIntegrationTest implements SignedJWTTest {
 
@@ -365,5 +358,19 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         assertTrue(body.containsKey("access_token"));
     }
 
-
+    @Test
+    public void authorizeUnknownClient() {
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("scope", "openid");
+        queryParams.put("response_type", "code");
+        queryParams.put("client_id", "nope");
+        given().redirects().follow(false)
+                .when()
+                .header("Content-type", "application/json")
+                .queryParams(queryParams)
+                .get("oidc/authorize")
+                .then()
+                .statusCode(401)
+                .body("message", equalTo("ClientID nope or secret is not correct"));
+    }
 }

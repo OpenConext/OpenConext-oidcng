@@ -34,9 +34,10 @@ public class ResponseAuthenticationConverter implements Converter<OpenSaml4Authe
 
     private static final Log LOG = LogFactory.getLog(ResponseAuthenticationConverter.class);
     private static final Pattern inResponseToPattern = Pattern.compile("InResponseTo=\"(.+?)\"", Pattern.DOTALL);
+    private final Converter<OpenSaml4AuthenticationProvider.ResponseToken, Saml2Authentication> defaultResponseAuthenticationConverter;
 
-    private UserRepository userRepository;
-    private List<UserAttribute> userAttributes;
+    private final UserRepository userRepository;
+    private final List<UserAttribute> userAttributes;
     private final AuthenticationRequestRepository authenticationRequestRepository;
 
     public ResponseAuthenticationConverter(UserRepository userRepository,
@@ -45,18 +46,16 @@ public class ResponseAuthenticationConverter implements Converter<OpenSaml4Authe
                                            Resource oidcSamlMapping) throws IOException {
         this.userRepository = userRepository;
         this.authenticationRequestRepository = authenticationRequestRepository;
-        this.userAttributes = objectMapper.readValue(oidcSamlMapping.getInputStream(),
-                new TypeReference<List<UserAttribute>>() {
-                });
+        this.userAttributes = objectMapper.readValue(oidcSamlMapping.getInputStream(),new TypeReference<>() {});
+        this.defaultResponseAuthenticationConverter = OpenSaml4AuthenticationProvider
+                .createDefaultResponseAuthenticationConverter();
     }
 
     @Override
     public OidcSamlAuthentication convert(OpenSaml4AuthenticationProvider.ResponseToken responseToken) {
-        Saml2Authentication authentication = OpenSaml4AuthenticationProvider
-                .createDefaultResponseAuthenticationConverter()
+        Saml2Authentication authentication = defaultResponseAuthenticationConverter
                 .convert(responseToken);
         Assertion assertion = responseToken.getResponse().getAssertions().get(0);
-
         Matcher matcher = inResponseToPattern.matcher(authentication.getSaml2Response());
         boolean match = matcher.find();
         if (!match) {
@@ -87,8 +86,6 @@ public class ResponseAuthenticationConverter implements Converter<OpenSaml4Authe
     }
 
     private User buildUser(Assertion assertion, String authenticationRequestID) {
-        String unspecifiedNameId = assertion.getSubject().getNameID().getValue();
-
         List<AuthnStatement> authnStatements = assertion.getAuthnStatements();
         AtomicReference<String> authenticatingAuthority = new AtomicReference<>();
         if (!CollectionUtils.isEmpty(authnStatements)) {
@@ -107,13 +104,22 @@ public class ResponseAuthenticationConverter implements Converter<OpenSaml4Authe
 
         this.addDerivedAttributes(attributes);
 
-        String eduPersonTargetedId = getAttributeValue("urn:mace:dir:attribute-def:eduPersonTargetedID", assertion);
-
         AuthenticationRequest authenticationRequest = authenticationRequestRepository.findById(authenticationRequestID).orElseThrow(
                 () -> new IllegalArgumentException("No Authentication Request found for ID: " + authenticationRequestID));
         String clientId = authenticationRequest.getClientId();
 
-        String sub = StringUtils.hasText(eduPersonTargetedId) ? eduPersonTargetedId : UUID.nameUUIDFromBytes((unspecifiedNameId + "_" + clientId).getBytes()).toString();
+        String nameId = assertion.getSubject().getNameID().getValue();
+        String eduPersonTargetedId = getAttributeValue("urn:mace:dir:attribute-def:eduPersonTargetedID", assertion);
+        String collabPersonId = getAttributeValue("urn:mace:surf.nl:attribute-def:internal-collabPersonId", assertion);
+        String sub;
+        if (StringUtils.hasText(collabPersonId)) {
+            sub = nameId;
+            nameId = collabPersonId;
+        } else if (StringUtils.hasText(eduPersonTargetedId)) {
+            sub = eduPersonTargetedId;
+        } else {
+            sub = UUID.nameUUIDFromBytes((nameId + "_" + clientId).getBytes()).toString();
+        }
         attributes.put("sub", sub);
 
         List<String> acrClaims = assertion.getAuthnStatements().stream()
@@ -122,7 +128,7 @@ public class ResponseAuthenticationConverter implements Converter<OpenSaml4Authe
                 .map(Optional::get)
                 .collect(toList());
 
-        return new User(sub, unspecifiedNameId, authenticatingAuthority.get(), clientId, attributes, acrClaims);
+        return new User(sub, nameId, authenticatingAuthority.get(), clientId, attributes, acrClaims);
     }
 
     private void addDerivedAttributes(Map<String, Object> attributes) {
