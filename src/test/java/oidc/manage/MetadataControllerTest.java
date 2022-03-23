@@ -1,9 +1,11 @@
 package oidc.manage;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import oidc.AbstractIntegrationTest;
 import oidc.model.OpenIDClient;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.test.context.ActiveProfiles;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 import static io.restassured.RestAssured.given;
 import static oidc.manage.ServiceProviderTranslation.translateServiceProviderEntityId;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 @SuppressWarnings("unchecked")
 @ActiveProfiles(value = "nope", inheritProfiles = false)
@@ -70,6 +73,19 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
         clientIds.sort(String::compareTo);
         assertEquals(Arrays.asList("mock-rp", "mock-sp", "playground_client", "resource-server-playground-client",
                 "rp-jwt-authentication", "student.mobility.rp.localhost"), clientIds);
+    }
+
+    @Test
+    public void persistentNameID() throws IOException {
+        List<Map<String, Object>> data = objectMapper.readValue(new ClassPathResource("manage/push.json").getInputStream(),
+                new TypeReference<>() {
+                });
+        postConnections(data);
+        List<OpenIDClient> openIDClients = mongoTemplate.find(new Query(), OpenIDClient.class);
+        assertEquals(1, openIDClients.size());
+
+        OpenIDClient openIDClient = openIDClients.get(0);
+        assertFalse(openIDClient.isIncludeUnspecifiedNameID());
     }
 
     private void postConnections(List<Map<String, Object>> serviceProviders) throws IOException {

@@ -28,7 +28,7 @@ public interface TestUtils {
 
     default List<Map<String, Object>> relyingParties() throws IOException {
         return objectMapper.readValue(new ClassPathResource("manage/oidc10_rp.json").getInputStream(),
-                new TypeReference<List<Map<String, Object>>>() {
+                new TypeReference<>() {
                 });
     }
 

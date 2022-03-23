@@ -1,0 +1,38 @@
+[
+  {
+    "_id": "3af5d577-ad2d-4ab4-a112-23adbc528fb4",
+    "version": 19,
+    "type": "oauth20_rs",
+    "revision": {
+      "number": 18,
+      "created": "2022-03-23T04:32:52.512Z",
+      "updatedBy": "urn:collab:person:example.com:admin"
+    },
+    "data": {
+      "entityid": "resource-server-playground-client",
+      "state": "prodaccepted",
+      "metaDataFields": {
+        "name:en": "Resource Server for the Playground Client Test2",
+        "secret": "$2a$10$ExyI5stqKuLLs2J3oBYD/uJej3.t6RSD3nj9ki7cfcL2B6rlOX9DS",
+        "scopes": [
+          "openid",
+          "testbart.nl/getcijfers",
+          "test-scope",
+          "eduid.nl/eduid",
+          "eduid.nl/eppn",
+          "eduid.nl/links"
+        ],
+        "isResourceServer": true,
+        "NameIDFormat": "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent",
+        "coin:institution_guid": "ad93daef-0911-e511-80d0-005056956c1a",
+        "description:en": "Used on the OIDC playground to showcase the different OIDC scenario's",
+        "logo:0:url": "https://static.surfconext.nl/logos/idp/uu.png",
+        "OrganizationName:en": "Playground RS",
+        "coin:privacy:country": "NL"
+      },
+      "revisionnote": "tst",
+      "eid": 24559
+    },
+    "_class": "manage.model.MetaData"
+  }
+]

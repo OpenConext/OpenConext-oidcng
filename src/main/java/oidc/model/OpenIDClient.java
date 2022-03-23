@@ -93,8 +93,7 @@ public class OpenIDClient {
         this.includeUnspecifiedNameID = nameIdFormats.stream()
                 .filter(id -> metaDataFields.containsKey(id))
                 .map(id -> metaDataFields.get(id).equals("urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"))
-                .findAny()
-                .isPresent();
+                .anyMatch(b -> b);
     }
 
     @Transient
