@@ -1,9 +1,10 @@
+# The logging configuration.
 logging:
   level:
     root: OFF
     org.springframework: OFF
     org.springframework.security: OFF
-    oidc: DEBUG
+    oidc: WARN
 
 cron:
   node-cron-job-responsible: true
