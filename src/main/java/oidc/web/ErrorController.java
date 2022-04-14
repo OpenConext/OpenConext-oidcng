@@ -3,8 +3,7 @@ package oidc.web;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.oauth2.sdk.ParseException;
 import lombok.SneakyThrows;
-import oidc.exceptions.BaseException;
-import oidc.exceptions.CookiesNotSupportedException;
+import oidc.exceptions.*;
 import oidc.saml.ContextSaml2AuthenticationException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,6 +35,7 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static oidc.saml.AuthnRequestConverter.REDIRECT_URI_VALID;
@@ -47,6 +47,13 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
     private static final Log LOG = LogFactory.getLog(ErrorController.class);
     private final DefaultErrorAttributes errorAttributes;
     private RequestCache requestCache = new HttpSessionRequestCache();
+    private List<Class> exceptionsToExclude = List.of(
+            RedirectMismatchException.class,
+            UnauthorizedException.class,
+            CodeVerifierMissingException.class,
+            UnsupportedPromptValueException.class,
+            TokenAlreadyUsedException.class
+    );
 
     public ErrorController() {
         this.errorAttributes = new DefaultErrorAttributes();
@@ -72,7 +79,11 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
             String message = error.getMessage();
             // Not be considered an error that we want to report
             if (!"AccessToken not found".equals(message)) {
-                LOG.error("Error has occurred", error);
+                if (this.exceptionsToExclude.contains(error.getClass())) {
+                    LOG.error("Error has occurred: " + error);
+                } else {
+                    LOG.error("Error has occurred", error);
+                }
             }
 
             result.put("error_description", message);

@@ -16,8 +16,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class ConcurrentAuthorizationCodeRepository {
 
-    private FindAndModifyOptions options = FindAndModifyOptions.options().returnNew(true);
-    private MongoTemplate mongoTemplate;
+    private final FindAndModifyOptions options = FindAndModifyOptions.options().returnNew(true);
+    private final MongoTemplate mongoTemplate;
 
     @Autowired
     public ConcurrentAuthorizationCodeRepository(MongoTemplate mongoTemplate) {

@@ -344,7 +344,8 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
                 .formParam("redirect_uri", "http://nope")
                 .post("oidc/token")
                 .as(mapTypeRef);
-        assertEquals("Redirects do not match", body.get("message"));
+        assertEquals("Client mock-sp authorizationCodeGrant redirect URL http://nope does not match redirect URL http://localhost:3006/redirect from authorizationCode",
+                body.get("message"));
     }
 
     @Test
@@ -359,7 +360,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
                 .formParam("code", code)
                 .post("oidc/token")
                 .as(mapTypeRef);
-        assertEquals("Redirect URI is mandatory if specified in code request", body.get("message"));
+        assertTrue("Client mock-sp redirect URI is mandatory if specified in code request", body.get("message"));
     }
 
     @Test
