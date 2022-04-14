@@ -360,7 +360,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
                 .formParam("code", code)
                 .post("oidc/token")
                 .as(mapTypeRef);
-        assertTrue("Client mock-sp redirect URI is mandatory if specified in code request", body.get("message"));
+        assertEquals("Client mock-sp redirect URI is mandatory if specified in code request", body.get("message"));
     }
 
     @Test
