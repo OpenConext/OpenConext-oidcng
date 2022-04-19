@@ -52,7 +52,8 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
             UnauthorizedException.class,
             CodeVerifierMissingException.class,
             UnsupportedPromptValueException.class,
-            TokenAlreadyUsedException.class
+            TokenAlreadyUsedException.class,
+            UnknownClientException.class
     );
 
     public ErrorController() {
