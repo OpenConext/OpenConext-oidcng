@@ -210,8 +210,14 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
              * and if we find something then we know there was a re-use issue.
              */
             AuthorizationCode byCode = authorizationCodeRepository.findByCode(code);
-            accessTokenRepository.deleteByAuthorizationCodeId(byCode.getId());
-            throw new TokenAlreadyUsedException("Authorization code already used");
+            List<AccessToken> accessTokens = accessTokenRepository.findByAuthorizationCodeId(byCode.getId());
+            accessTokenRepository.deleteAll(accessTokens);
+            throw new TokenAlreadyUsedException(
+                    String.format("Authorization code %s already used for RP %s, deleting access_tokens %s",
+                            code,
+                            client.getClientId(),
+                            accessTokens.stream().map(AccessToken::getJwtId)
+                                    .collect(Collectors.joining(", "))));
         }
 
         if (!authorizationCode.getClientId().equals(client.getClientId())) {
