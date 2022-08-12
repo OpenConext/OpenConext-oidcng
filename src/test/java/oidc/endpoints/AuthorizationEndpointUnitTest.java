@@ -69,6 +69,11 @@ public class AuthorizationEndpointUnitTest {
         doValidateRedirectionUri("http://localhost:3333", "http://localhost:8080");
     }
 
+    @Test(expected = org.junit.ComparisonFailure.class)
+    public void validateRedirectUriNonLocalhost() throws IOException, ParseException {
+        doValidateRedirectionUri("http://domain.net:3333", "http://domain.net:8080");
+    }
+
     @Test
     public void validateRedirectUriDefault() throws IOException, ParseException {
         doValidateRedirectionUri("https://redirect", null);

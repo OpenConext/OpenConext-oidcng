@@ -358,8 +358,9 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                     String.format("Client %s with registered redirect URI's %s requested authorization with redirectURI %s",
                             client.getClientId(), registeredRedirectUrls, redirectURI));
         }
-        //We return the redirectURI provided by the RP as the port may differ
-        return new ProvidedRedirectURI(redirectURI);
+        ProvidedRedirectURI providedRedirectURI = optionalProvidedRedirectURI.get();
+        //We return the redirectURI provided by the RP as the port may differ, but only for localhost
+        return providedRedirectURI.literalCheckRequired() ? providedRedirectURI : new ProvidedRedirectURI(redirectURI);
     }
 
     private String authorizationRedirect(String redirectionURI, State state, String code, boolean isFragment) {

@@ -6,18 +6,27 @@ import lombok.Getter;
 
 import java.net.URI;
 
-@AllArgsConstructor
 @Getter
 public class ProvidedRedirectURI {
 
-    private String redirectURI;
+    private final String redirectURI;
+    private final URI me;
+
+    public ProvidedRedirectURI(String redirectURI) {
+        this.redirectURI = redirectURI;
+        this.me = URI.create(redirectURI);
+    }
 
     public boolean equalsIgnorePort(String uri) {
         URI that = URI.create(uri);
-        URI me = URI.create(redirectURI);
         return that.getScheme().equals(me.getScheme()) &&
                 that.getHost().equals(me.getHost()) &&
                 that.getPath().equals(me.getPath());
+    }
+
+    public boolean literalCheckRequired() {
+        String host = me.getHost();
+        return !"127.0.0.1".equals(host) && !"localhost".equals(host);
     }
 
     @Override

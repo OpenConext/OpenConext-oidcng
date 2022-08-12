@@ -31,4 +31,20 @@ public class ProvidedRedirectURITest {
         assertFalse(providedRedirectURI.equalsIgnorePort("http://my.domain:9090/path"));
         assertFalse(providedRedirectURI.equalsIgnorePort("http://my.nope"));
     }
+
+    @Test
+    public void testLiteralCheckRequired() {
+        ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://my.domain");
+        assertTrue(providedRedirectURI.literalCheckRequired());
+
+        providedRedirectURI = new ProvidedRedirectURI("http://localhost:8080/redirect");
+        assertFalse(providedRedirectURI.literalCheckRequired());
+
+        providedRedirectURI = new ProvidedRedirectURI("http://127.0.0.1:8080/redirect");
+        assertFalse(providedRedirectURI.literalCheckRequired());
+
+        //Host for this URI is null
+        providedRedirectURI = new ProvidedRedirectURI("http://127.0.01:8080/redirect");
+        assertTrue(providedRedirectURI.literalCheckRequired());
+    }
 }
