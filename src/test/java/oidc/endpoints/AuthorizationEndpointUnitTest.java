@@ -65,6 +65,11 @@ public class AuthorizationEndpointUnitTest {
     }
 
     @Test
+    public void validateRedirectUriLocalhost() throws IOException, ParseException {
+        doValidateRedirectionUri("http://localhost:3333", "http://localhost:8080");
+    }
+
+    @Test
     public void validateRedirectUriDefault() throws IOException, ParseException {
         doValidateRedirectionUri("https://redirect", null);
     }

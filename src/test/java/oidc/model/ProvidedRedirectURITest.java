@@ -9,7 +9,7 @@ public class ProvidedRedirectURITest {
 
     @Test
     public void testCompareWithPath() {
-        ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://my.domain:8080/path", true);
+        ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://my.domain:8080/path");
 
         assertTrue(providedRedirectURI.equalsIgnorePort("http://my.domain/path"));
         assertTrue(providedRedirectURI.equalsIgnorePort("http://my.domain:9090/path"));
@@ -17,15 +17,15 @@ public class ProvidedRedirectURITest {
 
     @Test
     public void testCompareWithoutPath() {
-        ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://my.domain", true);
+        ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://my.domain");
 
         assertTrue(providedRedirectURI.equalsIgnorePort("http://my.domain"));
         assertTrue(providedRedirectURI.equalsIgnorePort("http://my.domain:9090"));
     }
 
     @Test
-    public void testCompareNotEquasl() {
-        ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://my.domain", true);
+    public void testCompareNotEquals() {
+        ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://my.domain");
 
         assertFalse(providedRedirectURI.equalsIgnorePort("https://my.domain"));
         assertFalse(providedRedirectURI.equalsIgnorePort("http://my.domain:9090/path"));

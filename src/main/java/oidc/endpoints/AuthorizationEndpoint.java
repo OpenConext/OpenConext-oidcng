@@ -63,6 +63,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -339,28 +340,26 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
     public static ProvidedRedirectURI validateRedirectionURI(URI redirectionURI, OpenIDClient client) throws UnsupportedEncodingException {
         List<String> registeredRedirectUrls = client.getRedirectUrls();
-        if (registeredRedirectUrls == null) {
+        if (CollectionUtils.isEmpty(registeredRedirectUrls)) {
             throw new IllegalArgumentException(String.format("Client %s must have at least one redirectURI configured to use the Authorization flow",
                     client.getClientId()));
         }
         if (redirectionURI == null) {
-            return registeredRedirectUrls.stream().findFirst().map(s -> new ProvidedRedirectURI(s, false))
-                    .orElseThrow(() ->
-                            new IllegalArgumentException(String.format("Client %s must have at least one redirectURI configured to use the Authorization flow",
-                                    client.getClientId())));
+            return new ProvidedRedirectURI(registeredRedirectUrls.get(0));
         }
 
-        String redirectURI = URLDecoder.decode(redirectionURI.toString(), "UTF-8");
+        String redirectURI = URLDecoder.decode(redirectionURI.toString(), StandardCharsets.UTF_8);
         Optional<ProvidedRedirectURI> optionalProvidedRedirectURI = registeredRedirectUrls.stream()
-                .map(url -> new ProvidedRedirectURI(url, true))
+                .map(ProvidedRedirectURI::new)
                 .filter(providedRedirectURI -> providedRedirectURI.equalsIgnorePort(redirectURI))
                 .findFirst();
-        if (!optionalProvidedRedirectURI.isPresent()) {
+        if (optionalProvidedRedirectURI.isEmpty()) {
             throw new RedirectMismatchException(
                     String.format("Client %s with registered redirect URI's %s requested authorization with redirectURI %s",
                             client.getClientId(), registeredRedirectUrls, redirectURI));
         }
-        return optionalProvidedRedirectURI.get();
+        //We return the redirectURI provided by the RP as the port may differ
+        return new ProvidedRedirectURI(redirectURI);
     }
 
     private String authorizationRedirect(String redirectionURI, State state, String code, boolean isFragment) {
