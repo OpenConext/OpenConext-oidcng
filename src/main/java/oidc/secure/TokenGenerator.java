@@ -34,6 +34,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.core.io.Resource;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -69,6 +70,8 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private final String issuer;
 
+    private final Long delayStartSigningWithNewKeySeconds;
+
     private Map<String, JWSSigner> signers;
 
     private Map<String, JWSVerifier> verifiers;
@@ -97,11 +100,13 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private final String defaultAcrValue;
 
+    private final ThreadPoolTaskScheduler taskScheduler;
+
     @Autowired
     public TokenGenerator(@Value("${sp.entity_id}") String issuer,
                           @Value("${secret_key_set_path}") Resource secretKeySetPath,
                           @Value("${associated_data}") String associatedData,
-                          @Value("${openid_configuration_path}") Resource configurationPath,
+                          @Value("${delay_start_signing_with_new_key_seconds}") Long delayStartSigningWithNewKeySeconds,
                           @Value("${default_acr_value}") String defaultAcrValue,
                           ObjectMapper objectMapper,
                           SigningKeyRepository signingKeyRepository,
@@ -115,6 +120,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         this.sequenceRepository = sequenceRepository;
         this.symmetricKeyRepository = symmetricKeyRepository;
         this.issuer = issuer;
+        this.delayStartSigningWithNewKeySeconds = delayStartSigningWithNewKeySeconds;
 
         this.objectMapper = objectMapper;
         this.clock = environment.acceptsProfiles(Profiles.of("dev")) ? Clock.fixed(instant, ZoneId.systemDefault()) : Clock.systemDefaultZone();
@@ -122,8 +128,9 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         this.primaryKeysetHandle = CleartextKeysetHandle.read(JsonKeysetReader.withInputStream(secretKeySetPath.getInputStream()));
         this.associatedData = associatedData.getBytes(defaultCharset());
 
-        Map<String, Object> wellKnownConfiguration = objectMapper.readValue(configurationPath.getInputStream(), mapTypeReference);
         this.defaultAcrValue = defaultAcrValue;
+        this.taskScheduler = new ThreadPoolTaskScheduler();
+        this.taskScheduler.initialize();
 
     }
 
@@ -132,11 +139,11 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     public void onApplicationEvent(ApplicationStartedEvent event) {
         //we need to run this after any possible mongo migrations
         initializeSymmetricKeys();
-        initializeSigningKeys();
+        initializeSigningKeys(false);
     }
 
-    private void initializeSigningKeys() throws GeneralSecurityException, ParseException, IOException {
-        List<RSAKey> rsaKeys = this.signingKeyRepository.findAllByOrderByCreatedDesc().stream()
+    private void initializeSigningKeys(boolean delayCurrentSigningKey) throws GeneralSecurityException, IOException {
+        final List<RSAKey> rsaKeys = this.signingKeyRepository.findAllByOrderByCreatedDesc().stream()
                 .filter(signingKey -> StringUtils.hasText(signingKey.getSymmetricKeyId()))
                 .map(this::parseEncryptedRsaKey)
                 .collect(Collectors.toList());
@@ -145,34 +152,41 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
             SigningKey signingKey = this.generateEncryptedRsaKey();
             this.signingKeyRepository.save(signingKey);
             RSAKey rsaKey = this.parseEncryptedRsaKey(signingKey);
-            rsaKeys = Collections.singletonList(rsaKey);
+            rsaKeys.add(rsaKey);
         }
 
         this.publicKeys = rsaKeys.stream().map(RSAKey::toPublicJWK).collect(Collectors.toList());
-        this.currentSigningKeyId = rsaKeys.get(0).getKeyID();
+        //See https://www.pivotaltracker.com/story/show/173728678
+        if (delayCurrentSigningKey) {
+            taskScheduler.schedule(() -> currentSigningKeyId = rsaKeys.get(0).getKeyID(),
+                    new Date(System.currentTimeMillis() + (delayStartSigningWithNewKeySeconds * 1000)));
+        } else {
+            this.currentSigningKeyId = rsaKeys.get(0).getKeyID();
+        }
+
         this.signers = rsaKeys.stream().collect(toMap(JWK::getKeyID, this::createRSASigner));
         this.verifiers = rsaKeys.stream().collect(toMap(JWK::getKeyID, this::createRSAVerifier));
     }
 
-    public SigningKey rolloverSigningKeys() throws GeneralSecurityException, ParseException, IOException {
+    public SigningKey rolloverSigningKeys() throws GeneralSecurityException, IOException {
         SigningKey signingKey = this.generateEncryptedRsaKey();
         this.signingKeyRepository.save(signingKey);
-        this.initializeSigningKeys();
+        this.initializeSigningKeys(true);
         return signingKey;
     }
 
     private void initializeSymmetricKeys() throws GeneralSecurityException, IOException {
-        List<KeysetHandle> keysetHandles = this.symmetricKeyRepository.findAllByOrderByCreatedDesc().stream()
+        List<KeysetHandle> keySetHandles = this.symmetricKeyRepository.findAllByOrderByCreatedDesc().stream()
                 .map(this::parseKeysetHandle)
                 .collect(Collectors.toList());
 
-        if (keysetHandles.isEmpty()) {
+        if (keySetHandles.isEmpty()) {
             signingKeyRepository.deleteAll();
             SymmetricKey symmetricKey = generateSymmetricKey();
-            keysetHandles = Collections.singletonList(parseKeysetHandle(symmetricKey));
+            keySetHandles = Collections.singletonList(parseKeysetHandle(symmetricKey));
         }
-        this.currentSymmetricKeyId = String.valueOf(keysetHandles.get(0).getKeysetInfo().getPrimaryKeyId());
-        this.keysetHandleMap = keysetHandles.stream().collect(toMap(
+        this.currentSymmetricKeyId = String.valueOf(keySetHandles.get(0).getKeysetInfo().getPrimaryKeyId());
+        this.keysetHandleMap = keySetHandles.stream().collect(toMap(
                 keysetHandle -> String.valueOf(keysetHandle.getKeysetInfo().getPrimaryKeyId()),
                 keysetHandle -> keysetHandle));
     }
@@ -377,9 +391,11 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     private SigningKey generateEncryptedRsaKey() throws GeneralSecurityException, IOException {
-        String keyId = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS").format(new Date());
+        String keyId = String.format("key_%s", new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS").format(new Date()));
+        //TODO this must be delayed as it will cause the new key to picked up by other nodes
         this.sequenceRepository.updateSigningKeyId(keyId);
-        RSAKey rsaKey = generateRsaKey(String.format("key_%s", keyId));
+        String format = String.format("key_%s", keyId);
+        RSAKey rsaKey = generateRsaKey(format);
         String currentSymmetricKeyId = this.ensureLatestSymmetricKey();
         String value = encryptAead(rsaKey.toJSONString(), currentSymmetricKeyId);
         return new SigningKey(rsaKey.getKeyID(), currentSymmetricKeyId, value, new Date());
@@ -442,8 +458,13 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     private String ensureLatestSigningKey() throws GeneralSecurityException, ParseException, IOException {
-        if (!sequenceRepository.currentSigningKeyId().equals(this.currentSigningKeyId)) {
-            this.initializeSigningKeys();
+        String lastSigningKey = sequenceRepository.currentSigningKeyId();
+        //Bug for backward compatibility
+        if (!lastSigningKey.startsWith("key_")) {
+            lastSigningKey = "key_" + lastSigningKey;
+        }
+        if (!lastSigningKey.equals(this.currentSigningKeyId)) {
+            this.initializeSigningKeys(false);
         }
         return this.currentSigningKeyId;
     }
