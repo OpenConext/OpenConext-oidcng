@@ -37,7 +37,7 @@ public class KeyRolloverTest extends AbstractIntegrationTest implements SeedUtil
                 .insert(tokens)
                 .execute();
 
-        KeyRollover keyRollover = new KeyRollover(tokenGenerator, mongoTemplate, true, sequenceRepository);
+        KeyRollover keyRollover = new KeyRollover(tokenGenerator, mongoTemplate, true);
         keyRollover.rollover();
 
         List<String> keys = mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().collect(toList());
@@ -47,7 +47,7 @@ public class KeyRolloverTest extends AbstractIntegrationTest implements SeedUtil
 
     @Test
     public void cronJobResponsible() {
-        KeyRollover keyRollover = new KeyRollover(null, null, false, sequenceRepository);
+        KeyRollover keyRollover = new KeyRollover(null, null, false);
         keyRollover.rollover();
     }
 
@@ -64,7 +64,7 @@ public class KeyRolloverTest extends AbstractIntegrationTest implements SeedUtil
                 .insert(signingKeys)
                 .execute();
 
-        KeyRollover keyRollover = new KeyRollover(tokenGenerator, mongoTemplate, true, sequenceRepository);
+        KeyRollover keyRollover = new KeyRollover(tokenGenerator, mongoTemplate, true);
         keyRollover.doSymmetricKeyRollover();
 
         List<String> keyIds = mongoTemplate.findAll(SymmetricKey.class).stream()
@@ -73,7 +73,7 @@ public class KeyRolloverTest extends AbstractIntegrationTest implements SeedUtil
                 .collect(toList());
 
         assertEquals(
-                Arrays.asList(symmetricKeys.get(0).getKeyId(), sequenceRepository.currentSymmetricKeyId()).stream().sorted().collect(toList()),
+                Arrays.asList(symmetricKeys.get(0).getKeyId(), sequenceRepository.getLatestSymmetricKeyId()).stream().sorted().collect(toList()),
                 keyIds);
 
         mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, SigningKey.class).remove(new Query()).execute();
@@ -91,7 +91,7 @@ public class KeyRolloverTest extends AbstractIntegrationTest implements SeedUtil
                 .insert(tokens)
                 .execute();
 
-        KeyRollover keyRollover = new KeyRollover(tokenGenerator, mongoTemplate, true, sequenceRepository);
+        KeyRollover keyRollover = new KeyRollover(tokenGenerator, mongoTemplate, true);
         keyRollover.rollover();
 
         List<String> keys = mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().collect(toList());

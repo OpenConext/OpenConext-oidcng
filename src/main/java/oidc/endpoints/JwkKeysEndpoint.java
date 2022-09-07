@@ -26,20 +26,23 @@ public class JwkKeysEndpoint implements MapTypeReference {
     private final TokenGenerator tokenGenerator;
     private final ObjectMapper objectMapper;
     private final Map<String, Object> wellKnownConfiguration;
+    private final Long maxAge;
 
     public JwkKeysEndpoint(TokenGenerator tokenGenerator,
                            ObjectMapper objectMapper,
+                           @Value("${keys-cache.cache-duration-seconds}") Long maxAge,
                            @Value("${openid_configuration_path}") Resource configurationPath) throws IOException {
         this.tokenGenerator = tokenGenerator;
         this.wellKnownConfiguration = objectMapper.readValue(configurationPath.getInputStream(), mapTypeReference);
         this.objectMapper = objectMapper;
+        this.maxAge = maxAge;
     }
 
     @GetMapping(value = {"/oidc/certs"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> publishClientJwk() throws GeneralSecurityException, ParseException, IOException {
         String publicKeysJson = new JWKSet(tokenGenerator.getAllPublicKeys()).toJSONObject().toString();
         HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.setCacheControl(CacheControl.maxAge(3600L, TimeUnit.SECONDS));
+        responseHeaders.setCacheControl(CacheControl.maxAge(this.maxAge, TimeUnit.SECONDS));
         return ResponseEntity.ok()
                 .headers(responseHeaders)
                 .body(publicKeysJson);

@@ -19,10 +19,10 @@ public class SequenceRepositoryTest extends AbstractIntegrationTest {
         mongoTemplate.dropCollection(Sequence.class);
 
         sequenceRepository.updateSigningKeyId(newKeyId);
-        assertEquals(newKeyId, sequenceRepository.currentSigningKeyId());
+        assertEquals(newKeyId, sequenceRepository.getLatestSigningKeyId());
 
         sequenceRepository.updateSigningKeyId(newKeyId2);
-        assertEquals(newKeyId2, sequenceRepository.currentSigningKeyId());
+        assertEquals(newKeyId2, sequenceRepository.getLatestSigningKeyId());
     }
 
     @Test
@@ -30,9 +30,9 @@ public class SequenceRepositoryTest extends AbstractIntegrationTest {
         mongoTemplate.dropCollection(Sequence.class);
 
         sequenceRepository.updateSymmetricKeyId(newKeyId);
-        assertEquals(newKeyId, sequenceRepository.currentSymmetricKeyId());
+        assertEquals(newKeyId, sequenceRepository.getLatestSymmetricKeyId());
 
         sequenceRepository.updateSymmetricKeyId(newKeyId2);
-        assertEquals(newKeyId2, sequenceRepository.currentSymmetricKeyId());
+        assertEquals(newKeyId2, sequenceRepository.getLatestSymmetricKeyId());
     }
 }

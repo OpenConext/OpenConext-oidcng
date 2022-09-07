@@ -23,19 +23,16 @@ public class KeyRollover {
 
     private static final Log LOG = LogFactory.getLog(KeyRollover.class);
 
-    private TokenGenerator tokenGenerator;
-    private MongoTemplate mongoTemplate;
-    private boolean cronJobResponsible;
-    private SequenceRepository sequenceRepository;
+    private final TokenGenerator tokenGenerator;
+    private final MongoTemplate mongoTemplate;
+    private final boolean cronJobResponsible;
 
     public KeyRollover(TokenGenerator tokenGenerator,
                        MongoTemplate mongoTemplate,
-                       @Value("${cron.node-cron-job-responsible}") boolean cronJobResponsible,
-                       SequenceRepository sequenceRepository) {
+                       @Value("${cron.node-cron-job-responsible}") boolean cronJobResponsible) {
         this.tokenGenerator = tokenGenerator;
         this.mongoTemplate = mongoTemplate;
         this.cronJobResponsible = cronJobResponsible;
-        this.sequenceRepository = sequenceRepository;
     }
 
     @Scheduled(cron = "${cron.key-rollover-expression}")
@@ -51,7 +48,7 @@ public class KeyRollover {
             SigningKey signingKey = tokenGenerator.rolloverSigningKeys();
             LOG.info("Successful signing key rollover. New signing key: " + signingKey.getKeyId());
 
-            return cleanUpSigningKeys();
+            return cleanUpSigningKeys(signingKey);
         } catch (Exception e) {
             LOG.error("Rollover exception", e);
             return Collections.emptyList();
@@ -63,19 +60,20 @@ public class KeyRollover {
             SymmetricKey symmetricKey = tokenGenerator.rolloverSymmetricKeys();
             LOG.info("Successful symmetric key rollover. New symmetric key: " + symmetricKey.getKeyId());
 
-            return cleanUpSymmetricKeys();
+            return cleanUpSymmetricKeys(symmetricKey);
         } catch (Exception e) {
             LOG.error("Rollover exception", e);
             return Collections.emptyList();
         }
     }
 
-    public List<String> cleanUpSigningKeys() {
+    private List<String> cleanUpSigningKeys(SigningKey signingKey) {
         List<String> signingKeyValues = mongoTemplate.findDistinct("signingKeyId", AccessToken.class, String.class);
         List<String> signingKeyValuesRefreshToken = mongoTemplate.findDistinct("signingKeyId", RefreshToken.class, String.class);
         signingKeyValues.addAll(signingKeyValuesRefreshToken);
 
-        signingKeyValues.add(sequenceRepository.currentSigningKeyId());
+        signingKeyValues.add(signingKey.getKeyId());
+        signingKeyValues.add(tokenGenerator.getCurrentSigningKeyId());
 
         Query query = Query.query(Criteria.where("keyId").not().in(signingKeyValues));
         List<SigningKey> signingKeys = mongoTemplate.findAllAndRemove(query, SigningKey.class);
@@ -87,9 +85,9 @@ public class KeyRollover {
         return deleted;
     }
 
-    public List<String> cleanUpSymmetricKeys() {
+    private List<String> cleanUpSymmetricKeys(SymmetricKey symmetricKey) {
         List<String> symmetricKeyValues = mongoTemplate.findDistinct("symmetricKeyId", SigningKey.class, String.class);
-        symmetricKeyValues.add(sequenceRepository.currentSymmetricKeyId());
+        symmetricKeyValues.add(symmetricKey.getKeyId());
 
         Query query = Query.query(Criteria.where("keyId").not().in(symmetricKeyValues));
         List<SymmetricKey> symmetricKeys = mongoTemplate.findAllAndRemove(query, SymmetricKey.class);

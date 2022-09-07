@@ -42,11 +42,11 @@ public class SequenceRepository {
         }
     }
 
-    public String currentSigningKeyId() {
+    public String getLatestSigningKeyId() {
         return getSequenceValue(signingKeyBasicQuery);
     }
 
-    public String currentSymmetricKeyId() {
+    public String getLatestSymmetricKeyId() {
         return getSequenceValue(symmetricKeyBasicQuery);
     }
 

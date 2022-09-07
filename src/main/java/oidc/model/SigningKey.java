@@ -15,13 +15,13 @@ public class SigningKey {
     @Id
     private String id;
 
-    private String keyId;
+    private final String keyId;
 
-    private String symmetricKeyId;
+    private final String symmetricKeyId;
 
-    private String jwk;
+    private final String jwk;
 
-    private Date created;
+    private final Date created;
 
     public SigningKey(String keyId, String symmetricKeyId, String jwk, Date created) {
         Assert.notNull(keyId, "KeyID must not be null");

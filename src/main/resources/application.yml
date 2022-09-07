@@ -12,6 +12,13 @@ cron:
   key-rollover-expression: "0 0/15 * * * *"
   consent-expiry-duration-days: 90
 
+keys-cache:
+  # The max-age cache control for signing keys in seconds
+  cache-duration-seconds: 3600
+  # The time in seconds where new signing keys are published, but not used
+  idle-time-seconds: 7200
+
+
 server:
   error:
     path: "/error"
@@ -32,8 +39,6 @@ default_acr_value: http://test.surfconext.nl/assurance/loa1
 secure_cookie: false
 oidc_token_endpoint: http://localhost:8080/oidc/token
 environment: SURFconext TEST2
-#delay_start_signing_with_new_key_seconds: 7200
-delay_start_signing_with_new_key_seconds: 5
 
 features:
   # Do we enforce that the RS - if eduID pseudonymisation is required - belongs to the SURF IdP linked to the eduID user account?
