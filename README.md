@@ -225,11 +225,11 @@ sign and verify the JWT tokens. The symmetric keys are used to encrypt and decry
 
 To rollover the signing key and clean up unreferenced signing keys:
 ```
-curl -u manage:secret "http://localhost:8080/manage/force-signing-key-rollover"
+curl -u oidcng:secret "http://localhost:8080/manage/force-signing-key-rollover"
 ```
 To rollover the symmetric key and clean up unreferenced symmetric keys:
 ```
-curl -u manage:secret "http://localhost:8080/manage/force-symmetric-key-rollover"
+curl -u oidcng:secret "http://localhost:8080/manage/force-symmetric-key-rollover"
 ```
 ## [SAML metadata](#saml-metadata)
 

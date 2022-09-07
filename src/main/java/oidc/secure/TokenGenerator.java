@@ -75,6 +75,8 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
 
     private String currentSigningKeyId;
 
+    private String latestSigningKey;
+
     private List<RSAKey> publicKeys;
 
     private final byte[] associatedData;
@@ -135,8 +137,9 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         initializeSigningKeys();
     }
 
-    private void initializeSigningKeys() throws GeneralSecurityException, ParseException, IOException {
-        List<RSAKey> rsaKeys = this.signingKeyRepository.findAllByOrderByCreatedDesc().stream()
+    private void initializeSigningKeys() throws GeneralSecurityException, IOException {
+        List<RSAKey> rsaKeys = this.signingKeyRepository.findAllByOrderByCreatedDesc()
+                .stream()
                 .filter(signingKey -> StringUtils.hasText(signingKey.getSymmetricKeyId()))
                 .map(this::parseEncryptedRsaKey)
                 .collect(Collectors.toList());
@@ -149,12 +152,15 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         }
 
         this.publicKeys = rsaKeys.stream().map(RSAKey::toPublicJWK).collect(Collectors.toList());
+        // We need the latestSigningKey to check if another node has done a roll-up
+        this.latestSigningKey = rsaKeys.get(0).getKeyID();
+        // The latest signing key is not used until the cache expires
         this.currentSigningKeyId = rsaKeys.get(0).getKeyID();
         this.signers = rsaKeys.stream().collect(toMap(JWK::getKeyID, this::createRSASigner));
         this.verifiers = rsaKeys.stream().collect(toMap(JWK::getKeyID, this::createRSAVerifier));
     }
 
-    public SigningKey rolloverSigningKeys() throws GeneralSecurityException, ParseException, IOException {
+    public SigningKey rolloverSigningKeys() throws GeneralSecurityException, IOException {
         SigningKey signingKey = this.generateEncryptedRsaKey();
         this.signingKeyRepository.save(signingKey);
         this.initializeSigningKeys();
@@ -377,9 +383,9 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     private SigningKey generateEncryptedRsaKey() throws GeneralSecurityException, IOException {
-        String keyId = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS").format(new Date());
+        String keyId = String.format("key_%s", new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS").format(new Date()));
         this.sequenceRepository.updateSigningKeyId(keyId);
-        RSAKey rsaKey = generateRsaKey(String.format("key_%s", keyId));
+        RSAKey rsaKey = generateRsaKey(keyId);
         String currentSymmetricKeyId = this.ensureLatestSymmetricKey();
         String value = encryptAead(rsaKey.toJSONString(), currentSymmetricKeyId);
         return new SigningKey(rsaKey.getKeyID(), currentSymmetricKeyId, value, new Date());
@@ -442,14 +448,16 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     private String ensureLatestSigningKey() throws GeneralSecurityException, ParseException, IOException {
-        if (!sequenceRepository.currentSigningKeyId().equals(this.currentSigningKeyId)) {
+        String signingKeyId = sequenceRepository.currentSigningKeyId();
+        if (!signingKeyId.equals(this.currentSigningKeyId)) {
             this.initializeSigningKeys();
         }
         return this.currentSigningKeyId;
     }
 
     private String ensureLatestSymmetricKey() throws GeneralSecurityException, IOException {
-        if (!sequenceRepository.currentSymmetricKeyId().equals(this.currentSymmetricKeyId)) {
+        String latestSymmetricKeyId = sequenceRepository.currentSymmetricKeyId();
+        if (!latestSymmetricKeyId.equals(this.currentSymmetricKeyId)) {
             this.initializeSymmetricKeys();
         }
         return this.currentSymmetricKeyId;

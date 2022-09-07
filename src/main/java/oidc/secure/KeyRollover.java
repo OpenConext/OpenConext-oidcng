@@ -75,7 +75,7 @@ public class KeyRollover {
         List<String> signingKeyValuesRefreshToken = mongoTemplate.findDistinct("signingKeyId", RefreshToken.class, String.class);
         signingKeyValues.addAll(signingKeyValuesRefreshToken);
 
-        signingKeyValues.add(String.format("key_%s", sequenceRepository.currentSigningKeyId()));
+        signingKeyValues.add(sequenceRepository.currentSigningKeyId());
 
         Query query = Query.query(Criteria.where("keyId").not().in(signingKeyValues));
         List<SigningKey> signingKeys = mongoTemplate.findAllAndRemove(query, SigningKey.class);
