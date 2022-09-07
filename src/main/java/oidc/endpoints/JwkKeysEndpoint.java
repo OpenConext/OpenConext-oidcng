@@ -9,10 +9,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import oidc.secure.TokenGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.http.CacheControl;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,9 +23,9 @@ import java.util.concurrent.TimeUnit;
 @RestController
 public class JwkKeysEndpoint implements MapTypeReference {
 
-    private TokenGenerator tokenGenerator;
-    private ObjectMapper objectMapper;
-    private Map<String, Object> wellKnownConfiguration;
+    private final TokenGenerator tokenGenerator;
+    private final ObjectMapper objectMapper;
+    private final Map<String, Object> wellKnownConfiguration;
 
     public JwkKeysEndpoint(TokenGenerator tokenGenerator,
                            ObjectMapper objectMapper,
@@ -39,8 +36,13 @@ public class JwkKeysEndpoint implements MapTypeReference {
     }
 
     @GetMapping(value = {"/oidc/certs"}, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String publishClientJwk() throws GeneralSecurityException, ParseException, IOException {
-        return new JWKSet(tokenGenerator.getAllPublicKeys()).toJSONObject().toString();
+    public ResponseEntity<String> publishClientJwk() throws GeneralSecurityException, ParseException, IOException {
+        String publicKeysJson = new JWKSet(tokenGenerator.getAllPublicKeys()).toJSONObject().toString();
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.setCacheControl(CacheControl.maxAge(3600L, TimeUnit.SECONDS));
+        return ResponseEntity.ok()
+                .headers(responseHeaders)
+                .body(publicKeysJson);
     }
 
     @GetMapping("oidc/generate-secret-key-set")

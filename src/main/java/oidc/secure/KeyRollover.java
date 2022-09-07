@@ -81,8 +81,8 @@ public class KeyRollover {
         List<SigningKey> signingKeys = mongoTemplate.findAllAndRemove(query, SigningKey.class);
 
         List<String> deleted = signingKeys.stream().map(SigningKey::getKeyId).collect(Collectors.toList());
-        LOG.info("Deleted signing keys that are no longer referenced by access_tokens and refresh_token: "
-                + String.join(", ", deleted));
+        String deletedKeys = deleted.isEmpty() ? "None" : String.join(", ", deleted);
+        LOG.info("Deleted signing keys that are no longer referenced by access_tokens and refresh_token: " + deletedKeys);
 
         return deleted;
     }
@@ -95,7 +95,8 @@ public class KeyRollover {
         List<SymmetricKey> symmetricKeys = mongoTemplate.findAllAndRemove(query, SymmetricKey.class);
 
         List<String> deleted = symmetricKeys.stream().map(SymmetricKey::getKeyId).collect(Collectors.toList());
-        LOG.info("Deleted symmetric keys that are no longer referenced by signing keys: " + String.join(", ", deleted));
+        String deletedKeys = deleted.isEmpty() ? "None" : String.join(", ", deleted);
+        LOG.info("Deleted symmetric keys that are no longer referenced by signing keys: " + deletedKeys);
 
         return deleted;
     }
