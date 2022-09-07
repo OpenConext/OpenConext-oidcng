@@ -394,8 +394,7 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         String keyId = String.format("key_%s", new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS").format(new Date()));
         //TODO this must be delayed as it will cause the new key to picked up by other nodes
         this.sequenceRepository.updateSigningKeyId(keyId);
-        String format = String.format("key_%s", keyId);
-        RSAKey rsaKey = generateRsaKey(format);
+        RSAKey rsaKey = generateRsaKey(keyId);
         String currentSymmetricKeyId = this.ensureLatestSymmetricKey();
         String value = encryptAead(rsaKey.toJSONString(), currentSymmetricKeyId);
         return new SigningKey(rsaKey.getKeyID(), currentSymmetricKeyId, value, new Date());
