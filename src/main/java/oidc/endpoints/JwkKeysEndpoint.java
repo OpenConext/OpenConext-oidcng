@@ -42,7 +42,7 @@ public class JwkKeysEndpoint implements MapTypeReference {
     public ResponseEntity<String> publishClientJwk() throws GeneralSecurityException, ParseException, IOException {
         String publicKeysJson = new JWKSet(tokenGenerator.getAllPublicKeys()).toJSONObject().toString();
         HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.setCacheControl(CacheControl.maxAge(this.maxAge, TimeUnit.SECONDS));
+        responseHeaders.setCacheControl(CacheControl.maxAge(this.maxAge, TimeUnit.SECONDS).noTransform());
         return ResponseEntity.ok()
                 .headers(responseHeaders)
                 .body(publicKeysJson);
