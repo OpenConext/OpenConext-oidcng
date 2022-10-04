@@ -157,6 +157,7 @@ public class TokenController {
                                         !scope.getName().equalsIgnoreCase("openid"))
                                 .collect(toList())
                 ))
+                .filter(map -> !((Collection)map.get("scopes")).isEmpty())
                 .collect(toList());
     }
 
