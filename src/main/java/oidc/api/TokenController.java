@@ -1,12 +1,7 @@
 package oidc.api;
 
 import oidc.crypto.KeyGenerator;
-import oidc.model.AccessToken;
-import oidc.model.OpenIDClient;
-import oidc.model.RefreshToken;
-import oidc.model.Scope;
-import oidc.model.TokenRepresentation;
-import oidc.model.TokenType;
+import oidc.model.*;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.OpenIDClientRepository;
 import oidc.repository.RefreshTokenRepository;
@@ -17,11 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -30,8 +22,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -41,10 +31,10 @@ public class TokenController {
 
     private static final Log LOG = LogFactory.getLog(TokenController.class);
 
-    private AccessTokenRepository accessTokenRepository;
-    private RefreshTokenRepository refreshTokenRepository;
-    private OpenIDClientRepository openIDClientRepository;
-    private String salt;
+    private final AccessTokenRepository accessTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final OpenIDClientRepository openIDClientRepository;
+    private final String salt;
 
     public TokenController(AccessTokenRepository accessTokenRepository,
                            RefreshTokenRepository refreshTokenRepository,
@@ -59,6 +49,17 @@ public class TokenController {
     @GetMapping("tokens")
     @PreAuthorize("hasRole('ROLE_api_tokens')")
     public List<Map<String, Object>> tokens(Authentication authentication, @RequestParam("unspecifiedID") String unspecifiedId) throws UnsupportedEncodingException {
+        return doTokens(authentication, unspecifiedId, APIVersion.V1);
+    }
+
+    @GetMapping("v2/tokens")
+    @PreAuthorize("hasRole('ROLE_api_tokens')")
+    public List<Map<String, Object>> tokensV2(Authentication authentication, @RequestParam("unspecifiedID") String unspecifiedId) throws UnsupportedEncodingException {
+        return doTokens(authentication, unspecifiedId, APIVersion.V2);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> doTokens(Authentication authentication, String unspecifiedId, APIVersion apiVersion) throws UnsupportedEncodingException {
         String name = authentication.getName();
         unspecifiedId = URLDecoder.decode(unspecifiedId, Charset.defaultCharset().name());
 
@@ -71,9 +72,11 @@ public class TokenController {
 
         accessTokens.addAll(refreshTokens);
         List<Map<String, Object>> result = accessTokens.stream()
-                .map(this::convertToken)
+                .map(token -> this.convertToken(token, apiVersion))
                 //No use returning tokens without RP
                 .filter(map -> map.containsKey("clientName"))
+                //Version 2 for Profile only returns tokens where there is actual an audience
+                .filter(map -> APIVersion.V1.equals(apiVersion) || !((Collection) map.get("audiences")).isEmpty())
                 .collect(toList());
 
         LOG.debug(String.format("Returning tokens for %s with unspecified %s: %s", name, unspecifiedId, result));
@@ -96,7 +99,7 @@ public class TokenController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
-    private Map<String, Object> convertToken(AccessToken token) {
+    private Map<String, Object> convertToken(AccessToken token, APIVersion version) {
         Map<String, Object> result = new HashMap<>();
         result.put("id", token.getId());
 
@@ -107,28 +110,50 @@ public class TokenController {
         OpenIDClient openIDClient = optionalClient.get();
         result.put("clientId", openIDClient.getClientId());
         result.put("clientName", openIDClient.getName());
+        result.put("createdAt", token.getCreatedAt());
+        result.put("expiresIn", token.getExpiresIn());
+        result.put("type", token instanceof RefreshToken ? TokenType.REFRESH : TokenType.ACCESS);
+
         List<OpenIDClient> resourceServers = openIDClient.getAllowedResourceServers().stream()
                 .map(rs -> openIDClientRepository.findOptionalByClientId(rs))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(toList());
-        result.put("audiences", resourceServers.stream().map(OpenIDClient::getName));
 
-        result.put("createdAt", token.getCreatedAt());
-        result.put("expiresIn", token.getExpiresIn());
-        result.put("type", token instanceof RefreshToken ? TokenType.REFRESH : TokenType.ACCESS);
+        if (version.equals(APIVersion.V1)) {
+            result.put("audiences", resourceServers.stream().map(OpenIDClient::getName).collect(toList()));
+            Map<String, Scope> allScopes = getAllScopes(resourceServers);
+            List<Scope> scopes = token.getScopes().stream()
+                    .filter(name -> !name.equalsIgnoreCase("openid"))
+                    .map(allScopes::get)
+                    .filter(Objects::nonNull)
+                    .collect(toList());
+            result.put("scopes", scopes);
+        } else if (version.equals(APIVersion.V2)) {
+            result.put("audiences", this.resourceServersObjects(token, resourceServers));
+        }
+        return result;
+    }
 
-        Map<String, Scope> allScopes = resourceServers.stream().map(OpenIDClient::getScopes)
+    private Map<String, Scope> getAllScopes(List<OpenIDClient> resourceServers) {
+        return resourceServers.stream().map(OpenIDClient::getScopes)
                 .flatMap(List::stream)
                 .filter(distinctByKey(Scope::getName))
                 .collect(toMap(Scope::getName, s -> s));
-        List<Scope> scopes = token.getScopes().stream()
-                .filter(name -> !name.equalsIgnoreCase("openid"))
-                .map(allScopes::get)
-                .filter(Objects::nonNull)
+    }
+
+    private List<Map<String, Object>> resourceServersObjects(AccessToken token, List<OpenIDClient> resourceServers) {
+        return resourceServers.stream()
+                .map(rs -> Map.of(
+                        "name", rs.getName(),
+                        "orgName", StringUtils.hasText(rs.getOrganisationName()) ? rs.getOrganisationName() : "",
+                        //Only add the scopes that are actually requested / granted for this token
+                        "scopes", rs.getScopes().stream()
+                                .filter(scope -> token.getScopes().contains(scope.getName()) &&
+                                        !scope.getName().equalsIgnoreCase("openid"))
+                                .collect(toList())
+                ))
                 .collect(toList());
-        result.put("scopes", scopes);
-        return result;
     }
 
     private <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {

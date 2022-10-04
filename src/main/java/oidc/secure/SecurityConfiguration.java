@@ -292,7 +292,7 @@ public class SecurityConfiguration {
         protected void configure(HttpSecurity http) throws Exception {
             http
                     .requestMatchers()
-                    .antMatchers("/internal/**", "/manage/**", "/tokens")
+                    .antMatchers("/internal/**", "/manage/**", "/tokens", "/v2/tokens")
                     .and()
                     .csrf()
                     .disable()
@@ -301,7 +301,7 @@ public class SecurityConfiguration {
                     .permitAll()
                     .and()
                     .authorizeRequests()
-                    .antMatchers("/manage/**", "/tokens")
+                    .antMatchers("/manage/**", "/tokens", "/v2/tokens")
                     .authenticated()
                     .and()
                     .httpBasic()

@@ -29,6 +29,7 @@ public class OpenIDClient {
     private String id;
     private String clientId;
     private String institutionGuid;
+    private String organisationName;
     private String name;
     private String nameNl;
     private String secret;
@@ -67,6 +68,7 @@ public class OpenIDClient {
         Map<String, Object> metaDataFields = (Map<String, Object>) data.get("metaDataFields");
 
         this.institutionGuid = (String) metaDataFields.get("coin:institution_guid");
+        this.organisationName = (String) metaDataFields.get("OrganizationName:en");
         this.name = (String) metaDataFields.get("name:en");
         this.nameNl = (String) metaDataFields.get("name:nl");
         this.secret = (String) metaDataFields.get("secret");

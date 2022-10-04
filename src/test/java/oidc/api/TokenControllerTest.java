@@ -1,5 +1,7 @@
 package oidc.api;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.common.mapper.TypeRef;
 import oidc.AbstractIntegrationTest;
 import oidc.crypto.KeyGenerator;
@@ -14,11 +16,7 @@ import org.springframework.http.HttpStatus;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.restassured.RestAssured.given;
@@ -39,13 +37,22 @@ public class TokenControllerTest extends AbstractIntegrationTest {
 
     @Test
     public void getTokens() {
-        List<Map<String, Object>> tokens = doGetTokens(user, password, unspecifiedId);
+        List<Map<String, Object>> tokens = doGetTokens(user, password, unspecifiedId, APIVersion.V1);
         assertEquals(4, tokens.size());
     }
 
     @Test
+    public void getTokensV2()  {
+        List<Map<String, Object>> tokens = doGetTokens(user, password, unspecifiedId, APIVersion.V2);
+        assertEquals(2, tokens.size());
+        List<Map<String, Object>> resourceServers = (List<Map<String, Object>>) tokens.get(0).get("audiences");
+        List<Map<String, Object>> scopes = (List<Map<String, Object>>) resourceServers.get(0).get("scopes");
+        assertEquals("groups", scopes.get(0).get("name"));
+    }
+
+    @Test
     public void deleteTokens() {
-        List<Map<String, Object>> tokens = doGetTokens(user, password, unspecifiedId);
+        List<Map<String, Object>> tokens = doGetTokens(user, password, unspecifiedId, APIVersion.V1);
 
         List<TokenRepresentation> body = tokens.stream()
                 .map(token -> new TokenRepresentation((String) token.get("id"), TokenType.valueOf((String) token.get("type"))))
@@ -60,7 +67,7 @@ public class TokenControllerTest extends AbstractIntegrationTest {
                 .put("tokens")
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
-        tokens = doGetTokens(user, password, unspecifiedId);
+        tokens = doGetTokens(user, password, unspecifiedId, APIVersion.V1);
         assertEquals(0, tokens.size());
     }
 
@@ -79,10 +86,10 @@ public class TokenControllerTest extends AbstractIntegrationTest {
     }
 
     private RefreshToken refreshToken(String clientId) {
-        return new RefreshToken(UUID.randomUUID().toString(),  accessToken(clientId), Date.from(Instant.now().minus(90, ChronoUnit.DAYS)));
+        return new RefreshToken(UUID.randomUUID().toString(), accessToken(clientId), Date.from(Instant.now().minus(90, ChronoUnit.DAYS)));
     }
 
-    private List<Map<String, Object>> doGetTokens(String user, String secret, String unspecifiedId) {
+    private List<Map<String, Object>> doGetTokens(String user, String secret, String unspecifiedId, APIVersion apiVersion) {
         return given()
                 .when()
                 .header("Content-type", "application/json")
@@ -90,8 +97,8 @@ public class TokenControllerTest extends AbstractIntegrationTest {
                 .preemptive()
                 .basic(user, secret)
                 .queryParam("unspecifiedID", unspecifiedId)
-                .get("tokens")
-                .as(new TypeRef<List<Map<String, Object>>>() {
+                .get(apiVersion.equals(APIVersion.V1) ? "tokens" : "/v2/tokens")
+                .as(new TypeRef<>() {
                 });
     }
 }
