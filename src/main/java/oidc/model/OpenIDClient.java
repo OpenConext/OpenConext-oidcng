@@ -30,8 +30,11 @@ public class OpenIDClient {
     private String clientId;
     private String institutionGuid;
     private String organisationName;
+    private String organisationNameNl;
     private String name;
     private String nameNl;
+    private String description;
+    private String descriptionNl;
     private String secret;
     private String clientSecretJWT;
     private String logoUrl;
@@ -69,8 +72,11 @@ public class OpenIDClient {
 
         this.institutionGuid = (String) metaDataFields.get("coin:institution_guid");
         this.organisationName = (String) metaDataFields.get("OrganizationName:en");
+        this.organisationNameNl = (String) metaDataFields.get("OrganizationName:nl");
         this.name = (String) metaDataFields.get("name:en");
         this.nameNl = (String) metaDataFields.get("name:nl");
+        this.description = (String) metaDataFields.get("description:en");
+        this.descriptionNl = (String) metaDataFields.get("description:nl");
         this.secret = (String) metaDataFields.get("secret");
         this.clientSecretJWT = (String) metaDataFields.get("clientSecretJWT");
         this.logoUrl = (String) metaDataFields.get("logo:0:url");

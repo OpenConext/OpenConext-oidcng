@@ -145,8 +145,12 @@ public class TokenController {
     private List<Map<String, Object>> resourceServersObjects(AccessToken token, List<OpenIDClient> resourceServers) {
         return resourceServers.stream()
                 .map(rs -> Map.of(
-                        "name", rs.getName(),
-                        "orgName", StringUtils.hasText(rs.getOrganisationName()) ? rs.getOrganisationName() : "",
+                        "name:en", safeNotNotValue(rs.getName()),
+                        "name:nl", safeNotNotValue(rs.getNameNl()),
+                        "description:en", safeNotNotValue(rs.getDescription()),
+                        "description:nl", safeNotNotValue(rs.getDescriptionNl()),
+                        "OrganizationName:en:", safeNotNotValue(rs.getOrganisationName()),
+                        "OrganizationName:nl:", safeNotNotValue(rs.getOrganisationNameNl()),
                         //Only add the scopes that are actually requested / granted for this token
                         "scopes", rs.getScopes().stream()
                                 .filter(scope -> token.getScopes().contains(scope.getName()) &&
@@ -154,6 +158,10 @@ public class TokenController {
                                 .collect(toList())
                 ))
                 .collect(toList());
+    }
+
+    private String safeNotNotValue(String value) {
+        return StringUtils.hasText(value) ? value : "";
     }
 
     private <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
