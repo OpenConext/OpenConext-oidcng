@@ -84,7 +84,7 @@ public class TokenController {
         return result;
     }
 
-    @PutMapping("tokens")
+    @PutMapping({"tokens", "v2/tokens"})
     @PreAuthorize("hasRole('ROLE_api_tokens')")
     public ResponseEntity<Void> deleteTokens(Authentication authentication,
                                              @RequestBody List<TokenRepresentation> tokenIdentifiers) {

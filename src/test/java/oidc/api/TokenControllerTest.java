@@ -1,5 +1,6 @@
 package oidc.api;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.restassured.common.mapper.TypeRef;
 import oidc.AbstractIntegrationTest;
 import oidc.crypto.KeyGenerator;
@@ -38,7 +39,7 @@ public class TokenControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void getTokensV2()  {
+    public void getTokensV2() {
         List<Map<String, Object>> tokens = doGetTokens(APIVersion.V2);
         assertEquals(2, tokens.size());
         List<Map<String, Object>> resourceServers = (List<Map<String, Object>>) tokens.get(0).get("audiences");
@@ -47,12 +48,22 @@ public class TokenControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void deleteTokens() {
+    public void deleteTokens() throws JsonProcessingException {
+        doDeleteTokens(APIVersion.V1);
+    }
+
+    @Test
+    public void deleteTokensV2() throws JsonProcessingException {
+        doDeleteTokens(APIVersion.V2);
+    }
+
+    private void doDeleteTokens(APIVersion apiVersion) throws JsonProcessingException {
         List<Map<String, Object>> tokens = doGetTokens(APIVersion.V1);
 
         List<TokenRepresentation> body = tokens.stream()
                 .map(token -> new TokenRepresentation((String) token.get("id"), TokenType.valueOf((String) token.get("type"))))
                 .collect(Collectors.toList());
+        System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(body));
         given()
                 .when()
                 .header("Content-type", "application/json")
@@ -60,7 +71,7 @@ public class TokenControllerTest extends AbstractIntegrationTest {
                 .preemptive()
                 .basic("eduid", "secret")
                 .body(body)
-                .put("tokens")
+                .put(apiVersion.equals(APIVersion.V1) ? "tokens" : "v2/tokens")
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
         tokens = doGetTokens(APIVersion.V1);
