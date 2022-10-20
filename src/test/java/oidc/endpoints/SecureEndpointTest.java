@@ -28,9 +28,7 @@ public class SecureEndpointTest {
         SecureEndpoint secureEndpoint = new SecureEndpoint();
         PlainClientSecret plainClientSecret = new ClientSecretBasic(new ClientID("test"), new Secret(secret));
 
-        long now = System.currentTimeMillis();
         boolean matches = secureEndpoint.secretsMatch(plainClientSecret, openIDClient);
-        System.out.println(System.currentTimeMillis() - now);
         assertTrue(matches);
     }
 }

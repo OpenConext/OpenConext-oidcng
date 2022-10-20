@@ -63,7 +63,6 @@ public class TokenControllerTest extends AbstractIntegrationTest {
         List<TokenRepresentation> body = tokens.stream()
                 .map(token -> new TokenRepresentation((String) token.get("id"), TokenType.valueOf((String) token.get("type"))))
                 .collect(Collectors.toList());
-        System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(body));
         given()
                 .when()
                 .header("Content-type", "application/json")
