@@ -47,15 +47,20 @@ public class ResponseAuthenticationValidator implements Converter<OpenSaml4Authe
 
     @Override
     public Saml2ResponseValidatorResult convert(OpenSaml4AuthenticationProvider.ResponseToken responseToken) {
-        try {
-            return defaultResponseValidator.convert(responseToken);
-        } catch (Saml2AuthenticationException e) {
+        Saml2ResponseValidatorResult result = defaultResponseValidator.convert(responseToken);
+
+        if (null == result || result.hasErrors()) {
             LOG.info("Caught Saml2AuthenticationException, find original authenticationRequest");
             String inResponseTo = responseToken.getResponse().getInResponseTo();
-            AuthenticationRequest authenticationRequest = authenticationRequestRepository.findById(inResponseTo).orElseThrow(() -> new SessionAuthenticationException("Invalid Authn Statement. Missing InResponseTo"));
+            AuthenticationRequest authenticationRequest =
+                    authenticationRequestRepository.findById(inResponseTo).orElseThrow(() ->
+                            new SessionAuthenticationException("Invalid Authn Statement. Missing InResponseTo"));
+
             String description = responseToken.getResponse().getStatus().getStatusMessage().getValue();
             throw new ContextSaml2AuthenticationException(authenticationRequest, description);
         }
+
+        return result;
     }
 
 }
