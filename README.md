@@ -8,7 +8,7 @@ OpenID Connect - SAML proxy
 
 ### [System Requirements](#system-requirements)
 
-- Java 8
+- Java 11
 - Maven 3.x
 - MongoDB 4.0.x (ensure sessions are supported, see https://stackoverflow.com/questions/56734130/sessions-are-not-supported-by-the-mongodb-cluster-to-which-this-client-is-connec)
 
