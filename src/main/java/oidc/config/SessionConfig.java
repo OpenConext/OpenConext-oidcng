@@ -44,7 +44,6 @@ public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
                 super.writeCookieValue(cookieValue);
                 Collection<String> headers = cookieValue.getResponse().getHeaders("Set-Cookie");
                 LOG.info("WriteCookieValue: " + headers);
-
             }
         };
         //We don't need same-site as the load-balancer takes care of this
