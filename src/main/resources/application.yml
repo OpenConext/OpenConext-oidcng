@@ -4,7 +4,7 @@ logging:
     root: INFO
     org.springframework: OFF
     org.springframework.security: OFF
-    oidc: INFO
+    oidc: DEBUG
 
 cron:
   node-cron-job-responsible: true
