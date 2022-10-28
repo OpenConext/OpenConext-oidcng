@@ -324,11 +324,3 @@ In `src\jmeter` there is a JMeter project file to perform load / stress tests.
 cd src/jmeter
 jmeter -n -t OIDC-NG.jmx -l results.log
 ```
-
-## [OWASP Dependency Check Maven](#owasp)
-The pom.xml has a profile which can be used to scan Java dependencies on known vulnerabilities. To start the scan, use
-the following command:
-
-`mvn clean install -P security-updates -DskipTests=true -B`
-
-Results are shown on the command line and reports are generated and stored in /target.
