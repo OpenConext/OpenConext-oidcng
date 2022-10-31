@@ -18,9 +18,9 @@ import static org.mockito.Mockito.*;
 
 class ResponseAuthenticationValidatorTest extends AbstractSamlUnitTest {
 
-    private AuthenticationRequestRepository authenticationRequestRepository = mock(AuthenticationRequestRepository.class);
+    private final AuthenticationRequestRepository authenticationRequestRepository = mock(AuthenticationRequestRepository.class);
 
-    private ResponseAuthenticationValidator subject = new ResponseAuthenticationValidator(authenticationRequestRepository);
+    private final ResponseAuthenticationValidator subject = new ResponseAuthenticationValidator(authenticationRequestRepository);
 
     @BeforeEach
     public void before() {

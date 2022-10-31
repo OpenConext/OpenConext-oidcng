@@ -81,6 +81,7 @@ public class ResponseAuthenticationConverter implements Converter<OpenSaml4Authe
         }
         OidcSamlAuthentication oidcSamlAuthentication =
                 new OidcSamlAuthentication(assertion, user, authenticationRequestID);
+
         return oidcSamlAuthentication;
 
     }

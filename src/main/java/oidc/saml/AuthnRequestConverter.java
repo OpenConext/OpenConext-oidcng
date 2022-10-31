@@ -81,7 +81,7 @@ public class AuthnRequestConverter implements
             Enumeration<String> attributeNames = session.getAttributeNames();
             List<String> list = Collections.list(attributeNames);
             if (!list.contains("SPRING_SECURITY_SAVED_REQUEST")) {
-                LOG.info("There is a session in the HttpServletRequest with ID " + session.getId() + " which does not contain a saved request. Attribute names are: " + list.toString());
+                LOG.warn("There is a session in the HttpServletRequest with ID " + session.getId() + " which does not contain a saved request. Attribute names are: " + list);
             }
         }
 
@@ -256,6 +256,9 @@ public class AuthnRequestConverter implements
         //EB also has a 1 hour validity
         LocalDateTime ldt = LocalDateTime.now().plusHours(1L);
         Date expiresIn = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
+
+        LOG.debug("Saving AuthenticationRequest with redirectURL: " + savedRequest.getRedirectUrl());
+
         authenticationRequestRepository.insert(
                 new oidc.model.AuthenticationRequest(id, expiresIn, clientID != null ? clientID.getValue() : null, savedRequest.getRedirectUrl())
         );

@@ -8,7 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 
 public class AuthenticationRequestContextResolver implements Saml2AuthenticationRequestContextResolver {
 
-    private RelyingPartyRegistration registration;
+    private final RelyingPartyRegistration registration;
 
     public AuthenticationRequestContextResolver(RelyingPartyRegistration registration) {
         this.registration = registration;

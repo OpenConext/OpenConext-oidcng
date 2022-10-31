@@ -25,11 +25,9 @@ import oidc.crypto.KeyGenerator;
 import oidc.log.MDCContextFilter;
 import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.OpenIDClientRepository;
+import oidc.repository.SamlAuthenticationRequestRepository;
 import oidc.repository.UserRepository;
-import oidc.saml.AuthenticationRequestContextResolver;
-import oidc.saml.AuthnRequestConverter;
-import oidc.saml.ResponseAuthenticationConverter;
-import oidc.saml.ResponseAuthenticationValidator;
+import oidc.saml.*;
 import oidc.web.ConcurrentSavedRequestAwareAuthenticationSuccessHandler;
 import oidc.web.FakeSamlAuthenticationFilter;
 import oidc.web.RedirectAuthenticationFailureHandler;
@@ -43,7 +41,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.core.io.Resource;
@@ -57,8 +54,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.saml2.core.Saml2ResponseValidatorResult;
 import org.springframework.security.saml2.core.Saml2X509Credential;
+import org.springframework.security.saml2.provider.service.authentication.AbstractSaml2AuthenticationRequest;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationRequestFactory;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationRequestFactory;
@@ -69,6 +66,7 @@ import org.springframework.security.saml2.provider.service.registration.RelyingP
 import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
 import org.springframework.security.saml2.provider.service.servlet.filter.Saml2WebSsoAuthenticationFilter;
 import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationRequestContextResolver;
+import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationRequestRepository;
 import org.springframework.security.saml2.provider.service.web.Saml2MetadataFilter;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
@@ -87,6 +85,7 @@ public class SecurityConfiguration {
     private static final Log LOG = LogFactory.getLog(SecurityConfiguration.class);
 
     private static final BouncyCastleProvider bcProvider = new BouncyCastleProvider();
+    private static final String REGISTRATION_ID = "oidcng";
 
     static {
         Security.addProvider(bcProvider);
@@ -96,19 +95,19 @@ public class SecurityConfiguration {
     @Order(1)
     public static class SamlSecurity extends WebSecurityConfigurerAdapter {
 
-        private String idpEntityId;
-        private String idpSsoLocation;
-        private Resource idpMetadataSigningCertificatePath;
-        private String spEntityId;
-        private String spAcsLocation;
-        private Environment environment;
-        private ObjectMapper objectMapper;
-        private OpenIDClientRepository openIDClientRepository;
-        private UserRepository userRepository;
-        private AuthenticationRequestRepository authenticationRequestRepository;
-        private Resource privateKeyPath;
-        private Resource certificatePath;
-        private Resource oidcSamlMapping;
+        private final String idpEntityId;
+        private final String idpSsoLocation;
+        private final Resource idpMetadataSigningCertificatePath;
+        private final String spEntityId;
+        private final String spAcsLocation;
+        private final Environment environment;
+        private final ObjectMapper objectMapper;
+        private final OpenIDClientRepository openIDClientRepository;
+        private final UserRepository userRepository;
+        private final AuthenticationRequestRepository authenticationRequestRepository;
+        private final Resource privateKeyPath;
+        private final Resource certificatePath;
+        private final Resource oidcSamlMapping;
 
         public SamlSecurity(
                 Environment environment,
@@ -146,7 +145,7 @@ public class SecurityConfiguration {
 
         @Bean
         public Saml2AuthenticationRequestContextResolver authenticationRequestContextResolver(RelyingPartyRegistrationRepository registrationRepository) {
-            return new AuthenticationRequestContextResolver(registrationRepository.findByRegistrationId("oidcng"));
+            return new AuthenticationRequestContextResolver(registrationRepository.findByRegistrationId(REGISTRATION_ID));
         }
 
         @Bean
@@ -162,7 +161,7 @@ public class SecurityConfiguration {
 
         @Bean
         public RelyingPartyRegistrationRepository relyingPartyRegistrationRepository() {
-            String registrationId = "oidcng";
+            String registrationId = REGISTRATION_ID;
             //local signing (and local decryption key and remote encryption certificate)
             Saml2X509Credential signingCredential = getSigningCredential();
             //IDP certificate for verification of incoming messages
@@ -229,6 +228,14 @@ public class SecurityConfiguration {
             return authenticationProvider;
         }
 
+        @Bean
+        public Saml2AuthenticationRequestRepository<AbstractSaml2AuthenticationRequest> saml2AuthenticationRequestRepository(
+                SamlAuthenticationRequestRepository samlAuthenticationRequestRepository,
+            RelyingPartyRegistrationRepository relyingPartyRegistrationRepository) {
+            RelyingPartyRegistration relyingPartyRegistration = relyingPartyRegistrationRepository.findByRegistrationId(REGISTRATION_ID);
+            return new MongoSaml2AuthenticationRequestRepository(samlAuthenticationRequestRepository, relyingPartyRegistration);
+        }
+
         @Override
         protected void configure(HttpSecurity http) throws Exception {
             http.cors()
@@ -257,7 +264,7 @@ public class SecurityConfiguration {
                         saml2.failureHandler(new RedirectAuthenticationFailureHandler(openIDClientRepository));
                     })
                     .addFilterBefore(new Saml2MetadataFilter(
-                            req -> relyingPartyRegistrationRepository().findByRegistrationId("oidcng"),
+                            req -> relyingPartyRegistrationRepository().findByRegistrationId(REGISTRATION_ID),
                             new OpenSamlMetadataResolver()), Saml2WebSsoAuthenticationFilter.class)
                     .addFilterBefore(new MDCContextFilter(), BasicAuthenticationFilter.class);
 
