@@ -5,6 +5,7 @@ import lombok.Getter;
 import org.springframework.util.StringUtils;
 
 import java.net.URI;
+import java.util.Objects;
 
 @Getter
 public class ProvidedRedirectURI {
@@ -25,7 +26,9 @@ public class ProvidedRedirectURI {
         }
         boolean equals = that.getScheme().equals(me.getScheme()) &&
                 that.getHost().equals(me.getHost()) &&
-                that.getPath().equals(me.getPath());
+                that.getPath().equals(me.getPath()) &&
+                Objects.equals(that.getQuery(), me.getQuery());
+
         return literalCheckRequired() ?
                 (equals && that.getPort() == me.getPort()) : equals;
     }

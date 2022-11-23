@@ -83,6 +83,11 @@ public class AuthorizationEndpointUnitTest {
         doValidateRedirectionUri("https://nope", "https://reedirect");
     }
 
+    @Test(expected = RedirectMismatchException.class)
+    public void doValidateRedirectUriQuery() throws IOException, ParseException {
+        doValidateRedirectionUri("https://domain.net?key=val", "https://domain.net?key=nope");
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void doValidateRedirectUriIllegal() throws IOException, ParseException {
         doValidateRedirectionUri(null, null);
@@ -107,6 +112,7 @@ public class AuthorizationEndpointUnitTest {
                 .p("response_type", "code")
                 .p("redirect_uri", requestRedirectUri));
         OpenIDClient client = openIDClient("http://domain.net?param=first", "open_id", "authorization_code");
+        client.getRedirectUrls().add("http://domain.net?param=pickme");
         ProvidedRedirectURI redirectUri = AuthorizationEndpoint.validateRedirectionURI(authorizationRequest.getRedirectionURI(), client);
 
         assertEquals(redirectUri.getRedirectURI(), requestRedirectUri);
@@ -154,8 +160,12 @@ public class AuthorizationEndpointUnitTest {
     }
 
     private OpenIDClient openIDClient(String redirectUrl, String scope, String grant) {
+        ArrayList<String> redirectUrls = new ArrayList<>();
+        if (StringUtils.hasText(redirectUrl)) {
+            redirectUrls.add(redirectUrl);
+        }
         return new OpenIDClient("https://mock-rp",
-                StringUtils.hasText(redirectUrl) ? singletonList(redirectUrl) : new ArrayList<>(),
+                redirectUrls,
                 singletonList(new oidc.model.Scope(scope)),
                 singletonList(grant));
     }
