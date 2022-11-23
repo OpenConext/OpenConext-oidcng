@@ -35,6 +35,7 @@ public class ProvidedRedirectURITest {
     public void testCompareWithQueryParams() {
         ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://my.domain?key=val");
 
+        assertTrue(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain?key=val"));
         assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain?key=nope"));
         assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain?key=val&key=nope"));
     }

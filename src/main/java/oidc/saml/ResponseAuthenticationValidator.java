@@ -4,6 +4,9 @@ import oidc.model.AuthenticationRequest;
 import oidc.repository.AuthenticationRequestRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.opensaml.saml.saml2.core.Response;
+import org.opensaml.saml.saml2.core.Status;
+import org.opensaml.saml.saml2.core.StatusMessage;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.saml2.core.Saml2ResponseValidatorResult;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
@@ -36,7 +39,7 @@ public class ResponseAuthenticationValidator implements Converter<OpenSaml4Authe
             if (result == null || result.hasErrors()) {
                 LOG.warn("Saml2ResponseValidatorResult contains errors, find original authenticationRequest");
                 if (result != null) {
-                    result.getErrors().forEach(error -> LOG.info(error.toString()));
+                    result.getErrors().forEach(error -> LOG.warn(error.toString()));
                 }
                 return returnInvalidResult(responseToken);
             }
@@ -48,12 +51,20 @@ public class ResponseAuthenticationValidator implements Converter<OpenSaml4Authe
     }
 
     private Saml2ResponseValidatorResult returnInvalidResult(OpenSaml4AuthenticationProvider.ResponseToken responseToken) {
-        String inResponseTo = responseToken.getResponse().getInResponseTo();
+        Response response = responseToken.getResponse();
+        String inResponseTo = response.getInResponseTo();
         AuthenticationRequest authenticationRequest =
                 authenticationRequestRepository.findById(inResponseTo).orElseThrow(() ->
                         new SessionAuthenticationException("Invalid Authn Statement. Missing InResponseTo"));
+        String description = "Unknown exception has occurred";
+        Status status = response.getStatus();
+        if (status != null) {
+            StatusMessage statusMessage = status.getStatusMessage();
+            if (statusMessage != null) {
+                description = statusMessage.getValue();
+            }
+        }
 
-        String description = responseToken.getResponse().getStatus().getStatusMessage().getValue();
         throw new ContextSaml2AuthenticationException(authenticationRequest, description);
     }
 
