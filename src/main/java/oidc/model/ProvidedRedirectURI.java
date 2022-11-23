@@ -2,6 +2,7 @@ package oidc.model;
 
 
 import lombok.Getter;
+import org.springframework.util.StringUtils;
 
 import java.net.URI;
 
@@ -19,6 +20,9 @@ public class ProvidedRedirectURI {
     //the ports may differ, but only for localhost
     public boolean equalsWithLiteralCheckRequired(String uri) {
         URI that = URI.create(uri);
+        if (StringUtils.hasText(that.getFragment())) {
+            return false;
+        }
         boolean equals = that.getScheme().equals(me.getScheme()) &&
                 that.getHost().equals(me.getHost()) &&
                 that.getPath().equals(me.getPath());

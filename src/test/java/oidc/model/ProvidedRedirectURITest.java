@@ -24,6 +24,15 @@ public class ProvidedRedirectURITest {
     }
 
     @Test
+    public void testCompareWithFragment() {
+        ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://my.domain");
+
+        assertTrue(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain?key=val"));
+        assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain#fragment"));
+        assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain?key=val#fragment"));
+    }
+
+    @Test
     public void testCompareWithoutPort() {
         ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://localhost:8080/nice");
 
