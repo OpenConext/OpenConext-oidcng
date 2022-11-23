@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -69,7 +68,7 @@ public class AuthorizationEndpointUnitTest {
         doValidateRedirectionUri("http://localhost:3333", "http://localhost:8080");
     }
 
-    @Test(expected = org.junit.ComparisonFailure.class)
+    @Test(expected = RedirectMismatchException.class)
     public void validateRedirectUriNonLocalhost() throws IOException, ParseException {
         doValidateRedirectionUri("http://domain.net:3333", "http://domain.net:8080");
     }
@@ -98,6 +97,21 @@ public class AuthorizationEndpointUnitTest {
     public void validatePromptInvalid() {
         AuthorizationEndpoint.validatePrompt(new Prompt("select_account"));
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void validateRedirectionUriQueryParams() throws IOException, ParseException {
+        String requestRedirectUri = "http://domain.net?param=pickme";
+        AuthorizationRequest authorizationRequest = authorizationRequest(new FluentMap<String, String>()
+                .p("client_id", "http://oidc-rp")
+                .p("response_type", "code")
+                .p("redirect_uri", requestRedirectUri));
+        OpenIDClient client = openIDClient("http://domain.net?param=first", "open_id", "authorization_code");
+        ProvidedRedirectURI redirectUri = AuthorizationEndpoint.validateRedirectionURI(authorizationRequest.getRedirectionURI(), client);
+
+        assertEquals(redirectUri.getRedirectURI(), requestRedirectUri);
+    }
+
 
     @SuppressWarnings("unchecked")
     private void doValidateGrantType(String clientGrantType, String requestResponseType) throws IOException, ParseException {

@@ -11,40 +11,39 @@ public class ProvidedRedirectURITest {
     public void testCompareWithPath() {
         ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://my.domain:8080/path");
 
-        assertTrue(providedRedirectURI.equalsIgnorePort("http://my.domain/path"));
-        assertTrue(providedRedirectURI.equalsIgnorePort("http://my.domain:9090/path"));
+        assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain/path"));
+        assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain:9090/path"));
     }
 
     @Test
     public void testCompareWithoutPath() {
         ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://my.domain");
 
-        assertTrue(providedRedirectURI.equalsIgnorePort("http://my.domain"));
-        assertTrue(providedRedirectURI.equalsIgnorePort("http://my.domain:9090"));
+        assertTrue(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain"));
+        assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain:9090"));
+    }
+
+    @Test
+    public void testCompareWithoutPort() {
+        ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://localhost:8080/nice");
+
+        assertTrue(providedRedirectURI.equalsWithLiteralCheckRequired("http://localhost:9090/nice"));
+    }
+
+    @Test
+    public void testCompareWithoutPortLocalHost() {
+        ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://127.0.0.1:8080/nice");
+
+        assertTrue(providedRedirectURI.equalsWithLiteralCheckRequired("http://127.0.0.1:9090/nice"));
     }
 
     @Test
     public void testCompareNotEquals() {
         ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://my.domain");
 
-        assertFalse(providedRedirectURI.equalsIgnorePort("https://my.domain"));
-        assertFalse(providedRedirectURI.equalsIgnorePort("http://my.domain:9090/path"));
-        assertFalse(providedRedirectURI.equalsIgnorePort("http://my.nope"));
+        assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("https://my.domain"));
+        assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain:9090/path"));
+        assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.nope"));
     }
 
-    @Test
-    public void testLiteralCheckRequired() {
-        ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://my.domain");
-        assertTrue(providedRedirectURI.literalCheckRequired());
-
-        providedRedirectURI = new ProvidedRedirectURI("http://localhost:8080/redirect");
-        assertFalse(providedRedirectURI.literalCheckRequired());
-
-        providedRedirectURI = new ProvidedRedirectURI("http://127.0.0.1:8080/redirect");
-        assertFalse(providedRedirectURI.literalCheckRequired());
-
-        //Host for this URI is null
-        providedRedirectURI = new ProvidedRedirectURI("http://127.0.01:8080/redirect");
-        assertTrue(providedRedirectURI.literalCheckRequired());
-    }
 }

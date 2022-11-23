@@ -1,7 +1,6 @@
 package oidc.model;
 
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.net.URI;
@@ -17,14 +16,17 @@ public class ProvidedRedirectURI {
         this.me = URI.create(redirectURI);
     }
 
-    public boolean equalsIgnorePort(String uri) {
+    //the ports may differ, but only for localhost
+    public boolean equalsWithLiteralCheckRequired(String uri) {
         URI that = URI.create(uri);
-        return that.getScheme().equals(me.getScheme()) &&
+        boolean equals = that.getScheme().equals(me.getScheme()) &&
                 that.getHost().equals(me.getHost()) &&
                 that.getPath().equals(me.getPath());
+        return literalCheckRequired() ?
+                (equals && that.getPort() == me.getPort()) : equals;
     }
 
-    public boolean literalCheckRequired() {
+    private boolean literalCheckRequired() {
         String host = me.getHost();
         return !"127.0.0.1".equals(host) && !"localhost".equals(host);
     }

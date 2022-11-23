@@ -59,7 +59,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -338,7 +337,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         return authorizationCode;
     }
 
-    public static ProvidedRedirectURI validateRedirectionURI(URI redirectionURI, OpenIDClient client) throws UnsupportedEncodingException {
+    public static ProvidedRedirectURI validateRedirectionURI(URI redirectionURI, OpenIDClient client) {
         List<String> registeredRedirectUrls = client.getRedirectUrls();
         if (CollectionUtils.isEmpty(registeredRedirectUrls)) {
             throw new IllegalArgumentException(String.format("Client %s must have at least one redirectURI configured to use the Authorization flow",
@@ -349,18 +348,17 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         }
 
         String redirectURI = URLDecoder.decode(redirectionURI.toString(), StandardCharsets.UTF_8);
-        Optional<ProvidedRedirectURI> optionalProvidedRedirectURI = registeredRedirectUrls.stream()
+        boolean providedRedirectURIMatch = registeredRedirectUrls.stream()
                 .map(ProvidedRedirectURI::new)
-                .filter(providedRedirectURI -> providedRedirectURI.equalsIgnorePort(redirectURI))
-                .findFirst();
-        if (optionalProvidedRedirectURI.isEmpty()) {
+                .anyMatch(providedRedirectURI -> providedRedirectURI.equalsWithLiteralCheckRequired(redirectURI));
+        if (!providedRedirectURIMatch) {
             throw new RedirectMismatchException(
                     String.format("Client %s with registered redirect URI's %s requested authorization with redirectURI %s",
                             client.getClientId(), registeredRedirectUrls, redirectURI));
         }
-        ProvidedRedirectURI providedRedirectURI = optionalProvidedRedirectURI.get();
-        //We return the redirectURI provided by the RP as the port may differ, but only for localhost
-        return providedRedirectURI.literalCheckRequired() ? providedRedirectURI : new ProvidedRedirectURI(redirectURI);
+        //We return the redirectURI provided by the RP. Spec dictates:
+        //The endpoint URI MAY include a query component, which MUST be retained when adding additional query parameters.
+        return new ProvidedRedirectURI(redirectURI);
     }
 
     private String authorizationRedirect(String redirectionURI, State state, String code, boolean isFragment) {
