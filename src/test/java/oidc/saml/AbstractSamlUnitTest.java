@@ -7,7 +7,6 @@ import oidc.crypto.KeyGenerator;
 import org.apache.commons.io.IOUtils;
 import org.junit.BeforeClass;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.opensaml.core.config.ConfigurationService;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
 import org.opensaml.core.xml.io.UnmarshallingException;
@@ -100,7 +99,10 @@ public abstract class AbstractSamlUnitTest {
         return getResponseToken(response, token);
     }
 
-
+    @SneakyThrows
+    public String readFile(String fileName) {
+        return IOUtils.toString(new ClassPathResource(fileName).getInputStream(), Charset.defaultCharset());
+    }
 
 
 

@@ -32,8 +32,10 @@ import static java.util.stream.Collectors.toList;
 
 public class ResponseAuthenticationConverter implements Converter<OpenSaml4AuthenticationProvider.ResponseToken, OidcSamlAuthentication> {
 
+    public static final Pattern inResponseToPattern = Pattern.compile("InResponseTo=\"(.+?)\"", Pattern.DOTALL);
+    public static final Pattern idPattern = Pattern.compile("ID=\"(.+?)\"", Pattern.DOTALL);
+
     private static final Log LOG = LogFactory.getLog(ResponseAuthenticationConverter.class);
-    private static final Pattern inResponseToPattern = Pattern.compile("InResponseTo=\"(.+?)\"", Pattern.DOTALL);
     private final Converter<OpenSaml4AuthenticationProvider.ResponseToken, Saml2Authentication> defaultResponseAuthenticationConverter;
 
     private final UserRepository userRepository;
