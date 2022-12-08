@@ -36,8 +36,9 @@ public class ProvidedRedirectURITest {
         ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://my.domain?key=val");
 
         assertTrue(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain?key=val"));
-        assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain?key=nope"));
-        assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain?key=val&key=nope"));
+        //Commented out 8 dec 2022. For now - pending investigation by RP's - we don't enforce query equality
+        //assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain?key=nope"));
+        //assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.domain?key=val&key=nope"));
     }
 
     @Test

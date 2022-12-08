@@ -12,6 +12,7 @@ public class ProvidedRedirectURI {
 
     private final String redirectURI;
     private final URI me;
+    private final boolean strictRedirectUriCheck = false;
 
     public ProvidedRedirectURI(String redirectURI) {
         this.redirectURI = redirectURI;
@@ -26,9 +27,10 @@ public class ProvidedRedirectURI {
         }
         boolean equals = that.getScheme().equals(me.getScheme()) &&
                 that.getHost().equals(me.getHost()) &&
-                that.getPath().equals(me.getPath()) &&
-                Objects.equals(that.getQuery(), me.getQuery());
-
+                that.getPath().equals(me.getPath());
+        if (strictRedirectUriCheck) {
+            equals = equals && Objects.equals(that.getQuery(), me.getQuery());
+        }
         return literalCheckRequired() ?
                 (equals && that.getPort() == me.getPort()) : equals;
     }
