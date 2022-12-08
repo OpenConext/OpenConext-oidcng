@@ -83,7 +83,7 @@ public class AuthorizationEndpointUnitTest {
         doValidateRedirectionUri("https://nope", "https://reedirect");
     }
 
-    @Test(expected = RedirectMismatchException.class)
+    @Test
     public void doValidateRedirectUriQuery() throws IOException, ParseException {
         doValidateRedirectionUri("https://domain.net?key=val", "https://domain.net?key=nope");
     }
