@@ -21,7 +21,7 @@
 
     <groupId>org.openconext</groupId>
     <artifactId>oidcng</artifactId>
-    <version>6.1.2</version>
+    <version>6.1.4</version>
     <name>oidcng</name>
 
     <dependencyManagement>
