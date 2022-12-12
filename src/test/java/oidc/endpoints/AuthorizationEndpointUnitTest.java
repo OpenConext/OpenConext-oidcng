@@ -68,11 +68,6 @@ public class AuthorizationEndpointUnitTest {
         doValidateRedirectionUri("http://localhost:3333", "http://localhost:8080");
     }
 
-    @Test(expected = RedirectMismatchException.class)
-    public void validateRedirectUriNonLocalhost() throws IOException, ParseException {
-        doValidateRedirectionUri("http://domain.net:3333", "http://domain.net:8080");
-    }
-
     @Test
     public void validateRedirectUriDefault() throws IOException, ParseException {
         doValidateRedirectionUri("https://redirect", null);
@@ -81,11 +76,6 @@ public class AuthorizationEndpointUnitTest {
     @Test(expected = RedirectMismatchException.class)
     public void doValidateRedirectUriInvalid() throws IOException, ParseException {
         doValidateRedirectionUri("https://nope", "https://reedirect");
-    }
-
-    @Test
-    public void doValidateRedirectUriQuery() throws IOException, ParseException {
-        doValidateRedirectionUri("https://domain.net?key=val", "https://domain.net?key=nope");
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -102,22 +92,6 @@ public class AuthorizationEndpointUnitTest {
     public void validatePromptInvalid() {
         AuthorizationEndpoint.validatePrompt(new Prompt("select_account"));
     }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    public void validateRedirectionUriQueryParams() throws IOException, ParseException {
-        String requestRedirectUri = "http://domain.net?param=pickme";
-        AuthorizationRequest authorizationRequest = authorizationRequest(new FluentMap<String, String>()
-                .p("client_id", "http://oidc-rp")
-                .p("response_type", "code")
-                .p("redirect_uri", requestRedirectUri));
-        OpenIDClient client = openIDClient("http://domain.net?param=first", "open_id", "authorization_code");
-        client.getRedirectUrls().add("http://domain.net?param=pickme");
-        ProvidedRedirectURI redirectUri = AuthorizationEndpoint.validateRedirectionURI(authorizationRequest.getRedirectionURI(), client);
-
-        assertEquals(redirectUri.getRedirectURI(), requestRedirectUri);
-    }
-
 
     @SuppressWarnings("unchecked")
     private void doValidateGrantType(String clientGrantType, String requestResponseType) throws IOException, ParseException {
@@ -160,12 +134,8 @@ public class AuthorizationEndpointUnitTest {
     }
 
     private OpenIDClient openIDClient(String redirectUrl, String scope, String grant) {
-        ArrayList<String> redirectUrls = new ArrayList<>();
-        if (StringUtils.hasText(redirectUrl)) {
-            redirectUrls.add(redirectUrl);
-        }
         return new OpenIDClient("https://mock-rp",
-                redirectUrls,
+                StringUtils.hasText(redirectUrl) ? singletonList(redirectUrl) : new ArrayList<>(),
                 singletonList(new oidc.model.Scope(scope)),
                 singletonList(grant));
     }
