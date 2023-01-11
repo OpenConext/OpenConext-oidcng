@@ -46,14 +46,15 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
 
     private static final Log LOG = LogFactory.getLog(ErrorController.class);
     private final DefaultErrorAttributes errorAttributes;
-    private RequestCache requestCache = new HttpSessionRequestCache();
-    private List<Class> exceptionsToExclude = List.of(
+    private final RequestCache requestCache = new HttpSessionRequestCache();
+    private final List<Class> exceptionsToExclude = List.of(
             RedirectMismatchException.class,
             UnauthorizedException.class,
             CodeVerifierMissingException.class,
             UnsupportedPromptValueException.class,
             TokenAlreadyUsedException.class,
-            UnknownClientException.class
+            UnknownClientException.class,
+            UnknownCodeException.class
     );
 
     public ErrorController() {

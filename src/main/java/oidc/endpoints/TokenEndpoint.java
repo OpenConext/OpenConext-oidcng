@@ -5,13 +5,7 @@ import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant;
-import com.nimbusds.oauth2.sdk.AuthorizationGrant;
-import com.nimbusds.oauth2.sdk.ClientCredentialsGrant;
-import com.nimbusds.oauth2.sdk.GrantType;
-import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.RefreshTokenGrant;
-import com.nimbusds.oauth2.sdk.TokenRequest;
+import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretJWT;
 import com.nimbusds.oauth2.sdk.auth.JWTAuthentication;
@@ -22,54 +16,30 @@ import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import oidc.crypto.KeyGenerator;
-import oidc.exceptions.CodeVerifierMissingException;
-import oidc.exceptions.InvalidClientException;
-import oidc.exceptions.InvalidGrantException;
-import oidc.exceptions.JWTAuthorizationGrantsException;
-import oidc.exceptions.RedirectMismatchException;
-import oidc.exceptions.TokenAlreadyUsedException;
-import oidc.exceptions.UnauthorizedException;
-import oidc.exceptions.UnknownClientException;
+import oidc.exceptions.*;
 import oidc.log.MDCContext;
-import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
-import oidc.model.EncryptedTokenValue;
-import oidc.model.OpenIDClient;
-import oidc.model.RefreshToken;
-import oidc.model.Scope;
-import oidc.model.TokenValue;
-import oidc.model.User;
-import oidc.repository.AccessTokenRepository;
-import oidc.repository.AuthorizationCodeRepository;
-import oidc.repository.OpenIDClientRepository;
-import oidc.repository.RefreshTokenRepository;
-import oidc.repository.UserRepository;
+import oidc.model.*;
+import oidc.repository.*;
 import oidc.secure.JWTRequest;
 import oidc.secure.TokenGenerator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.cert.CertificateException;
 import java.time.Clock;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -209,7 +179,12 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
              * If they code was bogus this will result in a 404 exception by the authorizationCodeRepository#findByCode
              * and if we find something then we know there was a re-use issue.
              */
-            AuthorizationCode byCode = authorizationCodeRepository.findByCode(code);
+            AuthorizationCode byCode;
+            try {
+                byCode = authorizationCodeRepository.findByCode(code);
+            } catch (EmptyResultDataAccessException e) {
+                throw new UnknownCodeException("Invalid code: " + code);
+            }
             List<AccessToken> accessTokens = accessTokenRepository.findByAuthorizationCodeId(byCode.getId());
             accessTokenRepository.deleteAll(accessTokens);
             throw new TokenAlreadyUsedException(
