@@ -1,12 +1,23 @@
 package oidc.exceptions;
 
-public abstract class BaseException extends RuntimeException {
+public class BaseException extends RuntimeException {
 
     public BaseException(String errorMsg) {
         super(errorMsg);
     }
 
-    public abstract String getErrorCode();
+    public String getErrorCode() {
+        return getMessage();
+    }
+
+    protected boolean suppressStackTrace() {
+        return false;
+    }
+
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+        return this.suppressStackTrace() ? this : super.fillInStackTrace();
+    }
 
     @Override
     public String toString() {

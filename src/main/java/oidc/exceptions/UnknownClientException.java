@@ -10,6 +10,10 @@ public class UnknownClientException extends BaseException {
         super(String.format("ClientID %s or secret is not correct", clientID));
     }
 
+    protected boolean suppressStackTrace() {
+        return true;
+    }
+
     @Override
     public String getErrorCode() {
         return "unauthorized";

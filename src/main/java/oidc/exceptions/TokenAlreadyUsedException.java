@@ -14,5 +14,7 @@ public class TokenAlreadyUsedException extends BaseException {
         return "invalid_grant";
     }
 
-
+    protected boolean suppressStackTrace() {
+        return true;
+    }
 }

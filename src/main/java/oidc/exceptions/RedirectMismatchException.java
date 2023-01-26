@@ -10,6 +10,10 @@ public class RedirectMismatchException extends BaseException {
         super(message);
     }
 
+    protected boolean suppressStackTrace() {
+        return true;
+    }
+
     @Override
     public String getErrorCode() {
         return "invalid_request_uri";

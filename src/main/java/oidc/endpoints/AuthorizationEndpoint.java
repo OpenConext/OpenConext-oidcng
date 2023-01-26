@@ -379,7 +379,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         return builder.toUriString();
     }
 
-    private static final String unsupportedPromptMessage = "Unsupported Prompt value";
+    private static final String unsupportedPromptMessage = "Unsupported prompt=%s is requested, redirecting the user back to the RP";
 
     public static String validatePrompt(Map<String, List<String>> request) throws ParseException {
         List<String> promptValues = request.get("prompt");
@@ -394,7 +394,9 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             List<String> allowedValues = Arrays.asList("consent", "login");
             prompt.toStringList().forEach(val -> {
                 if (!allowedValues.contains(val)) {
-                    throw new UnsupportedPromptValueException(unsupportedPromptValue(val), unsupportedPromptMessage);
+                    throw new UnsupportedPromptValueException(
+                            unsupportedPromptValue(val),
+                            String.format(unsupportedPromptMessage, val));
                 }
             });
         }
@@ -408,7 +410,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             case "select_account":
                 return "account_selection_required";
             default:
-                return "invalid_request";
+                return "invalid_prompt";
         }
     }
 

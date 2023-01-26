@@ -5,8 +5,13 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(value = HttpStatus.UNAUTHORIZED)
 public class CodeVerifierMissingException extends BaseException {
+
     public CodeVerifierMissingException(String message) {
         super(message);
+    }
+
+    protected boolean suppressStackTrace() {
+        return true;
     }
 
     @Override

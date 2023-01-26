@@ -114,7 +114,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
     public void invalidToken() throws IOException {
         Map<String, Object> body = doToken("nope");
 
-        assertEquals("invalid_grant", body.get("error"));
+        assertEquals("invalid_code", body.get("error"));
     }
 
     @Test

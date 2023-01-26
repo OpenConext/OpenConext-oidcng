@@ -10,6 +10,10 @@ public class UnauthorizedException extends BaseException {
         super(message);
     }
 
+    protected boolean suppressStackTrace() {
+        return true;
+    }
+
     @Override
     public String getErrorCode() {
         return "access_denied";
