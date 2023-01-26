@@ -11,7 +11,7 @@ public class UnknownCodeException extends BaseException {
 
     @Override
     public String getErrorCode() {
-        return "invalid_grant";
+        return "invalid_code";
     }
 
 
