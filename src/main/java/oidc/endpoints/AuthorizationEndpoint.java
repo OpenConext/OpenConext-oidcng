@@ -428,7 +428,9 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         grantedScopes.addAll(forFreeOpenIDScopes);
         //backward compatibility
         grantedScopes.addAll(client.getScopes().stream().map(oidc.model.Scope::getName).collect(toList()));
-
+        if (client.getGrants().contains("refresh_token")) {
+            grantedScopes.add("offline_access");
+        }
         if (!grantedScopes.containsAll(requestedScopes)) {
             List<String> missingScopes = requestedScopes.stream().filter(s -> !grantedScopes.contains(s)).collect(toList());
             throw new InvalidScopeException(

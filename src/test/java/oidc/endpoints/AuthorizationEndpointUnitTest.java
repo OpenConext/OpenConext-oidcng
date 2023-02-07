@@ -19,10 +19,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
@@ -49,13 +46,23 @@ public class AuthorizationEndpointUnitTest {
     }
 
     @Test
-    public void validateScope() throws IOException, ParseException {
-        doValidateScope("open_id", "open_id");
+    public void validateScope() {
+        doValidateScope("open_id", "open_id", "authorization_code");
+    }
+
+    @Test
+    public void validateScopeOfflineAccess() {
+        doValidateScope("open_id", "open_id, offline_access", "authorization_code", "refresh_token");
     }
 
     @Test(expected = InvalidScopeException.class)
-    public void doValidateScopeInvalid() throws IOException, ParseException {
-        doValidateScope("nope", "some");
+    public void validateScopeOfflineAccessNorefreshToken() {
+        doValidateScope("open_id", "open_id, offline_access", "authorization_code");
+    }
+
+    @Test(expected = InvalidScopeException.class)
+    public void doValidateScopeInvalid() {
+        doValidateScope("nope", "some", "authorization_code");
     }
 
     @Test
@@ -130,20 +137,16 @@ public class AuthorizationEndpointUnitTest {
     }
 
     @SuppressWarnings("unchecked")
-    private void doValidateScope(String clientScope, String requestResponseScope) throws IOException, ParseException {
-        AuthorizationRequest authorizationRequest = authorizationRequest(
-                new FluentMap<String, String>()
-                        .p("client_id", "http://oidc-rp")
-                        .p("response_type", "code")
-                        .p("scope", requestResponseScope));
-        OpenIDClient client = openIDClient("http://redirect", clientScope, "authorization_code");
+    private void doValidateScope(String clientScope, String requestResponseScope, String... grants) {
+        OpenIDClient client = openIDClient("http://redirect", clientScope, grants);
 
         OpenIDClientRepository openIDClientRepository = mock(OpenIDClientRepository.class);
-        when(openIDClientRepository.findByClientIdIn(null)).thenReturn(Collections.singletonList(openIDClient("http://redirect", clientScope, "authorization_code")));
+        when(openIDClientRepository.findByClientIdIn(null))
+                .thenReturn(Collections.singletonList(client));
+        Scope scope = Scope.parse(requestResponseScope);
+        List<String> scopes = AuthorizationEndpoint.validateScopes(openIDClientRepository, scope, client);
 
-        List<String> scopes = AuthorizationEndpoint.validateScopes(openIDClientRepository, new Scope(requestResponseScope), client);
-
-        assertEquals(singletonList(requestResponseScope), scopes);
+        assertEquals(scope.toStringList(), scopes);
     }
 
     @SuppressWarnings("unchecked")
@@ -159,15 +162,16 @@ public class AuthorizationEndpointUnitTest {
         assertEquals(redirectUri.getRedirectURI(), requestRedirectUri != null ? requestRedirectUri : clientRedirectUri);
     }
 
-    private OpenIDClient openIDClient(String redirectUrl, String scope, String grant) {
+    private OpenIDClient openIDClient(String redirectUrl, String scope, String... grants) {
         ArrayList<String> redirectUrls = new ArrayList<>();
         if (StringUtils.hasText(redirectUrl)) {
             redirectUrls.add(redirectUrl);
         }
+        List<oidc.model.Scope> scopes = Arrays.stream(scope.split(",")).map(s -> new oidc.model.Scope(s.trim())).collect(Collectors.toList());
         return new OpenIDClient("https://mock-rp",
                 redirectUrls,
-                singletonList(new oidc.model.Scope(scope)),
-                singletonList(grant));
+                scopes,
+                Arrays.asList(grants));
     }
 
     private AuthorizationRequest authorizationRequest(Map<String, String> parameters) throws IOException, ParseException {
