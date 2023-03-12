@@ -62,6 +62,7 @@ public class ResourceCleaner {
     @Scheduled(cron = "${cron.token-cleaner-expression}")
     public void clean() {
         if (!cronJobResponsible) {
+            LOG.info("No responsible for CRON job");
             return;
         }
         Date now = new Date();
