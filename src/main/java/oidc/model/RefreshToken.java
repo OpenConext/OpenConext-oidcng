@@ -11,7 +11,7 @@ import java.util.Date;
 @Getter
 public class RefreshToken extends AccessToken {
 
-    //Backward compatiblity
+    //Backward compatibility
     private String accessTokenValue;
     private String innerValue;
 
