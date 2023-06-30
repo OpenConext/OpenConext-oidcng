@@ -19,6 +19,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterOutputStream;
@@ -59,7 +60,8 @@ public class MongoSaml2AuthenticationRequestRepository implements Saml2Authentic
                 redirectAuthenticationRequest.getSigAlg(),
                 redirectAuthenticationRequest.getSignature(),
                 redirectAuthenticationRequest.getRelayState(),
-                redirectAuthenticationRequest.getAuthenticationRequestUri()
+                redirectAuthenticationRequest.getAuthenticationRequestUri(),
+                new Date()
         );
         this.samlAuthenticationRequestRepository.save(samlAuthenticationRequest);
     }

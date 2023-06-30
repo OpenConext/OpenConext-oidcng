@@ -7,10 +7,11 @@ import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.Date;
+
 @Document(collection = "saml_authentication_requests")
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
 public class SamlAuthenticationRequest {
 
@@ -22,5 +23,9 @@ public class SamlAuthenticationRequest {
     private String signature;
     private String relayState;
     private String authenticationRequestUri;
+    private Date expiresAt;
 
+    public SamlAuthenticationRequest() {
+        expiresAt = new Date();
+    }
 }

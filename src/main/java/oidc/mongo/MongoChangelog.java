@@ -3,6 +3,9 @@ package oidc.mongo;
 import com.github.cloudyrock.mongock.ChangeLog;
 import com.github.cloudyrock.mongock.ChangeSet;
 import com.github.cloudyrock.mongock.driver.mongodb.springdata.v3.decorator.impl.MongockTemplate;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.Indexes;
 import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
@@ -11,6 +14,7 @@ import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
 import oidc.model.User;
 import oidc.model.UserConsent;
+import org.bson.Document;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.index.IndexOperations;
@@ -19,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.singletonList;
 
@@ -69,7 +74,7 @@ public class MongoChangelog {
                 .ensureIndex(new Index("value", Sort.Direction.ASC).named(String.format("value_unique")).unique());
     }
 
-    @ChangeSet(order = "006", id = "dropValueIndexes", author = "Okke Harsta", runAlways = true)
+    @ChangeSet(order = "006", id = "dropValueIndexes", author = "Okke Harsta")
     public void dropValueIndexes(MongockTemplate mongoTemplate) {
         Arrays.asList("access_tokens", "refresh_tokens").forEach(collection -> {
             IndexOperations indexOperations = mongoTemplate.indexOps(collection);
@@ -79,6 +84,12 @@ public class MongoChangelog {
         });
     }
 
+    @ChangeSet(order = "007", id = "addTTLIndexSamlAuthenticationRequest", author = "Okke Harsta")
+    public void addTTLIndexSamlAuthenticationRequest(MongockTemplate mongoTemplate) {
+        MongoCollection<Document> collection = mongoTemplate.getCollection("saml_authentication_requests");
+        collection.createIndex(Indexes.ascending("expiresAt"),
+                new IndexOptions().expireAfter(60L, TimeUnit.MINUTES));
+    }
 
     private void ensureCollectionsAndIndexes(MongockTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {
         ensureCollectionsAndIndexes(mongoTemplate, indexInfo, true);
