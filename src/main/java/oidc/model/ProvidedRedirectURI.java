@@ -12,7 +12,7 @@ public class ProvidedRedirectURI {
 
     private final String redirectURI;
     private final URI me;
-    private final boolean strictRedirectUriCheck = false;
+    private final boolean strictRedirectUriCheck = true;
 
     public ProvidedRedirectURI(String redirectURI) {
         this.redirectURI = redirectURI;
