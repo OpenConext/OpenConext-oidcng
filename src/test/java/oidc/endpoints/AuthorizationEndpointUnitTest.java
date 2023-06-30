@@ -92,7 +92,7 @@ public class AuthorizationEndpointUnitTest {
 
     @Test
     public void doValidateRedirectUriQuery() throws IOException, ParseException {
-        doValidateRedirectionUri("https://domain.net?key=val", "https://domain.net?key=nope");
+        doValidateRedirectionUri("https://domain.net?key=val", "https://domain.net?key=val");
     }
 
     @Test(expected = IllegalArgumentException.class)
