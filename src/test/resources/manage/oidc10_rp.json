@@ -290,6 +290,7 @@
         ],
         "isResourceServer": "0",
         "isPublicClient": false,
+        "oidc:claims_in_id_token": true,
         "NameIDFormats:0": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified",
         "NameIDFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
       }

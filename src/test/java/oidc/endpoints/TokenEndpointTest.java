@@ -46,6 +46,7 @@ import java.util.*;
 
 import static com.nimbusds.oauth2.sdk.auth.JWTAuthentication.CLIENT_ASSERTION_TYPE;
 import static io.restassured.RestAssured.given;
+import static java.util.Collections.emptyList;
 import static org.junit.Assert.*;
 
 @SuppressWarnings("unchecked")
@@ -122,6 +123,19 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
         Response response = doAuthorizeWithClaims("mock-sp", "code", null, null, null, Arrays.asList("email", "nickname"));
         String code = getCode(response);
         Map<String, Object> body = doToken(code);
+
+        String idToken = (String) body.get("id_token");
+        JWTClaimsSet claimsSet = processToken(idToken, port);
+
+        assertEquals("john.doe@example.org", claimsSet.getClaim("email"));
+        assertEquals("Johhny", claimsSet.getClaim("nickname"));
+    }
+
+    @Test
+    public void claimsInIdToken() throws IOException, ParseException, JOSEException, BadJOSEException {
+        Response response = doAuthorizeWithClaims("student.mobility.rp.localhost", "code", null, null, null, emptyList());
+        String code = getCode(response);
+        Map<String, Object> body = doToken(code, "student.mobility.rp.localhost", "secret", GrantType.AUTHORIZATION_CODE);
 
         String idToken = (String) body.get("id_token");
         JWTClaimsSet claimsSet = processToken(idToken, port);
@@ -325,7 +339,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
         CodeChallenge codeChallenge = CodeChallenge.compute(CodeChallengeMethod.S256, new CodeVerifier(verifier));
 
         Response response = doAuthorizeWithClaimsAndScopesAndCodeChallengeMethod("mock-sp", "code", null, "nonce",
-                codeChallenge.getValue(), Collections.emptyList(), "openid", "state", CodeChallengeMethod.S256.getValue());
+                codeChallenge.getValue(), emptyList(), "openid", "state", CodeChallengeMethod.S256.getValue());
         String code = getCode(response);
         Map<String, Object> body = doToken(code, "mock-sp", null, GrantType.AUTHORIZATION_CODE, verifier);
         assertTrue(body.containsKey("id_token"));

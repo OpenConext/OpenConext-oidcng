@@ -172,7 +172,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
         if (authorizationCode == null) {
             /*
-             * Now it become's tricky. Did we get an 'null' because the code was bogus or because it was already
+             * Now it becomes tricky. Did we get an 'null' because the code was bogus or because it was already
              * used? To both satisfy the - highly theoretical - risk of the audit race condition and the OIDC certification
              * demand of deleting access_token issued with the re-used authorization code we need to query again.
              *
@@ -298,9 +298,12 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         return new ResponseEntity<>(body, responseHttpHeaders, HttpStatus.OK);
     }
 
-    private Map<String, Object> tokenEndpointResponse(Optional<User> user, OpenIDClient client,
-                                                      List<String> scopes, List<String> idTokenClaims,
-                                                      boolean clientCredentials, String nonce,
+    private Map<String, Object> tokenEndpointResponse(Optional<User> user,
+                                                      OpenIDClient client,
+                                                      List<String> scopes,
+                                                      List<String> idTokenClaims,
+                                                      boolean clientCredentials,
+                                                      String nonce,
                                                       Optional<Long> authorizationTime,
                                                       Optional<String> authorizationCodeId) {
         Map<String, Object> map = new LinkedHashMap<>();

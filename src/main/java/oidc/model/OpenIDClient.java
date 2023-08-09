@@ -54,6 +54,7 @@ public class OpenIDClient {
 
     private boolean includeUnspecifiedNameID;
     private boolean consentRequired;
+    private boolean claimsInIdToken;
 
     public OpenIDClient(String clientId, List<String> redirectUrls, List<Scope> scopes, List<String> grants) {
         this.clientId = clientId;
@@ -97,11 +98,11 @@ public class OpenIDClient {
         this.signingCertificate = (String) metaDataFields.get("oidc:signingCertificate");
         this.signingCertificateUrl = (String) metaDataFields.get("oidc:signingCertificateUrl");
         this.consentRequired = parseBoolean(metaDataFields.get("oidc:consentRequired"));
+        this.claimsInIdToken = parseBoolean(metaDataFields.get("oidc:claims_in_id_token"));
 
         this.includeUnspecifiedNameID = nameIdFormats.stream()
-                .filter(id -> metaDataFields.containsKey(id))
-                .map(id -> metaDataFields.get(id).equals("urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"))
-                .anyMatch(b -> b);
+                .filter(metaDataFields::containsKey)
+                .anyMatch(id -> metaDataFields.get(id).equals("urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"));
     }
 
     @Transient

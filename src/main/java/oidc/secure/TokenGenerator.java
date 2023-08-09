@@ -416,14 +416,20 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
             builder.claim("scope", String.join(" ", scopes));
         }
 
-        if (!CollectionUtils.isEmpty(idTokenClaims) && optionalUser.isPresent() && isAccessToken) {
+        if ((!CollectionUtils.isEmpty(idTokenClaims) || client.isClaimsInIdToken()) &&
+                optionalUser.isPresent() && isAccessToken) {
             User user = optionalUser.get();
             Map<String, Object> attributes = user.getAttributes();
-            idTokenClaims.forEach(claim -> {
-                if (attributes.containsKey(claim)) {
-                    builder.claim(claim, attributes.get(claim));
-                }
-            });
+            if (!CollectionUtils.isEmpty(idTokenClaims)) {
+                idTokenClaims.forEach(claim -> {
+                    if (attributes.containsKey(claim)) {
+                        builder.claim(claim, attributes.get(claim));
+                    }
+                });
+            }
+            if (client.isClaimsInIdToken()) {
+                attributes.forEach(builder::claim);
+            }
         }
 
         optionalUser.ifPresent(user -> {
