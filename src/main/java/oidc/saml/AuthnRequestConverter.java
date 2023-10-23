@@ -1,5 +1,7 @@
 package oidc.saml;
 
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.id.ClientID;
@@ -8,6 +10,7 @@ import com.nimbusds.openid.connect.sdk.claims.ACR;
 import lombok.SneakyThrows;
 import oidc.endpoints.AuthorizationEndpoint;
 import oidc.exceptions.CookiesNotSupportedException;
+import oidc.exceptions.JWTRequestURIMismatchException;
 import oidc.exceptions.UnknownClientException;
 import oidc.log.MDCContext;
 import oidc.manage.ServiceProviderTranslation;
@@ -32,11 +35,13 @@ import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
+import java.security.cert.CertificateException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -175,6 +180,11 @@ public class AuthnRequestConverter implements
         if (StringUtils.hasText(requestP) || StringUtils.hasText(requestUrlP)) {
             OpenIDClient openIDClient = openIDClientRepository.findOptionalByClientId(clientId)
                     .orElseThrow(() -> new UnknownClientException(clientId));
+            if (StringUtils.hasText(requestUrlP) && !requestUrlP.equalsIgnoreCase(openIDClient.getJwtRequestUri())) {
+                throw new JWTRequestURIMismatchException(
+                        String.format("JWT request_uri mismatch for RP %s. Requested %s, configured %s",
+                                openIDClient.getClientId(), requestUrlP, openIDClient.getJwtRequestUri()));
+            }
             try {
                 com.nimbusds.openid.connect.sdk.AuthenticationRequest authRequest =
                         com.nimbusds.openid.connect.sdk.AuthenticationRequest.parse(request);
@@ -189,7 +199,8 @@ public class AuthnRequestConverter implements
                 if (!authnRequest.isForceAuthn() && prompt != null) {
                     authnRequest.setForceAuthn(prompt.contains("login"));
                 }
-            } catch (Exception e) {
+            } catch (CertificateException | JOSEException | IOException | BadJOSEException |
+                     java.text.ParseException | URISyntaxException e) {
                 throw new RuntimeException(e);
             }
         }

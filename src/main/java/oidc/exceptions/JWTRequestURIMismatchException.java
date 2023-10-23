@@ -4,18 +4,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-public class RedirectMismatchException extends BaseException {
+public class JWTRequestURIMismatchException extends BaseException {
 
-    public RedirectMismatchException(String message) {
+    public JWTRequestURIMismatchException(String message) {
         super(message);
-    }
-
-    protected boolean suppressStackTrace() {
-        return true;
     }
 
     @Override
     public String getErrorCode() {
-        return "invalid_redirect_uri";
+        return "invalid_request_uri";
     }
 }

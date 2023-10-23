@@ -2,6 +2,7 @@ package oidc.saml;
 
 import com.nimbusds.jwt.SignedJWT;
 import oidc.exceptions.CookiesNotSupportedException;
+import oidc.exceptions.JWTRequestURIMismatchException;
 import oidc.model.OpenIDClient;
 import oidc.model.Scope;
 import oidc.repository.AuthenticationRequestRepository;
@@ -15,21 +16,22 @@ import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 import org.springframework.security.web.savedrequest.RequestCache;
 
 import javax.servlet.http.HttpServletRequest;
-
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static oidc.model.EntityType.OAUTH_RS;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class AuthnRequestConverterUnitTest extends AbstractSamlUnitTest implements SignedJWTTest {
 
-    private OpenIDClientRepository openIDClientRepository = mock(OpenIDClientRepository.class);
-    private AuthenticationRequestRepository authenticationRequestRepository = mock(AuthenticationRequestRepository.class);
-    private RequestCache requestCache = mock(RequestCache.class);
+    private final OpenIDClientRepository openIDClientRepository = mock(OpenIDClientRepository.class);
+    private final AuthenticationRequestRepository authenticationRequestRepository = mock(AuthenticationRequestRepository.class);
+    private final RequestCache requestCache = mock(RequestCache.class);
 
     private AuthnRequestConverter subject;
 
@@ -67,6 +69,29 @@ public class AuthnRequestConverterUnitTest extends AbstractSamlUnitTest implemen
         assertTrue(authnRequest.isForceAuthn());
         assertEquals("loa1", authnRequest.getRequestedAuthnContext().getAuthnContextClassRefs().get(0).getAuthnContextClassRef());
         assertEquals("http://idp", authnRequest.getScoping().getIDPList().getIDPEntrys().get(0).getProviderID());
+    }
+
+    @Test
+    public void testJWTRequestURIMismatch() throws Exception {
+        OpenIDClient openIDClient = new OpenIDClient(Map.of(
+                "type", OAUTH_RS.getType(),
+                "data", Map.of("entityid", "mock_sp",
+                        "metaDataFields",
+                        Map.of("oidc:jwtRequestUri", "http://valid.url",
+                                "redirectUrls", List.of("http://localhost:8080")))));
+        when(openIDClientRepository.findOptionalByClientId("mock_sp")).thenReturn(Optional.of(openIDClient));
+
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "http://localhost/oidc/authorize");
+        request.addParameter("client_id", "mock_sp");
+        request.addParameter("response_type", "code");
+        request.addParameter("request_uri", "http://invalid_url");
+
+        HttpServletRequest servletRequest = new MockHttpServletRequest();
+        CustomSaml2AuthenticationRequestContext ctx = new CustomSaml2AuthenticationRequestContext(relyingParty, servletRequest);
+
+        when(requestCache.getRequest(any(HttpServletRequest.class), any()))
+                .thenReturn(new DefaultSavedRequest(request, portResolver));
+        assertThrows(JWTRequestURIMismatchException.class, () -> subject.convert(ctx));
     }
 
     @Test

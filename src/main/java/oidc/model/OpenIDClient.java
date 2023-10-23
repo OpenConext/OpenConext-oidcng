@@ -42,6 +42,7 @@ public class OpenIDClient {
     private List<Scope> scopes;
     private List<String> grants;
     private List<String> allowedResourceServers;
+    private String jwtRequestUri;
     private boolean resourceServer;
     private boolean publicClient;
     //seconds
@@ -82,6 +83,7 @@ public class OpenIDClient {
         this.clientSecretJWT = (String) metaDataFields.get("clientSecretJWT");
         this.logoUrl = (String) metaDataFields.get("logo:0:url");
         this.redirectUrls = (List) metaDataFields.get("redirectUrls");
+        this.jwtRequestUri = (String) metaDataFields.get("oidc:jwtRequestUri");
 
         this.grants = (List) metaDataFields.getOrDefault("grants", Collections.singletonList("authorization_code"));
         this.allowedResourceServers = ((List<Map<String, String>>) data.getOrDefault("allowedResourceServers", new ArrayList<>()))
