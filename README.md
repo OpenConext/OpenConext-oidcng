@@ -39,8 +39,8 @@ https://oidcng.test2.surfconext.nl/oidc/generate-secret-key-set
 ```
 If you have started the application before adding the new keyset, you have to remove the existing signing and symmetric keys from the mongo database. Run these two commands on the mongo prompt:
 ```
-db.symmetric_keys.remove({})
-db.signing_keys.remove({})
+db.symmetric_keys.deleteMany({})
+db.signing_keys.deleteMany({})
 ```
 You can also use this Java binary to generate a keyset to use before starting oidcng [https://build.openconext.org/repository/public/releases/org/openconext/crypto/1.0.0/crypto-1.0.0-shaded.jar](https://build.openconext.org/repository/public/releases/org/openconext/crypto/1.0.0/crypto-1.0.0-shaded.jar)
 
