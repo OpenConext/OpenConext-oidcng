@@ -16,7 +16,7 @@
         <protobuf-java.version>3.21.8</protobuf-java.version>
         <rest-assured.version>5.2.0</rest-assured.version>
         <spring-session-data-mongodb.version>2.7.0</spring-session-data-mongodb.version>
-        <xmlsec.version>2.3.0</xmlsec.version>
+        <xmlsec.version>2.3.4</xmlsec.version>
     </properties>
 
     <groupId>org.openconext</groupId>
