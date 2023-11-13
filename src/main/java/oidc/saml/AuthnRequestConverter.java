@@ -158,7 +158,7 @@ public class AuthnRequestConverter implements
         String clientId = param("client_id", request);
 
         String entityId = ServiceProviderTranslation.translateClientId(clientId);
-        authnRequest.setScoping(getScoping(Arrays.asList(entityId)));
+        authnRequest.setScoping(getScoping(entityId));
         String prompt = AuthorizationEndpoint.validatePrompt(request);
 
         authnRequest.setForceAuthn(prompt != null && prompt.contains("login"));
@@ -230,26 +230,23 @@ public class AuthnRequestConverter implements
         return idpList;
     }
 
-    private Scoping getScoping(List<String> entityIds) {
+    private Scoping getScoping(String entityId) {
         ScopingBuilder scopingBuilder = (ScopingBuilder) registry.getBuilderFactory()
                 .getBuilder(Scoping.DEFAULT_ELEMENT_NAME);
 
         Scoping scoping = scopingBuilder.buildObject();
-        addRequesterIds(entityIds, scoping);
+        addRequesterIds(entityId, scoping);
         return scoping;
     }
 
-    private void addRequesterIds(List<String> entityIds, Scoping scoping) {
+    private void addRequesterIds(String entityId, Scoping scoping) {
         RequesterIDBuilder requesterIDBuilder = (RequesterIDBuilder) registry.getBuilderFactory()
                 .getBuilder(RequesterID.DEFAULT_ELEMENT_NAME);
-        List<RequesterID> requesterIDS = entityIds.stream().map(entityId -> {
             RequesterID requesterID = requesterIDBuilder.buildObject();
             requesterID.setURI(entityId);
-            return requesterID;
-        }).collect(Collectors.toList());
 
         scoping.setProxyCount(1);
-        scoping.getRequesterIDs().addAll(requesterIDS);
+        scoping.getRequesterIDs().add(requesterID);
     }
 
     private boolean isValidURI(String uri) {
