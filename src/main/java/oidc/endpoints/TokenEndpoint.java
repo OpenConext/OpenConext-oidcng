@@ -275,7 +275,13 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         } else {
             accessToken = accessTokenRepository.findById(refreshToken.getAccessTokenId());
         }
-        accessToken.ifPresent(accessTokenRepository::delete);
+        accessToken.ifPresent(oldAccessToken -> {
+            LOG.info(String.format(
+                    "Deleting existing access_token (jti: %s) after refresh_token request from %s",
+                    oldAccessToken.getJwtId(),
+                    client.getClientId()));
+            accessTokenRepository.delete(oldAccessToken);
+        });
 
         Optional<User> optionalUser;
         if (refreshToken.isClientCredentials()) {
