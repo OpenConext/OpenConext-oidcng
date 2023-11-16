@@ -2,6 +2,7 @@ package oidc.secure;
 
 import oidc.AbstractIntegrationTest;
 import oidc.SeedUtils;
+import oidc.endpoints.OidcEndpoint;
 import oidc.model.AccessToken;
 import oidc.model.AuthenticationRequest;
 import oidc.model.AuthorizationCode;
@@ -9,6 +10,7 @@ import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
 import oidc.model.User;
 import oidc.model.UserConsent;
+import oidc.repository.AccessTokenRepository;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,14 +22,12 @@ import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
@@ -36,10 +36,13 @@ import static org.junit.Assert.assertEquals;
                 "cron.node-cron-job-responsible=true"
         })
 @SuppressWarnings("unchecked")
-public class ResourceCleanerTest extends AbstractIntegrationTest implements SeedUtils {
+public class ResourceCleanerTest extends AbstractIntegrationTest implements SeedUtils, OidcEndpoint {
 
     @Autowired
     private ResourceCleaner subject;
+
+    @Autowired
+    private AccessTokenRepository accessTokenRepository;
 
     @Test
     public void clean() throws URISyntaxException {
@@ -60,6 +63,26 @@ public class ResourceCleanerTest extends AbstractIntegrationTest implements Seed
         subject.clean();
 
         Stream.of(classes).forEach(clazz -> assertEquals(0, mongoTemplate.findAll(clazz).size()));
+    }
+
+    @Test
+    public void cleanEagerNegative() {
+        String jwtId = UUID.randomUUID().toString();
+        coCleanEager(jwtId, -5, false);
+    }
+
+    @Test
+    public void cleanEagerPositive() {
+        String jwtId = UUID.randomUUID().toString();
+        coCleanEager(jwtId, 15, true);
+    }
+
+    private void coCleanEager(String jwtId, int validity, boolean present) {
+        AccessToken accessToken = accessToken(jwtId, tokenValidity(validity));
+        accessTokenRepository.insert(accessToken);
+        subject.clean();
+        Optional<AccessToken> optionalAccessToken = accessTokenRepository.findByJwtId(jwtId);
+        assertEquals(present, optionalAccessToken.isPresent());
     }
 
     private UserConsent userConsent() {
