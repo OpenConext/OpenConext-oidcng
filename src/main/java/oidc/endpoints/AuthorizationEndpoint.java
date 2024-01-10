@@ -2,12 +2,8 @@ package oidc.endpoints;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.proc.BadJOSEException;
-import com.nimbusds.oauth2.sdk.AuthorizationRequest;
-import com.nimbusds.oauth2.sdk.GrantType;
-import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.ResponseMode;
-import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
+import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
@@ -16,19 +12,10 @@ import com.nimbusds.openid.connect.sdk.Nonce;
 import com.nimbusds.openid.connect.sdk.OIDCResponseTypeValue;
 import com.nimbusds.openid.connect.sdk.Prompt;
 import oidc.crypto.KeyGenerator;
-import oidc.exceptions.InvalidGrantException;
-import oidc.exceptions.InvalidScopeException;
-import oidc.exceptions.RedirectMismatchException;
-import oidc.exceptions.UnknownClientException;
-import oidc.exceptions.UnsupportedPromptValueException;
+import oidc.exceptions.*;
 import oidc.log.MDCContext;
-import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
-import oidc.model.EncryptedTokenValue;
-import oidc.model.OpenIDClient;
-import oidc.model.ProvidedRedirectURI;
-import oidc.model.TokenValue;
-import oidc.model.User;
+import oidc.model.*;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.OpenIDClientRepository;
@@ -64,16 +51,7 @@ import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -222,18 +200,33 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             }
             if (responseMode.equals(ResponseMode.QUERY)) {
                 UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectURI);
-                body.forEach(builder::queryParam);
-                return new ModelAndView(new RedirectView(builder.toUriString()));
+                body.entrySet().stream()
+                        .filter(entry -> !entry.getKey().equalsIgnoreCase("state"))
+                        .forEach(entry -> builder.queryParam(entry.getKey(), entry.getValue()));
+                return redirectViewWithState(builder, state);
             }
             if (responseMode.equals(ResponseMode.FRAGMENT)) {
                 UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectURI);
-                String fragment = body.entrySet().stream().map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue())).collect(Collectors.joining("&"));
+                String fragment = body.entrySet().stream()
+                        .filter(entry -> !entry.getKey().equalsIgnoreCase("state"))
+                        .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()))
+                        .collect(Collectors.joining("&"));
                 builder.fragment(fragment);
-                return new ModelAndView(new RedirectView(builder.toUriString()));
+                return redirectViewWithState(builder, state);
             }
             throw new IllegalArgumentException("Response mode " + responseMode + " not supported");
         }
         throw new IllegalArgumentException("Not yet implemented response_type: " + responseType.toString());
+    }
+
+    private static ModelAndView redirectViewWithState(UriComponentsBuilder builder, State state) {
+        String uriString = builder.toUriString();
+        boolean hasState = state != null && StringUtils.hasText(state.getValue());
+        if (hasState) {
+            //We must do this after the toUriString, otherwise it will get encoded
+            uriString += ("&state=" + state.getValue());
+        }
+        return new ModelAndView(new RedirectView(uriString));
     }
 
     private void logout(HttpServletRequest request) {
@@ -301,7 +294,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             result.put("id_token", tokenValue.getValue());
         }
         result.put("expires_in", client.getAccessTokenValidity());
-        if (state != null) {
+        if (state != null && StringUtils.hasText(state.getValue())) {
             result.put("state", state.getValue());
         }
         return result;
@@ -366,17 +359,16 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         boolean hasState = state != null && StringUtils.hasText(state.getValue());
         if (isFragment) {
             String fragment = "code=" + code;
-            if (hasState) {
-                fragment = fragment.concat("&state=" + state.getValue());
-            }
             builder.fragment(fragment);
         } else {
             builder.queryParam("code", code);
-            if (hasState) {
-                builder.queryParam("state", state.getValue());
-            }
         }
-        return builder.toUriString();
+        String uriString = builder.toUriString();
+        if (hasState) {
+            //We must do this after the toUriString, otherwise it will get encoded
+            uriString += ("&state=" + state.getValue());
+        }
+        return uriString;
     }
 
     private static final String unsupportedPromptMessage = "Unsupported prompt=%s is requested, redirecting the user back to the RP";
