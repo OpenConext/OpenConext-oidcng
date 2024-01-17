@@ -329,7 +329,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(location);
         MultiValueMap<String, String> queryParams = builder.build().getQueryParams();
         String state = queryParams.getFirst("state");
-        assertEquals("new", state);
+        assertEquals("state", state);
 
         String code = queryParams.getFirst("code");
         Map<String, Object> result = doToken(code);

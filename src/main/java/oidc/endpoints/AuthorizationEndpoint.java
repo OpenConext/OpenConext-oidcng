@@ -135,7 +135,10 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             //swap reference
             authenticationRequest = oidcAuthenticationRequest;
         }
-        State state = authenticationRequest.getState();
+        //Can't use authenticationRequest.getState(), because this is decoded
+        String stateValue = new QueryString(request).getStateValue();
+        State state = StringUtils.hasText(stateValue) ? new State(stateValue) : null;
+
         String redirectURI = validateRedirectionURI(authenticationRequest.getRedirectionURI(), client).getRedirectURI();
 
         List<String> scopes = validateScopes(openIDClientRepository, authenticationRequest.getScope(), client);

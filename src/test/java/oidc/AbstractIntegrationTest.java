@@ -22,17 +22,11 @@ import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.openid.connect.sdk.ClaimsRequest;
 import io.restassured.RestAssured;
+import io.restassured.internal.http.URIBuilder;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import oidc.endpoints.MapTypeReference;
-import oidc.model.AccessToken;
-import oidc.model.AuthorizationCode;
-import oidc.model.OpenIDClient;
-import oidc.model.RefreshToken;
-import oidc.model.Sequence;
-import oidc.model.SigningKey;
-import oidc.model.SymmetricKey;
-import oidc.model.UserConsent;
+import oidc.model.*;
 import oidc.repository.SequenceRepository;
 import oidc.secure.TokenGenerator;
 import org.junit.Before;
@@ -66,24 +60,17 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.restassured.RestAssured.given;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 
 /**
@@ -234,8 +221,11 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
                                                   String scopes, String state, String codeChallengeMethod,
                                                   JWT signedJWT, String requestURL) throws IOException {
         Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("scope", scopes);
-        queryParams.put("response_type", responseType);
+        if (StringUtils.hasText(scopes)) {
+            queryParams.put("scope", URIBuilder.encode(scopes, Charset.defaultCharset().toString()));
+        }
+        //Ensure we don't end up with an invalid URI containing spaces
+        queryParams.put("response_type", URIBuilder.encode(responseType, Charset.defaultCharset().toString()));
         queryParams.put("client_id", clientId);
         if (StringUtils.hasText(clientId)) {
             queryParams.put("redirect_uri", openIDClient(clientId).getRedirectUrls().get(0));
@@ -255,7 +245,7 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
             ClaimsRequest claimsRequest = new ClaimsRequest();
             claims.forEach(claim -> claimsRequest.addIDTokenClaim(claim));
             String claimsRequestString = claimsRequest.toString();
-            queryParams.put("claims", claimsRequestString);
+            queryParams.put("claims", URIBuilder.encode(claimsRequestString, Charset.defaultCharset().toString()));
         }
         if (signedJWT != null) {
             queryParams.put("request", signedJWT.serialize());
@@ -263,7 +253,9 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         if (StringUtils.hasText(requestURL)) {
             queryParams.put("request_uri", requestURL);
         }
-        Response response = given().redirects().follow(false)
+        Response response = given()
+                .urlEncodingEnabled(false)
+                .redirects().follow(false)
                 .when()
                 .header("Content-type", "application/json")
                 .queryParams(queryParams)
