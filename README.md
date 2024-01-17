@@ -58,7 +58,7 @@ Note that this only works because of the `dev` profile where there is pre-authen
 First obtain an authorization code:
 
 ```
-curl -i  "http://localhost:8080/oidc/authorize?response_type=code&client_id=mock-sp&scope=openid&redirect_uri=http://localhost:8091/redirect"
+curl -i  "http://localhost:8080/oidc/authorize?response_type=code&client_id=mock-sp&scope=openid&redirect_uri=http://localhost:8091/redirect&state=https%3A%2F%2Fexample.com"
 ```
 
 This will output the following:
