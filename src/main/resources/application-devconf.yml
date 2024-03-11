@@ -11,7 +11,7 @@ private_key_path: file:///config/saml.key
 certificate_path: file:///config/saml.crt
 default_acr_value: http://dev.openconext.local/assurance/loa1
 secure_cookie: false
-oidc_token_endpoint: https://dev.openconext.local/oidc/token
+oidc_token_endpoint: https://connect.dev.openconext.local/oidc/token
 environment: SURFconext DEV
 
 features:
@@ -26,8 +26,8 @@ sp:
   acs_location: https://connect.dev.openconext.local/login/saml2/sso/oidcng
 
 idp:
-  entity_id: https://dev.openconext.local/authentication/idp/metadata
-  sso_location: https://dev.openconext.local/authentication/idp/single-sign-on
+  entity_id: https://engine.dev.openconext.local/authentication/idp/metadata
+  sso_location: https://engine.dev.openconext.local/authentication/idp/single-sign-on
   saml_assertion_signing_key: classpath:/engine.dev.openconext.local.default.pem
 
 spring:
