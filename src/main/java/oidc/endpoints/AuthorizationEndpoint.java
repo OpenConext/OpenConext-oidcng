@@ -138,6 +138,10 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         //Can't use authenticationRequest.getState(), because this is decoded
         String stateValue = new QueryString(request).getStateValue();
         State state = StringUtils.hasText(stateValue) ? new State(stateValue) : null;
+        //The form post after consent has been asked / given contains the state
+        if (state == null && authenticationRequest.getState() != null) {
+            state = authenticationRequest.getState();
+        }
 
         String redirectURI = validateRedirectionURI(authenticationRequest.getRedirectionURI(), client).getRedirectURI();
 
@@ -166,7 +170,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
              */
             if (consentRequired && apiScopeRequested && (consentFromPrompt || client.isConsentRequired()) && resourceServers.size() > 0) {
                 LOG.info("Asking for consent for User " + user + " and scopes " + scopes);
-                return doConsent(parameters, client, filteredScopes, resourceServers);
+                return doConsent(parameters, client, filteredScopes, resourceServers, state);
             }
         }
         //We do not provide SSO as does EB not - up to the identity provider
@@ -241,13 +245,20 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         }
     }
 
-    private ModelAndView doConsent(MultiValueMap<String, String> parameters, OpenIDClient client, Set<String> scopes, List<OpenIDClient> resourceServers) {
+    private ModelAndView doConsent(MultiValueMap<String, String> parameters,
+                                   OpenIDClient client,
+                                   Set<String> scopes,
+                                   List<OpenIDClient> resourceServers,
+                                   State state) {
         Map<String, Object> body = new HashMap<>();
         body.put("parameters", parameters.entrySet().stream().collect(Collectors.toMap(
                 Map.Entry::getKey,
                 entry -> entry.getValue().get(0)
         )));
         body.put("client", client);
+        if (state != null && StringUtils.hasText(state.getValue())) {
+            body.put("state", state.getValue());
+        }
         body.put("resourceServers", resourceServers.stream().filter(rs -> StringUtils.hasText(rs.getLogoUrl())).collect(toList()));
         body.put("scopes", resourceServers.stream()
                 .map(OpenIDClient::getScopes)

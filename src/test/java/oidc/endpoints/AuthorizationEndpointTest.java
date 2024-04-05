@@ -365,12 +365,15 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
             String group = matcher.group(1);
             formParams.put(group.substring(0, group.indexOf("\"")), group.substring(group.lastIndexOf("\"") + 1));
         }
+        assertEquals("state", formParams.get("state"));
 
         response = given().redirects().follow(false)
                 .when()
                 .formParams(formParams)
                 .post("oidc/consent");
         assertEquals(302, response.getStatusCode());
+        String location = response.getHeader("Location");
+        assertTrue(location.contains("state=state"));
 
         String code = getCode(response);
         Map<String, Object> body = doToken(code, "playground_client", "secret", GrantType.AUTHORIZATION_CODE);
