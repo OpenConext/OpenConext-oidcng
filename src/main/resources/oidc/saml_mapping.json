@@ -104,5 +104,10 @@
     "saml": "urn:mace:surf.nl:attribute-def:surf-crm-id",
     "oidc": "surf-crm-id",
     "multiValue": false
+  },
+  {
+    "saml": "urn:schac:attribute-def:schacDateOfBirth",
+    "oidc": "date_of_birth",
+    "multiValue": false
   }
 ]
