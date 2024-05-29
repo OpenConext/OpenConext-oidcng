@@ -13,6 +13,13 @@ public class ServiceProviderTranslationTest {
 
         s = ServiceProviderTranslation.translateServiceProviderEntityId("https://test@test");
         assertEquals(s, "https@//test@@test", s);
+
+        String originalSPEntityID = "https://test@@@test";
+        s = ServiceProviderTranslation.translateServiceProviderEntityId(originalSPEntityID);
+        assertEquals(s, "https@//test@@@@@@test", s);
+
+        s = new ServiceProviderTranslation().translateClientId(s);
+        assertEquals(originalSPEntityID, s);
     }
 
     @Test
