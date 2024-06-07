@@ -109,14 +109,13 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void oauth2NonOidcImplicitFlow() throws IOException {
-        String state = "https://example.com";
         Response response = doAuthorizeWithClaimsAndScopes("mock-sp", "token",
-                null, null, null, null, "groups", state);
+                null, null, null, null, "groups", "https%3A%2F%2Fexample.com");
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = fragmentToMap(fragment);
         assertFalse(fragmentParameters.containsKey("id_token"));
-        assertEquals(state, fragmentParameters.get("state"));
+        assertEquals("https://example.com", fragmentParameters.get("state"));
     }
 
     @Test
@@ -312,12 +311,11 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void implicitFlowQuery() throws IOException, BadJOSEException, ParseException, JOSEException {
-        String state = "https://example.com";
         Response response = doAuthorizeWithClaimsAndScopes("mock-sp", "id_token token", ResponseMode.QUERY.getValue(), "nonce", null,
-                Collections.emptyList(), "openid", state);
+                Collections.emptyList(), "openid", "https%3A%2F%2Fexample.com");
         String url = response.getHeader("Location");
         Map<String, String> queryParameters = UriComponentsBuilder.fromUriString(url).build().getQueryParams().toSingleValueMap();
-        assertEquals(state, queryParameters.get("state"));
+        assertEquals("https://example.com", queryParameters.get("state"));
         assertImplicitFlowResponse(queryParameters);
     }
 
