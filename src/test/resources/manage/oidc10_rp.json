@@ -286,11 +286,15 @@
           "groups"
         ],
         "grants": [
-          "authorization_code"
+          "authorization_code",
+          "implicit",
+          "refresh_token",
+          "client_credentials"
         ],
         "isResourceServer": "0",
         "isPublicClient": false,
         "oidc:claims_in_id_token": true,
+        "oidc:state_parameter_decoding_disabled": true,
         "NameIDFormats:0": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified",
         "NameIDFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
       }

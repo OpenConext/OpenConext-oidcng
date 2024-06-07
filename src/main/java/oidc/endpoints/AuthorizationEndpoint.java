@@ -135,10 +135,16 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             //swap reference
             authenticationRequest = oidcAuthenticationRequest;
         }
-        //Can't use authenticationRequest.getState(), because this is decoded
-        String stateValue = new QueryString(request).getStateValue();
-        State state = StringUtils.hasText(stateValue) ? new State(stateValue) : null;
-        //The form post after consent has been asked / given contains the state
+        State state;
+        if (client.isStateParameterDecodingDisabled()) {
+            //Can't use authenticationRequest.getState(), because this is decoded and the client opted out for that
+            String stateValue = new QueryString(request).getStateValue();
+            state = StringUtils.hasText(stateValue) ? new State(stateValue) : null;
+        } else {
+            //The authenticationRequest.getState() returns it decoded, which is the default behaviour we want
+            state = authenticationRequest.getState();
+        }
+        //The form post after the user has granted consent contains the state in de body, instead of a query param
         if (state == null && authenticationRequest.getState() != null) {
             state = authenticationRequest.getState();
         }
