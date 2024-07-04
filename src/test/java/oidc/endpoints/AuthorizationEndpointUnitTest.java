@@ -17,14 +17,16 @@ import org.junit.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static java.nio.charset.Charset.defaultCharset;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -123,6 +125,29 @@ public class AuthorizationEndpointUnitTest {
         ProvidedRedirectURI redirectUri = AuthorizationEndpoint.validateRedirectionURI(authorizationRequest.getRedirectionURI(), client);
 
         assertEquals(redirectUri.getRedirectURI(), requestRedirectUri);
+    }
+
+    @Test
+    public void mismatchEncodingSpringVSDefaultEncoder() {
+        String originalState = "{\"returnUrl\":\"\"}";
+        String uri = "http://localhost?state=" + originalState;
+
+        String stateEncoded = URLEncoder.encode(originalState, defaultCharset());
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(uri);
+        String uriString = builder.toUriString();
+        String expectedUri = "http://localhost?state=" + stateEncoded;
+
+        assertNotEquals(expectedUri, uriString);
+        // UriComponentsBuilder does not encode ":" in the query params
+        String fixedUri = "http://localhost?" +
+                uriString.substring(uriString.indexOf("?") + 1)
+                        .replace(":", URLEncoder.encode(":"));
+        assertEquals(expectedUri, fixedUri);
+        //Main use case is that the decoded query params match
+        String decodedExpectedURI = URLDecoder.decode(expectedUri, defaultCharset());
+        String decodedURIString = URLDecoder.decode(uriString, defaultCharset());
+        assertEquals(decodedExpectedURI, decodedURIString);
+
     }
 
 

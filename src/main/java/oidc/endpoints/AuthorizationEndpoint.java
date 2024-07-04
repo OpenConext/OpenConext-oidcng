@@ -49,11 +49,13 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.nio.charset.Charset.defaultCharset;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -136,7 +138,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             authenticationRequest = oidcAuthenticationRequest;
         }
         State state;
-        if (client.isStateParameterDecodingDisabled()) {
+        boolean stateParameterDecodingDisabled = client.isStateParameterDecodingDisabled();
+        if (stateParameterDecodingDisabled) {
             //Can't use authenticationRequest.getState(), because this is decoded and the client opted out for that
             String stateValue = new QueryString(request).getStateValue();
             state = StringUtils.hasText(stateValue) ? new State(stateValue) : null;
@@ -196,8 +199,9 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 }
                 return new ModelAndView("form_post", body);
             }
-            return new ModelAndView(new RedirectView(authorizationRedirect(redirectURI, state,
-                    authorizationCode.getCode(), responseMode.equals(ResponseMode.FRAGMENT))));
+            String uriString = authorizationRedirect(redirectURI, state,
+                    authorizationCode.getCode(), responseMode.equals(ResponseMode.FRAGMENT), stateParameterDecodingDisabled);
+            return new ModelAndView(new RedirectView(uriString));
         } else if (responseType.impliesImplicitFlow() || responseType.impliesHybridFlow()) {
             if (responseType.impliesImplicitFlow()) {
                 //User information is encrypted in access token
@@ -216,7 +220,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 body.entrySet().stream()
                         .filter(entry -> !entry.getKey().equalsIgnoreCase("state"))
                         .forEach(entry -> builder.queryParam(entry.getKey(), entry.getValue()));
-                return redirectViewWithState(builder, state);
+                return redirectViewWithState(builder, state, stateParameterDecodingDisabled);
             }
             if (responseMode.equals(ResponseMode.FRAGMENT)) {
                 UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectURI);
@@ -225,21 +229,30 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                         .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()))
                         .collect(Collectors.joining("&"));
                 builder.fragment(fragment);
-                return redirectViewWithState(builder, state);
+                return redirectViewWithState(builder, state, stateParameterDecodingDisabled);
             }
             throw new IllegalArgumentException("Response mode " + responseMode + " not supported");
         }
         throw new IllegalArgumentException("Not yet implemented response_type: " + responseType.toString());
     }
 
-    private static ModelAndView redirectViewWithState(UriComponentsBuilder builder, State state) {
-        String uriString = builder.toUriString();
-        boolean hasState = state != null && StringUtils.hasText(state.getValue());
-        if (hasState) {
-            //We must do this after the toUriString, otherwise it will get encoded
-            uriString += ("&state=" + state.getValue());
-        }
+    private static ModelAndView redirectViewWithState(
+            UriComponentsBuilder builder,
+            State state,
+            boolean stateParameterDecodingDisabled) {
+        String uriString = adStateToQueryParameters(builder, state, stateParameterDecodingDisabled);
         return new ModelAndView(new RedirectView(uriString));
+    }
+
+    private static String adStateToQueryParameters(UriComponentsBuilder builder, State state, boolean stateParameterDecodingDisabled) {
+        String uriString = builder.toUriString();
+        if (state != null) {
+            String stateValue = state.getValue();
+            // We don't want to use UriComponentsBuilder, because it does not encode ":" in the query params
+            // See AuthorizationEndpointUnitTest#mismatchEncodingSpringVSDefaultEncoder for self-explaining test code
+            uriString += "&state=" + (stateParameterDecodingDisabled ? stateValue : URLEncoder.encode(stateValue, defaultCharset()));
+        }
+        return uriString;
     }
 
     private void logout(HttpServletRequest request) {
@@ -374,21 +387,16 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         return new ProvidedRedirectURI(redirectURI);
     }
 
-    private String authorizationRedirect(String redirectionURI, State state, String code, boolean isFragment) {
+    private String authorizationRedirect(
+            String redirectionURI, State state, String code, boolean isFragment, boolean stateParameterDecodingDisabled) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectionURI);
-        boolean hasState = state != null && StringUtils.hasText(state.getValue());
         if (isFragment) {
             String fragment = "code=" + code;
             builder.fragment(fragment);
         } else {
             builder.queryParam("code", code);
         }
-        String uriString = builder.toUriString();
-        if (hasState) {
-            //We must do this after the toUriString, otherwise it will get encoded
-            uriString += ("&state=" + state.getValue());
-        }
-        return uriString;
+        return adStateToQueryParameters(builder, state, isFragment || stateParameterDecodingDisabled);
     }
 
     private static final String unsupportedPromptMessage = "Unsupported prompt=%s is requested, redirecting the user back to the RP";

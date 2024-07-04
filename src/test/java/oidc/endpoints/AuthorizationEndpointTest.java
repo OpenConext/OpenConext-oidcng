@@ -26,6 +26,7 @@ import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.ParseException;
 import java.util.*;
@@ -33,6 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.restassured.RestAssured.given;
+import static java.nio.charset.Charset.defaultCharset;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.*;
@@ -109,13 +111,14 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void oauth2NonOidcImplicitFlow() throws IOException {
+        String state = "https%3A%2F%2Fexample.com";
         Response response = doAuthorizeWithClaimsAndScopes("mock-sp", "token",
-                null, null, null, null, "groups", "https%3A%2F%2Fexample.com");
+                null, null, null, null, "groups", state);
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = fragmentToMap(fragment);
         assertFalse(fragmentParameters.containsKey("id_token"));
-        assertEquals("https://example.com", fragmentParameters.get("state"));
+        assertEquals(state, fragmentParameters.get("state"));
     }
 
     @Test
@@ -145,9 +148,20 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         Response response = doAuthorizeWithClaimsAndScopes("mock-sp", "code",
                 null, null, null, null, null, state);
         String location = response.getHeader("Location");
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(location);
-        String returnedState = builder.build().getQueryParams().getFirst("state");
-        assertEquals(state, returnedState);
+        Map<String, String> queryParams = super.queryParamsToMap(location);
+        String stateReturned = queryParams.get("state");
+        assertEquals(state, URLDecoder.decode(stateReturned, defaultCharset()));
+    }
+
+    @Test
+    public void queryParamStateParameterDecodingDisabled() throws IOException {
+        String state = "https://example.com";
+        Response response = doAuthorizeWithClaimsAndScopes("mock-sp", "code",
+                null, null, null, null, null, state);
+        String location = response.getHeader("Location");
+        Map<String, String> queryParams = super.queryParamsToMap(location);
+        String stateReturned = queryParams.get("state");
+        assertEquals(state, URLDecoder.decode(stateReturned, defaultCharset()));
     }
 
     @Test
@@ -271,13 +285,14 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     @Test
     public void hybridFlowFragment() throws IOException, BadJOSEException, ParseException, JOSEException {
         String state = "https%3A%2F%2Fexample.com";
-        Response response = doAuthorizeWithClaimsAndScopes("mock-sp", "code id_token token", null, "nonce", null,
+        Response response = doAuthorizeWithClaimsAndScopes("mock-sp",
+                "code id_token token", null, "nonce", null,
                 Collections.emptyList(),"openid", state);
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = fragmentToMap(fragment);
         String code = fragmentParameters.get("code");
-        assertEquals("https://example.com", fragmentParameters.get("state"));
+        assertEquals(URLEncoder.encode("https://example.com", defaultCharset()), fragmentParameters.get("state"));
 
         AuthorizationCode authorizationCode = mongoTemplate.findOne(Query.query(Criteria.where("code").is(code)), AuthorizationCode.class);
         User user = mongoTemplate.findOne(Query.query(Criteria.where("sub").is(authorizationCode.getSub())), User.class);
@@ -311,11 +326,13 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
 
     @Test
     public void implicitFlowQuery() throws IOException, BadJOSEException, ParseException, JOSEException {
-        Response response = doAuthorizeWithClaimsAndScopes("mock-sp", "id_token token", ResponseMode.QUERY.getValue(), "nonce", null,
-                Collections.emptyList(), "openid", "https%3A%2F%2Fexample.com");
+        String state = "https%3A%2F%2Fexample.com";
+        Response response = doAuthorizeWithClaimsAndScopes("mock-sp",
+                "id_token token", ResponseMode.QUERY.getValue(), "nonce", null,
+                Collections.emptyList(), "openid", state);
         String url = response.getHeader("Location");
         Map<String, String> queryParameters = UriComponentsBuilder.fromUriString(url).build().getQueryParams().toSingleValueMap();
-        assertEquals("https://example.com", queryParameters.get("state"));
+        assertEquals(state, queryParameters.get("state"));
         assertImplicitFlowResponse(queryParameters);
     }
 
@@ -328,6 +345,17 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         Map<String, String> queryParameters = UriComponentsBuilder.fromUriString(url).build().getQueryParams().toSingleValueMap();
         assertEquals(state, queryParameters.get("state"));
         assertImplicitFlowResponse(queryParameters);
+    }
+
+    @Test
+    public void implicitFlowQueryStateDecodingDisabledNoClientEncoding() throws IOException, BadJOSEException, ParseException, JOSEException {
+        String state = "https://example.com";
+        Response response = doAuthorizeWithClaimsAndScopes("student.mobility.rp.localhost", "id_token token", ResponseMode.QUERY.getValue(), "nonce", null,
+                Collections.emptyList(), "openid", state);
+        String url = response.getHeader("Location");
+        Map<String, String> queryParams = super.queryParamsToMap(url);
+        assertEquals(state, queryParams.get("state"));
+        assertImplicitFlowResponse(queryParams);
     }
 
     private JWTClaimsSet assertImplicitFlowResponse(Map<String, ? extends Object> parameters) throws ParseException, MalformedURLException, BadJOSEException, JOSEException {

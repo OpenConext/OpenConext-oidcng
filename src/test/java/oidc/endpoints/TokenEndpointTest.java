@@ -6,6 +6,7 @@ import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
+import com.nimbusds.oauth2.sdk.ResponseMode;
 import com.nimbusds.oauth2.sdk.assertions.jwt.JWTAssertionDetails;
 import com.nimbusds.oauth2.sdk.assertions.jwt.JWTAssertionFactory;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretJWT;
@@ -34,10 +35,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
@@ -429,6 +435,47 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
         assertEquals("invalid_grant", res.get("error"));
         assertEquals("Expired claims", res.get("error_description"));
     }
+
+    @Test
+    public void codeChallengeFlowStateBug() throws IOException {
+        String verifier = "12345678901234567890123456789012345678901234567890";
+        CodeChallenge codeChallenge = CodeChallenge.compute(CodeChallengeMethod.S256, new CodeVerifier(verifier));
+
+        String stateEncoded = URLEncoder.encode("{\"returnUrl\":\"\"}", Charset.defaultCharset());
+        Response response = doAuthorizeWithClaimsAndScopesAndCodeChallengeMethod(
+                "mock-sp",
+                "code",
+                null,
+                "nonce",
+                codeChallenge.getValue(),
+                List.of("email", "schac_personal_unique_code", "eduperson_affiliation"),
+                "openid",
+                stateEncoded,
+                CodeChallengeMethod.S256.getValue());
+        String location = response.getHeader("Location");
+        Map<String, String> queryParams = queryParamsToMap(location);
+
+        assertEquals(stateEncoded, queryParams.get("state"));
+        assertNotNull(queryParams.get("code"));
+    }
+
+    @Test
+    public void codeChallengeFlowStateBugWithoutDecoding() throws IOException {
+        String state =  URLEncoder.encode("{\"returnUrl\":\"\"}", Charset.defaultCharset());
+        Response response = doAuthorizeWithClaimsAndScopes(
+                "student.mobility.rp.localhost",
+                "id_token token",
+                ResponseMode.QUERY.getValue(),
+                "nonce",
+                null,
+                Collections.emptyList(),
+                "openid",
+                state);
+        String url = response.getHeader("Location");
+        Map<String, String> queryParameters = UriComponentsBuilder.fromUriString(url).build().getQueryParams().toSingleValueMap();
+        assertEquals(state, queryParameters.get("state"));
+    }
+
 
     private Map<String, Object> doClientSecretJwtAuthorization(String secret) throws IOException, JOSEException {
         ClientSecretJWT clientSecretJWT = new ClientSecretJWT(

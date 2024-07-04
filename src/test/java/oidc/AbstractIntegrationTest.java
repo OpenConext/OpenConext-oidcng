@@ -29,6 +29,7 @@ import oidc.endpoints.MapTypeReference;
 import oidc.model.*;
 import oidc.repository.SequenceRepository;
 import oidc.secure.TokenGenerator;
+import org.apache.commons.lang3.stream.Streams;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +71,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.restassured.RestAssured.given;
+import static java.util.Collections.emptyMap;
 import static org.junit.Assert.*;
 
 
@@ -311,6 +313,14 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
     protected Map<String, String> fragmentToMap(String fragment) {
         return Arrays.stream(fragment.split("&")).map(s -> s.split("="))
                 .collect(Collectors.toMap(s -> s[0], s -> s[1]));
+    }
+
+    protected Map<String, String> queryParamsToMap(String url) {
+        if (!url.contains("?")) {
+            return emptyMap();
+        }
+        String queryPart = url.substring(url.indexOf("?") + 1);
+        return fragmentToMap(queryPart);
     }
 
     protected void expireAccessToken(String token) throws ParseException {
