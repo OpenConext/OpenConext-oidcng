@@ -233,7 +233,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             }
             throw new IllegalArgumentException("Response mode " + responseMode + " not supported");
         }
-        throw new IllegalArgumentException("Not yet implemented response_type: " + responseType.toString());
+        throw new IllegalArgumentException("Not yet implemented response_type: " + responseType);
     }
 
     private static ModelAndView redirectViewWithState(
