@@ -165,15 +165,24 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void queryParamStateDecodingDisabled() throws IOException {
+    public void queryParamStateDecodingDefault() throws IOException {
         String state = "https%3A%2F%2Fexample.com";
-        //See src/test/resources/manage/oidc10_rp.json and metaData: oidc:state_parameter_decoding_disabled
         Response response = doAuthorizeWithClaimsAndScopes("student.mobility.rp.localhost", "code",
                 null, null, null, null, null, state);
         String location = response.getHeader("Location");
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(location);
         String returnedState = builder.build().getQueryParams().getFirst("state");
         assertEquals(state, returnedState);
+    }
+
+    @Test
+    public void queryParamStateDecodingDisclaimer() throws IOException {
+        String state = "https://example.com";
+        Response response = doAuthorizeWithClaimsAndScopes("student.mobility.rp.localhost", "code",
+                null, null, null, null, null, state);
+        String location = response.getHeader("Location");
+        Map<String, String> queryParamsToMap = super.queryParamsToMap(location);
+        assertEquals(queryParamsToMap.get("state"), "https%3A%2F%2Fexample.com");
     }
 
     @Test
@@ -354,7 +363,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 Collections.emptyList(), "openid", state);
         String url = response.getHeader("Location");
         Map<String, String> queryParams = super.queryParamsToMap(url);
-        assertEquals(state, queryParams.get("state"));
+        assertEquals(URLEncoder.encode(state, defaultCharset()), queryParams.get("state"));
         assertImplicitFlowResponse(queryParams);
     }
 

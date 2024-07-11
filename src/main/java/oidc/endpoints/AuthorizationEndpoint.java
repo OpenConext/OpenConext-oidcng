@@ -137,16 +137,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             //swap reference
             authenticationRequest = oidcAuthenticationRequest;
         }
-        State state;
-        boolean stateParameterDecodingDisabled = client.isStateParameterDecodingDisabled();
-        if (stateParameterDecodingDisabled) {
-            //Can't use authenticationRequest.getState(), because this is decoded and the client opted out for that
-            String stateValue = new QueryString(request).getStateValue();
-            state = StringUtils.hasText(stateValue) ? new State(stateValue) : null;
-        } else {
-            //The authenticationRequest.getState() returns it decoded, which is the default behaviour we want
-            state = authenticationRequest.getState();
-        }
+        //The authenticationRequest.getState() returns it decoded, which is the default behaviour we want
+        State state = authenticationRequest.getState();
         //The form post after the user has granted consent contains the state in de body, instead of a query param
         if (state == null && authenticationRequest.getState() != null) {
             state = authenticationRequest.getState();
@@ -189,7 +181,9 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         if (responseType.impliesCodeFlow()) {
             AuthorizationCode authorizationCode = createAndSaveAuthorizationCode(authenticationRequest, client, user);
+
             LOG.debug(String.format("Returning authorizationCode flow %s %s", ResponseMode.FORM_POST, redirectURI));
+
             if (responseMode.equals(ResponseMode.FORM_POST)) {
                 Map<String, String> body = new HashMap<>();
                 body.put("redirect_uri", redirectURI);
@@ -200,7 +194,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 return new ModelAndView("form_post", body);
             }
             String uriString = authorizationRedirect(redirectURI, state,
-                    authorizationCode.getCode(), responseMode.equals(ResponseMode.FRAGMENT), stateParameterDecodingDisabled);
+                    authorizationCode.getCode(), responseMode.equals(ResponseMode.FRAGMENT));
             return new ModelAndView(new RedirectView(uriString));
         } else if (responseType.impliesImplicitFlow() || responseType.impliesHybridFlow()) {
             if (responseType.impliesImplicitFlow()) {
@@ -220,7 +214,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 body.entrySet().stream()
                         .filter(entry -> !entry.getKey().equalsIgnoreCase("state"))
                         .forEach(entry -> builder.queryParam(entry.getKey(), entry.getValue()));
-                return redirectViewWithState(builder, state, stateParameterDecodingDisabled);
+                return redirectViewWithState(builder, state);
             }
             if (responseMode.equals(ResponseMode.FRAGMENT)) {
                 UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectURI);
@@ -229,7 +223,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                         .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()))
                         .collect(Collectors.joining("&"));
                 builder.fragment(fragment);
-                return redirectViewWithState(builder, state, stateParameterDecodingDisabled);
+                return redirectViewWithState(builder, state);
             }
             throw new IllegalArgumentException("Response mode " + responseMode + " not supported");
         }
@@ -238,19 +232,18 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
     private static ModelAndView redirectViewWithState(
             UriComponentsBuilder builder,
-            State state,
-            boolean stateParameterDecodingDisabled) {
-        String uriString = adStateToQueryParameters(builder, state, stateParameterDecodingDisabled);
+            State state) {
+        String uriString = adStateToQueryParameters(builder, state);
         return new ModelAndView(new RedirectView(uriString));
     }
 
-    private static String adStateToQueryParameters(UriComponentsBuilder builder, State state, boolean stateParameterDecodingDisabled) {
+    private static String adStateToQueryParameters(UriComponentsBuilder builder, State state) {
         String uriString = builder.toUriString();
         if (state != null) {
             String stateValue = state.getValue();
-            // We don't want to use UriComponentsBuilder, because it does not encode ":" in the query params
+            // We don't want to use UriComponentsBuilder, because it does not encode "/" and ":" in the query params
             // See AuthorizationEndpointUnitTest#mismatchEncodingSpringVSDefaultEncoder for self-explaining test code
-            uriString += "&state=" + (stateParameterDecodingDisabled ? stateValue : URLEncoder.encode(stateValue, defaultCharset()));
+            uriString += "&state=" + URLEncoder.encode(stateValue, defaultCharset());
         }
         return uriString;
     }
@@ -388,7 +381,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     }
 
     private String authorizationRedirect(
-            String redirectionURI, State state, String code, boolean isFragment, boolean stateParameterDecodingDisabled) {
+            String redirectionURI, State state, String code, boolean isFragment) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectionURI);
         if (isFragment) {
             String fragment = "code=" + code;
@@ -396,7 +389,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         } else {
             builder.queryParam("code", code);
         }
-        return adStateToQueryParameters(builder, state, isFragment || stateParameterDecodingDisabled);
+        return adStateToQueryParameters(builder, state);
     }
 
     private static final String unsupportedPromptMessage = "Unsupported prompt=%s is requested, redirecting the user back to the RP";

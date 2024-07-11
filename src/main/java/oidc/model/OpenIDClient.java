@@ -52,7 +52,6 @@ public class OpenIDClient {
     private boolean includeUnspecifiedNameID;
     private boolean consentRequired;
     private boolean claimsInIdToken;
-    private boolean stateParameterDecodingDisabled;
 
     public OpenIDClient(String clientId, List<String> redirectUrls, List<Scope> scopes, List<String> grants) {
         this.clientId = clientId;
@@ -98,7 +97,6 @@ public class OpenIDClient {
         this.signingCertificateUrl = (String) metaDataFields.get("oidc:signingCertificateUrl");
         this.consentRequired = parseBoolean(metaDataFields.get("oidc:consentRequired"));
         this.claimsInIdToken = parseBoolean(metaDataFields.get("oidc:claims_in_id_token"));
-        this.stateParameterDecodingDisabled = parseBoolean(metaDataFields.get("oidc:state_parameter_decoding_disabled"));
 
         this.includeUnspecifiedNameID = nameIdFormats.stream()
                 .filter(metaDataFields::containsKey)

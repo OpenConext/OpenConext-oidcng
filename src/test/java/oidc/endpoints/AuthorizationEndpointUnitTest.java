@@ -137,6 +137,8 @@ public class AuthorizationEndpointUnitTest {
         String uriString = builder.toUriString();
         String expectedUri = "http://localhost?state=" + stateEncoded;
 
+        assertEquals(expectedUri, "http://localhost?state=%7B%22returnUrl%22%3A%22%22%7D");
+        assertEquals(uriString, "http://localhost?state=%7B%22returnUrl%22:%22%22%7D");
         assertNotEquals(expectedUri, uriString);
         // UriComponentsBuilder does not encode ":" in the query params
         String fixedUri = "http://localhost?" +
