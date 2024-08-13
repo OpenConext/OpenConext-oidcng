@@ -22,6 +22,9 @@ package oidc.manage;
  */
 public class ServiceProviderTranslation {
 
+    private ServiceProviderTranslation() {
+    }
+
     public static String translateServiceProviderEntityId(String entityId) {
         return entityId.replace("@", "@@").replaceAll(":", "@");
     }
