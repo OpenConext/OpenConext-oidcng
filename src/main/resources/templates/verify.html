@@ -1,0 +1,95 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Device Verify</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta content="ie=edge,chrome=1" http-equiv="x-ua-compatible">
+    <meta content="initial-scale=1.0,user-scalable=no,maximum-scale=1,width=device-width" name="viewport">
+    <meta content="yes" name="apple-mobile-web-app-capable">
+    <meta content="translucent-black" name="apple-mobile-web-app-status-bar-style">
+    <link href="/favicon.ico" rel="shortcut icon">
+    <link th:href="@{/styles.css}" rel="stylesheet" type="text/css"/>
+    <link th:href="@{/consent.css}" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div class="container">
+    <div class="top-header">
+        <h1 th:text="#{login(${environment})}"></h1>
+    </div>
+    <form class="form-data" method="post" action="/oidc/verify">
+        <div class="header">
+            <h1 th:text="#{devicePermission}"></h1>
+        </div>
+        <div class="content-container">
+            <div class="content">
+                <div class="permission-container" th:if="${rateLimitExceeded == false}">
+                    <h2 class="permission" th:if="${client == null}" th:text="#{grantDeviceUnknown}"></h2>
+                    <h2 class="permission" th:if="${client != null}" th:text="#{grantDevice(${client.name})}"></h2>
+                    <p class="consent-info" th:if="${!completeURI}" th:utext="#{consentDeviceInfo}"></p>
+                    <p class="consent-info" th:if="${completeURI}" th:utext="#{consentDeviceCheckCodeInfo}"></p>
+                </div>
+                <div class="input-container" th:if="${rateLimitExceeded == false}">
+                    <input type="text"
+                           id="userCode"
+                           name="userCode"
+                           autofocus
+                           th:value="${userCode}"
+                           th:disabled="${completeURI == true}">
+                    <input type="hidden"
+                           name="userCodeComplete"
+                           th:if="${completeURI == true}"
+                           th:value="${userCode}">
+                    <span class="code-error" th:if="${error == true && rateLimitExceeded == false}"
+                          th:text="#{wrongDeviceCode(${attemptsLeft})}">
+                    </span>
+                </div>
+                <div th:if="${rateLimitExceeded == true}">
+                    <p class="rate-limit-error" th:text="#{rateLimitExceeded}"></p>
+                </div>
+                <div class="actions" th:if="${rateLimitExceeded == false}">
+                    <button th:text="#{submit}" th:if="${completeURI == false}" name="yes" value="yes"
+                            type="submit"></button>
+                    <button th:text="#{confirm}" th:if="${completeURI == true}" name="yes" value="yes"
+                            type="submit"></button>
+                    <a href="#modal-one" th:text="#{noSubmit}" class="button cancel"></a>
+                </div>
+            </div>
+        </div>
+    </form>
+    <div class="footer">
+        <div class="inner-footer">
+            <a th:if="${lang == 'en'}" href="/nl" onclick="switchLang('nl'); return false;">NL</a>
+            <a th:if="${lang == 'en'}" class="active" href="#" onclick="return false;">EN</a>
+
+            <a th:if="${lang == 'nl'}" class="active" href="#" onclick="return false;">NL</a>
+            <a th:if="${lang == 'nl'}" href="/en" onclick="switchLang('en');return false;">EN</a>
+        </div>
+    </div>
+
+</div>
+<div class="modal" id="modal-one" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h1 th:text="#{footerTitle}"></h1>
+        </div>
+        <div class="modal-body">
+            <p class="modal-text" th:utext="#{modelDeviceIntro}">
+            </p>
+            <p class="modal-text" th:utext="#{modelDeviceSub}"></p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" th:text="#{close}" class="button cancel"></a>
+        </div>
+    </div>
+</div>
+</body>
+<script th:src="@{/main.js}" type="text/javascript"></script>
+<script>
+
+    function switchLang(lang) {
+        const searchParams = new URLSearchParams(window.location.search);
+        searchParams.set("lang", lang);
+        window.location.search = searchParams.toString();
+    }
+
+</script>
+</html>

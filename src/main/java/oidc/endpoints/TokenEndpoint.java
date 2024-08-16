@@ -10,6 +10,7 @@ import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretJWT;
 import com.nimbusds.oauth2.sdk.auth.JWTAuthentication;
 import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
+import com.nimbusds.oauth2.sdk.device.DeviceCodeGrant;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
@@ -39,6 +40,7 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.cert.CertificateException;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -59,6 +61,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
     private final OpenIDClientRepository openIDClientRepository;
+    private final DeviceAuthorizationRepository deviceAuthorizationRepository;
     private final TokenGenerator tokenGenerator;
     private final String tokenEndpoint;
     private final String salt;
@@ -70,6 +73,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                          AccessTokenRepository accessTokenRepository,
                          RefreshTokenRepository refreshTokenRepository,
                          UserRepository userRepository,
+                         DeviceAuthorizationRepository deviceAuthorizationRepository,
                          TokenGenerator tokenGenerator,
                          @Value("${oidc_token_endpoint}") String tokenEndpoint,
                          @Value("${access_token_one_way_hash_salt}") String salt) {
@@ -79,6 +83,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         this.accessTokenRepository = accessTokenRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;
+        this.deviceAuthorizationRepository = deviceAuthorizationRepository;
         this.tokenGenerator = tokenGenerator;
         this.tokenEndpoint = tokenEndpoint;
         this.salt = salt;
@@ -89,21 +94,19 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     public ResponseEntity token(HttpServletRequest request) throws IOException, ParseException, JOSEException, java.text.ParseException, CertificateException, BadJOSEException {
         HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
         TokenRequest tokenRequest = TokenRequest.parse(httpRequest);
-
-        ClientAuthentication clientAuthentication = tokenRequest.getClientAuthentication();
-        if (clientAuthentication != null &&
-                !(clientAuthentication instanceof PlainClientSecret ||
-                        clientAuthentication instanceof JWTAuthentication)) {
-            throw new IllegalArgumentException(
-                    String.format("Unsupported '%s' findByClientId authentication in token endpoint", clientAuthentication.getClass()));
-        }
         AuthorizationGrant authorizationGrant = tokenRequest.getAuthorizationGrant();
-        if (clientAuthentication == null && authorizationGrant instanceof AuthorizationCodeGrant
-                && ((AuthorizationCodeGrant) authorizationGrant).getCodeVerifier() == null) {
-            throw new CodeVerifierMissingException("code_verifier required without client authentication");
-        }
+
+        ClientAuthentication clientAuthentication = getClientAuthentication(tokenRequest, authorizationGrant);
         String clientId = clientAuthentication != null ? clientAuthentication.getClientID().getValue() : tokenRequest.getClientID().getValue();
         OpenIDClient client = openIDClientRepository.findOptionalByClientId(clientId).orElseThrow(() -> new UnknownClientException(clientId));
+
+        if (authorizationGrant instanceof DeviceCodeGrant) {
+            DeviceCodeGrant deviceCodeGrant = (DeviceCodeGrant) authorizationGrant;
+            String value = deviceCodeGrant.getDeviceCode().getValue();
+            return deviceAuthorizationRepository.findByDeviceCode(value)
+                    .map(deviceAuthorization ->  this.handleDeviceCodeFlow(deviceAuthorization, client))
+                    .orElseThrow(() -> new DeviceFlowException("expired_token"));
+        }
 
         if (clientAuthentication == null && !client.isPublicClient()) {
             throw new UnauthorizedException("Non-public client requires authentication");
@@ -131,6 +134,21 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         }
         throw new IllegalArgumentException("Not supported - yet - authorizationGrant " + authorizationGrant.getType().getValue());
 
+    }
+
+    private ClientAuthentication getClientAuthentication(TokenRequest tokenRequest, AuthorizationGrant authorizationGrant) {
+        ClientAuthentication clientAuthentication = tokenRequest.getClientAuthentication();
+        if (clientAuthentication != null &&
+                !(clientAuthentication instanceof PlainClientSecret ||
+                        clientAuthentication instanceof JWTAuthentication)) {
+            throw new IllegalArgumentException(
+                    String.format("Unsupported '%s' findByClientId authentication in token endpoint", clientAuthentication.getClass()));
+        }
+        if (clientAuthentication == null && authorizationGrant instanceof AuthorizationCodeGrant
+                && ((AuthorizationCodeGrant) authorizationGrant).getCodeVerifier() == null) {
+            throw new CodeVerifierMissingException("code_verifier required without client authentication");
+        }
+        return clientAuthentication;
     }
 
     boolean verifySignature(JWTAuthentication jwtAuthentication, OpenIDClient openIDClient, String tokenEndpoint)
@@ -240,6 +258,41 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                 authorizationCode.getIdTokenClaims(), false, authorizationCode.getNonce(),
                 Optional.of(authorizationCode.getAuthTime()), Optional.of(authorizationCode.getId()));
         return new ResponseEntity<>(body, responseHttpHeaders, HttpStatus.OK);
+    }
+
+    private ResponseEntity handleDeviceCodeFlow(DeviceAuthorization deviceAuthorization, OpenIDClient client) {
+        if (!client.getClientId().equals(deviceAuthorization.getClientId())) {
+            throw new DeviceFlowException("access_denied");
+        }
+        if (!deviceAuthorization.getStatus().equals(DeviceAuthorizationStatus.success)) {
+            Instant lastLookup = deviceAuthorization.getLastLookup();
+            deviceAuthorization.setLastLookup(Instant.now());
+            deviceAuthorizationRepository.save(deviceAuthorization);
+            if (lastLookup != null && ((lastLookup.toEpochMilli() + 1001) > System.currentTimeMillis())) {
+                throw new DeviceFlowException("slow_down");
+            }
+            throw new DeviceFlowException("authorization_pending");
+        }
+        User user = userRepository.findUserBySub(deviceAuthorization.getUserSub());
+        MDCContext.mdcContext(user);
+        //User information is encrypted in access token
+        LOG.debug(String.format("Deleting user %s before token is returned for client %s",
+                user.getSub(), client.getName()));
+
+        userRepository.delete(user);
+
+        Map<String, Object> body = tokenEndpointResponse(
+                Optional.of(user),
+                client,
+                deviceAuthorization.getScopes(),
+                Collections.emptyList(),
+                false,
+                null,
+                Optional.of(System.currentTimeMillis() / 1000L),
+                Optional.empty());
+        //We only permit one request for a success authorization
+        return new ResponseEntity<>(body, responseHttpHeaders, HttpStatus.OK);
+
     }
 
     private ResponseEntity handleRefreshCodeGrant(RefreshTokenGrant refreshTokenGrant, OpenIDClient client) throws java.text.ParseException {

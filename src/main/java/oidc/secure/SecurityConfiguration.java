@@ -248,7 +248,7 @@ public class SecurityConfiguration {
                     .authorizeRequests()
                     .antMatchers(HttpMethod.OPTIONS, "/oidc/authorize")
                     .permitAll()
-                    .antMatchers("/oidc/authorize")
+                    .antMatchers("/oidc/authorize", "/oidc/device_authorize")
                     .authenticated()
                     .and()
                     .authorizeRequests()

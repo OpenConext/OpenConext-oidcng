@@ -3,6 +3,7 @@ package oidc.saml;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
+import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.openid.connect.sdk.Prompt;
@@ -10,6 +11,7 @@ import com.nimbusds.openid.connect.sdk.claims.ACR;
 import lombok.SneakyThrows;
 import oidc.endpoints.AuthorizationEndpoint;
 import oidc.exceptions.CookiesNotSupportedException;
+import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.JWTRequestURIMismatchException;
 import oidc.exceptions.UnknownClientException;
 import oidc.log.MDCContext;
@@ -99,21 +101,33 @@ public class AuthnRequestConverter implements
         Map<String, String[]> parameterMap = savedRequest.getParameterMap();
         Map<String, List<String>> parameters = parameterMap.keySet().stream()
                 .collect(Collectors.toMap(key -> key, key -> Arrays.asList(parameterMap.get(key))));
-
-        List<String> redirectUris = parameters.get("redirect_uri");
-        URI redirectURI = CollectionUtils.isEmpty(redirectUris) ? null : new URI(redirectUris.get(0));
-
         List<String> clientIds = parameters.get("client_id");
         String clientId = CollectionUtils.isEmpty(clientIds) ? null : clientIds.get(0);
-
+        if (!StringUtils.hasText(clientId)) {
+            throw new UnknownClientException(String.format("client_id parameter missing in parameters: %s", parameters));
+        }
         OpenIDClient openIDClient = openIDClientRepository.findOptionalByClientId(clientId)
                 .orElseThrow(() -> new UnknownClientException(clientId));
-        AuthorizationEndpoint.validateRedirectionURI(redirectURI, openIDClient);
-        request.setAttribute(REDIRECT_URI_VALID, true);
 
-        AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(parameters);
+        //If this a device code flow, we don't validate redirect URI's
+        List<String> userCode = parameters.get("user_code");
+        if (!CollectionUtils.isEmpty(userCode)) {
+            List<String> grants = openIDClient.getGrants();
+            if (!grants.contains(GrantType.DEVICE_CODE.getValue())) {
+                throw new InvalidGrantException(String.format("Grant types %s for client %s does not allow for device code flow",
+                        grants, openIDClient.getClientId()));
+            }
+        } else {
+            List<String> redirectUris = parameters.get("redirect_uri");
+            URI redirectURI = CollectionUtils.isEmpty(redirectUris) ? null : new URI(redirectUris.get(0));
 
-        validateAuthorizationRequest(authorizationRequest, openIDClient);
+            AuthorizationEndpoint.validateRedirectionURI(redirectURI, openIDClient);
+            request.setAttribute(REDIRECT_URI_VALID, true);
+
+            AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(parameters);
+
+            validateAuthorizationRequest(authorizationRequest, openIDClient);
+        }
 
         RelyingPartyRegistration relyingParty = context.getRelyingPartyRegistration();
         AuthnRequestBuilder authnRequestBuilder = (AuthnRequestBuilder) registry.getBuilderFactory()
@@ -133,10 +147,8 @@ public class AuthnRequestConverter implements
         authnRequest.setDestination(context.getDestination());
         authnRequest.setAssertionConsumerServiceURL(context.getAssertionConsumerServiceUrl());
 
-
-        saveAuthenticationRequestUrl(savedRequest, authnRequest, authorizationRequest.getClientID());
-        enhanceAuthenticationRequest(authnRequest, parameters);
-        return authnRequest;
+        saveAuthenticationRequestUrl(savedRequest, authnRequest, new ClientID(clientId));
+        return enhanceAuthenticationRequest(authnRequest, parameters);
     }
 
     @SneakyThrows
@@ -163,7 +175,7 @@ public class AuthnRequestConverter implements
 
         authnRequest.setForceAuthn(prompt != null && prompt.contains("login"));
 
-        /**
+        /*
          * Based on the ongoing discussion with the certification committee
          * authenticationRequest.setPassive("none".equals(prompt));
          */
@@ -261,7 +273,7 @@ public class AuthnRequestConverter implements
 
     private void saveAuthenticationRequestUrl(SavedRequest savedRequest, AuthnRequest authnRequest, ClientID clientID) {
         String id = authnRequest.getID();
-        //EB also has a 1 hour validity
+        //EB also has a 1-hour validity
         LocalDateTime ldt = LocalDateTime.now().plusHours(1L);
         Date expiresIn = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
 

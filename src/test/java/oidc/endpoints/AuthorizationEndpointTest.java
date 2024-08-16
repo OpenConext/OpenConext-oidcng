@@ -428,7 +428,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         Response response = doAuthorizeWithClaimsAndScopes("playground_client", "code", ResponseMode.QUERY.getValue(), "nonce", null,
                 Collections.emptyList(), "https://voot.surfconext.nl/groups groups", "state");
         String html = response.getBody().asString();
-        assertTrue(html.contains("<form method=\"post\" action=\"/oidc/consent\">"));
+        assertTrue(html.contains("<form class=\"form-data\" method=\"post\" action=\"/oidc/consent\">"));
 
         Map<String, String> formParams = new HashMap<>();
         Matcher matcher = Pattern.compile("<input type=\"hidden\" name=\"(.+?)\"/>", Pattern.DOTALL).matcher(html);

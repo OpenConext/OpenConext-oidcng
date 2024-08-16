@@ -11,7 +11,7 @@ import java.util.Base64;
 
 public class QRGenerator {
 
-    private static final int IMAGE_SIZE = 400;
+    public static final int IMAGE_SIZE = 400;
 
     private QRGenerator() {
     }

@@ -6,14 +6,7 @@ import com.github.cloudyrock.mongock.driver.mongodb.springdata.v3.decorator.impl
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
-import oidc.model.AccessToken;
-import oidc.model.AuthorizationCode;
-import oidc.model.OpenIDClient;
-import oidc.model.RefreshToken;
-import oidc.model.SigningKey;
-import oidc.model.SymmetricKey;
-import oidc.model.User;
-import oidc.model.UserConsent;
+import oidc.model.*;
 import org.bson.Document;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.index.Index;
@@ -89,6 +82,20 @@ public class MongoChangelog {
         MongoCollection<Document> collection = mongoTemplate.getCollection("saml_authentication_requests");
         collection.createIndex(Indexes.ascending("expiresAt"),
                 new IndexOptions().expireAfter(60L, TimeUnit.MINUTES));
+    }
+
+    @ChangeSet(order = "009", id = "deviceAuthorization", author = "Okke Harsta")
+    public void deviceAuthorization(MongockTemplate mongoTemplate) {
+        if (!mongoTemplate.collectionExists("device_authorizations")) {
+            MongoCollection<Document> collection = mongoTemplate.createCollection("device_authorizations");
+            //15 minutes might look long, but creating an eduID account including setting up the eduID app can take some timme
+            collection.createIndex(Indexes.ascending("expiresAt"),
+                    new IndexOptions().expireAfter(15L, TimeUnit.MINUTES));
+        }
+        //Main retrieval key's
+        IndexOperations indexOperations = mongoTemplate.indexOps(DeviceAuthorization.class);
+        indexOperations.ensureIndex(new Index("deviceCode", Sort.Direction.DESC));
+        indexOperations.ensureIndex(new Index("userCode", Sort.Direction.DESC));
     }
 
     private void ensureCollectionsAndIndexes(MongockTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {

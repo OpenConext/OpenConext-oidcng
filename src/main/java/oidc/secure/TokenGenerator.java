@@ -316,8 +316,11 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
     }
 
     @SneakyThrows
-    public TokenValue generateIDTokenForTokenEndpoint(Optional<User> user, OpenIDClient client, String nonce,
-                                                      List<String> idTokenClaims, List<String> scopes,
+    public TokenValue generateIDTokenForTokenEndpoint(Optional<User> user,
+                                                      OpenIDClient client,
+                                                      String nonce,
+                                                      List<String> idTokenClaims,
+                                                      List<String> scopes,
                                                       Optional<Long> authorizationTime) {
         Map<String, Object> additionalClaims = new HashMap<>();
         authorizationTime.ifPresent(time -> additionalClaims.put("auth_time", time));
@@ -390,9 +393,14 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         return new SigningKey(rsaKey.getKeyID(), currentSymmetricKeyId, value, new Date());
     }
 
-    private TokenValue idToken(OpenIDClient client, Optional<User> optionalUser, Map<String, Object> additionalClaims,
-                               List<String> idTokenClaims, boolean includeAllowedResourceServers, String signingKey,
-                               List<String> scopes, boolean isAccessToken) throws JOSEException, GeneralSecurityException, ParseException, IOException {
+    private TokenValue idToken(OpenIDClient client,
+                               Optional<User> optionalUser,
+                               Map<String, Object> additionalClaims,
+                               List<String> idTokenClaims,
+                               boolean includeAllowedResourceServers,
+                               String signingKey,
+                               List<String> scopes,
+                               boolean isAccessToken) throws JOSEException, GeneralSecurityException, ParseException, IOException {
         List<String> audiences = new ArrayList<>();
         audiences.add(client.getClientId());
         if (includeAllowedResourceServers && isAccessToken) {

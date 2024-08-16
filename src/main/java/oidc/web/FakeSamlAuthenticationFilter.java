@@ -35,7 +35,7 @@ public class FakeSamlAuthenticationFilter extends GenericFilterBean {
 
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
-    private final List<String> authorizeEndpoints = Arrays.asList("oidc/authorize", "oidc/consent");
+    private final List<String> authorizeEndpoints = Arrays.asList("oidc/authorize", "oidc/consent", "oidc/device_authorize");
     private final XMLObjectProviderRegistry registry = ConfigurationService.get(XMLObjectProviderRegistry.class);
 
     public FakeSamlAuthenticationFilter(UserRepository userRepository, ObjectMapper objectMapper) {

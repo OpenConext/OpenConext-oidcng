@@ -27,7 +27,6 @@ import oidc.model.AccessToken;
 import oidc.model.RefreshToken;
 import oidc.model.User;
 import oidc.secure.SignedJWTTest;
-import oidc.secure.TokenGenerator;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,13 +34,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
@@ -57,9 +54,6 @@ import static org.junit.Assert.*;
 
 @SuppressWarnings("unchecked")
 public class TokenEndpointTest extends AbstractIntegrationTest implements SignedJWTTest {
-
-    @Autowired
-    private TokenGenerator tokenGenerator;
 
     @Autowired
     @Value("${sp.entity_id}")
@@ -219,15 +213,6 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
                 codeChallenge);
 
         doRefreshToken(body, null);
-    }
-
-    @Test
-    public void deviceCodeNotSupported() throws ParseException, JOSEException, IOException {
-        String code = doAuthorize();
-        Map<String, Object> body = doToken(code);
-
-        Map<String, Object> result = doTokenWithGrantType(body, "secret", GrantType.DEVICE_CODE, Collections.singletonMap("device_code", "12345"));
-        assertEquals("Not supported - yet - authorizationGrant urn:ietf:params:oauth:grant-type:device_code", result.get("message"));
     }
 
     private Map<String, Object> doRefreshToken(Map<String, Object> body, String secret) throws MalformedURLException, JOSEException, ParseException {

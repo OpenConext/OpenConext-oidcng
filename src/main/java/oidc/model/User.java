@@ -1,9 +1,6 @@
 package oidc.model;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -20,6 +17,7 @@ import java.util.Map;
 @ToString
 public class User implements Serializable {
 
+    @Setter
     @Id
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
@@ -45,10 +43,6 @@ public class User implements Serializable {
         this.clientId = clientId;
         this.attributes = attributes;
         this.acrClaims = acrClaims;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
 }

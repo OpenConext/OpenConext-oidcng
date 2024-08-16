@@ -4,11 +4,15 @@ div.container {
     min-height: 100vh;
 }
 
-form {
+.form-data {
     border-bottom-right-radius: 8px;
     border-bottom-left-radius: 8px;
-    background-color: #f4f6f8;
     box-shadow: 0 3px 0 2px #003980;
+    background-color: #004c97;
+}
+
+.no-form {
+    margin-bottom: 1em;
 }
 
 div.top-header {
@@ -28,6 +32,9 @@ div.header {
     background-color: #fedb00;
     margin: 0;
     padding: 1.625rem 2rem;
+    border-top-right-radius: 8px;
+    border-top-left-radius: 8px;
+
 }
 
 div.header h1 {
@@ -42,6 +49,9 @@ div.content-container {
     width: 100%;
     display: flex;
     flex-direction: column;
+    background-color: #f4f6f8;
+    border-bottom-right-radius: 8px;
+    border-bottom-left-radius: 8px;
 }
 
 div.content {
@@ -89,8 +99,12 @@ div.permission-container h2 {
     margin: 1.5rem 0 1.5rem 0;
 }
 
-div.permission-container p.consent-info {
+p.consent-info {
     margin-bottom: 1.125rem;;
+}
+
+p.device-info {
+    margin-top: 1.125rem;
 }
 
 div.grant {
@@ -199,6 +213,40 @@ button, .button {
 
 a.button {
     margin-bottom: 0;
+}
+
+.input-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin: 20px 0 35px 0;
+}
+
+.input-container input {
+    width: 50%;
+    min-height: 3rem;
+    padding: 0.75rem;
+    border: .0625rem solid #8C969F;
+    border-radius: .375rem;
+    margin: 0 auto;
+    font-size: 24px;
+    line-height: 26px;
+    text-align: center;
+    letter-spacing: 4px;
+}
+
+.input-container input:disabled {
+    background-color: #efefef;
+}
+
+.code-error {
+    margin: 0.375rem auto 0 auto;
+    color: #870000;
+}
+
+.rate-limit-error {
+    margin: 2.375rem 0;
+    color: #870000;
 }
 
 button:hover {
@@ -322,8 +370,13 @@ p.modal-text {
         max-width: 100%
     }
 
+    .form-data {
+        margin-left: 15px;
+        margin-right: 15px;
+    }
+
     div.content {
-        padding: 35px 15px 0 15px;
+        padding: 0 15px 0 15px;
     }
 
     div.data-transfer {
@@ -335,8 +388,17 @@ p.modal-text {
         margin: 50px 0;
     }
 
+    .input-container input {
+        width: 100%;
+    }
+
+    p.device-info {
+        margin-top: 0;
+        margin-bottom: 2.125rem;
+    }
+
     div.actions {
-        padding: 20px 20px;
+        padding-bottom: 20px;
     }
 
     .modal-dialog {
