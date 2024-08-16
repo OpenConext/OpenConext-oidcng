@@ -254,8 +254,8 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
         assertEquals(400, slowDownTokenResult.get("status"));
         assertEquals("slow_down", slowDownTokenResult.get("error"));
 
+        //Mock - see FakeSamlAuthenticationFilter#authorizeEndpoints - the successful user authentication
         String authorizeLocation = String.format("oidc/device_authorize?state=%s&client_id=mock-sp&user_code=%s", userCode, userCode);
-
         given()
                 .when()
                 .get(authorizeLocation)
