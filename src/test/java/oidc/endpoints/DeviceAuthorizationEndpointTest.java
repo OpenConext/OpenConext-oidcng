@@ -18,14 +18,17 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
 
@@ -39,8 +42,8 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .formParam("scope", String.join(",", List.of("openid", "groups")))
                 .post("oidc/device_authorization")
                 .as(mapTypeRef);
-        assertEquals(body.get("expires_in"), 900);
-        assertEquals(body.get("interval"), 1);
+        assertEquals((int) body.get("expires_in"), 900);
+        assertEquals((int) body.get("interval"), 1);
 
         String deviceCode = (String) body.get("device_code");
         assertEquals(deviceCode, UUID.fromString(deviceCode).toString());
@@ -71,7 +74,7 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .formParam("client_id", "nope")
                 .post("oidc/device_authorization")
                 .as(mapTypeRef);
-        assertEquals(body.get("status"), 401);
+        assertEquals((int) body.get("status"), 401);
         assertEquals(body.get("error"), "unauthorized");
     }
 
@@ -200,7 +203,7 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .formParam("scope", String.join(",", List.of("not-granted")))
                 .post("oidc/device_authorization")
                 .as(mapTypeRef);
-        assertEquals(body.get("status"), 401);
+        assertEquals((int) body.get("status"), 401);
         assertEquals(body.get("error"), "invalid_scope");
     }
 
@@ -234,7 +237,7 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .post("oidc/token")
                 .as(mapTypeRef);
 
-        assertEquals(400, pendingTokenResult.get("status"));
+        assertEquals(400, (int) pendingTokenResult.get("status"));
         assertEquals("authorization_pending", pendingTokenResult.get("error"));
 
         DeviceAuthorization deviceAuthorization = mongoTemplate
@@ -251,7 +254,7 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .post("oidc/token")
                 .as(mapTypeRef);
 
-        assertEquals(400, slowDownTokenResult.get("status"));
+        assertEquals(400, (int) slowDownTokenResult.get("status"));
         assertEquals("slow_down", slowDownTokenResult.get("error"));
 
         //Mock - see FakeSamlAuthenticationFilter#authorizeEndpoints - the successful user authentication
@@ -296,7 +299,7 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .post("oidc/token")
                 .as(mapTypeRef);
 
-        assertEquals(400, pendingTokenResult.get("status"));
+        assertEquals(400, (int) pendingTokenResult.get("status"));
         assertEquals("expired_token", pendingTokenResult.get("error"));
     }
 
@@ -322,7 +325,7 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .post("oidc/token")
                 .as(mapTypeRef);
 
-        assertEquals(400, pendingTokenResult.get("status"));
+        assertEquals(400, (int) pendingTokenResult.get("status"));
         assertEquals("access_denied", pendingTokenResult.get("error"));
     }
 }
