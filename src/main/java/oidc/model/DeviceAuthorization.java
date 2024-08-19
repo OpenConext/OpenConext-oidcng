@@ -27,6 +27,13 @@ public class DeviceAuthorization {
 
     private List<String> scopes;
 
+    private String state;
+
+    //The following parameters are not mentioned in the spec, but a device may add them to dictate the way the user authenticates
+    private  String prompt;
+    private String  acrValues;
+    private String loginHint;
+
     @Setter
     private DeviceAuthorizationStatus status;
 

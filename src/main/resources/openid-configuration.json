@@ -5,6 +5,7 @@
   "userinfo_endpoint": "http://localhost:8080/oidc/userinfo",
   "introspect_endpoint": "http://localhost:8080/oidc/introspect",
   "jwks_uri": "http://localhost:8080/oidc/certs",
+  "device_authorization_endpoint": "http://localhost:8080/oidc/device_authorization",
   "response_types_supported": [
     "code",
     "token",
@@ -23,7 +24,8 @@
     "authorization_code",
     "implicit",
     "refresh_token",
-    "client_credentials"
+    "client_credentials",
+    "urn:ietf:params:oauth:grant-type:device_code"
   ],
   "subject_types_supported": [
     "public",

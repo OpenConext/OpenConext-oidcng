@@ -109,10 +109,16 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .then()
                 .statusCode(302);
 
-        String location = response.getHeader("Location");
         String strippedUserCode = userCode.replaceAll("-", "");
-        String authorizeLocation = String.format("oidc/device_authorize?state=%s&client_id=mock-sp&user_code=%s", strippedUserCode, strippedUserCode);
-        assertTrue(location.endsWith(authorizeLocation));
+        DeviceAuthorization deviceAuthorization = mongoTemplate
+                .findOne(Query.query(Criteria.where("userCode").is(strippedUserCode)), DeviceAuthorization.class);
+
+        String location = response.getHeader("Location");
+        String authorizeLocation = String.format("oidc/device_authorize?client_id=mock-sp&user_code=%s&state=%s",
+                strippedUserCode,
+                deviceAuthorization.getState()
+        );
+        assertTrue(location.contains("oidc/device_authorize"));
 
         InputStream authorizationInputStream = given()
                 .when()
@@ -122,9 +128,9 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
         String authorizationView = IOUtils.toString(authorizationInputStream, Charset.defaultCharset());
         assertTrue(authorizationView.contains("You have successfully authenticated"));
 
-        DeviceAuthorization deviceAuthorization = mongoTemplate
+        DeviceAuthorization deviceAuthorizationFromDB = mongoTemplate
                 .findOne(Query.query(Criteria.where("userCode").is(strippedUserCode)), DeviceAuthorization.class);
-        assertEquals(DeviceAuthorizationStatus.success, deviceAuthorization.getStatus());
+        assertEquals(DeviceAuthorizationStatus.success, deviceAuthorizationFromDB.getStatus());
     }
 
     @SneakyThrows
@@ -257,8 +263,12 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
         assertEquals(400, (int) slowDownTokenResult.get("status"));
         assertEquals("slow_down", slowDownTokenResult.get("error"));
 
+        deviceAuthorization = mongoTemplate
+                .findOne(Query.query(Criteria.where("deviceCode").is(deviceCode)), DeviceAuthorization.class);
         //Mock - see FakeSamlAuthenticationFilter#authorizeEndpoints - the successful user authentication
-        String authorizeLocation = String.format("oidc/device_authorize?state=%s&client_id=mock-sp&user_code=%s", userCode, userCode);
+        String authorizeLocation = String.format("oidc/device_authorize?client_id=mock-sp&user_code=%s&state=%s",
+                userCode,
+                deviceAuthorization.getState());
         given()
                 .when()
                 .get(authorizeLocation)

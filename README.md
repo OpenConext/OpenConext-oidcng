@@ -250,8 +250,9 @@ Running OIDC-NG on localhost you can test the consent page by visiting
 OpenConext-OIDC also supports the [Device Authorization Grant](https://datatracker.ietf.org/doc/html/rfc8628). Start the OIDC-NG server 
 on localhost and request for an `device_token` posting to the new endpoint:
 ```
-curl -H "Content-Type: application/x-www-form-urlencoded" -X POST -d "grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id=mock-sp&scope=openid,groups" "http://localhost:8080/oidc/device_authorization" | jq .
+curl -H "Content-Type: application/x-www-form-urlencoded" -X POST -d "client_id=mock-sp&scope=openid,groups&prompt=login&acr_values=https%3A%2F%2Feduid.nl%2Ftrust%2Flinked-institution&login_hint=https%3A%2F%2Flogin.test2.eduid.nl" "http://localhost:8080/oidc/device_authorization" | jq .
 ```
+Note that the client must be configured with the `urn:ietf:params:oauth:grant-type:device_code` grant_type. Only the parameter client_id is required.
 The return value contains the URL intended  for the user to visit:
 ```
 {
