@@ -78,6 +78,20 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
         assertEquals(body.get("error"), "unauthorized");
     }
 
+    @Test
+    public void deviceAuthorizationInvalidGrant() {
+        Map<String, Object> body = given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
+                .formParam("client_id", "mock-rp")
+                .post("oidc/device_authorization")
+                .as(mapTypeRef);
+        assertEquals((int) body.get("status"), 401);
+        assertEquals(body.get("error"), "unauthorized_client");
+        assertEquals(body.get("error_description"), "Missing grant: urn:ietf:params:oauth:grant-type:device_code for clientId: mock-rp");
+    }
+
     @SneakyThrows
     @Test
     public void deviceAuthorizationHappyFlow() {
