@@ -291,6 +291,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
                 Optional.of(System.currentTimeMillis() / 1000L),
                 Optional.empty());
         //We only permit one request for a success authorization
+        LOG.debug(String.format("Deleting deviceAuthorization as token is returned for client %s", client.getName()));
+        deviceAuthorizationRepository.delete(deviceAuthorization);
         return new ResponseEntity<>(body, responseHttpHeaders, HttpStatus.OK);
 
     }

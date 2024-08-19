@@ -245,6 +245,53 @@ Therefore the WAYF and ARP must be scoped for the requesting SP (and not this OI
 Running OIDC-NG on localhost you can test the consent page by visiting
 [the consent page](http://localhost:8080/oidc/authorize?scope=openid&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fredirect&state=example&prompt=consent&nonce=example&client_id=playground_client&response_mode=query)
 
+## Device Code Flow(#device_code_flow)
+
+OpenConext-OIDC also supports the [Device Authorization Grant](https://datatracker.ietf.org/doc/html/rfc8628). Start the OIDC-NG server 
+on localhost and request for an `device_token` posting to the new endpoint:
+```
+curl -H "Content-Type: application/x-www-form-urlencoded" -X POST -d "grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id=mock-sp&scope=openid,groups" "http://localhost:8080/oidc/device_authorization" | jq .
+```
+The return value contains the URL intended  for the user to visit:
+```
+{
+    "interval": 1,
+    "expires_in": 900,
+    "qr_code": "iVBORw0KG...",
+    "verification_uri": "http://localhost:8080/oidc/verify",
+    "user_code": "DZTC-JVJS",
+    "verification_uri_complete": "http://localhost:8080/oidc/verify?user_code=DZTC-JVJS",
+    "device_code": "5ede5b0e-bf04-4a9f-b389-93b08a9e8faf"
+}
+```
+Save the `device_code`:
+```
+`export device_code=5ede5b0e-bf04-4a9f-b389-93b08a9e8faf`
+```
+Before you log in, the device_authorization will have the status `pending-authorization`
+```
+curl -H "Content-Type: application/x-www-form-urlencoded" -X POST -d "grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id=mock-sp&device_code=${device_code}" "http://localhost:8080/oidc/token" | jq .
+```
+And the result
+```
+{
+  "timestamp": "2024-08-19T07:44:43.924+00:00",
+  "status": 400,
+  "error": "authorization_pending",
+  "path": "/oidc/token",
+  "error_description": "authorization_pending",
+  "message": "authorization_pending"
+}
+```
+The status 400 might look strange as the request / response is perfectly valid, but  it is according the [spec](https://datatracker.ietf.org/doc/html/rfc8628#section-3.5).
+
+To obtain an `access_code` as  a device, you'll have to log in first. You can either use the `verification_uri` or the `verification_uri_complete`. 
+After confirming or submitting the correct user code, you'll be redirected to log in. After the login, you can mimic the device again
+and request for an `access_token` using the `device_coce`
+```
+curl -H "Content-Type: application/x-www-form-urlencoded" -X POST -d "grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id=mock-sp&device_code=${device_code}" "http://localhost:8080/oidc/token" | jq .
+```
+
 ## [Token-API](#topenapi)
 If you run the `TokenControllerTest` the test seed resides in the mongo test database. Fetch all tokens
 ```

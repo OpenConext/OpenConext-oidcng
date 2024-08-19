@@ -265,6 +265,10 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .then()
                 .statusCode(200);
 
+        deviceAuthorization = mongoTemplate
+                .findOne(Query.query(Criteria.where("deviceCode").is(deviceCode)), DeviceAuthorization.class);
+        assertEquals(DeviceAuthorizationStatus.success, deviceAuthorization.getStatus());
+
         Map<String, Object> successTokenResult = given()
                 .when()
                 .formParam("grant_type", GrantType.DEVICE_CODE.getValue())
@@ -284,7 +288,7 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
 
         deviceAuthorization = mongoTemplate
                 .findOne(Query.query(Criteria.where("deviceCode").is(deviceCode)), DeviceAuthorization.class);
-        assertEquals(DeviceAuthorizationStatus.success, deviceAuthorization.getStatus());
+        assertNull(deviceAuthorization);
     }
 
     @SneakyThrows
