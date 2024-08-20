@@ -248,15 +248,6 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         return uriString;
     }
 
-    private void logout(HttpServletRequest request) {
-        SecurityContextHolder.getContext().setAuthentication(null);
-        SecurityContextHolder.clearContext();
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-        }
-    }
-
     private ModelAndView doConsent(MultiValueMap<String, String> parameters,
                                    OpenIDClient client,
                                    Set<String> scopes,

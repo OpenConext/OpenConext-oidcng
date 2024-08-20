@@ -4,7 +4,10 @@ import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.ClaimsRequest;
 import oidc.model.OpenIDClient;
+import org.springframework.security.core.context.SecurityContextHolder;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -50,4 +53,14 @@ public interface OidcEndpoint {
         LocalDateTime ldt = LocalDateTime.now().plusSeconds(validity);
         return Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
     }
+    default void logout(HttpServletRequest request) {
+        SecurityContextHolder.getContext().setAuthentication(null);
+        SecurityContextHolder.clearContext();
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+    }
+
+
 }

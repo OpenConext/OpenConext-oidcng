@@ -45,7 +45,7 @@ import static java.nio.charset.Charset.defaultCharset;
 import static oidc.endpoints.AuthorizationEndpoint.validateScopes;
 
 @RestController
-public class DeviceAuthorizationEndpoint {
+public class DeviceAuthorizationEndpoint implements OidcEndpoint{
 
     private static final Log LOG = LogFactory.getLog(DeviceAuthorizationEndpoint.class);
 
@@ -161,8 +161,11 @@ public class DeviceAuthorizationEndpoint {
         ModelAndView modelAndView = findByUserCode(userCode)
                 //avoid replay's
                 .filter(deviceAuthorization -> deviceAuthorization.getStatus().equals(DeviceAuthorizationStatus.authorization_pending))
-                .map(deviceAuthorization ->
-                        new ModelAndView(new RedirectView(deviceAuthorizeURL(deviceAuthorization), true)))
+                .map(deviceAuthorization -> {
+                    //We do not provide SSO as does EB not - up to the identity provider
+                    logout(request);
+                    return new ModelAndView(new RedirectView(deviceAuthorizeURL(deviceAuthorization), true));
+                })
                 .orElseGet(() -> this.verification(null, "true", request));
         return modelAndView;
     }
