@@ -104,7 +104,8 @@ public class DeviceAuthorizationEndpoint implements OidcEndpoint{
         );
         deviceAuthorizationRepository.save(deviceAuthorization);
 
-        Map<String, Object> results = Map.of("device_code", deviceCode,
+        Map<String, Object> results = Map.of(
+                "device_code", deviceCode,
                 "user_code", userCode,
                 "verification_uri", verificationUrl,
                 "verification_uri_complete", String.format("%s?user_code=%s", verificationUrl, userCode),
