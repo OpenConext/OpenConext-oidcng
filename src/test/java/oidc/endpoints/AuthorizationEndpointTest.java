@@ -154,6 +154,17 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
+    public void queryParamStateWithSemiColon() throws IOException {
+        String state = "signon;eu;1725954357882971540;/";
+        Response response = doAuthorizeWithClaimsAndScopes("mock-sp", "code",
+                null, null, null, null, null, state);
+        String location = response.getHeader("Location");
+        Map<String, String> queryParams = super.queryParamsToMap(location);
+        String stateReturned = queryParams.get("state");
+        assertEquals(state, URLDecoder.decode(stateReturned, defaultCharset()));
+    }
+
+    @Test
     public void queryParamStateParameterDecodingDisabled() throws IOException {
         String state = "https://example.com";
         Response response = doAuthorizeWithClaimsAndScopes("mock-sp", "code",
