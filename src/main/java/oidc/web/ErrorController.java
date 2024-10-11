@@ -110,14 +110,16 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
         SavedRequest savedRequest = requestCache.getRequest(request, null);
         boolean redirect = false;
 
+        boolean isDeviceFlow = error instanceof DeviceFlowException;
         if (error instanceof ContextSaml2AuthenticationException) {
             ContextSaml2AuthenticationException ctxE = (ContextSaml2AuthenticationException) error;
             String originalRequestUrl = ctxE.getAuthenticationRequest().getOriginalRequestUrl();
             UriComponents uriComponent = UriComponentsBuilder.fromUriString(originalRequestUrl).build();
             redirectUri = uriComponent.getQueryParams().getFirst("redirect_uri");
             redirect = true;
-        } else if (savedRequest == null) {
+        } else if (savedRequest == null && !isDeviceFlow) {
             LOG.warn("No saved request found. Check the cookie flow");
+
         }
         if (savedRequest instanceof DefaultSavedRequest) {
             parameterMap = savedRequest.getParameterMap();
