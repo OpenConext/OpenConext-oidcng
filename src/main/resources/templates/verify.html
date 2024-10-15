@@ -83,13 +83,5 @@
 </div>
 </body>
 <script th:src="@{/main.js}" type="text/javascript"></script>
-<script>
-
-    function switchLang(lang) {
-        const searchParams = new URLSearchParams(window.location.search);
-        searchParams.set("lang", lang);
-        window.location.search = searchParams.toString();
-    }
-
-</script>
+<script th:src="@{/lang.js}" type="text/javascript"></script>
 </html>
