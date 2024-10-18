@@ -154,7 +154,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         if (scope != null) {
             List<String> scopeList = scope.toStringList();
-            boolean apiScopeRequested = !(scopeList.size() == 0 || (scopeList.size() == 1 && scopeList.contains("openid")));
+            boolean apiScopeRequested = !(scopeList.isEmpty() || (scopeList.size() == 1 && scopeList.contains("openid")));
             Set<String> filteredScopes = scopeList.stream()
                     .filter(s -> !s.equalsIgnoreCase("openid"))
                     .map(String::toLowerCase)
@@ -169,7 +169,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
              *   Manage attribute "oidc:consentRequired" is true for the RP or the RP has explicitly asked for consent
              *   There is at least one ResourceServer that has the requested scope(s) configured in manage
              */
-            if (consentRequired && apiScopeRequested && (consentFromPrompt || client.isConsentRequired()) && resourceServers.size() > 0) {
+            if (consentRequired && apiScopeRequested && (consentFromPrompt || client.isConsentRequired()) && !resourceServers.isEmpty()) {
                 LOG.info("Asking for consent for User " + user + " and scopes " + scopes);
                 return doConsent(parameters, client, filteredScopes, resourceServers, state);
             }
