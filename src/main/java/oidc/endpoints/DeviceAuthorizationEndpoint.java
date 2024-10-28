@@ -17,6 +17,7 @@ import oidc.user.OidcSamlAuthentication;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -45,6 +46,7 @@ import static java.nio.charset.Charset.defaultCharset;
 import static oidc.endpoints.AuthorizationEndpoint.validateScopes;
 
 @RestController
+@ConditionalOnExpression("${features.oidcng_device_flow:false}")
 public class DeviceAuthorizationEndpoint implements OidcEndpoint{
 
     private static final Log LOG = LogFactory.getLog(DeviceAuthorizationEndpoint.class);
