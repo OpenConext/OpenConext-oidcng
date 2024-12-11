@@ -1,6 +1,6 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head><title>Submit This Form</title></head>
-<body onload="javascript:document.forms[0].submit()" enctype="application/x-www-form-urlencoded">
+<body enctype="application/x-www-form-urlencoded">
 <form method="post" th:action="${redirect_uri}">
     <input th:if="${access_token != null}" type="hidden" name="access_token" th:value="${access_token}"/>
     <input th:if="${code != null}" type="hidden" name="code" th:value="${code}"/>
@@ -10,4 +10,5 @@
     <input th:if="${error_description != null}" type="hidden" name="error_description" th:value="${error_description}"/>
 </form>
 </body>
+<script th:src="@{/post.js}"></script>
 </html>
