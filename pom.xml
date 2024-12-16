@@ -221,7 +221,7 @@
         <dependency>
             <groupId>jakarta.xml.bind</groupId>
             <artifactId>jakarta.xml.bind-api</artifactId>
-            <version>3.0.1</version>
+            <version>4.0.2</version>
         </dependency>
         <!--    Fix for CVE-2021-40690    -->
         <dependency>
