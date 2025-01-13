@@ -23,6 +23,7 @@ import oidc.secure.JWTRequest;
 import oidc.web.URLCoding;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.joda.time.DateTime;
 import org.opensaml.core.config.ConfigurationService;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
 import org.opensaml.saml.saml2.core.*;
@@ -134,7 +135,7 @@ public class AuthnRequestConverter implements
                 .getBuilder(AuthnRequest.DEFAULT_ELEMENT_NAME);
         AuthnRequest authnRequest = authnRequestBuilder.buildObject();
         authnRequest.setID("ARQ" + UUID.randomUUID().toString().substring(1));
-        authnRequest.setIssueInstant(Instant.now());
+        authnRequest.setIssueInstant(DateTime.now());
 
         authnRequest.setProtocolBinding(POST.getUrn());
 
@@ -255,7 +256,7 @@ public class AuthnRequestConverter implements
         RequesterIDBuilder requesterIDBuilder = (RequesterIDBuilder) registry.getBuilderFactory()
                 .getBuilder(RequesterID.DEFAULT_ELEMENT_NAME);
             RequesterID requesterID = requesterIDBuilder.buildObject();
-            requesterID.setURI(entityId);
+            requesterID.setRequesterID(entityId);
 
         scoping.setProxyCount(1);
         scoping.getRequesterIDs().add(requesterID);
@@ -295,7 +296,7 @@ public class AuthnRequestConverter implements
 
             List<AuthnContextClassRef> authnContextClassRefs = acrValuesObjects.stream().map(acr -> {
                 AuthnContextClassRef authnContextClassRef = authnContextClassRefBuilder.buildObject();
-                authnContextClassRef.setURI(acr.getValue());
+                authnContextClassRef.setAuthnContextClassRef(acr.getValue());
                 return authnContextClassRef;
             }).collect(Collectors.toList());
             requestedAuthnContext.getAuthnContextClassRefs().addAll(authnContextClassRefs);

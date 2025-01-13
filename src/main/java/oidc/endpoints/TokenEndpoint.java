@@ -26,6 +26,7 @@ import oidc.secure.JWTRequest;
 import oidc.secure.TokenGenerator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hc.core5.http.ContentType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpHeaders;
@@ -46,7 +47,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static oidc.endpoints.AuthorizationEndpoint.validateScopes;
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 @RestController
 public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
@@ -403,7 +403,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     private HttpHeaders getResponseHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.CACHE_CONTROL, "no-store");
-        headers.set(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON.getMimeType());
+        headers.set(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
         headers.set(HttpHeaders.PRAGMA, "no-cache");
         return headers;
     }

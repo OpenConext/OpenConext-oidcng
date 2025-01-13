@@ -61,7 +61,7 @@ public class ResponseAuthenticationValidator implements Converter<OpenSaml4Authe
         if (status != null) {
             StatusMessage statusMessage = status.getStatusMessage();
             if (statusMessage != null) {
-                description = statusMessage.getValue();
+                description = statusMessage.getMessage();
             }
         }
 
