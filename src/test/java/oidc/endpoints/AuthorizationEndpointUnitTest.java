@@ -4,7 +4,7 @@ import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
-import com.nimbusds.oauth2.sdk.http.ServletUtils;
+import com.nimbusds.oauth2.sdk.http.JakartaServletUtils;
 import com.nimbusds.openid.connect.sdk.Prompt;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.InvalidScopeException;
@@ -209,6 +209,6 @@ public class AuthorizationEndpointUnitTest {
                 .collect(Collectors.joining("&"));
         MockHttpServletRequest request = new MockHttpServletRequest(HttpMethod.GET.name(), "http://localhost");
         request.setQueryString(queryString);
-        return AuthorizationRequest.parse(ServletUtils.createHTTPRequest(request));
+        return AuthorizationRequest.parse(JakartaServletUtils.createHTTPRequest(request));
     }
 }

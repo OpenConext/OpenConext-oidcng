@@ -1,12 +1,12 @@
 package oidc.saml;
 
-import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationRequestContext;
+import org.springframework.security.saml2.provider.service.authentication.AbstractSaml2AuthenticationRequest;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
-import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationRequestContextResolver;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.saml2.provider.service.web.authentication.Saml2AuthenticationRequestResolver;
 
-public class AuthenticationRequestContextResolver implements Saml2AuthenticationRequestContextResolver {
+public class AuthenticationRequestContextResolver implements Saml2AuthenticationRequestResolver {
 
     private final RelyingPartyRegistration registration;
 
@@ -15,7 +15,7 @@ public class AuthenticationRequestContextResolver implements Saml2Authentication
     }
 
     @Override
-    public Saml2AuthenticationRequestContext resolve(HttpServletRequest request) {
-        return new CustomSaml2AuthenticationRequestContext(registration, request);
+    public AbstractSaml2AuthenticationRequest resolve(HttpServletRequest request) {
+        return new CustomSaml2AuthenticationRequestContext(registration, request).getAuthenticationRequest();
     }
 }

@@ -38,6 +38,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -47,39 +48,43 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.authentication.configurers.provisioning.InMemoryUserDetailsManagerConfigurer;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.saml2.core.Saml2X509Credential;
 import org.springframework.security.saml2.provider.service.authentication.AbstractSaml2AuthenticationRequest;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
-import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationRequestFactory;
-import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationRequestFactory;
 import org.springframework.security.saml2.provider.service.metadata.OpenSamlMetadataResolver;
 import org.springframework.security.saml2.provider.service.registration.InMemoryRelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
-import org.springframework.security.saml2.provider.service.servlet.filter.Saml2WebSsoAuthenticationFilter;
-import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationRequestContextResolver;
 import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationRequestRepository;
 import org.springframework.security.saml2.provider.service.web.Saml2MetadataFilter;
+import org.springframework.security.saml2.provider.service.web.authentication.Saml2AuthenticationRequestResolver;
+import org.springframework.security.saml2.provider.service.web.authentication.Saml2WebSsoAuthenticationFilter;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import java.nio.charset.Charset;
 import java.security.PrivateKey;
 import java.security.Security;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
 
 @EnableScheduling
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity
 public class SecurityConfiguration {
 
     private static final Log LOG = LogFactory.getLog(SecurityConfiguration.class);
@@ -93,7 +98,7 @@ public class SecurityConfiguration {
 
     @Configuration
     @Order(1)
-    public static class SamlSecurity extends WebSecurityConfigurerAdapter {
+    public static class SamlSecurity {
 
         private final String idpEntityId;
         private final String idpSsoLocation;
@@ -108,6 +113,7 @@ public class SecurityConfiguration {
         private final Resource privateKeyPath;
         private final Resource certificatePath;
         private final Resource oidcSamlMapping;
+        private final ApplicationContext applicationContext;
 
         public SamlSecurity(
                 Environment environment,
@@ -122,7 +128,7 @@ public class SecurityConfiguration {
                 @Value("${idp.saml_assertion_signing_key}") Resource idpMetadataSigningCertificatePath,
                 @Value("${sp.entity_id}") String spEntityId,
                 @Value("${sp.acs_location}") String spAcsLocation,
-                @Value("${oidc_saml_mapping_path}") Resource oidcSamlMapping) {
+                @Value("${oidc_saml_mapping_path}") Resource oidcSamlMapping, ApplicationContext applicationContext) {
             this.environment = environment;
             this.objectMapper = objectMapper;
             this.userRepository = userRepository;
@@ -136,6 +142,7 @@ public class SecurityConfiguration {
             this.spEntityId = spEntityId;
             this.spAcsLocation = spAcsLocation;
             this.oidcSamlMapping = oidcSamlMapping;
+            this.applicationContext = applicationContext;
         }
 
         @Bean
@@ -144,31 +151,19 @@ public class SecurityConfiguration {
         }
 
         @Bean
-        public Saml2AuthenticationRequestContextResolver authenticationRequestContextResolver(RelyingPartyRegistrationRepository registrationRepository) {
+        public Saml2AuthenticationRequestResolver authenticationRequestContextResolver(RelyingPartyRegistrationRepository registrationRepository) {
             return new AuthenticationRequestContextResolver(registrationRepository.findByRegistrationId(REGISTRATION_ID));
         }
 
         @Bean
-        public Saml2AuthenticationRequestFactory authenticationRequestFactory() {
-            OpenSaml4AuthenticationRequestFactory authenticationRequestFactory =
-                    new OpenSaml4AuthenticationRequestFactory();
-
-            AuthnRequestConverter authnRequestConverter =
-                    new AuthnRequestConverter(openIDClientRepository, authenticationRequestRepository, new HttpSessionRequestCache());
-            authenticationRequestFactory.setAuthenticationRequestContextConverter(authnRequestConverter);
-            return authenticationRequestFactory;
-        }
-
-        @Bean
         public RelyingPartyRegistrationRepository relyingPartyRegistrationRepository() {
-            String registrationId = REGISTRATION_ID;
             //local signing (and local decryption key and remote encryption certificate)
             Saml2X509Credential signingCredential = getSigningCredential();
             //IDP certificate for verification of incoming messages
             Saml2X509Credential idpVerificationCertificate = getVerificationCertificate();
 
             RelyingPartyRegistration rp = RelyingPartyRegistration
-                    .withRegistrationId(registrationId)
+                    .withRegistrationId(REGISTRATION_ID)
                     .entityId(spEntityId)
                     .signingX509Credentials(c -> c.add(signingCredential))
                     .assertingPartyDetails(assertingPartyDetails -> assertingPartyDetails
@@ -236,30 +231,23 @@ public class SecurityConfiguration {
             return new MongoSaml2AuthenticationRequestRepository(samlAuthenticationRequestRepository, relyingPartyRegistration);
         }
 
-        @Override
-        protected void configure(HttpSecurity http) throws Exception {
-            http.cors()
-                    .configurationSource(new OidcCorsConfigurationSource()).configure(http);
+        @Bean
+        protected SecurityFilterChain samlSecurityFilterChain(HttpSecurity http) throws Exception {
+            http.cors(corsConfiguration ->
+                    corsConfiguration.configurationSource(new OidcCorsConfigurationSource()).configure(http));
 
-            http.csrf().disable()
-                    .requestMatchers()
-                    .antMatchers("/oidc/**", "/saml2/**", "/login/**")
-                    .and()
-                    .authorizeRequests()
-                    .antMatchers(HttpMethod.OPTIONS, "/oidc/authorize")
-                    .permitAll()
-                    .antMatchers("/oidc/authorize", "/oidc/device_authorize")
-                    .authenticated()
-                    .and()
-                    .authorizeRequests()
-                    .antMatchers("/oidc/**")
-                    .permitAll()
-                    .and()
+            http
+                    .csrf(AbstractHttpConfigurer::disable)
+                    .authorizeHttpRequests(auth -> auth
+                            .requestMatchers("/oidc/**", "/saml2/**", "/login/**").permitAll()
+                            .requestMatchers(HttpMethod.OPTIONS, "/oidc/authorize").permitAll()
+                            .requestMatchers("/oidc/authorize", "/oidc/device_authorize").authenticated()
+                            .requestMatchers("/oidc/**").permitAll())
                     .saml2Login(saml2 -> {
                         OpenSaml4AuthenticationProvider openSamlAuthenticationProvider =
-                                getApplicationContext().getBean(OpenSaml4AuthenticationProvider.class);
+                                applicationContext.getBean(OpenSaml4AuthenticationProvider.class);
                         saml2.authenticationManager(new ProviderManager(openSamlAuthenticationProvider));
-                        AuthenticationSuccessHandler bean = getApplicationContext().getBean(AuthenticationSuccessHandler.class);
+                        AuthenticationSuccessHandler bean = applicationContext.getBean(AuthenticationSuccessHandler.class);
                         saml2.successHandler(bean);
                         saml2.failureHandler(new RedirectAuthenticationFailureHandler(openIDClientRepository));
                     })
@@ -272,6 +260,8 @@ public class SecurityConfiguration {
                 http.addFilterBefore(new FakeSamlAuthenticationFilter(userRepository, objectMapper),
                         BasicAuthenticationFilter.class);
             }
+
+            return http.build();
         }
 
         @SneakyThrows
@@ -283,9 +273,10 @@ public class SecurityConfiguration {
     }
 
 
+    @Order(2)
     @Configuration
     @EnableConfigurationProperties(TokenUsers.class)
-    public static class AppSecurity extends WebSecurityConfigurerAdapter {
+    public static class AppSecurity {
 
         private @Value("${manage.user}")
         String user;
@@ -295,47 +286,41 @@ public class SecurityConfiguration {
         @Autowired
         private TokenUsers tokenUsers;
 
-        @Override
-        protected void configure(HttpSecurity http) throws Exception {
-            http
-                    .requestMatchers()
-                    .antMatchers("/internal/**", "/manage/**", "/tokens", "/v2/tokens")
-                    .and()
-                    .csrf()
-                    .disable()
-                    .authorizeRequests()
-                    .antMatchers("/internal/health", "/internal/info")
-                    .permitAll()
-                    .and()
-                    .authorizeRequests()
-                    .antMatchers("/manage/**", "/tokens", "/v2/tokens")
-                    .authenticated()
-                    .and()
-                    .httpBasic()
-                    .and()
-                    .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                    .and()
-                    .addFilterBefore(new MDCContextFilter(), BasicAuthenticationFilter.class);
+        @Bean
+        protected SecurityFilterChain appSecurityFilterChain(HttpSecurity http) throws Exception {
+            return http
+                    .securityMatcher("/internal/**", "/manage/**", "/tokens", "/v2/tokens")
+                    .authorizeHttpRequests(auth -> auth
+                            .requestMatchers("/internal/health", "/internal/info").permitAll()
+                            .anyRequest().authenticated()
+                    )
+                    .csrf(AbstractHttpConfigurer::disable)
+                    .httpBasic(Customizer.withDefaults())
+                    .sessionManagement(session ->
+                            session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                    .addFilterBefore(new MDCContextFilter(), BasicAuthenticationFilter.class)
+                    .build();
         }
 
-        @Override
-        protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-            InMemoryUserDetailsManagerConfigurer<AuthenticationManagerBuilder> builder = auth
-                    .inMemoryAuthentication()
-                    .withUser(user)
+        @Bean
+        public UserDetailsService userDetailsService() {
+            List<UserDetails> users = new ArrayList<>();
+            users.add(User.withUsername(user)
                     .password("{noop}" + password)
                     .roles("manage")
-                    .and();
+                    .build()
+            );
 
             if (tokenUsers.isEnabled()) {
-                tokenUsers.getUsers().forEach(user -> {
-                    builder
-                            .withUser(user.getUser())
-                            .password("{noop}" + user.getPassword())
-                            .roles("api_tokens");
-                });
-
+                tokenUsers.getUsers().forEach(tokenUser -> users.add(
+                        User.withUsername(tokenUser.getUser())
+                                .password("{noop}" + tokenUser.getPassword())
+                                .roles("api_tokens")
+                                .build()
+                ));
             }
+
+            return new InMemoryUserDetailsManager(users);
         }
     }
 

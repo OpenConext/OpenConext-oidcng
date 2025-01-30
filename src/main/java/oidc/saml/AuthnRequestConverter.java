@@ -23,21 +23,20 @@ import oidc.secure.JWTRequest;
 import oidc.web.URLCoding;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.joda.time.DateTime;
 import org.opensaml.core.config.ConfigurationService;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
 import org.opensaml.saml.saml2.core.*;
 import org.opensaml.saml.saml2.core.impl.*;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationRequestContext;
+import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationToken;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -56,7 +55,7 @@ import static org.springframework.security.saml2.provider.service.registration.S
 
 
 public class AuthnRequestConverter implements
-        Converter<Saml2AuthenticationRequestContext, AuthnRequest>, URLCoding {
+        Converter<Saml2AuthenticationToken, AuthnRequest>, URLCoding {
 
     public final static String REDIRECT_URI_VALID = "REDIRECT_URI_VALID";
 
@@ -78,7 +77,7 @@ public class AuthnRequestConverter implements
 
     @SneakyThrows
     @Override
-    public AuthnRequest convert(Saml2AuthenticationRequestContext ctx) {
+    public AuthnRequest convert(Saml2AuthenticationToken ctx) {
         CustomSaml2AuthenticationRequestContext context = (CustomSaml2AuthenticationRequestContext) ctx;
         HttpServletRequest request = context.getRequest();
 
@@ -135,7 +134,7 @@ public class AuthnRequestConverter implements
                 .getBuilder(AuthnRequest.DEFAULT_ELEMENT_NAME);
         AuthnRequest authnRequest = authnRequestBuilder.buildObject();
         authnRequest.setID("ARQ" + UUID.randomUUID().toString().substring(1));
-        authnRequest.setIssueInstant(DateTime.now());
+        authnRequest.setIssueInstant(Instant.now());
 
         authnRequest.setProtocolBinding(POST.getUrn());
 
@@ -145,8 +144,9 @@ public class AuthnRequestConverter implements
         Issuer issuer = issuerBuilder.buildObject();
         issuer.setValue(relyingParty.getEntityId());
         authnRequest.setIssuer(issuer);
-        authnRequest.setDestination(context.getDestination());
-        authnRequest.setAssertionConsumerServiceURL(context.getAssertionConsumerServiceUrl());
+        // @TODO: correct retrieval of data?
+        authnRequest.setDestination(context.getRelyingPartyRegistration().getAssertingPartyDetails().getSingleSignOnServiceLocation());
+        authnRequest.setAssertionConsumerServiceURL(context.getRelyingPartyRegistration().getAssertionConsumerServiceLocation());
 
         saveAuthenticationRequestUrl(savedRequest, authnRequest, new ClientID(clientId));
         return enhanceAuthenticationRequest(authnRequest, parameters);
@@ -256,7 +256,7 @@ public class AuthnRequestConverter implements
         RequesterIDBuilder requesterIDBuilder = (RequesterIDBuilder) registry.getBuilderFactory()
                 .getBuilder(RequesterID.DEFAULT_ELEMENT_NAME);
             RequesterID requesterID = requesterIDBuilder.buildObject();
-            requesterID.setRequesterID(entityId);
+            requesterID.setURI(entityId);
 
         scoping.setProxyCount(1);
         scoping.getRequesterIDs().add(requesterID);
@@ -296,7 +296,7 @@ public class AuthnRequestConverter implements
 
             List<AuthnContextClassRef> authnContextClassRefs = acrValuesObjects.stream().map(acr -> {
                 AuthnContextClassRef authnContextClassRef = authnContextClassRefBuilder.buildObject();
-                authnContextClassRef.setAuthnContextClassRef(acr.getValue());
+                authnContextClassRef.setURI(acr.getValue());
                 return authnContextClassRef;
             }).collect(Collectors.toList());
             requestedAuthnContext.getAuthnContextClassRefs().addAll(authnContextClassRefs);

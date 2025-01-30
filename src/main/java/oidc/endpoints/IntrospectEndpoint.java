@@ -6,14 +6,13 @@ import com.nimbusds.oauth2.sdk.TokenIntrospectionRequest;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
-import com.nimbusds.oauth2.sdk.http.ServletUtils;
+import com.nimbusds.oauth2.sdk.http.JakartaServletUtils;
 import oidc.eduid.AttributePseudonymisation;
 import oidc.exceptions.UnauthorizedException;
 import oidc.exceptions.UnknownClientException;
 import oidc.log.MDCContext;
 import oidc.model.AccessToken;
 import oidc.model.OpenIDClient;
-import oidc.model.Scope;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.OpenIDClientRepository;
@@ -27,16 +26,14 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 @RestController
 public class IntrospectEndpoint extends SecureEndpoint {
@@ -68,7 +65,7 @@ public class IntrospectEndpoint extends SecureEndpoint {
 
     @PostMapping(value = {"oidc/introspect"}, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
     public ResponseEntity<Map<String, Object>> introspect(HttpServletRequest request) throws ParseException, IOException, java.text.ParseException {
-        HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
+        HTTPRequest httpRequest = JakartaServletUtils.createHTTPRequest(request);
         TokenIntrospectionRequest tokenIntrospectionRequest = TokenIntrospectionRequest.parse(httpRequest);
         ClientAuthentication clientAuthentication = tokenIntrospectionRequest.getClientAuthentication();
         String accessTokenValue = tokenIntrospectionRequest.getToken().getValue();

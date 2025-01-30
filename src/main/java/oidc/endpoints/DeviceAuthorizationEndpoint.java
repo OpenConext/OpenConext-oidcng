@@ -3,7 +3,7 @@ package oidc.endpoints;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.device.DeviceAuthorizationRequest;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
-import com.nimbusds.oauth2.sdk.http.ServletUtils;
+import com.nimbusds.oauth2.sdk.http.JakartaServletUtils;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.UnknownClientException;
 import oidc.model.DeviceAuthorization;
@@ -31,8 +31,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.security.SecureRandom;
@@ -74,7 +74,7 @@ public class DeviceAuthorizationEndpoint implements OidcEndpoint{
 
     @PostMapping(value = "oidc/device_authorization", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
     public ResponseEntity<Map<String, Object>> deviceAuthorization(HttpServletRequest request) throws IOException, ParseException {
-        HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
+        HTTPRequest httpRequest = JakartaServletUtils.createHTTPRequest(request);
         DeviceAuthorizationRequest deviceAuthorizationRequest = DeviceAuthorizationRequest.parse(httpRequest);
         // Mandatory client ID as we don't allow for authenticated requests for devices that most likely can't hide secrets
         String clientId = deviceAuthorizationRequest.getClientID().getValue();

@@ -20,15 +20,13 @@ import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -41,10 +39,10 @@ import java.util.Map;
 import static oidc.saml.AuthnRequestConverter.REDIRECT_URI_VALID;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
-@RestController
-public class ErrorController implements org.springframework.boot.web.servlet.error.ErrorController {
+@RestControllerAdvice
+public class CustomErrorController {
 
-    private static final Log LOG = LogFactory.getLog(ErrorController.class);
+    private static final Log LOG = LogFactory.getLog(CustomErrorController.class);
     private final DefaultErrorAttributes errorAttributes;
     private final RequestCache requestCache = new HttpSessionRequestCache();
     private final List<Class> exceptionsToExclude = List.of(
@@ -57,13 +55,24 @@ public class ErrorController implements org.springframework.boot.web.servlet.err
             UnknownCodeException.class
     );
 
-    public ErrorController() {
+    public CustomErrorController() {
         this.errorAttributes = new DefaultErrorAttributes();
     }
 
+    @ExceptionHandler({CookiesNotSupportedException.class, DeviceFlowException.class,
+            InvalidClientException.class, InvalidGrantException.class, InvalidScopeException.class,
+            JWTAuthorizationGrantsException.class, JWTRequestURIMismatchException.class,
+            UnsupportedJWTException.class, ContextSaml2AuthenticationException.class,
+            RedirectMismatchException.class, UnauthorizedException.class, CodeVerifierMissingException.class,
+            UnsupportedPromptValueException.class, TokenAlreadyUsedException.class, UnknownClientException.class,
+            UnknownCodeException.class
+    })
+    public Object handleError(Exception ex, HttpServletRequest request) {
+        return handleError(request);
+    }
+
     @SneakyThrows
-    @RequestMapping("${server.error.path:${error.path:/error}}")
-    public Object error(HttpServletRequest request) {
+    private Object handleError(HttpServletRequest request) {
         ServletWebRequest webRequest = new ServletWebRequest(request);
 
         Map<String, Object> result = errorAttributes.getErrorAttributes(webRequest, ErrorAttributeOptions.defaults());

@@ -142,7 +142,7 @@ public class ResponseAuthenticationConverter implements Converter<OpenSaml4Authe
 
     private Optional<String> authenticationContextClassReference(AuthnContextClassRef authnContextClassRef) {
         return Optional.ofNullable(authnContextClassRef)
-                .map(AuthnContextClassRef::getAuthnContextClassRef);
+                .map(AuthnContextClassRef::getURI);
     }
 
     private String getAttributeValue(String samlAttributeName, Assertion assertion) {
@@ -186,7 +186,7 @@ public class ResponseAuthenticationConverter implements Converter<OpenSaml4Authe
             return ((XSInteger) xmlObject).getValue();
         }
         if (xmlObject instanceof XSURI) {
-            return ((XSURI) xmlObject).getValue();
+            return ((XSURI) xmlObject).getURI();
         }
         if (xmlObject instanceof XSBoolean) {
             XSBooleanValue xsBooleanValue = ((XSBoolean) xmlObject).getValue();

@@ -18,9 +18,9 @@ import java.util.Map;
 import static oidc.saml.AuthnRequestConverter.REDIRECT_URI_VALID;
 import static org.junit.Assert.assertEquals;
 
-public class ErrorControllerTest {
+public class CustomErrorControllerTest {
 
-    private ErrorController subject = new ErrorController();
+    private CustomErrorController subject = new CustomErrorController();
 
     @Test
     @SuppressWarnings("unchecked")
@@ -39,10 +39,10 @@ public class ErrorControllerTest {
         ContextSaml2AuthenticationException exception = new ContextSaml2AuthenticationException(new AuthenticationRequest("id", new Date(), "client_id", originalUrl), "Error description");
         MockHttpServletRequest request = MockMvcRequestBuilders
                 .get(new URI("http://localhost:8080/oidc/authorize?response_type=code&client_id=http@//mock-sp&scope=openid&redirect_uri=http://localhost:8080"))
-                .requestAttr("javax.servlet.error.exception", exception)
+                .requestAttr("jakarta.servlet.error.exception", exception)
                 .buildRequest(null);
         request.setAttribute(REDIRECT_URI_VALID, true);
-        ResponseEntity responseEntity = (ResponseEntity) subject.error(request);
+        ResponseEntity responseEntity = (ResponseEntity) subject.handleError(exception, request);
         assertEquals(302, responseEntity.getStatusCodeValue());
 
         String location = responseEntity.getHeaders().getLocation().toString();
@@ -59,9 +59,9 @@ public class ErrorControllerTest {
     private Object doError(Exception exception) throws URISyntaxException {
         MockHttpServletRequest request = MockMvcRequestBuilders
                 .get(new URI("http://localhost:8080/oidc/authorize?response_type=code&client_id=http@//mock-sp&scope=openid&redirect_uri=http://localhost:8080"))
-                .requestAttr("javax.servlet.error.exception", exception)
+                .requestAttr("jakarta.servlet.error.exception", exception)
                 .buildRequest(null);
-        return subject.error(request);
+        return subject.handleError(exception, request);
     }
 
 }

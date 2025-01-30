@@ -6,7 +6,7 @@ import org.springframework.security.web.firewall.FirewalledRequest;
 import org.springframework.security.web.firewall.RequestRejectedException;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 public class LoggingStrictHttpFirewall extends StrictHttpFirewall {
 

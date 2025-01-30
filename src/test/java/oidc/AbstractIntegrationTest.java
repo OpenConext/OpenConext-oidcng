@@ -29,12 +29,11 @@ import oidc.endpoints.MapTypeReference;
 import oidc.model.*;
 import oidc.repository.SequenceRepository;
 import oidc.secure.TokenGenerator;
-import org.apache.commons.lang3.stream.Streams;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -292,10 +291,13 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
         if (StringUtils.hasText(code)) {
             header = header.formParam("code", code);
         }
-        return header
+        Response response = header
                 .formParam("grant_type", grantType.getValue())
-                .post("oidc/token")
-                .as(Map.class);
+                .post("oidc/token");
+        if (response.body() != null && !response.body().asString().isEmpty()) {
+            return response.body().as(Map.class);
+        }
+        return Collections.emptyMap();
     }
 
     protected NodeList getNodeListFromFormPost(Response response) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {

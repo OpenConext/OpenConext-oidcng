@@ -21,7 +21,7 @@ public interface TestUtils {
         }
     }
 
-    TypeRef<Map<String, Object>> mapTypeRef = new TypeRef<Map<String, Object>>() {
+    TypeRef<Map<String, Object>> mapTypeRef = new TypeRef<>() {
     };
 
     ObjectMapper objectMapper = ObjectMapperWrapper.init();

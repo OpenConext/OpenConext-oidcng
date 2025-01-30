@@ -3,7 +3,7 @@ package oidc.endpoints;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
-import com.nimbusds.oauth2.sdk.http.ServletUtils;
+import com.nimbusds.oauth2.sdk.http.JakartaServletUtils;
 import com.nimbusds.openid.connect.sdk.UserInfoRequest;
 import oidc.exceptions.InvalidGrantException;
 import oidc.log.MDCContext;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.HashMap;
@@ -50,7 +50,7 @@ public class UserInfoEndpoint {
     }
 
     private ResponseEntity<Map<String, Object>> userInfo(HttpServletRequest request) throws ParseException, IOException, java.text.ParseException {
-        HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
+        HTTPRequest httpRequest = JakartaServletUtils.createHTTPRequest(request);
         UserInfoRequest userInfoRequest = UserInfoRequest.parse(httpRequest);
 
         String accessTokenValue = userInfoRequest.getAccessToken().getValue();

@@ -15,7 +15,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 import org.springframework.security.web.savedrequest.RequestCache;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -67,7 +67,7 @@ public class AuthnRequestConverterUnitTest extends AbstractSamlUnitTest implemen
         AuthnRequest authnRequest = subject.convert(ctx);
 
         assertTrue(authnRequest.isForceAuthn());
-        assertEquals("loa1", authnRequest.getRequestedAuthnContext().getAuthnContextClassRefs().get(0).getAuthnContextClassRef());
+        assertEquals("loa1", authnRequest.getRequestedAuthnContext().getAuthnContextClassRefs().get(0).getURI());
         assertEquals("http://idp", authnRequest.getScoping().getIDPList().getIDPEntrys().get(0).getProviderID());
     }
 

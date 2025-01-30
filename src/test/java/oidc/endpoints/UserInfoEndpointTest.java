@@ -7,7 +7,7 @@ import com.nimbusds.oauth2.sdk.GrantType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
-import oidc.web.ErrorController;
+import oidc.web.CustomErrorController;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +49,7 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
 
     @Test
     public void userInfoClientCredentials() throws IOException {
-        Logger errorLogger = (Logger) LoggerFactory.getLogger(ErrorController.class);
+        Logger errorLogger = (Logger) LoggerFactory.getLogger(CustomErrorController.class);
         ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
         listAppender.start();
 
@@ -70,7 +70,7 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
 
     @Test
     public void userInfoAccessTokenNotFound() {
-        Logger errorLogger = (Logger) LoggerFactory.getLogger(ErrorController.class);
+        Logger errorLogger = (Logger) LoggerFactory.getLogger(CustomErrorController.class);
         ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
         listAppender.start();
 

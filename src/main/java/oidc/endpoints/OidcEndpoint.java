@@ -6,14 +6,13 @@ import com.nimbusds.openid.connect.sdk.ClaimsRequest;
 import oidc.model.OpenIDClient;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public interface OidcEndpoint {
 
@@ -33,8 +32,8 @@ public interface OidcEndpoint {
             if (claimsRequest != null) {
                 idTokenClaims.addAll(
                         claimsRequest.getIDTokenClaims().stream()
-                                .map(entry -> entry.getClaimName())
-                                .collect(Collectors.toList()));
+                                .map(ClaimsRequest.Entry::getClaimName)
+                                .toList());
             }
         }
         return idTokenClaims;

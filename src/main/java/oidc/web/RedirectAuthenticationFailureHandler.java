@@ -17,10 +17,10 @@ import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.util.CollectionUtils;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
@@ -71,7 +71,7 @@ public class RedirectAuthenticationFailureHandler implements AuthenticationFailu
             throw exception;
         }
         /*
-         * Will be picked up by the ErrorController. Do note that if the user has stepped up his account in eduID, then
+         * Will be picked up by the CustomErrorController. Do note that if the user has stepped up his account in eduID, then
          * the initial session is no longer around.
          */
         if (exception instanceof Saml2AuthenticationException) {

@@ -12,7 +12,7 @@ import com.nimbusds.oauth2.sdk.auth.JWTAuthentication;
 import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
 import com.nimbusds.oauth2.sdk.device.DeviceCodeGrant;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
-import com.nimbusds.oauth2.sdk.http.ServletUtils;
+import com.nimbusds.oauth2.sdk.http.JakartaServletUtils;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
@@ -26,7 +26,6 @@ import oidc.secure.JWTRequest;
 import oidc.secure.TokenGenerator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hc.core5.http.ContentType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpHeaders;
@@ -36,7 +35,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.cert.CertificateException;
@@ -47,6 +46,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static oidc.endpoints.AuthorizationEndpoint.validateScopes;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 @RestController
 public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
@@ -92,7 +92,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
     @PostMapping(value = "oidc/token", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
     public ResponseEntity token(HttpServletRequest request) throws IOException, ParseException, JOSEException, java.text.ParseException, CertificateException, BadJOSEException {
-        HTTPRequest httpRequest = ServletUtils.createHTTPRequest(request);
+        HTTPRequest httpRequest = JakartaServletUtils.createHTTPRequest(request);
         TokenRequest tokenRequest = TokenRequest.parse(httpRequest);
         AuthorizationGrant authorizationGrant = tokenRequest.getAuthorizationGrant();
 
@@ -403,7 +403,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     private HttpHeaders getResponseHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.CACHE_CONTROL, "no-store");
-        headers.set(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
+        headers.set(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON.getMimeType());
         headers.set(HttpHeaders.PRAGMA, "no-cache");
         return headers;
     }
