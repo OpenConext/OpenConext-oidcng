@@ -204,7 +204,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
 
     @Test
     public void refreshTokenForPublicClient() throws ParseException, JOSEException, IOException {
-        String codeChallenge = StringUtils.leftPad("token", 45, "*");
+        String codeChallenge = StringUtils.leftPad("token", 45, ".");
         Response response = doAuthorize("mock-sp", "code", null, "nonce",
                 codeChallenge);
         String code = getCode(response);
@@ -270,7 +270,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
     public void nonPublicClient() throws IOException {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code, "mock-rp", null, GrantType.AUTHORIZATION_CODE,
-                StringUtils.leftPad("token", 45, "*"));
+                StringUtils.leftPad("token", 45, "."));
 
         assertEquals("Non-public client requires authentication", body.get("error_description"));
     }
@@ -294,7 +294,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
                 .formParams(Collections.emptyMap())
                 .post("oidc/token")
                 .as(Map.class);
-        assertEquals("Missing or empty \"refresh_token\" parameter", result.get("error_description"));
+        assertEquals("Missing or empty refresh_token parameter", result.get("error_description"));
     }
 
     @Test
@@ -311,7 +311,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
                 StringUtils.leftPad("token", 45, "-"));
         String code = getCode(response);
         Map<String, Object> body = doToken(code, "mock-sp", null, GrantType.AUTHORIZATION_CODE,
-                StringUtils.leftPad("token", 45, "*"));
+                StringUtils.leftPad("token", 45, "."));
         assertEquals("code_verifier does not match code_challenge", body.get("message"));
     }
 
@@ -320,7 +320,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
         Response response = doAuthorize("mock-sp", "code", null, null, null);
         String code = getCode(response);
         Map<String, Object> body = doToken(code, "mock-sp", null, GrantType.AUTHORIZATION_CODE,
-                StringUtils.leftPad("token", 45, "*"));
+                StringUtils.leftPad("token", 45, "."));
         assertEquals("code_verifier present, but no code_challenge in the authorization_code", body.get("message"));
     }
 
