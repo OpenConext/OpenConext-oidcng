@@ -54,12 +54,12 @@ public class AuthorizationEndpointUnitTest {
 
     @Test
     public void validateScopeOfflineAccess() {
-        doValidateScope("open_id", "open_id, offline_access", "authorization_code", "refresh_token");
+        doValidateScope("open_id", "open_id offline_access", "authorization_code", "refresh_token");
     }
 
     @Test(expected = InvalidScopeException.class)
     public void validateScopeOfflineAccessNorefreshToken() {
-        doValidateScope("open_id", "open_id, offline_access", "authorization_code");
+        doValidateScope("open_id", "open_id offline_access", "authorization_code");
     }
 
     @Test(expected = InvalidScopeException.class)

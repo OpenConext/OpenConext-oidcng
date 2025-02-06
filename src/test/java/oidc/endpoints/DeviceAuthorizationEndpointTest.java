@@ -39,17 +39,17 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .header("Content-type", "application/x-www-form-urlencoded")
                 .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
                 .formParam("client_id", "mock-sp")
-                .formParam("scope", String.join(",", List.of("openid", "groups")))
+                .formParam("scope", "openid groups")
                 .post("oidc/device_authorization")
                 .as(mapTypeRef);
-        assertEquals((int) body.get("expires_in"), 900);
-        assertEquals((int) body.get("interval"), 1);
+        assertEquals(900, (int) body.get("expires_in"));
+        assertEquals(1, (int) body.get("interval"));
 
         String deviceCode = (String) body.get("device_code");
         assertEquals(deviceCode, UUID.fromString(deviceCode).toString());
 
         String verificationURI = "http://localhost:8080/oidc/verify";
-        assertEquals(body.get("verification_uri"), verificationURI);
+        assertEquals(verificationURI, body.get("verification_uri"));
         String userCode = (String) body.get("user_code");
         assertEquals(body.get("verification_uri_complete"), verificationURI + "?user_code=" + userCode);
         //See QRGeneratorTest#qrCode for qr_code validation
@@ -74,8 +74,8 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .formParam("client_id", "nope")
                 .post("oidc/device_authorization")
                 .as(mapTypeRef);
-        assertEquals((int) body.get("status"), 401);
-        assertEquals(body.get("error"), "unauthorized");
+        assertEquals(401, (int) body.get("status"));
+        assertEquals("unauthorized", body.get("error"));
     }
 
     @Test
@@ -87,9 +87,9 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .formParam("client_id", "mock-rp")
                 .post("oidc/device_authorization")
                 .as(mapTypeRef);
-        assertEquals((int) body.get("status"), 401);
-        assertEquals(body.get("error"), "unauthorized_client");
-        assertEquals(body.get("error_description"), "Missing grant: urn:ietf:params:oauth:grant-type:device_code for clientId: mock-rp");
+        assertEquals(401, (int) body.get("status"));
+        assertEquals("unauthorized_client", body.get("error"));
+        assertEquals("Missing grant: urn:ietf:params:oauth:grant-type:device_code for clientId: mock-rp", body.get("error_description"));
     }
 
     @SneakyThrows
@@ -100,7 +100,7 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .header("Content-type", "application/x-www-form-urlencoded")
                 .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
                 .formParam("client_id", "mock-sp")
-                .formParam("scope", String.join(",", List.of("openid", "groups")))
+                .formParam("scope", "openid groups")
                 .post("oidc/device_authorization")
                 .as(mapTypeRef);
         String userCode = (String) body.get("user_code");
@@ -155,7 +155,7 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .header("Content-type", "application/x-www-form-urlencoded")
                 .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
                 .formParam("client_id", "mock-sp")
-                .formParam("scope", String.join(",", List.of("openid", "groups")))
+                .formParam("scope", "openid groups")
                 .post("oidc/device_authorization")
                 .as(mapTypeRef);
         String userCode = (String) body.get("user_code");
@@ -223,8 +223,8 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .formParam("scope", String.join(",", List.of("not-granted")))
                 .post("oidc/device_authorization")
                 .as(mapTypeRef);
-        assertEquals((int) body.get("status"), 401);
-        assertEquals(body.get("error"), "invalid_scope");
+        assertEquals(401, (int) body.get("status"));
+        assertEquals("invalid_scope", body.get("error"));
     }
 
     @Test
@@ -242,7 +242,7 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .header("Content-type", "application/x-www-form-urlencoded")
                 .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
                 .formParam("client_id", "mock-sp")
-                .formParam("scope", String.join(",", List.of("openid", "groups")))
+                .formParam("scope", "openid groups")
                 .post("oidc/device_authorization")
                 .as(mapTypeRef);
         String deviceCode = (String) tokenRequestResponse.get("device_code");
@@ -339,7 +339,7 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .header("Content-type", "application/x-www-form-urlencoded")
                 .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
                 .formParam("client_id", "mock-sp")
-                .formParam("scope", String.join(",", List.of("openid", "groups")))
+                .formParam("scope", "openid groups")
                 .post("oidc/device_authorization")
                 .as(mapTypeRef);
         String deviceCode = (String) tokenRequestResponse.get("device_code");

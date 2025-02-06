@@ -18,6 +18,7 @@
 package oidc.secure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.oauth2.sdk.ParseException;
 import lombok.SneakyThrows;
 import oidc.config.OidcCorsConfigurationSource;
 import oidc.config.TokenUsers;
@@ -46,7 +47,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpMethod;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -69,12 +69,16 @@ import org.springframework.security.saml2.provider.service.registration.RelyingP
 import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
 import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationRequestRepository;
 import org.springframework.security.saml2.provider.service.web.Saml2MetadataFilter;
+import org.springframework.security.saml2.provider.service.web.authentication.OpenSaml4AuthenticationRequestResolver;
 import org.springframework.security.saml2.provider.service.web.authentication.Saml2AuthenticationRequestResolver;
 import org.springframework.security.saml2.provider.service.web.authentication.Saml2WebSsoAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.security.PrivateKey;
 import java.security.Security;
@@ -82,7 +86,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
-@EnableScheduling
+@Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfiguration {
@@ -150,9 +154,24 @@ public class SecurityConfiguration {
             return new ConcurrentSavedRequestAwareAuthenticationSuccessHandler(authenticationRequestRepository);
         }
 
+        // TODO: authnRequestConverter is not being used, should be configured differently in Spring Boot 3 and Spring Security 6
         @Bean
-        public Saml2AuthenticationRequestResolver authenticationRequestContextResolver(RelyingPartyRegistrationRepository registrationRepository) {
-            return new AuthenticationRequestContextResolver(registrationRepository.findByRegistrationId(REGISTRATION_ID));
+        public Saml2AuthenticationRequestResolver authenticationRequestResolver(
+                RelyingPartyRegistrationRepository relyingPartyRegistrationRepository) {
+
+            OpenSaml4AuthenticationRequestResolver resolver =
+                    new OpenSaml4AuthenticationRequestResolver(relyingPartyRegistrationRepository);
+            resolver.setAuthnRequestCustomizer(context -> {
+                AuthnRequestConverter authnRequestConverter =
+                    new AuthnRequestConverter(openIDClientRepository, authenticationRequestRepository, new HttpSessionRequestCache());
+                try {
+                    authnRequestConverter.enrichAuthnRequest(context.getAuthnRequest(), context.getRelyingPartyRegistration(), context.getRequest());
+                } catch (ParseException | URISyntaxException | UnsupportedEncodingException e) {
+                    LOG.warn(e.getMessage(), e);
+                    throw new RuntimeException(e);
+                }
+            });
+            return resolver;
         }
 
         @Bean
@@ -237,6 +256,7 @@ public class SecurityConfiguration {
                     corsConfiguration.configurationSource(new OidcCorsConfigurationSource()).configure(http));
 
             http
+                    .securityMatcher("/oidc/**", "/saml2/**", "/login/**")
                     .csrf(AbstractHttpConfigurer::disable)
                     .authorizeHttpRequests(auth -> auth
                             .requestMatchers("/oidc/**", "/saml2/**", "/login/**").permitAll()
@@ -292,17 +312,17 @@ public class SecurityConfiguration {
                     .securityMatcher("/internal/**", "/manage/**", "/tokens", "/v2/tokens")
                     .authorizeHttpRequests(auth -> auth
                             .requestMatchers("/internal/health", "/internal/info").permitAll()
-                            .anyRequest().authenticated()
+                            .requestMatchers("/manage/**", "/tokens", "/v2/tokens").permitAll()
                     )
                     .csrf(AbstractHttpConfigurer::disable)
                     .httpBasic(Customizer.withDefaults())
+                    .userDetailsService(userDetailsService())
                     .sessionManagement(session ->
                             session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                     .addFilterBefore(new MDCContextFilter(), BasicAuthenticationFilter.class)
                     .build();
         }
 
-        @Bean
         public UserDetailsService userDetailsService() {
             List<UserDetails> users = new ArrayList<>();
             users.add(User.withUsername(user)

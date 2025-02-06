@@ -15,7 +15,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -48,20 +47,19 @@ public class TokenController {
 
     @GetMapping("tokens")
     @PreAuthorize("hasRole('ROLE_api_tokens')")
-    public List<Map<String, Object>> tokens(Authentication authentication, @RequestParam("unspecifiedID") String unspecifiedId) throws UnsupportedEncodingException {
+    public List<Map<String, Object>> tokens(Authentication authentication, @RequestParam("unspecifiedID") String unspecifiedId) {
         return doTokens(authentication, unspecifiedId, APIVersion.V1);
     }
 
     @GetMapping("v2/tokens")
     @PreAuthorize("hasRole('ROLE_api_tokens')")
-    public List<Map<String, Object>> tokensV2(Authentication authentication, @RequestParam("unspecifiedID") String unspecifiedId) throws UnsupportedEncodingException {
+    public List<Map<String, Object>> tokensV2(Authentication authentication, @RequestParam("unspecifiedID") String unspecifiedId) {
         return doTokens(authentication, unspecifiedId, APIVersion.V2);
     }
 
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> doTokens(Authentication authentication, String unspecifiedId, APIVersion apiVersion) throws UnsupportedEncodingException {
+    private List<Map<String, Object>> doTokens(Authentication authentication, String unspecifiedId, APIVersion apiVersion) {
         String name = authentication.getName();
-        unspecifiedId = URLDecoder.decode(unspecifiedId, Charset.defaultCharset().name());
+        unspecifiedId = URLDecoder.decode(unspecifiedId, Charset.defaultCharset());
 
         LOG.debug(String.format("Starting tokens GET for %s with unspecified %s", name, unspecifiedId));
 
@@ -104,7 +102,7 @@ public class TokenController {
         result.put("id", token.getId());
 
         Optional<OpenIDClient> optionalClient = openIDClientRepository.findOptionalByClientId(token.getClientId());
-        if (!optionalClient.isPresent()) {
+        if (optionalClient.isEmpty()) {
             return result;
         }
         OpenIDClient openIDClient = optionalClient.get();
@@ -115,7 +113,7 @@ public class TokenController {
         result.put("type", token instanceof RefreshToken ? TokenType.REFRESH : TokenType.ACCESS);
 
         List<OpenIDClient> resourceServers = openIDClient.getAllowedResourceServers().stream()
-                .map(rs -> openIDClientRepository.findOptionalByClientId(rs))
+                .map(openIDClientRepository::findOptionalByClientId)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(toList());

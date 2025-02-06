@@ -46,7 +46,7 @@ public class DeviceAuthorizationEndpointDisabledTest extends AbstractIntegration
                 .header("Content-type", "application/x-www-form-urlencoded")
                 .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
                 .formParam("client_id", "mock-sp")
-                .formParam("scope", String.join(",", List.of("openid", "groups")))
+                .formParam("scope", "openid groups")
                 .post("oidc/device_authorization")
                 .as(mapTypeRef);
         assertEquals(404, body.get("status"));

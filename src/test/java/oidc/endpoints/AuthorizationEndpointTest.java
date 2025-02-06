@@ -24,10 +24,10 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -193,7 +193,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 null, null, null, null, null, state);
         String location = response.getHeader("Location");
         Map<String, String> queryParamsToMap = super.queryParamsToMap(location);
-        assertEquals(queryParamsToMap.get("state"), "https%3A%2F%2Fexample.com");
+        assertEquals("https%3A%2F%2Fexample.com", queryParamsToMap.get("state"));
     }
 
     @Test
@@ -208,16 +208,16 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 .get("oidc/authorize")
                 .then()
                 .statusCode(302)
-                .body(containsString("Missing \\\"client_id\\\" parameter"));
+                .body(containsString("Missing client_id parameter"));
     }
 
     @Test
-    public void validationScope() throws UnsupportedEncodingException {
+    public void validationScope() {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", "openid nopes");
         queryParams.put("response_type", "code");
         queryParams.put("client_id", "mock-sp");
-        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", "UTF-8"));
+        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", StandardCharsets.UTF_8));
 
         given().redirects().follow(false)
                 .when()
@@ -230,11 +230,11 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
-    public void noResponseType() throws UnsupportedEncodingException {
+    public void noResponseType() {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", "openid");
         queryParams.put("client_id", "mock-sp");
-        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", "UTF-8"));
+        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", StandardCharsets.UTF_8));
 
         Response response = given().redirects().follow(false)
                 .when()
@@ -244,19 +244,18 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         assertEquals(302, response.getStatusCode());
         String location = response.getHeader("Location");
         MultiValueMap<String, String> params = UriComponentsBuilder.fromHttpUrl(location).build().getQueryParams();
-        assertEquals(params.getFirst("error"), "invalid_request");
-
+        assertEquals("invalid_request", params.getFirst("error"));
     }
 
     @Test
-    public void validationScopeFormPost() throws UnsupportedEncodingException {
+    public void validationScopeFormPost() {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", "openid nopes");
         queryParams.put("response_type", "code");
         queryParams.put("client_id", "mock-sp");
         queryParams.put("response_mode", "form_post");
         queryParams.put("state", "example");
-        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", "UTF-8"));
+        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", StandardCharsets.UTF_8));
 
         given().redirects().follow(false)
                 .when()
@@ -430,7 +429,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         PlainJWT plainJWT = plainJWT(client.getClientId(), client.getRedirectUrls().get(0));
         String location = doAuthorizeWithJWTRequest("mock-sp", "code", null, plainJWT, null).getHeader("Location");
         MultiValueMap<String, String> params = UriComponentsBuilder.fromHttpUrl(location).build().getQueryParams();
-        assertEquals(params.getFirst("error"), "request_not_supported");
+        assertEquals("request_not_supported", params.getFirst("error"));
     }
 
 

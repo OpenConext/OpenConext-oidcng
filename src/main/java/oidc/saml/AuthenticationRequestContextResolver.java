@@ -6,7 +6,8 @@ import org.springframework.security.saml2.provider.service.registration.RelyingP
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.saml2.provider.service.web.authentication.Saml2AuthenticationRequestResolver;
 
-public class AuthenticationRequestContextResolver implements Saml2AuthenticationRequestResolver {
+//@TODO: potentially obsolete in Spring Boot 3
+public class AuthenticationRequestContextResolver {//implements Saml2AuthenticationRequestContextResolver {
 
     private final RelyingPartyRegistration registration;
 
@@ -14,7 +15,7 @@ public class AuthenticationRequestContextResolver implements Saml2Authentication
         this.registration = registration;
     }
 
-    @Override
+//    @Override
     public AbstractSaml2AuthenticationRequest resolve(HttpServletRequest request) {
         return new CustomSaml2AuthenticationRequestContext(registration, request).getAuthenticationRequest();
     }

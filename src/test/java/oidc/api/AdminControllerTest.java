@@ -14,7 +14,6 @@ import java.text.ParseException;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
-import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -28,14 +27,14 @@ public class AdminControllerTest extends AbstractIntegrationTest {
     @Test
     public void rolloverSigningKeys() throws GeneralSecurityException, ParseException, IOException {
         resetAndCreateSigningKeys(1);
-        List<String> keys = mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().collect(toList());
+        List<String> keys = mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().toList();
         assertEquals(1, keys.size());
 
         mongoTemplate.findAllAndRemove(new Query(), AccessToken.class);
 
         doRollover(201, user, password, "force-signing-key-rollover");
 
-        List<String> newKeys = mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().collect(toList());
+        List<String> newKeys = mongoTemplate.findAll(SigningKey.class).stream().map(SigningKey::getKeyId).sorted().toList();
         assertEquals(1, newKeys.size());
 
         assertNotEquals(keys.get(0), newKeys.get(0));

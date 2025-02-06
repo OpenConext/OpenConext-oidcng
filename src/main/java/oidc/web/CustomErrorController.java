@@ -31,6 +31,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -59,14 +60,7 @@ public class CustomErrorController {
         this.errorAttributes = new DefaultErrorAttributes();
     }
 
-    @ExceptionHandler({CookiesNotSupportedException.class, DeviceFlowException.class,
-            InvalidClientException.class, InvalidGrantException.class, InvalidScopeException.class,
-            JWTAuthorizationGrantsException.class, JWTRequestURIMismatchException.class,
-            UnsupportedJWTException.class, ContextSaml2AuthenticationException.class,
-            RedirectMismatchException.class, UnauthorizedException.class, CodeVerifierMissingException.class,
-            UnsupportedPromptValueException.class, TokenAlreadyUsedException.class, UnknownClientException.class,
-            UnknownCodeException.class
-    })
+    @ExceptionHandler({Exception.class})
     public Object handleError(Exception ex, HttpServletRequest request) {
         return handleError(request);
     }
@@ -165,11 +159,11 @@ public class CustomErrorController {
 
     private String errorMessage(Throwable error) throws UnsupportedEncodingException {
         String errorMsg = error != null ? error.getMessage() : "Unknown exception occurred";
-        return URLEncoder.encode(errorMsg.replaceAll("\"", ""), "UTF-8");
+        return URLEncoder.encode(errorMsg.replaceAll("\"", ""), StandardCharsets.UTF_8);
     }
 
     private Object redirectErrorResponse(Map<String, String[]> parameterMap, Map<String, Object> result, Throwable error, String redirectUri) throws UnsupportedEncodingException {
-        String url = URLDecoder.decode(redirectUri, "UTF-8");
+        String url = URLDecoder.decode(redirectUri, StandardCharsets.UTF_8);
 
         String responseType = defaultValue(parameterMap, "response_type", "code");
         String responseMode = defaultValue(parameterMap, "response_mode", "code".equals(responseType) ? "query" : "fragment");

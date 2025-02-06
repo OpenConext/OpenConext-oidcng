@@ -1,7 +1,6 @@
 package oidc.endpoints;
 
 import com.nimbusds.jwt.PlainJWT;
-import io.restassured.http.Headers;
 import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import oidc.model.OpenIDClient;
@@ -11,8 +10,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,13 +24,13 @@ import static org.junit.Assert.assertTrue;
 public class AuthorizationEndpointIntegrationTest extends AbstractIntegrationTest implements SignedJWTTest {
 
     @Test
-    public void validationScope() throws UnsupportedEncodingException {
+    public void validationScope() {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", "openid nope");
         queryParams.put("response_type", "code");
         queryParams.put("client_id", "mock-sp");
         queryParams.put("state", "example");
-        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", "UTF-8"));
+        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", StandardCharsets.UTF_8));
 
         Response response = doAuthorize(queryParams);
         response
@@ -51,7 +50,7 @@ public class AuthorizationEndpointIntegrationTest extends AbstractIntegrationTes
         queryParams.put("response_type", "code");
         queryParams.put("client_id", "mock-sp");
         queryParams.put("state", "openid");
-        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", "UTF-8"));
+        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", StandardCharsets.UTF_8));
         queryParams.put("request", plainJWT.serialize());
 
         Response response = doAuthorize(queryParams);
@@ -65,11 +64,11 @@ public class AuthorizationEndpointIntegrationTest extends AbstractIntegrationTes
     }
 
     @Test
-    public void noResponseType() throws UnsupportedEncodingException {
+    public void noResponseType() {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("scope", "openid");
         queryParams.put("client_id", "mock-sp");
-        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", "UTF-8"));
+        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", StandardCharsets.UTF_8));
 
         Response response = doAuthorize(queryParams);
         String location = response.getHeader("Location");

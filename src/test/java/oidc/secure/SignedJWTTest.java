@@ -78,7 +78,7 @@ public interface SignedJWTTest extends TestUtils {
                 .jwtID(UUID.randomUUID().toString())
                 .issuer(clientId)
                 .issueTime(Date.from(instant))
-                .subject(clientId)
+                .subject(clientId + "sub")
                 .notBeforeTime(new Date(System.currentTimeMillis()))
                 .claim("redirect_uri", redirectURI)
                 .claim("scope", "openid groups")

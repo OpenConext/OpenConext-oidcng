@@ -152,6 +152,76 @@ public class AuthnRequestConverter implements
         return enhanceAuthenticationRequest(authnRequest, parameters);
     }
 
+    public void enrichAuthnRequest(AuthnRequest authnRequest, RelyingPartyRegistration relyingParty,
+                                   HttpServletRequest request)
+            throws ParseException, URISyntaxException, UnsupportedEncodingException {
+
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            LOG.warn("There is no session in the HttpServletRequest. CookiesNotSupportedException will be thrown");
+        } else {
+            Enumeration<String> attributeNames = session.getAttributeNames();
+            List<String> list = Collections.list(attributeNames);
+            if (!list.contains("SPRING_SECURITY_SAVED_REQUEST")) {
+                LOG.warn("There is a session in the HttpServletRequest with ID " + session.getId() + " which does not contain a saved request. Attribute names are: " + list);
+            }
+        }
+
+        SavedRequest savedRequest = requestCache.getRequest(request, null);
+
+        if (savedRequest == null) {
+            throw new CookiesNotSupportedException();
+        }
+
+        Map<String, String[]> parameterMap = savedRequest.getParameterMap();
+        Map<String, List<String>> parameters = parameterMap.keySet().stream()
+                .collect(Collectors.toMap(key -> key, key -> Arrays.asList(parameterMap.get(key))));
+        List<String> clientIds = parameters.get("client_id");
+        String clientId = CollectionUtils.isEmpty(clientIds) ? null : clientIds.get(0);
+        if (!StringUtils.hasText(clientId)) {
+            throw new UnknownClientException(String.format("client_id parameter missing in parameters: %s", parameters));
+        }
+        OpenIDClient openIDClient = openIDClientRepository.findOptionalByClientId(clientId)
+                .orElseThrow(() -> new UnknownClientException(clientId));
+
+        //If this a device code flow, we don't validate redirect URI's
+        List<String> userCode = parameters.get("user_code");
+        if (!CollectionUtils.isEmpty(userCode)) {
+            List<String> grants = openIDClient.getGrants();
+            if (!grants.contains(GrantType.DEVICE_CODE.getValue())) {
+                throw new InvalidGrantException(String.format("Grant types %s for client %s does not allow for device code flow",
+                        grants, openIDClient.getClientId()));
+            }
+        } else {
+            List<String> redirectUris = parameters.get("redirect_uri");
+            URI redirectURI = CollectionUtils.isEmpty(redirectUris) ? null : new URI(redirectUris.get(0));
+
+            AuthorizationEndpoint.validateRedirectionURI(redirectURI, openIDClient);
+            request.setAttribute(REDIRECT_URI_VALID, true);
+
+            AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(parameters);
+
+            validateAuthorizationRequest(authorizationRequest, openIDClient);
+        }
+
+        authnRequest.setID("ARQ" + UUID.randomUUID().toString().substring(1));
+        authnRequest.setIssueInstant(Instant.now());
+
+        authnRequest.setProtocolBinding(POST.getUrn());
+
+        IssuerBuilder issuerBuilder = (IssuerBuilder) registry.getBuilderFactory()
+                .getBuilder(Issuer.DEFAULT_ELEMENT_NAME);
+
+        Issuer issuer = issuerBuilder.buildObject();
+        issuer.setValue(relyingParty.getEntityId());
+        authnRequest.setIssuer(issuer);
+        // @TODO: correct retrieval of data?
+        authnRequest.setDestination(relyingParty.getAssertingPartyDetails().getSingleSignOnServiceLocation());
+        authnRequest.setAssertionConsumerServiceURL(relyingParty.getAssertionConsumerServiceLocation());
+
+        enhanceAuthenticationRequest(authnRequest, parameters);
+    }
+
     @SneakyThrows
     private void validateAuthorizationRequest(AuthorizationRequest authorizationRequest, OpenIDClient openIDClient) {
         ClientID clientID = authorizationRequest.getClientID();

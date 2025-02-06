@@ -423,16 +423,16 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             List<OpenIDClient> resourceServers = openIDClientRepository.findByClientIdIn(allowedResourceServers);
             grantedScopes.addAll(resourceServers.stream()
                     .flatMap(rs -> rs.getScopes().stream().map(oidc.model.Scope::getName))
-                    .collect(toList()));
+                    .toList());
         }
         grantedScopes.addAll(forFreeOpenIDScopes);
         //backward compatibility
-        grantedScopes.addAll(client.getScopes().stream().map(oidc.model.Scope::getName).collect(toList()));
+        grantedScopes.addAll(client.getScopes().stream().map(oidc.model.Scope::getName).toList());
         if (client.getGrants().contains("refresh_token")) {
             grantedScopes.add("offline_access");
         }
         if (!grantedScopes.containsAll(requestedScopes)) {
-            List<String> missingScopes = requestedScopes.stream().filter(s -> !grantedScopes.contains(s)).collect(toList());
+            List<String> missingScopes = requestedScopes.stream().filter(s -> !grantedScopes.contains(s)).toList();
             throw new InvalidScopeException(
                     String.format("Scope(s) %s are not allowed for %s. Allowed scopes: %s",
                             missingScopes, client.getClientId(), client.getScopes()));
