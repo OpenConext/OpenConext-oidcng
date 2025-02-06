@@ -225,7 +225,6 @@ public class SecurityConfiguration {
             return new Saml2X509Credential(privateKey, x509Certificate, Saml2X509Credential.Saml2X509CredentialType.SIGNING);
         }
 
-        @Autowired
         @Bean
         public OpenSaml4AuthenticationProvider configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
             //because Autowired this will end up in the global ProviderManager
