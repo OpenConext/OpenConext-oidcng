@@ -74,7 +74,7 @@ public class AuthorizationEndpointIntegrationTest extends AbstractIntegrationTes
         String location = response.getHeader("Location");
         assertEquals(302, response.getStatusCode());
         MultiValueMap<String, String> params = UriComponentsBuilder.fromHttpUrl(location).build().getQueryParams();
-        assertEquals(params.getFirst("error"), "invalid_request");
+        assertEquals("invalid_request", params.getFirst("error"));
 
         //'error_description' field MUST NOT include characters outside the set %09-0A (Tab and LF) / %x0D (CR) / %x20-21 / %x23-5B / %x5D-7E
         assertEquals("Missing+response_type+parameter", params.getFirst("error_description"));

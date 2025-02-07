@@ -1,14 +1,13 @@
 package oidc.exceptions;
 
-import lombok.Getter;
-
 public class WrappingException extends BaseException {
 
-    @Getter
-    private final Exception originalException;
-
-    public WrappingException(String errorMsg, Exception originalException) {
+    public WrappingException(String errorMsg) {
         super(errorMsg);
-        this.originalException = originalException;
+    }
+
+    @Override
+    public String getErrorCode() {
+        return "invalid_request";
     }
 }

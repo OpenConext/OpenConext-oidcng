@@ -31,7 +31,6 @@ import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
 import java.net.URI;
@@ -57,16 +56,14 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml4Authentica
     private final AuthenticationRequestRepository authenticationRequestRepository;
     private final XMLObjectProviderRegistry registry = ConfigurationService.get(XMLObjectProviderRegistry.class);
     private final RequestCache requestCache;
-    private final HandlerExceptionResolver handlerExceptionResolver;
 
     public AuthnRequestContextConsumer(OpenIDClientRepository openIDClientRepository,
                                        AuthenticationRequestRepository authenticationRequestRepository,
-                                       RequestCache requestCache, HandlerExceptionResolver handlerExceptionResolver) {
+                                       RequestCache requestCache) {
 
         this.openIDClientRepository = openIDClientRepository;
         this.authenticationRequestRepository = authenticationRequestRepository;
         this.requestCache = requestCache;
-        this.handlerExceptionResolver = handlerExceptionResolver;
     }
 
     @Override
@@ -123,12 +120,12 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml4Authentica
             try {
                 authorizationRequest = AuthorizationRequest.parse(parameters);
             } catch (ParseException e) {
-                throw new WrappingException(e.getMessage(), e);
+                throw new WrappingException(e.getMessage());
             }
 
             validateAuthorizationRequest(authorizationRequest, openIDClient);
         }
-
+        // @TODO: can we sip all of this, check runtime
 //        authnRequest.setID("ARQ" + UUID.randomUUID().toString().substring(1));
 //        authnRequest.setIssueInstant(Instant.now());
 //
@@ -147,8 +144,8 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml4Authentica
 
         try {
             enhanceAuthenticationRequest(authnRequest, parameters);
-        } catch (Exception e) {
-            throw new WrappingException(e.getMessage(), e);
+        } catch (ParseException e) {
+            throw new WrappingException(e.getMessage());
         }
     }
 
@@ -167,7 +164,7 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml4Authentica
     }
 
     private void enhanceAuthenticationRequest(AuthnRequest authnRequest,
-                                                      Map<String, List<String>> request) throws ParseException, BadJOSEException, CertificateException, IOException, java.text.ParseException, URISyntaxException, JOSEException {
+                                              Map<String, List<String>> request) throws ParseException {
         String clientId = param("client_id", request);
 
         String entityId = ServiceProviderTranslation.translateClientId(clientId);
@@ -198,6 +195,7 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml4Authentica
                         String.format("JWT request_uri mismatch for RP %s. Requested %s, configured %s",
                                 openIDClient.getClientId(), requestUrlP, openIDClient.getJwtRequestUri()));
             }
+            try {
                 com.nimbusds.openid.connect.sdk.AuthenticationRequest authRequest =
                         com.nimbusds.openid.connect.sdk.AuthenticationRequest.parse(request);
                 authRequest = JWTRequest.parse(authRequest, openIDClient);
@@ -211,6 +209,10 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml4Authentica
                 if (!authnRequest.isForceAuthn() && prompt != null) {
                     authnRequest.setForceAuthn(prompt.contains("login"));
                 }
+            } catch (CertificateException | JOSEException | IOException | BadJOSEException |
+                     java.text.ParseException | URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
         }
         String loginHint = param("login_hint", request);
         if (StringUtils.hasText(loginHint)) {

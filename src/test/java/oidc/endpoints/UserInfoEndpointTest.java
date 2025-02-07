@@ -129,7 +129,7 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
     private void assertResponse(Response response) {
         Map<String, Object> result = response.as(mapTypeRef);
         assertEquals("john.doe@example.org", result.get("email"));
-        assertTrue( result.containsKey("sub"));
+        assertTrue(result.containsKey("sub"));
         assertTrue(result.containsKey("acr"));
     }
 }

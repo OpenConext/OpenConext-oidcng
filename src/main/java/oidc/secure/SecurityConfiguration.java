@@ -155,16 +155,14 @@ public class SecurityConfiguration {
             return new ConcurrentSavedRequestAwareAuthenticationSuccessHandler(authenticationRequestRepository);
         }
 
-        // TODO: authnRequestConverter is not being used, should be configured differently in Spring Boot 3 and Spring Security 6
         @Bean
         public Saml2AuthenticationRequestResolver authenticationRequestResolver(
-                HandlerExceptionResolver handlerExceptionResolver,
                 RelyingPartyRegistrationRepository relyingPartyRegistrationRepository) {
 
             OpenSaml4AuthenticationRequestResolver resolver =
                     new OpenSaml4AuthenticationRequestResolver(relyingPartyRegistrationRepository);
             AuthnRequestContextConsumer contextConsumer = new AuthnRequestContextConsumer(
-                    openIDClientRepository, authenticationRequestRepository, new HttpSessionRequestCache(), handlerExceptionResolver);
+                    openIDClientRepository, authenticationRequestRepository, new HttpSessionRequestCache());
             resolver.setAuthnRequestCustomizer(contextConsumer);
             return resolver;
         }

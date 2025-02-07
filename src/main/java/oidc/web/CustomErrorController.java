@@ -21,12 +21,11 @@ import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -34,17 +33,17 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 import static oidc.saml.AuthnRequestContextConsumer.REDIRECT_URI_VALID;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
-@RestControllerAdvice
-public class CustomErrorController {
+@RestController
+public class CustomErrorController implements org.springframework.boot.web.servlet.error.ErrorController {
 
     private static final Log LOG = LogFactory.getLog(CustomErrorController.class);
     private final DefaultErrorAttributes errorAttributes;
@@ -63,13 +62,9 @@ public class CustomErrorController {
         this.errorAttributes = new DefaultErrorAttributes();
     }
 
-    @ExceptionHandler({Exception.class})
-    public Object handleError(Exception ex, HttpServletRequest request) {
-        return handleError(request);
-    }
-
     @SneakyThrows
-    private Object handleError(HttpServletRequest request) {
+    @RequestMapping("${server.error.path:${error.path:/error}}")
+    public Object error(HttpServletRequest request) {
         ServletWebRequest webRequest = new ServletWebRequest(request);
 
         Map<String, Object> result = errorAttributes.getErrorAttributes(webRequest, ErrorAttributeOptions.defaults());
@@ -82,13 +77,7 @@ public class CustomErrorController {
             error = error.getCause();
         }
         boolean status = result.containsKey("status") && !result.get("status").equals(999) && !result.get("status").equals(500);
-        HttpStatus statusCode;
-        if (error instanceof NoResourceFoundException) {
-            statusCode = HttpStatus.NOT_FOUND;
-        } else {
-            statusCode = status ? HttpStatus.resolve((Integer) result.get("status")) : BAD_REQUEST;
-        }
-
+        HttpStatus statusCode = status ? HttpStatus.resolve((Integer) result.get("status")) : BAD_REQUEST;
         if (error != null) {
             String message = error.getMessage();
             // Not be considered an error that we want to report
@@ -145,15 +134,12 @@ public class CustomErrorController {
 
         if (redirectUriValid != null && (boolean) redirectUriValid &&
                 (statusCode.is3xxRedirection() || redirect || StringUtils.hasText(redirectUri))) {
-            return redirectErrorResponse(parameterMap, result, error, redirectUri, statusCode);
+            return redirectErrorResponse(parameterMap, result, error, redirectUri);
         }
         return new ResponseEntity<>(result, statusCode);
     }
 
     private String errorCode(Throwable error) {
-        if (error instanceof WrappingException) {
-            error = ((WrappingException) error).getOriginalException();
-        }
         if (error == null) {
             return "unknown_exception";
         }
@@ -171,15 +157,11 @@ public class CustomErrorController {
 
     private String errorMessage(Throwable error) throws UnsupportedEncodingException {
         String errorMsg = error != null ? error.getMessage() : "Unknown exception occurred";
-        return URLEncoder.encode(errorMsg.replaceAll("\"", ""), StandardCharsets.UTF_8);
+        return URLEncoder.encode(errorMsg.replaceAll("\"", ""), "UTF-8");
     }
 
-    private Object redirectErrorResponse(Map<String, String[]> parameterMap,
-                                         Map<String, Object> result,
-                                         Throwable error,
-                                         String redirectUri,
-                                         HttpStatus statusCode) throws UnsupportedEncodingException {
-        String url = URLDecoder.decode(redirectUri, StandardCharsets.UTF_8);
+    private Object redirectErrorResponse(Map<String, String[]> parameterMap, Map<String, Object> result, Throwable error, String redirectUri) throws UnsupportedEncodingException {
+        String url = URLDecoder.decode(redirectUri, "UTF-8");
 
         String responseType = defaultValue(parameterMap, "response_type", "code");
         String responseMode = defaultValue(parameterMap, "response_mode", "code".equals(responseType) ? "query" : "fragment");
@@ -219,7 +201,7 @@ public class CustomErrorController {
                 }
                 LOG.debug("Post form to " + url);
 
-                return new ModelAndView("form_post", body, statusCode);
+                return new ModelAndView("form_post", body);
             }
             default://nope
         }

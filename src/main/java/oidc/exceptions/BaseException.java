@@ -6,6 +6,11 @@ public class BaseException extends RuntimeException {
         super(errorMsg);
     }
 
+    public BaseException(String errorMsg, Throwable cause) {
+
+        super(errorMsg, cause);
+    }
+
     public String getErrorCode() {
         return getMessage();
     }

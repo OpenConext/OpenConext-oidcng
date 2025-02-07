@@ -144,8 +144,7 @@ public class AuthnRequestConverter implements
         Issuer issuer = issuerBuilder.buildObject();
         issuer.setValue(relyingParty.getEntityId());
         authnRequest.setIssuer(issuer);
-        // @TODO: correct retrieval of data?
-        authnRequest.setDestination(context.getRelyingPartyRegistration().getAssertingPartyDetails().getSingleSignOnServiceLocation());
+        authnRequest.setDestination(context.getRelyingPartyRegistration().getAssertingPartyMetadata().getSingleSignOnServiceLocation());
         authnRequest.setAssertionConsumerServiceURL(context.getRelyingPartyRegistration().getAssertionConsumerServiceLocation());
 
         saveAuthenticationRequestUrl(savedRequest, authnRequest, new ClientID(clientId));
@@ -215,8 +214,7 @@ public class AuthnRequestConverter implements
         Issuer issuer = issuerBuilder.buildObject();
         issuer.setValue(relyingParty.getEntityId());
         authnRequest.setIssuer(issuer);
-        // @TODO: correct retrieval of data?
-        authnRequest.setDestination(relyingParty.getAssertingPartyDetails().getSingleSignOnServiceLocation());
+        authnRequest.setDestination(relyingParty.getAssertingPartyMetadata().getSingleSignOnServiceLocation());
         authnRequest.setAssertionConsumerServiceURL(relyingParty.getAssertionConsumerServiceLocation());
 
         enhanceAuthenticationRequest(authnRequest, parameters);

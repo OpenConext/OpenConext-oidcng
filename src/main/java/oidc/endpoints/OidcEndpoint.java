@@ -2,6 +2,7 @@ package oidc.endpoints;
 
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
+import com.nimbusds.openid.connect.sdk.ClaimsRequest;
 import com.nimbusds.openid.connect.sdk.OIDCClaimsRequest;
 import com.nimbusds.openid.connect.sdk.claims.ClaimsSetRequest;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,6 +15,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public interface OidcEndpoint {
 
@@ -29,13 +31,12 @@ public interface OidcEndpoint {
         List<String> idTokenClaims = new ArrayList<>();
         if (isOpenIDRequest(authorizationRequest)) {
             AuthenticationRequest authenticationRequest = (AuthenticationRequest) authorizationRequest;
-            OIDCClaimsRequest oidcClaims = authenticationRequest.getOIDCClaims();
-            if (oidcClaims != null) {
-                List<String> claims = oidcClaims.getIDTokenVerifiedClaimsRequests().stream()
-                        .flatMap(verifiedClaimsSetRequest -> verifiedClaimsSetRequest.getEntries().stream()
-                                .map(ClaimsSetRequest.Entry::getClaimName))
-                        .toList();
-                idTokenClaims.addAll(claims);
+            ClaimsRequest claimsRequest = authenticationRequest.getClaims();
+            if (claimsRequest != null) {
+                idTokenClaims.addAll(
+                        claimsRequest.getIDTokenClaims().stream()
+                                .map(ClaimsRequest.Entry::getClaimName)
+                                .toList());
             }
         }
         return idTokenClaims;

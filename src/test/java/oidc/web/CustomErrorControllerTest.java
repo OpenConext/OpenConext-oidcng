@@ -3,6 +3,7 @@ package oidc.web;
 import oidc.exceptions.CookiesNotSupportedException;
 import oidc.exceptions.InvalidScopeException;
 import oidc.model.AuthenticationRequest;
+import oidc.saml.AuthnRequestConverter;
 import oidc.saml.ContextSaml2AuthenticationException;
 import org.junit.Test;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +21,7 @@ import static org.junit.Assert.assertEquals;
 
 public class CustomErrorControllerTest {
 
-    private CustomErrorController subject = new CustomErrorController();
+    private final CustomErrorController subject = new CustomErrorController();
 
     @Test
     @SuppressWarnings("unchecked")
@@ -42,7 +43,7 @@ public class CustomErrorControllerTest {
                 .requestAttr("jakarta.servlet.error.exception", exception)
                 .buildRequest(null);
         request.setAttribute(REDIRECT_URI_VALID, true);
-        ResponseEntity responseEntity = (ResponseEntity) subject.handleError(exception, request);
+        ResponseEntity responseEntity = (ResponseEntity) subject.error(request);
         assertEquals(302, responseEntity.getStatusCodeValue());
 
         String location = responseEntity.getHeaders().getLocation().toString();
@@ -61,7 +62,7 @@ public class CustomErrorControllerTest {
                 .get(new URI("http://localhost:8080/oidc/authorize?response_type=code&client_id=http@//mock-sp&scope=openid&redirect_uri=http://localhost:8080"))
                 .requestAttr("jakarta.servlet.error.exception", exception)
                 .buildRequest(null);
-        return subject.handleError(exception, request);
+        return subject.error(request);
     }
 
 }
