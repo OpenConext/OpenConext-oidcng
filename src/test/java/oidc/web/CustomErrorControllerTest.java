@@ -27,7 +27,7 @@ public class CustomErrorControllerTest {
     public void error() throws URISyntaxException {
         ResponseEntity responseEntity = (ResponseEntity) doError(new InvalidScopeException("invalid_scope"));
 
-        assertEquals(401, responseEntity.getStatusCodeValue());
+        assertEquals(401, responseEntity.getStatusCode());
         Map<String, Object> body = (Map<String, Object>) responseEntity.getBody();
         assertEquals("invalid_scope", body.get("error"));
     }
@@ -43,7 +43,7 @@ public class CustomErrorControllerTest {
                 .buildRequest(null);
         request.setAttribute(REDIRECT_URI_VALID, true);
         ResponseEntity responseEntity = (ResponseEntity) subject.error(request);
-        assertEquals(302, responseEntity.getStatusCodeValue());
+        assertEquals(302, responseEntity.getStatusCode());
 
         String location = responseEntity.getHeaders().getLocation().toString();
         assertEquals("https://oidc-playground.test2.surfconext.nl/redirect?error=access_denied&error_description=Error+description", location);
