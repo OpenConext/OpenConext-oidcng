@@ -51,6 +51,10 @@ public class UserInfoEndpoint {
 
     private ResponseEntity<Map<String, Object>> userInfo(HttpServletRequest request) throws ParseException, IOException, java.text.ParseException {
         HTTPRequest httpRequest = JakartaServletUtils.createHTTPRequest(request);
+        if (request.getMethod().equalsIgnoreCase("GET")) {
+            //Otherwise the query parameters are not read by the nimbus parser
+            httpRequest.setEntityContentType(null);
+        }
         UserInfoRequest userInfoRequest = UserInfoRequest.parse(httpRequest);
 
         String accessTokenValue = userInfoRequest.getAccessToken().getValue();

@@ -2,6 +2,7 @@ package oidc.web;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.oauth2.sdk.ParseException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.SneakyThrows;
 import oidc.exceptions.*;
 import oidc.saml.ContextSaml2AuthenticationException;
@@ -20,13 +21,15 @@ import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -79,7 +82,13 @@ public class CustomErrorController {
             error = error.getCause();
         }
         boolean status = result.containsKey("status") && !result.get("status").equals(999) && !result.get("status").equals(500);
-        HttpStatus statusCode = status ? HttpStatus.resolve((Integer) result.get("status")) : BAD_REQUEST;
+        HttpStatus statusCode;
+        if (error instanceof NoResourceFoundException) {
+            statusCode = HttpStatus.NOT_FOUND;
+        } else {
+            statusCode = status ? HttpStatus.resolve((Integer) result.get("status")) : BAD_REQUEST;
+        }
+
         if (error != null) {
             String message = error.getMessage();
             // Not be considered an error that we want to report
@@ -136,7 +145,7 @@ public class CustomErrorController {
 
         if (redirectUriValid != null && (boolean) redirectUriValid &&
                 (statusCode.is3xxRedirection() || redirect || StringUtils.hasText(redirectUri))) {
-            return redirectErrorResponse(parameterMap, result, error, redirectUri);
+            return redirectErrorResponse(parameterMap, result, error, redirectUri, statusCode);
         }
         return new ResponseEntity<>(result, statusCode);
     }
@@ -162,7 +171,11 @@ public class CustomErrorController {
         return URLEncoder.encode(errorMsg.replaceAll("\"", ""), StandardCharsets.UTF_8);
     }
 
-    private Object redirectErrorResponse(Map<String, String[]> parameterMap, Map<String, Object> result, Throwable error, String redirectUri) throws UnsupportedEncodingException {
+    private Object redirectErrorResponse(Map<String, String[]> parameterMap,
+                                         Map<String, Object> result,
+                                         Throwable error,
+                                         String redirectUri,
+                                         HttpStatus statusCode) throws UnsupportedEncodingException {
         String url = URLDecoder.decode(redirectUri, StandardCharsets.UTF_8);
 
         String responseType = defaultValue(parameterMap, "response_type", "code");
@@ -203,7 +216,7 @@ public class CustomErrorController {
                 }
                 LOG.debug("Post form to " + url);
 
-                return new ModelAndView("form_post", body);
+                return new ModelAndView("form_post", body, statusCode);
             }
             default://nope
         }
