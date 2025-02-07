@@ -17,7 +17,7 @@ public interface AccessTokenRepository extends MongoRepository<AccessToken, Stri
 
     Long deleteByExpiresInBefore(Date expiryDate);
 
-    List<AccessToken>  findByAuthorizationCodeId(String authorizationCodeId);
+    List<AccessToken> findByAuthorizationCodeId(String authorizationCodeId);
 
     List<AccessToken> findByUnspecifiedUrnHash(String unspecifiedUrnHash);
 

@@ -89,10 +89,10 @@ public class AuthorizationEndpointIntegrationTest extends AbstractIntegrationTes
         Map<String, String> cookies = response.getCookies();
 
         String location = response.getHeader("Location");
-        assertTrue(location.contains("/saml2/authenticate/oidcng"));
+        assertTrue(location.contains("/saml2/authenticate?registrationId=oidcng"));
 
         //strip the url
-        String strippedLocation = location.substring(location.indexOf("saml2/authenticate/oidcng"));
+        String strippedLocation = location.substring(location.indexOf("saml2/authenticate?registrationId=oidcng"));
         response = given().redirects().follow(false)
                 .cookies(cookies)
                 .when()

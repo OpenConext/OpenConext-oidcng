@@ -48,7 +48,8 @@ public class ResponseAuthenticationConverter implements Converter<OpenSaml4Authe
                                            Resource oidcSamlMapping) throws IOException {
         this.userRepository = userRepository;
         this.authenticationRequestRepository = authenticationRequestRepository;
-        this.userAttributes = objectMapper.readValue(oidcSamlMapping.getInputStream(),new TypeReference<>() {});
+        this.userAttributes = objectMapper.readValue(oidcSamlMapping.getInputStream(), new TypeReference<>() {
+        });
         this.defaultResponseAuthenticationConverter = OpenSaml4AuthenticationProvider
                 .createDefaultResponseAuthenticationConverter();
     }

@@ -40,7 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static oidc.saml.AuthnRequestConverter.REDIRECT_URI_VALID;
+import static oidc.saml.AuthnRequestContextConsumer.REDIRECT_URI_VALID;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 @RestControllerAdvice
@@ -49,7 +49,7 @@ public class CustomErrorController {
     private static final Log LOG = LogFactory.getLog(CustomErrorController.class);
     private final DefaultErrorAttributes errorAttributes;
     private final RequestCache requestCache = new HttpSessionRequestCache();
-    private final List<Class> exceptionsToExclude = List.of(
+    private final List<Class<? extends Exception>> exceptionsToExclude = List.of(
             RedirectMismatchException.class,
             UnauthorizedException.class,
             CodeVerifierMissingException.class,
@@ -151,6 +151,9 @@ public class CustomErrorController {
     }
 
     private String errorCode(Throwable error) {
+        if (error instanceof WrappingException) {
+            error = ((WrappingException) error).getOriginalException();
+        }
         if (error == null) {
             return "unknown_exception";
         }

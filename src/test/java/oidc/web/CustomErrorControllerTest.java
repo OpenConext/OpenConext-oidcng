@@ -15,7 +15,7 @@ import java.net.URISyntaxException;
 import java.util.Date;
 import java.util.Map;
 
-import static oidc.saml.AuthnRequestConverter.REDIRECT_URI_VALID;
+import static oidc.saml.AuthnRequestContextConsumer.REDIRECT_URI_VALID;
 import static org.junit.Assert.assertEquals;
 
 public class CustomErrorControllerTest {

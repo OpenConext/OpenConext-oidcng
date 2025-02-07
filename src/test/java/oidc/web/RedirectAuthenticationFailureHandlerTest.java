@@ -21,7 +21,7 @@ import java.util.Optional;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static oidc.saml.AuthnRequestConverter.REDIRECT_URI_VALID;
+import static oidc.saml.AuthnRequestContextConsumer.REDIRECT_URI_VALID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -29,9 +29,9 @@ import static org.mockito.Mockito.when;
 
 class RedirectAuthenticationFailureHandlerTest {
 
-    private RequestCache requestCache = new HttpSessionRequestCache();
-    private OpenIDClientRepository openIDClientRepository = mock(OpenIDClientRepository.class);
-    private RedirectAuthenticationFailureHandler subject = new RedirectAuthenticationFailureHandler(openIDClientRepository);
+    private final RequestCache requestCache = new HttpSessionRequestCache();
+    private final OpenIDClientRepository openIDClientRepository = mock(OpenIDClientRepository.class);
+    private final RedirectAuthenticationFailureHandler subject = new RedirectAuthenticationFailureHandler(openIDClientRepository);
 
     @Test
     void onAuthenticationFailureSaml2AuthenticationException() {

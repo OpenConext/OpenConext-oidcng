@@ -1,10 +1,9 @@
 package oidc.saml;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationToken;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 @Getter
 public class CustomSaml2AuthenticationRequestContext extends Saml2AuthenticationToken {

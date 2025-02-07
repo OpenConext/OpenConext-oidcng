@@ -16,6 +16,7 @@ import com.nimbusds.oauth2.sdk.http.JakartaServletUtils;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
+import jakarta.servlet.http.HttpServletRequest;
 import oidc.crypto.KeyGenerator;
 import oidc.exceptions.*;
 import oidc.log.MDCContext;
@@ -35,7 +36,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.cert.CertificateException;
@@ -46,7 +46,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static oidc.endpoints.AuthorizationEndpoint.validateScopes;
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 @RestController
 public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
@@ -104,7 +103,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
             DeviceCodeGrant deviceCodeGrant = (DeviceCodeGrant) authorizationGrant;
             String value = deviceCodeGrant.getDeviceCode().getValue();
             return deviceAuthorizationRepository.findByDeviceCode(value)
-                    .map(deviceAuthorization ->  this.handleDeviceCodeFlow(deviceAuthorization, client))
+                    .map(deviceAuthorization -> this.handleDeviceCodeFlow(deviceAuthorization, client))
                     .orElseThrow(() -> new DeviceFlowException("expired_token"));
         }
 
@@ -403,7 +402,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
     private HttpHeaders getResponseHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.CACHE_CONTROL, "no-store");
-        headers.set(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON.getMimeType());
+        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         headers.set(HttpHeaders.PRAGMA, "no-cache");
         return headers;
     }

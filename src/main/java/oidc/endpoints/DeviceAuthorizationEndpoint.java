@@ -4,6 +4,8 @@ import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.device.DeviceAuthorizationRequest;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.JakartaServletUtils;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.UnknownClientException;
 import oidc.model.DeviceAuthorization;
@@ -31,8 +33,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.security.SecureRandom;
@@ -47,7 +47,7 @@ import static oidc.endpoints.AuthorizationEndpoint.validateScopes;
 
 @RestController
 @ConditionalOnExpression("${features.oidcng_device_flow:false}")
-public class DeviceAuthorizationEndpoint implements OidcEndpoint{
+public class DeviceAuthorizationEndpoint implements OidcEndpoint {
 
     private static final Log LOG = LogFactory.getLog(DeviceAuthorizationEndpoint.class);
 

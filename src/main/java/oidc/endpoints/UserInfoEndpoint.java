@@ -5,6 +5,7 @@ import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.JakartaServletUtils;
 import com.nimbusds.openid.connect.sdk.UserInfoRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import oidc.exceptions.InvalidGrantException;
 import oidc.log.MDCContext;
 import oidc.model.AccessToken;
@@ -19,14 +20,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.Clock;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
+import java.util.*;
 
 @RestController
 public class UserInfoEndpoint {

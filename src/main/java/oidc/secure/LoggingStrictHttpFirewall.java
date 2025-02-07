@@ -1,12 +1,11 @@
 package oidc.secure;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.security.web.firewall.FirewalledRequest;
 import org.springframework.security.web.firewall.RequestRejectedException;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 public class LoggingStrictHttpFirewall extends StrictHttpFirewall {
 

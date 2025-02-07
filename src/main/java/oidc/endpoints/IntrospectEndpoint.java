@@ -7,6 +7,7 @@ import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.JakartaServletUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import oidc.eduid.AttributePseudonymisation;
 import oidc.exceptions.UnauthorizedException;
 import oidc.exceptions.UnknownClientException;
@@ -26,14 +27,9 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.Clock;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
+import java.util.*;
 
 @RestController
 public class IntrospectEndpoint extends SecureEndpoint {

@@ -13,6 +13,7 @@ import org.junit.Test;
 import org.opensaml.core.xml.io.UnmarshallingException;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -26,8 +27,8 @@ import static org.mockito.Mockito.*;
 
 public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest implements SeedUtils {
 
-    private UserRepository userRepository = mock(UserRepository.class);
-    private AuthenticationRequestRepository authenticationRequestRepository = mock(AuthenticationRequestRepository.class);
+    private final UserRepository userRepository = mock(UserRepository.class);
+    private final AuthenticationRequestRepository authenticationRequestRepository = mock(AuthenticationRequestRepository.class);
 
     private ResponseAuthenticationConverter subject = new ResponseAuthenticationConverter(
             userRepository, authenticationRequestRepository, new ObjectMapper(), new ClassPathResource("oidc/saml_mapping.json")

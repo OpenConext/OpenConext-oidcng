@@ -4,7 +4,6 @@ import oidc.model.AccessToken;
 import oidc.model.RefreshToken;
 import oidc.model.SigningKey;
 import oidc.model.SymmetricKey;
-import oidc.repository.SequenceRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;

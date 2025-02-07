@@ -2,12 +2,13 @@ package oidc.endpoints;
 
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
-import com.nimbusds.openid.connect.sdk.ClaimsRequest;
+import com.nimbusds.openid.connect.sdk.OIDCClaimsRequest;
+import com.nimbusds.openid.connect.sdk.claims.ClaimsSetRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import oidc.model.OpenIDClient;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -28,12 +29,13 @@ public interface OidcEndpoint {
         List<String> idTokenClaims = new ArrayList<>();
         if (isOpenIDRequest(authorizationRequest)) {
             AuthenticationRequest authenticationRequest = (AuthenticationRequest) authorizationRequest;
-            ClaimsRequest claimsRequest = authenticationRequest.getClaims();
-            if (claimsRequest != null) {
-                idTokenClaims.addAll(
-                        claimsRequest.getIDTokenClaims().stream()
-                                .map(ClaimsRequest.Entry::getClaimName)
-                                .toList());
+            OIDCClaimsRequest oidcClaims = authenticationRequest.getOIDCClaims();
+            if (oidcClaims != null) {
+                List<String> claims = oidcClaims.getIDTokenVerifiedClaimsRequests().stream()
+                        .flatMap(verifiedClaimsSetRequest -> verifiedClaimsSetRequest.getEntries().stream()
+                                .map(ClaimsSetRequest.Entry::getClaimName))
+                        .toList();
+                idTokenClaims.addAll(claims);
             }
         }
         return idTokenClaims;
@@ -52,6 +54,7 @@ public interface OidcEndpoint {
         LocalDateTime ldt = LocalDateTime.now().plusSeconds(validity);
         return Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
     }
+
     default void logout(HttpServletRequest request) {
         SecurityContextHolder.getContext().setAuthentication(null);
         SecurityContextHolder.clearContext();

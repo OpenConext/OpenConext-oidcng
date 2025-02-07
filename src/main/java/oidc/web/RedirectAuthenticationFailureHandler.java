@@ -1,9 +1,12 @@
 package oidc.web;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.SneakyThrows;
 import oidc.endpoints.AuthorizationEndpoint;
 import oidc.exceptions.UnknownClientException;
-import oidc.model.AuthenticationRequest;
 import oidc.model.OpenIDClient;
 import oidc.repository.OpenIDClientRepository;
 import oidc.saml.ContextSaml2AuthenticationException;
@@ -17,10 +20,6 @@ import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.util.CollectionUtils;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
@@ -28,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static oidc.saml.AuthnRequestConverter.REDIRECT_URI_VALID;
+import static oidc.saml.AuthnRequestContextConsumer.REDIRECT_URI_VALID;
 
 public class RedirectAuthenticationFailureHandler implements AuthenticationFailureHandler {
 

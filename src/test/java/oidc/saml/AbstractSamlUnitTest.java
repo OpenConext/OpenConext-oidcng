@@ -49,7 +49,7 @@ public abstract class AbstractSamlUnitTest {
                 .entityId("entityID")
                 .signingX509Credentials(c -> c.add(saml2X509Credential))
                 .assertionConsumerServiceLocation("https://acs")
-                .assertingPartyDetails(builder -> builder
+                .assertingPartyMetadata(builder -> builder
                         .entityId("entityID")
                         .wantAuthnRequestsSigned(false)
                         .singleSignOnServiceLocation("https://sso").build())
@@ -103,7 +103,6 @@ public abstract class AbstractSamlUnitTest {
     public String readFile(String fileName) {
         return IOUtils.toString(new ClassPathResource(fileName).getInputStream(), Charset.defaultCharset());
     }
-
 
 
 }

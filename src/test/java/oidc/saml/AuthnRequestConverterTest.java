@@ -42,17 +42,17 @@ public class AuthnRequestConverterTest extends AbstractIntegrationTest {
         Map<String, String> cookies = response.getCookies();
 
         String location = response.getHeader("Location");
-        assertTrue(location.endsWith("/saml2/authenticate/oidcng"));
+        assertTrue(location.endsWith("/saml2/authenticate?registrationId=oidcng"));
 
         response = given().redirects().follow(false)
                 .cookies(cookies)
                 .when()
-                .get("saml2/authenticate/oidcng");
+                .get("saml2/authenticate?registrationId=oidcng");
 
         String ebLocation = response.getHeader("Location");
         assertTrue(ebLocation.startsWith("https://engine"));
 
-        MultiValueMap<String, String> params = UriComponentsBuilder.fromHttpUrl(ebLocation).build().getQueryParams();
+        MultiValueMap<String, String> params = UriComponentsBuilder.fromUriString(ebLocation).build().getQueryParams();
         Arrays.asList("SAMLRequest", "SigAlg", "Signature").forEach(param -> assertTrue(params.containsKey(param)));
     }
 

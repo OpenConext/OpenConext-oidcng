@@ -1,18 +1,8 @@
 package oidc.secure;
 
 
-import oidc.model.AccessToken;
-import oidc.model.AuthenticationRequest;
-import oidc.model.AuthorizationCode;
-import oidc.model.RefreshToken;
-import oidc.model.User;
-import oidc.model.UserConsent;
-import oidc.repository.AccessTokenRepository;
-import oidc.repository.AuthenticationRequestRepository;
-import oidc.repository.AuthorizationCodeRepository;
-import oidc.repository.RefreshTokenRepository;
-import oidc.repository.UserConsentRepository;
-import oidc.repository.UserRepository;
+import oidc.model.*;
+import oidc.repository.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;

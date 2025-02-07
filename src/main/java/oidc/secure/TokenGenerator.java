@@ -344,14 +344,14 @@ public class TokenGenerator implements MapTypeReference, ApplicationListener<App
         }
         if (AccessTokenHash.isRequiredInIDTokenClaims(responseType)) {
             additionalClaims.put("at_hash",
-                    AccessTokenHash.compute(new BearerAccessToken(accessToken), signingAlg).getValue());
+                    AccessTokenHash.compute(new BearerAccessToken(accessToken), signingAlg, null).getValue());
         }
         if (CodeHash.isRequiredInIDTokenClaims(responseType) && authorizationCode.isPresent()) {
             additionalClaims.put("c_hash",
-                    CodeHash.compute(new com.nimbusds.oauth2.sdk.AuthorizationCode(authorizationCode.get()), signingAlg));
+                    CodeHash.compute(new com.nimbusds.oauth2.sdk.AuthorizationCode(authorizationCode.get()), signingAlg, null));
         }
         if (state != null && StringUtils.hasText(state.getValue())) {
-            additionalClaims.put("s_hash", StateHash.compute(state, signingAlg));
+            additionalClaims.put("s_hash", StateHash.compute(state, signingAlg, null));
         }
         String currentSigningKeyId = ensureLatestSigningKey();
         return idToken(client, Optional.of(user), additionalClaims, claims, false,

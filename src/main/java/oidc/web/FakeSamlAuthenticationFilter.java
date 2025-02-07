@@ -1,6 +1,11 @@
 package oidc.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import oidc.model.User;
 import oidc.repository.UserRepository;
 import oidc.user.OidcSamlAuthentication;
@@ -19,17 +24,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.GenericFilterBean;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 
-import static oidc.saml.AuthnRequestConverter.REDIRECT_URI_VALID;
+import static oidc.saml.AuthnRequestContextConsumer.REDIRECT_URI_VALID;
 
 public class FakeSamlAuthenticationFilter extends GenericFilterBean {
 
