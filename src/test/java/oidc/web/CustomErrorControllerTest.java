@@ -3,7 +3,6 @@ package oidc.web;
 import oidc.exceptions.CookiesNotSupportedException;
 import oidc.exceptions.InvalidScopeException;
 import oidc.model.AuthenticationRequest;
-import oidc.saml.AuthnRequestConverter;
 import oidc.saml.ContextSaml2AuthenticationException;
 import org.junit.Test;
 import org.springframework.http.ResponseEntity;

@@ -10,8 +10,12 @@ import oidc.repository.OpenIDClientRepository;
 import oidc.secure.SignedJWTTest;
 import org.junit.Before;
 import org.junit.Test;
+import org.opensaml.core.config.ConfigurationService;
+import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
 import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.impl.AuthnRequestBuilder;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.security.saml2.provider.service.web.authentication.OpenSaml4AuthenticationRequestResolver;
 import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 import org.springframework.security.web.savedrequest.RequestCache;
 
@@ -27,17 +31,18 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class AuthnRequestConverterUnitTest extends AbstractSamlUnitTest implements SignedJWTTest {
+public class AuthnRequestContextConsumerUnitTest extends AbstractSamlUnitTest implements SignedJWTTest {
 
     private final OpenIDClientRepository openIDClientRepository = mock(OpenIDClientRepository.class);
     private final AuthenticationRequestRepository authenticationRequestRepository = mock(AuthenticationRequestRepository.class);
     private final RequestCache requestCache = mock(RequestCache.class);
+    private final XMLObjectProviderRegistry registry = ConfigurationService.get(XMLObjectProviderRegistry.class);
 
-    private AuthnRequestConverter subject;
+    private AuthnRequestContextConsumer subject;
 
     @Before
-    public void beforeTest() throws Exception {
-        subject = new AuthnRequestConverter(openIDClientRepository, authenticationRequestRepository, requestCache);
+    public void beforeTest() {
+        subject = new AuthnRequestContextConsumer(openIDClientRepository, authenticationRequestRepository, requestCache);
     }
 
     @Test
@@ -58,21 +63,30 @@ public class AuthnRequestConverterUnitTest extends AbstractSamlUnitTest implemen
         SignedJWT signedJWT = signedJWT(openIDClient.getClientId(), keyID, openIDClient.getRedirectUrls().get(0));
         request.addParameter("request", signedJWT.serialize());
 
-        HttpServletRequest servletRequest = new MockHttpServletRequest();
-        CustomSaml2AuthenticationRequestContext ctx = new CustomSaml2AuthenticationRequestContext(relyingParty, servletRequest);
-
         when(requestCache.getRequest(any(HttpServletRequest.class), any()))
                 .thenReturn(new DefaultSavedRequest(request, portResolver));
 
-        AuthnRequest authnRequest = subject.convert(ctx);
+        AuthnRequest authnRequest = getAuthnRequest();
+
+        OpenSaml4AuthenticationRequestResolver.AuthnRequestContext ctx =
+                new OpenSaml4AuthenticationRequestResolver.AuthnRequestContext(request,relyingParty,authnRequest);
+
+        subject.accept(ctx);
 
         assertTrue(authnRequest.isForceAuthn());
         assertEquals("loa1", authnRequest.getRequestedAuthnContext().getAuthnContextClassRefs().get(0).getURI());
         assertEquals("http://idp", authnRequest.getScoping().getIDPList().getIDPEntrys().get(0).getProviderID());
     }
 
+    private AuthnRequest getAuthnRequest() {
+        AuthnRequestBuilder authnRequestBuilder = (AuthnRequestBuilder) registry.getBuilderFactory()
+                .getBuilder(AuthnRequest.DEFAULT_ELEMENT_NAME);
+        AuthnRequest authnRequest = authnRequestBuilder.buildObject();
+        return authnRequest;
+    }
+
     @Test
-    public void testJWTRequestURIMismatch() throws Exception {
+    public void testJWTRequestURIMismatch() {
         OpenIDClient openIDClient = new OpenIDClient(Map.of(
                 "type", OAUTH_RS.getType(),
                 "data", Map.of("entityid", "mock_sp",
@@ -87,11 +101,15 @@ public class AuthnRequestConverterUnitTest extends AbstractSamlUnitTest implemen
         request.addParameter("request_uri", "http://invalid_url");
 
         HttpServletRequest servletRequest = new MockHttpServletRequest();
-        CustomSaml2AuthenticationRequestContext ctx = new CustomSaml2AuthenticationRequestContext(relyingParty, servletRequest);
 
         when(requestCache.getRequest(any(HttpServletRequest.class), any()))
                 .thenReturn(new DefaultSavedRequest(request, portResolver));
-        assertThrows(JWTRequestURIMismatchException.class, () -> subject.convert(ctx));
+        AuthnRequest authnRequest = getAuthnRequest();
+
+        OpenSaml4AuthenticationRequestResolver.AuthnRequestContext ctx =
+                new OpenSaml4AuthenticationRequestResolver.AuthnRequestContext(request,relyingParty,authnRequest);
+
+        assertThrows(JWTRequestURIMismatchException.class, () -> subject.accept(ctx));
     }
 
     @Test
@@ -105,21 +123,28 @@ public class AuthnRequestConverterUnitTest extends AbstractSamlUnitTest implemen
         request.addParameter("response_type", "code");
         request.addParameter("client_id", "mock_sp");
 
-        HttpServletRequest servletRequest = new MockHttpServletRequest();
-        CustomSaml2AuthenticationRequestContext ctx = new CustomSaml2AuthenticationRequestContext(relyingParty, servletRequest);
-
         when(requestCache.getRequest(any(HttpServletRequest.class), any()))
                 .thenReturn(new DefaultSavedRequest(request, portResolver));
 
-        AuthnRequest authnRequest = subject.convert(ctx);
+        AuthnRequest authnRequest = getAuthnRequest();
+
+        OpenSaml4AuthenticationRequestResolver.AuthnRequestContext ctx =
+                new OpenSaml4AuthenticationRequestResolver.AuthnRequestContext(request,relyingParty,authnRequest);
+
+        subject.accept(ctx);
+
         assertTrue(authnRequest.isForceAuthn());
     }
 
     @Test(expected = CookiesNotSupportedException.class)
     public void noCookies() {
-        HttpServletRequest servletRequest = new MockHttpServletRequest();
-        CustomSaml2AuthenticationRequestContext ctx = new CustomSaml2AuthenticationRequestContext(relyingParty, servletRequest);
-        subject.convert(ctx);
+        HttpServletRequest request = new MockHttpServletRequest();
+        AuthnRequest authnRequest = getAuthnRequest();
+
+        OpenSaml4AuthenticationRequestResolver.AuthnRequestContext ctx =
+                new OpenSaml4AuthenticationRequestResolver.AuthnRequestContext(request,relyingParty,authnRequest);
+
+        subject.accept(ctx);
     }
 
 }

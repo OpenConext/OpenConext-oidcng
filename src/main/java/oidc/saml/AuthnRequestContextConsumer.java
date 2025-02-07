@@ -25,7 +25,6 @@ import org.opensaml.core.config.ConfigurationService;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
 import org.opensaml.saml.saml2.core.*;
 import org.opensaml.saml.saml2.core.impl.*;
-import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.web.authentication.OpenSaml4AuthenticationRequestResolver;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
@@ -69,8 +68,6 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml4Authentica
     @Override
     public void accept(OpenSaml4AuthenticationRequestResolver.AuthnRequestContext authnRequestContext) {
         AuthnRequest authnRequest = authnRequestContext.getAuthnRequest();
-        RelyingPartyRegistration relyingParty = authnRequestContext.getRelyingPartyRegistration();
-
         HttpServletRequest request = authnRequestContext.getRequest();
 
         HttpSession session = request.getSession(false);
@@ -125,21 +122,8 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml4Authentica
 
             validateAuthorizationRequest(authorizationRequest, openIDClient);
         }
-        // @TODO: can we sip all of this, check runtime
-//        authnRequest.setID("ARQ" + UUID.randomUUID().toString().substring(1));
-//        authnRequest.setIssueInstant(Instant.now());
-//
-//        authnRequest.setProtocolBinding(POST.getUrn());
-//
-//        IssuerBuilder issuerBuilder = (IssuerBuilder) registry.getBuilderFactory()
-//                .getBuilder(Issuer.DEFAULT_ELEMENT_NAME);
-//
-//        Issuer issuer = issuerBuilder.buildObject();
-//        issuer.setValue(relyingParty.getEntityId());
-//        authnRequest.setIssuer(issuer);
-//        // @TODO: correct retrieval of data?
-//        authnRequest.setDestination(relyingParty.getAssertingPartyDetails().getSingleSignOnServiceLocation());
-//        authnRequest.setAssertionConsumerServiceURL(relyingParty.getAssertionConsumerServiceLocation());
+
+        authnRequest.setID("ARQ" + UUID.randomUUID().toString().substring(1));
         saveAuthenticationRequestUrl(savedRequest, authnRequest, new ClientID(clientId));
 
         try {
