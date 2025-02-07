@@ -148,7 +148,7 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml4Authentica
         try {
             enhanceAuthenticationRequest(authnRequest, parameters);
         } catch (Exception e) {
-
+            throw new WrappingException(e.getMessage(), e);
         }
     }
 
