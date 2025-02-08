@@ -1,6 +1,7 @@
 package oidc.saml;
 
 import com.nimbusds.jwt.SignedJWT;
+import jakarta.servlet.http.HttpServletRequest;
 import oidc.exceptions.CookiesNotSupportedException;
 import oidc.exceptions.JWTRequestURIMismatchException;
 import oidc.model.OpenIDClient;
@@ -15,11 +16,10 @@ import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
 import org.opensaml.saml.saml2.core.AuthnRequest;
 import org.opensaml.saml.saml2.core.impl.AuthnRequestBuilder;
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.security.saml2.provider.service.web.authentication.OpenSaml4AuthenticationRequestResolver;
+import org.springframework.security.saml2.provider.service.web.authentication.OpenSaml5AuthenticationRequestResolver;
 import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 import org.springframework.security.web.savedrequest.RequestCache;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -68,8 +68,8 @@ public class AuthnRequestContextConsumerUnitTest extends AbstractSamlUnitTest im
 
         AuthnRequest authnRequest = getAuthnRequest();
 
-        OpenSaml4AuthenticationRequestResolver.AuthnRequestContext ctx =
-                new OpenSaml4AuthenticationRequestResolver.AuthnRequestContext(request,relyingParty,authnRequest);
+        OpenSaml5AuthenticationRequestResolver.AuthnRequestContext ctx =
+                new OpenSaml5AuthenticationRequestResolver.AuthnRequestContext(request, relyingParty, authnRequest);
 
         subject.accept(ctx);
 
@@ -106,8 +106,8 @@ public class AuthnRequestContextConsumerUnitTest extends AbstractSamlUnitTest im
                 .thenReturn(new DefaultSavedRequest(request, portResolver));
         AuthnRequest authnRequest = getAuthnRequest();
 
-        OpenSaml4AuthenticationRequestResolver.AuthnRequestContext ctx =
-                new OpenSaml4AuthenticationRequestResolver.AuthnRequestContext(request,relyingParty,authnRequest);
+        OpenSaml5AuthenticationRequestResolver.AuthnRequestContext ctx =
+                new OpenSaml5AuthenticationRequestResolver.AuthnRequestContext(request, relyingParty, authnRequest);
 
         assertThrows(JWTRequestURIMismatchException.class, () -> subject.accept(ctx));
     }
@@ -128,8 +128,8 @@ public class AuthnRequestContextConsumerUnitTest extends AbstractSamlUnitTest im
 
         AuthnRequest authnRequest = getAuthnRequest();
 
-        OpenSaml4AuthenticationRequestResolver.AuthnRequestContext ctx =
-                new OpenSaml4AuthenticationRequestResolver.AuthnRequestContext(request,relyingParty,authnRequest);
+        OpenSaml5AuthenticationRequestResolver.AuthnRequestContext ctx =
+                new OpenSaml5AuthenticationRequestResolver.AuthnRequestContext(request, relyingParty, authnRequest);
 
         subject.accept(ctx);
 
@@ -141,8 +141,8 @@ public class AuthnRequestContextConsumerUnitTest extends AbstractSamlUnitTest im
         HttpServletRequest request = new MockHttpServletRequest();
         AuthnRequest authnRequest = getAuthnRequest();
 
-        OpenSaml4AuthenticationRequestResolver.AuthnRequestContext ctx =
-                new OpenSaml4AuthenticationRequestResolver.AuthnRequestContext(request,relyingParty,authnRequest);
+        OpenSaml5AuthenticationRequestResolver.AuthnRequestContext ctx =
+                new OpenSaml5AuthenticationRequestResolver.AuthnRequestContext(request, relyingParty, authnRequest);
 
         subject.accept(ctx);
     }

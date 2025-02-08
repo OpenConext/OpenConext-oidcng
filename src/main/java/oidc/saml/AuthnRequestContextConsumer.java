@@ -25,7 +25,7 @@ import org.opensaml.core.config.ConfigurationService;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
 import org.opensaml.saml.saml2.core.*;
 import org.opensaml.saml.saml2.core.impl.*;
-import org.springframework.security.saml2.provider.service.web.authentication.OpenSaml4AuthenticationRequestResolver;
+import org.springframework.security.saml2.provider.service.web.authentication.OpenSaml5AuthenticationRequestResolver;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.util.CollectionUtils;
@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
-public class AuthnRequestContextConsumer implements Consumer<OpenSaml4AuthenticationRequestResolver.AuthnRequestContext> {
+public class AuthnRequestContextConsumer implements Consumer<OpenSaml5AuthenticationRequestResolver.AuthnRequestContext> {
 
     public final static String REDIRECT_URI_VALID = "REDIRECT_URI_VALID";
 
@@ -66,7 +66,7 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml4Authentica
     }
 
     @Override
-    public void accept(OpenSaml4AuthenticationRequestResolver.AuthnRequestContext authnRequestContext) {
+    public void accept(OpenSaml5AuthenticationRequestResolver.AuthnRequestContext authnRequestContext) {
         AuthnRequest authnRequest = authnRequestContext.getAuthnRequest();
         HttpServletRequest request = authnRequestContext.getRequest();
 

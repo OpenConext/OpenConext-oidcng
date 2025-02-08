@@ -3,8 +3,6 @@ package oidc.endpoints;
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.ClaimsRequest;
-import com.nimbusds.openid.connect.sdk.OIDCClaimsRequest;
-import com.nimbusds.openid.connect.sdk.claims.ClaimsSetRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import oidc.model.OpenIDClient;
@@ -15,7 +13,6 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public interface OidcEndpoint {
 

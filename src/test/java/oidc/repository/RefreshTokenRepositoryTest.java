@@ -2,12 +2,9 @@ package oidc.repository;
 
 import oidc.AbstractIntegrationTest;
 import oidc.SeedUtils;
-import oidc.model.AccessToken;
 import oidc.model.RefreshToken;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;

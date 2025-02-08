@@ -446,7 +446,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
 
     @Test
     public void codeChallengeFlowStateBugWithoutDecoding() throws IOException {
-        String state =  URLEncoder.encode("{\"returnUrl\":\"\"}", Charset.defaultCharset());
+        String state = URLEncoder.encode("{\"returnUrl\":\"\"}", Charset.defaultCharset());
         Response response = doAuthorizeWithClaimsAndScopes(
                 "student.mobility.rp.localhost",
                 "id_token token",

@@ -9,25 +9,25 @@ import org.opensaml.saml.saml2.core.Status;
 import org.opensaml.saml.saml2.core.StatusMessage;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.saml2.core.Saml2ResponseValidatorResult;
-import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml5AuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationException;
 import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 
-public class ResponseAuthenticationValidator implements Converter<OpenSaml4AuthenticationProvider.ResponseToken, Saml2ResponseValidatorResult> {
+public class ResponseAuthenticationValidator implements Converter<OpenSaml5AuthenticationProvider.ResponseToken, Saml2ResponseValidatorResult> {
 
     private static final Log LOG = LogFactory.getLog(ResponseAuthenticationValidator.class);
 
     private final AuthenticationRequestRepository authenticationRequestRepository;
-    private final Converter<OpenSaml4AuthenticationProvider.ResponseToken, Saml2ResponseValidatorResult> defaultResponseValidator;
+    private final Converter<OpenSaml5AuthenticationProvider.ResponseToken, Saml2ResponseValidatorResult> defaultResponseValidator;
 
     public ResponseAuthenticationValidator(AuthenticationRequestRepository authenticationRequestRepository) {
         this.authenticationRequestRepository = authenticationRequestRepository;
         this.defaultResponseValidator =
-                OpenSaml4AuthenticationProvider.createDefaultResponseValidator();
+                OpenSaml5AuthenticationProvider.createDefaultResponseValidator();
     }
 
     @Override
-    public Saml2ResponseValidatorResult convert(OpenSaml4AuthenticationProvider.ResponseToken responseToken) {
+    public Saml2ResponseValidatorResult convert(OpenSaml5AuthenticationProvider.ResponseToken responseToken) {
         if (LOG.isDebugEnabled()) {
             LOG.debug(String.format("Validating responseToken %s, %s, %s",
                     responseToken.getResponse().getInResponseTo(),
@@ -50,7 +50,7 @@ public class ResponseAuthenticationValidator implements Converter<OpenSaml4Authe
         }
     }
 
-    private Saml2ResponseValidatorResult returnInvalidResult(OpenSaml4AuthenticationProvider.ResponseToken responseToken) {
+    private Saml2ResponseValidatorResult returnInvalidResult(OpenSaml5AuthenticationProvider.ResponseToken responseToken) {
         Response response = responseToken.getResponse();
         String inResponseTo = response.getInResponseTo();
         AuthenticationRequest authenticationRequest =

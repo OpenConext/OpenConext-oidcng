@@ -74,7 +74,7 @@ public class AuthnRequestContextConsumerTest extends AbstractIntegrationTest {
         assertEquals("https://engine.test2.surfconext.nl/authentication/idp/single-sign-on", map.get("Destination"));
         assertEquals("https://org.openconext.local.oidc.ng", map.get("Issuer"));
         assertFalse(Boolean.parseBoolean((String) map.get("ForceAuthn")));
-        assertTrue(((String)map.get("ID")).startsWith("ARQ"));
+        assertTrue(((String) map.get("ID")).startsWith("ARQ"));
 
         Map<String, Object> scoping = (Map<String, Object>) map.get("Scoping");
         assertEquals(scoping.get("RequesterID"), "mock-sp");

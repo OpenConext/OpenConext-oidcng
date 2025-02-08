@@ -1,5 +1,6 @@
 package oidc.saml;
 
+import jakarta.servlet.http.HttpServletRequest;
 import oidc.model.SamlAuthenticationRequest;
 import oidc.repository.SamlAuthenticationRequestRepository;
 import org.apache.commons.codec.CodecPolicy;
@@ -12,7 +13,6 @@ import org.springframework.security.saml2.core.Saml2ParameterNames;
 import org.springframework.security.saml2.provider.service.authentication.AbstractSaml2AuthenticationRequest;
 import org.springframework.security.saml2.provider.service.authentication.Saml2RedirectAuthenticationRequest;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 

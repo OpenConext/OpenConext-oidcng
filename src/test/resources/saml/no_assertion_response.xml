@@ -3,7 +3,7 @@
         ID="RP547bd49a-bcbc-4d4c-a9c6-d2568d48e5c3"
         InResponseTo="CORTO60b6632630b6a0dffa5229226b508d7d699d9164" IssueInstant="2021-02-27T11:48:42.762Z"
         Version="2.0" xmlns:saml2p="urn:oasis:names:tc:SAML:2.0:protocol"
-        xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+>
     <saml2:Issuer xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion">https://login.test2.eduid.nl</saml2:Issuer>
     <saml2p:Status>
         <saml2p:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:NoAuthnContext"/>

@@ -3,13 +3,7 @@ package oidc.secure;
 import oidc.AbstractIntegrationTest;
 import oidc.SeedUtils;
 import oidc.endpoints.OidcEndpoint;
-import oidc.model.AccessToken;
-import oidc.model.AuthenticationRequest;
-import oidc.model.AuthorizationCode;
-import oidc.model.OpenIDClient;
-import oidc.model.RefreshToken;
-import oidc.model.User;
-import oidc.model.UserConsent;
+import oidc.model.*;
 import oidc.repository.AccessTokenRepository;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +21,6 @@ import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {

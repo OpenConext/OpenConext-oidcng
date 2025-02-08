@@ -1,7 +1,7 @@
 package oidc.saml;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.shibboleth.utilities.java.support.xml.XMLParserException;
+import net.shibboleth.shared.xml.XMLParserException;
 import oidc.SeedUtils;
 import oidc.model.AuthenticationRequest;
 import oidc.model.User;
@@ -12,8 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opensaml.core.xml.io.UnmarshallingException;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
-import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml5AuthenticationProvider;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -94,7 +93,7 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
     }
 
     private OidcSamlAuthentication doLogin(String path) throws IOException, UnmarshallingException, XMLParserException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        OpenSaml4AuthenticationProvider.ResponseToken responseToken = getResponseToken(path);
+        OpenSaml5AuthenticationProvider.ResponseToken responseToken = getResponseToken(path);
         return subject.convert(responseToken);
     }
 

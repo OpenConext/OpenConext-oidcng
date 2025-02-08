@@ -4,10 +4,8 @@ import oidc.AbstractIntegrationTest;
 import oidc.SeedUtils;
 import oidc.crypto.KeyGenerator;
 import oidc.model.AccessToken;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;

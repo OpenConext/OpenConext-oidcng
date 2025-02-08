@@ -1,5 +1,6 @@
 package oidc.web;
 
+import jakarta.servlet.http.HttpServletResponse;
 import oidc.TestUtils;
 import oidc.model.AuthenticationRequest;
 import oidc.repository.AuthenticationRequestRepository;
@@ -8,7 +9,6 @@ import org.junit.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Optional;

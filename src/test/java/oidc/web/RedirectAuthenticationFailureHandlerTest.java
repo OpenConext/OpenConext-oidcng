@@ -1,5 +1,6 @@
 package oidc.web;
 
+import jakarta.servlet.http.HttpSession;
 import oidc.model.OpenIDClient;
 import oidc.repository.OpenIDClientRepository;
 import oidc.saml.ContextSaml2AuthenticationException;
@@ -16,7 +17,6 @@ import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 
-import jakarta.servlet.http.HttpSession;
 import java.util.Optional;
 
 import static java.util.Collections.emptyList;

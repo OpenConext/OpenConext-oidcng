@@ -308,7 +308,7 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
 
         String idToken = (String) successTokenResult.get("id_token");
         JWTClaimsSet idTokenClaimsSet = verifySignedJWT(idToken, port);
-        assertEquals("mock-sp", ((List<String>)idTokenClaimsSet.getClaim("aud")).get(0));
+        assertEquals("mock-sp", ((List<String>) idTokenClaimsSet.getClaim("aud")).get(0));
 
         deviceAuthorization = mongoTemplate
                 .findOne(Query.query(Criteria.where("deviceCode").is(deviceCode)), DeviceAuthorization.class);

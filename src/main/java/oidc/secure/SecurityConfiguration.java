@@ -63,22 +63,21 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.saml2.core.Saml2X509Credential;
 import org.springframework.security.saml2.provider.service.authentication.AbstractSaml2AuthenticationRequest;
-import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
-import org.springframework.security.saml2.provider.service.metadata.OpenSaml4MetadataResolver;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml5AuthenticationProvider;
+import org.springframework.security.saml2.provider.service.metadata.OpenSaml5MetadataResolver;
 import org.springframework.security.saml2.provider.service.registration.InMemoryRelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
 import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationRequestRepository;
 import org.springframework.security.saml2.provider.service.web.Saml2MetadataFilter;
-import org.springframework.security.saml2.provider.service.web.authentication.OpenSaml4AuthenticationRequestResolver;
+import org.springframework.security.saml2.provider.service.web.authentication.OpenSaml5AuthenticationRequestResolver;
 import org.springframework.security.saml2.provider.service.web.authentication.Saml2AuthenticationRequestResolver;
 import org.springframework.security.saml2.provider.service.web.authentication.Saml2WebSsoAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
-import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.nio.charset.Charset;
 import java.security.PrivateKey;
@@ -160,8 +159,8 @@ public class SecurityConfiguration {
         public Saml2AuthenticationRequestResolver authenticationRequestResolver(
                 RelyingPartyRegistrationRepository relyingPartyRegistrationRepository) {
 
-            OpenSaml4AuthenticationRequestResolver resolver =
-                    new OpenSaml4AuthenticationRequestResolver(relyingPartyRegistrationRepository);
+            OpenSaml5AuthenticationRequestResolver resolver =
+                    new OpenSaml5AuthenticationRequestResolver(relyingPartyRegistrationRepository);
             AuthnRequestContextConsumer contextConsumer = new AuthnRequestContextConsumer(
                     openIDClientRepository, authenticationRequestRepository, new HttpSessionRequestCache());
             resolver.setAuthnRequestCustomizer(contextConsumer);
@@ -220,9 +219,9 @@ public class SecurityConfiguration {
         }
 
         @Bean
-        public OpenSaml4AuthenticationProvider configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        public OpenSaml5AuthenticationProvider configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
             //because Autowired this will end up in the global ProviderManager
-            OpenSaml4AuthenticationProvider authenticationProvider = new OpenSaml4AuthenticationProvider();
+            OpenSaml5AuthenticationProvider authenticationProvider = new OpenSaml5AuthenticationProvider();
 
             ResponseAuthenticationConverter responseAuthenticationConverter =
                     new ResponseAuthenticationConverter(userRepository, authenticationRequestRepository, objectMapper, oidcSamlMapping);
@@ -257,8 +256,8 @@ public class SecurityConfiguration {
                             .requestMatchers("/oidc/**", "/saml2/**", "/login/**").permitAll()
                             .requestMatchers("/oidc/**").permitAll())
                     .saml2Login(saml2 -> {
-                        OpenSaml4AuthenticationProvider openSamlAuthenticationProvider =
-                                applicationContext.getBean(OpenSaml4AuthenticationProvider.class);
+                        OpenSaml5AuthenticationProvider openSamlAuthenticationProvider =
+                                applicationContext.getBean(OpenSaml5AuthenticationProvider.class);
                         saml2.authenticationManager(new ProviderManager(openSamlAuthenticationProvider));
                         AuthenticationSuccessHandler bean = applicationContext.getBean(AuthenticationSuccessHandler.class);
                         saml2.successHandler(bean);
@@ -266,7 +265,7 @@ public class SecurityConfiguration {
                     })
                     .addFilterBefore(new Saml2MetadataFilter(
                             req -> relyingPartyRegistrationRepository().findByRegistrationId(REGISTRATION_ID),
-                            new OpenSaml4MetadataResolver()), Saml2WebSsoAuthenticationFilter.class)
+                            new OpenSaml5MetadataResolver()), Saml2WebSsoAuthenticationFilter.class)
                     .addFilterBefore(new MDCContextFilter(), BasicAuthenticationFilter.class);
 
             if (environment.acceptsProfiles(Profiles.of("dev"))) {

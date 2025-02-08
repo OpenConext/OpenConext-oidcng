@@ -1,13 +1,12 @@
 package oidc.saml;
 
-import net.shibboleth.utilities.java.support.xml.XMLParserException;
+import net.shibboleth.shared.xml.XMLParserException;
 import oidc.model.AuthenticationRequest;
 import oidc.repository.AuthenticationRequestRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opensaml.core.xml.io.UnmarshallingException;
-import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
-import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml5AuthenticationProvider;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -30,7 +29,7 @@ class ResponseAuthenticationValidatorTest extends AbstractSamlUnitTest {
 
     @Test
     void convert() throws XMLParserException, IOException, ClassNotFoundException, UnmarshallingException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        OpenSaml4AuthenticationProvider.ResponseToken responseToken = getResponseToken("saml/no_assertion_response.xml");
+        OpenSaml5AuthenticationProvider.ResponseToken responseToken = getResponseToken("saml/no_assertion_response.xml");
         when(authenticationRequestRepository.findById(anyString())).thenReturn(Optional.of(
                 new AuthenticationRequest("id", new Date(), "clientId", "http://some")));
         assertThrows(ContextSaml2AuthenticationException.class, () -> subject.convert(responseToken));

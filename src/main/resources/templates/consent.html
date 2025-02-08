@@ -96,8 +96,10 @@
                             <div class="scope-info">
                                 <span class="title" th:if="${lang == 'en'}" th:text="${scope.titles.get('en')}"/></span>
                                 <span class="title" th:if="${lang == 'nl'}" th:text="${scope.titles.get('nl')}"/></span>
-                                <span class="description" th:if="${lang == 'en'}" th:text="${scope.descriptions.get('en')}"/></span>
-                                <span class="description" th:if="${lang == 'nl'}" th:text="${scope.descriptions.get('nl')}"/></span>
+                                <span class="description" th:if="${lang == 'en'}"
+                                      th:text="${scope.descriptions.get('en')}"/></span>
+                                <span class="description" th:if="${lang == 'nl'}"
+                                      th:text="${scope.descriptions.get('nl')}"/></span>
                             </div>
                         </li>
                     </ul>

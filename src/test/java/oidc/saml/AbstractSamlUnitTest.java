@@ -1,8 +1,8 @@
 package oidc.saml;
 
 import lombok.SneakyThrows;
-import net.shibboleth.utilities.java.support.xml.ParserPool;
-import net.shibboleth.utilities.java.support.xml.XMLParserException;
+import net.shibboleth.shared.xml.ParserPool;
+import net.shibboleth.shared.xml.XMLParserException;
 import oidc.crypto.KeyGenerator;
 import org.apache.commons.io.IOUtils;
 import org.junit.BeforeClass;
@@ -15,7 +15,7 @@ import org.opensaml.saml.saml2.core.impl.ResponseUnmarshaller;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.saml2.core.OpenSamlInitializationService;
 import org.springframework.security.saml2.core.Saml2X509Credential;
-import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml5AuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationToken;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.web.PortResolver;
@@ -69,12 +69,12 @@ public abstract class AbstractSamlUnitTest {
     }
 
     //See https://github.com/spring-projects/spring-security/issues/9004
-    public OpenSaml4AuthenticationProvider.ResponseToken getResponseToken(Response response, Saml2AuthenticationToken token) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        Class<?> c = Class.forName("org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider$ResponseToken");
+    public OpenSaml5AuthenticationProvider.ResponseToken getResponseToken(Response response, Saml2AuthenticationToken token) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
+        Class<?> c = Class.forName("org.springframework.security.saml2.provider.service.authentication.OpenSaml5AuthenticationProvider$ResponseToken");
         Constructor<?> declaredConstructor = c.getDeclaredConstructor(Response.class, Saml2AuthenticationToken.class);
 
         declaredConstructor.setAccessible(true);
-        OpenSaml4AuthenticationProvider.ResponseToken responseToken = (OpenSaml4AuthenticationProvider.ResponseToken) declaredConstructor.newInstance(response, token);
+        OpenSaml5AuthenticationProvider.ResponseToken responseToken = (OpenSaml5AuthenticationProvider.ResponseToken) declaredConstructor.newInstance(response, token);
         return responseToken;
     }
 
@@ -89,7 +89,7 @@ public abstract class AbstractSamlUnitTest {
         return (Response) responseUnmarshaller.unmarshall(samlElement);
     }
 
-    public OpenSaml4AuthenticationProvider.ResponseToken getResponseToken(String path) throws IOException, UnmarshallingException, XMLParserException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
+    public OpenSaml5AuthenticationProvider.ResponseToken getResponseToken(String path) throws IOException, UnmarshallingException, XMLParserException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
         InputStream inputStream = new ClassPathResource(path).getInputStream();
         String saml2Response = IOUtils.toString(inputStream, Charset.defaultCharset());
         Response response = unmarshall(saml2Response);

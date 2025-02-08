@@ -4,11 +4,7 @@ import oidc.model.AccessToken;
 import oidc.model.RefreshToken;
 import oidc.model.User;
 
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static java.util.Collections.singletonList;
 
@@ -28,11 +24,11 @@ public interface SeedUtils {
     }
 
     default RefreshToken refreshToken(String signingKey) {
-        return new RefreshToken(UUID.randomUUID().toString(),accessToken(UUID.randomUUID().toString(), signingKey), new Date());
+        return new RefreshToken(UUID.randomUUID().toString(), accessToken(UUID.randomUUID().toString(), signingKey), new Date());
     }
 
     default RefreshToken refreshToken(Date expiresIn) {
-        return new RefreshToken(UUID.randomUUID().toString(),accessToken(UUID.randomUUID().toString(), "signingKey"), expiresIn);
+        return new RefreshToken(UUID.randomUUID().toString(), accessToken(UUID.randomUUID().toString(), "signingKey"), expiresIn);
     }
 
     default RefreshToken refreshTokenWithValue(String jwtId) {

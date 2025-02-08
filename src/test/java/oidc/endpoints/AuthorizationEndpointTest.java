@@ -306,7 +306,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         String state = "https%3A%2F%2Fexample.com";
         Response response = doAuthorizeWithClaimsAndScopes("mock-sp",
                 "code id_token token", null, "nonce", null,
-                Collections.emptyList(),"openid", state);
+                Collections.emptyList(), "openid", state);
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = fragmentToMap(fragment);

@@ -15,7 +15,7 @@ import org.opensaml.core.xml.schema.*;
 import org.opensaml.saml.saml2.core.*;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.Resource;
-import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml5AuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.Saml2Authentication;
 import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 import org.springframework.util.CollectionUtils;
@@ -30,13 +30,13 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
-public class ResponseAuthenticationConverter implements Converter<OpenSaml4AuthenticationProvider.ResponseToken, OidcSamlAuthentication> {
+public class ResponseAuthenticationConverter implements Converter<OpenSaml5AuthenticationProvider.ResponseToken, OidcSamlAuthentication> {
 
     public static final Pattern inResponseToPattern = Pattern.compile("InResponseTo=\"(.+?)\"", Pattern.DOTALL);
     public static final Pattern idPattern = Pattern.compile("ID=\"(.+?)\"", Pattern.DOTALL);
 
     private static final Log LOG = LogFactory.getLog(ResponseAuthenticationConverter.class);
-    private final Converter<OpenSaml4AuthenticationProvider.ResponseToken, Saml2Authentication> defaultResponseAuthenticationConverter;
+    private final Converter<OpenSaml5AuthenticationProvider.ResponseToken, Saml2Authentication> defaultResponseAuthenticationConverter;
 
     private final UserRepository userRepository;
     private final List<UserAttribute> userAttributes;
@@ -50,12 +50,12 @@ public class ResponseAuthenticationConverter implements Converter<OpenSaml4Authe
         this.authenticationRequestRepository = authenticationRequestRepository;
         this.userAttributes = objectMapper.readValue(oidcSamlMapping.getInputStream(), new TypeReference<>() {
         });
-        this.defaultResponseAuthenticationConverter = OpenSaml4AuthenticationProvider
+        this.defaultResponseAuthenticationConverter = OpenSaml5AuthenticationProvider
                 .createDefaultResponseAuthenticationConverter();
     }
 
     @Override
-    public OidcSamlAuthentication convert(OpenSaml4AuthenticationProvider.ResponseToken responseToken) {
+    public OidcSamlAuthentication convert(OpenSaml5AuthenticationProvider.ResponseToken responseToken) {
         Saml2Authentication authentication = defaultResponseAuthenticationConverter
                 .convert(responseToken);
         Assertion assertion = responseToken.getResponse().getAssertions().get(0);
