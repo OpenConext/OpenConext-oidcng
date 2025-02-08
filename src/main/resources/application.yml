@@ -22,10 +22,10 @@ keys-cache:
 server:
   error:
     path: "/error"
-  max-http-header-size: 10000000
   tomcat:
     max-http-form-post-size: 10000000
     max-swallow-size: 10000000
+  max-http-request-header-size: 10000000
 
 mongodb_db: oidc_test
 oidc_saml_mapping_path: classpath:/oidc/saml_mapping.json

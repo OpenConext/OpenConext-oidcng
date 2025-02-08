@@ -12,7 +12,7 @@ import java.io.IOException;
 
 public class ConcurrentSavedRequestAwareAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    private AuthenticationRequestRepository authenticationRequestRepository;
+    private final AuthenticationRequestRepository authenticationRequestRepository;
 
     public ConcurrentSavedRequestAwareAuthenticationSuccessHandler(AuthenticationRequestRepository authenticationRequestRepository) {
         this.authenticationRequestRepository = authenticationRequestRepository;

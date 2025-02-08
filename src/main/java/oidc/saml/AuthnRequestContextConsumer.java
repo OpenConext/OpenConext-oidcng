@@ -122,7 +122,7 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml4Authentica
 
             validateAuthorizationRequest(authorizationRequest, openIDClient);
         }
-
+        //Very important to set ID here, otherwise it will be set by Spring later, and we don't have a reference to it
         authnRequest.setID("ARQ" + UUID.randomUUID().toString().substring(1));
         saveAuthenticationRequestUrl(savedRequest, authnRequest, new ClientID(clientId));
 

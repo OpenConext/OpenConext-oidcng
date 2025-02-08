@@ -133,7 +133,8 @@ public class SecurityConfiguration {
                 @Value("${idp.saml_assertion_signing_key}") Resource idpMetadataSigningCertificatePath,
                 @Value("${sp.entity_id}") String spEntityId,
                 @Value("${sp.acs_location}") String spAcsLocation,
-                @Value("${oidc_saml_mapping_path}") Resource oidcSamlMapping, ApplicationContext applicationContext) {
+                @Value("${oidc_saml_mapping_path}") Resource oidcSamlMapping,
+                ApplicationContext applicationContext) {
             this.environment = environment;
             this.objectMapper = objectMapper;
             this.userRepository = userRepository;

@@ -105,6 +105,7 @@ public class MongoSaml2AuthenticationRequestRepository implements Saml2Authentic
                 .sigAlg(samlAuthenticationRequest.getSigAlg())
                 .relayState(samlAuthenticationRequest.getRelayState())
                 .samlRequest(samlAuthenticationRequest.getSamlRequest())
+                .id(samlAuthenticationRequest.getId())
                 .build();
     }
 
