@@ -17,6 +17,7 @@ import org.junit.Test;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -295,7 +296,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = fragmentToMap(fragment);
-        JWTClaimsSet claimsSet = assertImplicitFlowResponse(fragmentParameters);
+        JWTClaimsSet claimsSet = assertImplicitFlowResponse(fragmentParameters, false);
 
         assertEquals("john.doe@example.org", claimsSet.getClaim("email"));
         assertEquals("Johhny", claimsSet.getClaim("nickname"));
@@ -318,7 +319,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         assertNotNull(user);
 
         String accessToken = fragmentParameters.get("access_token");
-        JWTClaimsSet claimsSet = assertImplicitFlowResponse(fragmentParameters);
+        JWTClaimsSet claimsSet = assertImplicitFlowResponse(fragmentParameters, true);
 
         Map<String, Object> tokenResponse = doToken(code);
 
@@ -352,7 +353,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         String url = response.getHeader("Location");
         Map<String, String> queryParameters = UriComponentsBuilder.fromUriString(url).build().getQueryParams().toSingleValueMap();
         assertEquals(state, queryParameters.get("state"));
-        assertImplicitFlowResponse(queryParameters);
+        assertImplicitFlowResponse(queryParameters, false);
     }
 
     @Test
@@ -363,7 +364,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         String url = response.getHeader("Location");
         Map<String, String> queryParameters = UriComponentsBuilder.fromUriString(url).build().getQueryParams().toSingleValueMap();
         assertEquals(state, queryParameters.get("state"));
-        assertImplicitFlowResponse(queryParameters);
+        assertImplicitFlowResponse(queryParameters, false);
     }
 
     @Test
@@ -374,14 +375,18 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         String url = response.getHeader("Location");
         Map<String, String> queryParams = super.queryParamsToMap(url);
         assertEquals(URLEncoder.encode(state, defaultCharset()), queryParams.get("state"));
-        assertImplicitFlowResponse(queryParams);
+        assertImplicitFlowResponse(queryParams, false);
     }
 
-    private JWTClaimsSet assertImplicitFlowResponse(Map<String, ? extends Object> parameters) throws ParseException, MalformedURLException, BadJOSEException, JOSEException {
+    private JWTClaimsSet assertImplicitFlowResponse(Map<String, ? extends Object> parameters, boolean includesHashed) throws ParseException, MalformedURLException, BadJOSEException, JOSEException {
         String idToken = (String) parameters.get("id_token");
         JWTClaimsSet claimsSet = processToken(idToken, port);
         assertEquals("nonce", claimsSet.getClaim("nonce"));
-        assertNotNull(claimsSet.getClaim("at_hash"));
+        assertTrue(StringUtils.hasText((String) claimsSet.getClaim("at_hash")));
+        if (includesHashed) {
+            assertTrue(StringUtils.hasText((String) claimsSet.getClaim("c_hash")));
+            assertTrue(StringUtils.hasText((String) claimsSet.getClaim("s_hash")));
+        }
         return claimsSet;
     }
 
