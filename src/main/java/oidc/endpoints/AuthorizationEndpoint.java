@@ -416,7 +416,13 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
     public static List<String> validateScopes(OpenIDClientRepository openIDClientRepository, Scope scope, OpenIDClient client) {
         List<String> requestedScopes = scope != null ? scope.toStringList() : Collections.emptyList();
+        if (requestedScopes.stream().anyMatch(s -> s.contains(","))) {
+            //backward compatibility with old scope comma separated scopes
+            requestedScopes = requestedScopes.stream()
+                    .flatMap(s -> Arrays.stream(s.split(",")))
+                    .toList();
 
+        }
         List<String> allowedResourceServers = client.getAllowedResourceServers();
         List<String> grantedScopes = new ArrayList<>();
         if (!CollectionUtils.isEmpty(allowedResourceServers)) {

@@ -53,6 +53,21 @@ public class AuthorizationEndpointUnitTest {
     }
 
     @Test
+    public void validateScopesForFree() {
+        doValidateScope("custom", "openid offline_access email profile phone", "authorization_code", "refresh_token");
+    }
+
+    @Test
+    public void validateScopesForFreeWrongFormat() {
+        doValidateScope("custom", "openid,offline_access,email,profile,phone", "authorization_code", "refresh_token");
+    }
+
+    @Test
+    public void validateScopesForFreeWrongFormatSpaces() {
+        doValidateScope("custom", "openid, offline_access, email, profile, phone", "authorization_code", "refresh_token");
+    }
+
+    @Test
     public void validateScopeOfflineAccess() {
         doValidateScope("open_id", "open_id offline_access", "authorization_code", "refresh_token");
     }
@@ -170,6 +185,7 @@ public class AuthorizationEndpointUnitTest {
         OpenIDClientRepository openIDClientRepository = mock(OpenIDClientRepository.class);
         when(openIDClientRepository.findByClientIdIn(null))
                 .thenReturn(Collections.singletonList(client));
+        requestResponseScope = requestResponseScope.replaceAll(",", " ");
         Scope scope = Scope.parse(requestResponseScope);
         List<String> scopes = AuthorizationEndpoint.validateScopes(openIDClientRepository, scope, client);
 
