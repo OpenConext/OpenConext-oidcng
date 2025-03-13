@@ -104,7 +104,8 @@ public class ResponseAuthenticationConverter implements Converter<OpenSaml5Authe
                 .filter(ua -> !ua.customMapping)
                 .map(ua -> new Object[]{ua.oidc, ua.multiValue ? getAttributeValues(ua.saml, assertion) : getAttributeValue(ua.saml, assertion)})
                 .filter(oo -> oo[1] != null)
-                .collect(Collectors.toMap(oo -> (String) oo[0], oo -> oo[1]));
+                .collect(Collectors.toMap(oo -> (String) oo[0], oo -> oo[1],
+                        (r1, r2) -> r1));
 
         this.addDerivedAttributes(attributes);
 
