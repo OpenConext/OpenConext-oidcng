@@ -38,7 +38,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
         List<Map<String, Object>> connections = relyingParties();
 
         postConnections(connections);
-        assertEquals(6L, mongoTemplate.count(new Query(), OpenIDClient.class));
+        assertEquals(7L, mongoTemplate.count(new Query(), OpenIDClient.class));
 
         List<Map<String, Object>> serviceProviders = connections;
         Map<String, Object> mockSp = serviceProviders.get(0);
@@ -52,7 +52,7 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
 
         postConnections(serviceProviders);
 
-        assertEquals(6L, mongoTemplate.count(new Query(), OpenIDClient.class));
+        assertEquals(7L, mongoTemplate.count(new Query(), OpenIDClient.class));
 
         OpenIDClient openIDClient = mongoTemplate.find(Query.query(Criteria.where("clientId").is("changed")), OpenIDClient.class).get(0);
         assertEquals("changed", openIDClient.getClientId());
@@ -71,8 +71,14 @@ public class MetadataControllerTest extends AbstractIntegrationTest {
 
         List<String> clientIds = mongoTemplate.find(new Query(), OpenIDClient.class).stream().map(OpenIDClient::getClientId).collect(Collectors.toList());
         clientIds.sort(String::compareTo);
-        assertEquals(Arrays.asList("mock-rp", "mock-sp", "playground_client", "resource-server-playground-client",
-                "rp-jwt-authentication", "student.mobility.rp.localhost"), clientIds);
+        assertEquals(Arrays.asList(
+                "https@//sram.service.api.saml_sp",
+                "mock-rp",
+                "mock-sp",
+                "playground_client",
+                "resource-server-playground-client",
+                "rp-jwt-authentication",
+                "student.mobility.rp.localhost").stream().sorted().toList(), clientIds);
     }
 
     @Test

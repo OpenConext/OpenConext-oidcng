@@ -1,5 +1,6 @@
 package oidc.manage;
 
+import oidc.model.EntityType;
 import oidc.model.OpenIDClient;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -16,9 +17,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static oidc.model.EntityType.OAUTH_RS;
 import static oidc.model.EntityType.OIDC_RP;
@@ -27,6 +30,9 @@ import static oidc.model.EntityType.OIDC_RP;
 public class MetadataController {
 
     private static final Log LOG = LogFactory.getLog(MetadataController.class);
+
+    private final List<String> includedEntities = Stream.of(EntityType.values())
+            .map(entityType -> entityType.getType()).toList();
 
     @Autowired
     private MongoTemplate mongoTemplate;
@@ -41,7 +47,7 @@ public class MetadataController {
         LOG.debug("Starting to provision OIDC clients from push: " + name);
 
         List<OpenIDClient> newClients = connections.stream()
-                .filter(connection -> connection.get("type").equals(OIDC_RP.getType()) || connection.get("type").equals(OAUTH_RS.getType()))
+                .filter(connection -> includedEntities.contains(connection.get("type")))
                 .map(OpenIDClient::new)
                 .collect(Collectors.toList());
 
