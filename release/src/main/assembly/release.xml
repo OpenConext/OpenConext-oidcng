@@ -1,0 +1,41 @@
+<assembly
+        xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3 http://maven.apache.org/xsd/assembly-1.1.3.xsd">
+    <id>applicatie</id>
+    <formats>
+        <format>tar.gz</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+
+    <fileSets>
+        <fileSet>
+            <directory>../oidc/src/main/resources/</directory>
+            <outputDirectory>sample-config</outputDirectory>
+            <includes>
+                <include>data/**</include>
+                <include>oidc/**</include>
+                <include>application.yml</include>
+                <include>engine.dev.openconext.local.default.pem</include>
+                <include>engine.test2.surfconext.nl.pem</include>
+                <include>openid-configuration-docker.json</include>
+                <include>secret_keyset.json</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+
+    <moduleSets>
+        <moduleSet>
+            <useAllReactorProjects>true</useAllReactorProjects>
+            <includes>
+                <include>${project.groupId}:oidcng</include>
+            </includes>
+            <binaries>
+                <outputDirectory>jar</outputDirectory>
+                <unpack>false</unpack>
+                <includeDependencies>false</includeDependencies>
+                <outputFileNameMapping>${module.artifactId}.${module.extension}</outputFileNameMapping>
+            </binaries>
+        </moduleSet>
+    </moduleSets>
+</assembly>
