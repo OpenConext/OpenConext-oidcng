@@ -29,7 +29,7 @@
         <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
         <jackson-dataformat-xml.version>2.15.0</jackson-dataformat-xml.version>
         <jakarta.xml.bind-api.version>4.0.2</jakarta.xml.bind-api.version>
-        <java.version>17</java.version>
+        <java.version>21</java.version>
         <javase.version>3.5.3</javase.version>
         <junit-vintage-engine.version>5.10.2</junit-vintage-engine.version>
         <logstash-logback-encoder.version>6.4</logstash-logback-encoder.version>
@@ -83,7 +83,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <release>17</release>
+                    <release>21</release>
                 </configuration>
             </plugin>
             <plugin>
