@@ -105,7 +105,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: oidc
-          file: docker/Dockerfile
+          file: oidc/docker/Dockerfile
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
