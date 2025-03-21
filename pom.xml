@@ -11,7 +11,7 @@
 
     <groupId>org.openconext</groupId>
     <artifactId>oidcng-parent</artifactId>
-    <version>8.0.2-SNAPSHOT</version>
+    <version>8.0.3-SNAPSHOT</version>
     <name>oidcng</name>
     <packaging>pom</packaging>
 
