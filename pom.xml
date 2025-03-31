@@ -36,7 +36,7 @@
         <mockito-core.version>4.2.0</mockito-core.version>
         <mongock-bom.version>4.3.8</mongock-bom.version>
         <oauth2-oidc-sdk.version>11.22.1</oauth2-oidc-sdk.version>
-        <opensaml-saml.version>5.1.3</opensaml-saml.version>
+        <opensaml-saml.version>5.1.4</opensaml-saml.version>
         <protobuf-java.version>3.25.5</protobuf-java.version>
         <rest-assured.version>5.2.0</rest-assured.version>
         <require-maven.version>3.8.4</require-maven.version>
