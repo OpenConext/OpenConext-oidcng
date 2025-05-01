@@ -111,6 +111,11 @@
     "multiValue": false
   },
   {
+    "saml": "urn:mace:dir:attribute-def:preferredLanguage",
+    "oidc": "preferred_language",
+    "multiValue": false
+  },
+  {
     "saml": "urn:mace:surf.nl:attribute-def:surf-autorisaties",
     "oidc": "surf-autorisaties",
     "multiValue": true

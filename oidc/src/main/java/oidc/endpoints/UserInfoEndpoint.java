@@ -27,8 +27,8 @@ import java.util.*;
 @RestController
 public class UserInfoEndpoint {
 
-    private AccessTokenRepository accessTokenRepository;
-    private TokenGenerator tokenGenerator;
+    private final AccessTokenRepository accessTokenRepository;
+    private final TokenGenerator tokenGenerator;
 
     public UserInfoEndpoint(AccessTokenRepository accessTokenRepository, TokenGenerator tokenGenerator) {
         this.accessTokenRepository = accessTokenRepository;
