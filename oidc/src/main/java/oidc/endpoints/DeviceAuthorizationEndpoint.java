@@ -6,6 +6,7 @@ import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.JakartaServletUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import oidc.crypto.SimpleEncryptionHandler;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.UnknownClientException;
 import oidc.model.DeviceAuthorization;
@@ -35,11 +36,13 @@ import org.springframework.web.servlet.view.RedirectView;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.nimbusds.oauth2.sdk.GrantType.DEVICE_CODE;
 import static java.nio.charset.Charset.defaultCharset;
@@ -106,12 +109,15 @@ public class DeviceAuthorizationEndpoint implements OidcEndpoint {
         );
         deviceAuthorizationRepository.save(deviceAuthorization);
 
+        String hint = URLEncoder.encode(SimpleEncryptionHandler.encrypt(userCode), Charset.defaultCharset());
+        String verificationUrlWithHint = String.format("%s?hint=%s", verificationUrl, hint);
+
         Map<String, Object> results = Map.of(
                 "device_code", deviceCode,
                 "user_code", userCode,
-                "verification_uri", verificationUrl,
+                "verification_uri", verificationUrlWithHint,
                 "verification_uri_complete", String.format("%s?user_code=%s", verificationUrl, userCode),
-                "qr_code", QRGenerator.qrCode(verificationUrl).getImage(),
+                "qr_code", QRGenerator.qrCode(verificationUrlWithHint).getImage(),
                 //The lifetime in seconds of the "device_code" and "user_code"
                 "expires_in", 60 * 15,
                 //The minimum amount of time in seconds that the client SHOULD wait between polling requests to the token endpoint
@@ -122,18 +128,23 @@ public class DeviceAuthorizationEndpoint implements OidcEndpoint {
 
     @GetMapping(value = "oidc/verify")
     public ModelAndView verification(@RequestParam(value = "user_code", required = false) String userCode,
+                                     @RequestParam(value = "hint", required = false) String hint,
                                      @RequestParam(value = "error", required = false, defaultValue = "false") String error,
                                      HttpServletRequest request) {
+        AtomicReference<String> userCodeRef = new AtomicReference<>(userCode);
         Map<String, Object> model = new HashMap<>();
-        if (StringUtils.hasText(userCode)) {
+        if (StringUtils.hasText(hint)) {
+            userCodeRef.set(SimpleEncryptionHandler.decrypt(hint));
+        }
+        if (StringUtils.hasText(userCodeRef.get())) {
             //When the code checks out, then retrieve the client for displaying purposes
-            findByUserCode(userCode)
+            findByUserCode(userCodeRef.get())
                     .flatMap(deviceAuthorization -> openIDClientRepository.findOptionalByClientId(deviceAuthorization.getClientId()))
                     //Check the very strange use-case for the client not existing anymore
                     .ifPresent(openIDClient -> {
                         model.put("client", openIDClient);
-                        model.put("userCode", userCode);
-                        model.put("completeURI", true);
+                        model.put("userCode", StringUtils.hasText(userCode) ? userCodeRef.get() : null);
+                        model.put("completeURI", StringUtils.hasText(userCode));
                     });
         }
         model.putIfAbsent("completeURI", false);
@@ -169,7 +180,7 @@ public class DeviceAuthorizationEndpoint implements OidcEndpoint {
                     logout(request);
                     return new ModelAndView(new RedirectView(deviceAuthorizeURL(deviceAuthorization), true));
                 })
-                .orElseGet(() -> this.verification(null, "true", request));
+                .orElseGet(() -> this.verification(null, null, "true", request));
         return modelAndView;
     }
 
@@ -178,7 +189,7 @@ public class DeviceAuthorizationEndpoint implements OidcEndpoint {
                                         @RequestParam(value = "user_code") String userCode,
                                         Authentication authentication) {
         LOG.debug(String.format("/oidc/device_authorize %s %s", authentication.getDetails(), userCode));
-        //If the state (e.g. userCode) corresponds with a DeviceAuthentication then mark this as success and inform the user
+        //If the state (e.g. userCode) corresponds with a DeviceAuthentication then mark this as succes and inform the user
         Map<String, Object> model = new HashMap<>();
         Optional<DeviceAuthorization> optionalDeviceAuthorization = findByUserCode(userCode);
         AtomicBoolean stateMatches = new AtomicBoolean(false);
