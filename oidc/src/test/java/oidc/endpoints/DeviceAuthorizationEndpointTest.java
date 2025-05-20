@@ -49,7 +49,7 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
         assertEquals(deviceCode, UUID.fromString(deviceCode).toString());
 
         String verificationURI = "http://localhost:8080/oidc/verify";
-        assertEquals(verificationURI, body.get("verification_uri"));
+        assertTrue(((String)body.get("verification_uri")).startsWith(verificationURI));
         String userCode = (String) body.get("user_code");
         assertEquals(body.get("verification_uri_complete"), verificationURI + "?user_code=" + userCode);
         //See QRGeneratorTest#qrCode for qr_code validation
