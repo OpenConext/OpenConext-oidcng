@@ -37,7 +37,7 @@
         <mongock-bom.version>4.3.8</mongock-bom.version>
         <oauth2-oidc-sdk.version>11.23.1</oauth2-oidc-sdk.version>
         <opensaml-saml.version>5.1.4</opensaml-saml.version>
-        <protobuf-java.version>3.25.5</protobuf-java.version>
+        <protobuf-java.version>4.31.0</protobuf-java.version>
         <rest-assured.version>5.2.0</rest-assured.version>
         <require-maven.version>3.8.4</require-maven.version>
         <spring-session-data-mongodb.version>3.4.1</spring-session-data-mongodb.version>
