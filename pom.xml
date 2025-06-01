@@ -32,7 +32,7 @@
         <java.version>21</java.version>
         <javase.version>3.5.3</javase.version>
         <junit-vintage-engine.version>5.10.2</junit-vintage-engine.version>
-        <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
+        <logstash-logback-encoder.version>8.1</logstash-logback-encoder.version>
         <mockito-core.version>4.2.0</mockito-core.version>
         <mongock-bom.version>4.3.8</mongock-bom.version>
         <oauth2-oidc-sdk.version>11.23.1</oauth2-oidc-sdk.version>
