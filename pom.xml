@@ -46,7 +46,7 @@
         <tink.version>1.5.0</tink.version>
         <wagon-webdav-jackrabbit.version>3.5.3</wagon-webdav-jackrabbit.version>
         <wiremock-standalone.version>3.6.0</wiremock-standalone.version>
-        <xmlsec.version>4.0.3</xmlsec.version>
+        <xmlsec.version>4.0.4</xmlsec.version>
     </properties>
 
     <profiles>
