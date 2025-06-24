@@ -99,6 +99,16 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         return doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, consentEnabled);
     }
 
+    @PostMapping(value = {"oidc/authorize"}, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+    public ModelAndView postAuthorize(@RequestParam MultiValueMap<String, String> parameters,
+                                  Authentication authentication,
+                                  HttpServletRequest request) throws ParseException, JOSEException, IOException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
+        LOG.debug(String.format("/oidc/authorize %s %s", authentication.getDetails(), parameters));
+
+        //to enable consent, set consentRequired to true
+        return doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, consentEnabled);
+    }
+
     @PostMapping(value = "/oidc/consent", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ModelAndView consent(@RequestParam Map<String, String> body,
                                 Authentication authentication,
