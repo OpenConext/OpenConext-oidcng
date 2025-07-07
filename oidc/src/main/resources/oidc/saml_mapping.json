@@ -119,5 +119,10 @@
     "saml": "urn:mace:surf.nl:attribute-def:surf-autorisaties",
     "oidc": "surf-autorisaties",
     "multiValue": true
+  },
+  {
+    "saml": "urn:mace:dir:attribute-def:eduPersonAssurance",
+    "oidc": "eduperson_assurance",
+    "multiValue": true
   }
 ]
