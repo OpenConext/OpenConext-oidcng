@@ -18,7 +18,7 @@ jobs:
         mongodb-version: [4.4]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - uses: supercharge/mongodb-github-action@1.12.0
       with:
