@@ -83,7 +83,7 @@ token-api:
 eduid:
   user: oidcng
   password: secret
-  uri: https://eduid.test2.surfconext.nl/myconext/api/attribute-manipulation
+  uri: https://eduid.test2.surfconext.nl/myconext/api/
   enabled: true
 
 management:
@@ -93,13 +93,15 @@ management:
   endpoints:
     web:
       exposure:
-        include: "health,info,mappings"
+        include: "health,info"
       base-path: "/internal"
   endpoint:
     info:
-      enabled: true
+      access: unrestricted
+    health:
+      access: unrestricted
     mappings:
-      enabled: true
+      access: none
   info:
     git:
       mode: full
