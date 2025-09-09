@@ -217,7 +217,7 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml5Authentica
                     idpEntry.setProviderID(s);
                     return idpEntry;
                 })
-                .collect(Collectors.toList());
+                .toList();
         IDPList idpList = ((IDPListBuilder) registry.getBuilderFactory().getBuilder(IDPList.DEFAULT_ELEMENT_NAME)).buildObject();
         idpList.getIDPEntrys().addAll(idpEntries);
         return idpList;
@@ -244,12 +244,9 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml5Authentica
 
     private boolean isValidURI(String uri) {
         try {
-            URI parsed = new URI(uri);
-            if (parsed.isAbsolute() === false) {
-                // As per paragraph 1.3.2 of the SAML 2.0 core specifications
-                throw new URISyntaxException("URI provided is not an absolute URI as required by SAML 2.0 specifications.");
-            }
-            return true;
+            // As per paragraph 1.3.2 of the SAML 2.0 core specifications
+            // "URI provided is not an absolute URI as required by SAML 2.0 specifications."
+            return new URI(uri).isAbsolute();
         } catch (URISyntaxException e) {
             return false;
         }
