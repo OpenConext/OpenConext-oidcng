@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.opensaml.core.config.ConfigurationService;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
 import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.IDPEntry;
 import org.opensaml.saml.saml2.core.impl.AuthnRequestBuilder;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.saml2.provider.service.web.authentication.OpenSaml5AuthenticationRequestResolver;
@@ -57,7 +58,7 @@ public class AuthnRequestContextConsumerUnitTest extends AbstractSamlUnitTest im
         request.addParameter("response_type", "code");
         request.addParameter("acr_values", "http://loa1");
         request.addParameter("prompt", "login");
-        request.addParameter("login_hint", "http://idp");
+        request.addParameter("login_hint", "https://idp,https://idp2,tata@ex.org");
 
         String keyID = getCertificateKeyIDFromCertificate(cert);
         SignedJWT signedJWT = signedJWT(openIDClient.getClientId(), keyID, openIDClient.getRedirectUrls().get(0));
@@ -75,7 +76,10 @@ public class AuthnRequestContextConsumerUnitTest extends AbstractSamlUnitTest im
 
         assertTrue(authnRequest.isForceAuthn());
         assertEquals("loa1", authnRequest.getRequestedAuthnContext().getAuthnContextClassRefs().get(0).getURI());
-        assertEquals("http://idp", authnRequest.getScoping().getIDPList().getIDPEntrys().get(0).getProviderID());
+        List<IDPEntry> idpEntrys = authnRequest.getScoping().getIDPList().getIDPEntrys();
+        assertEquals(2, idpEntrys.size());
+        assertEquals("https://idp", idpEntrys.get(0).getProviderID());
+        assertEquals("https://idp2", idpEntrys.get(1).getProviderID());
     }
 
     private AuthnRequest getAuthnRequest() {
