@@ -244,7 +244,11 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml5Authentica
 
     private boolean isValidURI(String uri) {
         try {
-            new URI(uri);
+            URI parsed = new URI(uri);
+            if (parsed.isAbsolute() === false) {
+                // As per paragraph 1.3.2 of the SAML 2.0 core specifications
+                throw new URISyntaxException("URI provided is not an absolute URI as required by SAML 2.0 specifications.");
+            }
             return true;
         } catch (URISyntaxException e) {
             return false;
