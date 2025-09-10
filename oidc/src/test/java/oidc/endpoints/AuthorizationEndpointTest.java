@@ -8,6 +8,7 @@ import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ResponseMode;
 import io.restassured.response.Response;
+import lombok.SneakyThrows;
 import oidc.AbstractIntegrationTest;
 import oidc.model.AuthorizationCode;
 import oidc.model.OpenIDClient;
@@ -481,4 +482,30 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 .statusCode(401)
                 .body("message", equalTo("ClientID nope or secret is not correct"));
     }
+
+    @SneakyThrows
+    @Test
+    public void authorizeWithPost() {
+        Map<String, String> parametersMap = new HashMap<>();
+        parametersMap.put("scope", "openid");
+        parametersMap.put("response_type", "code");
+        parametersMap.put("client_id", "mock-sp");
+        parametersMap.put("redirect_uri", openIDClient("mock-sp").getRedirectUrls().get(0));
+        parametersMap.put("state", "state");
+        parametersMap.put("nonce", "nonce");
+        Response response = given()
+                .redirects().follow(false)
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .formParams(parametersMap)
+                .post("oidc/authorize");
+        String code = getCode(response);
+        Map<String, Object> tokenResponse = doToken(code);
+        String idToken = (String) tokenResponse.get("id_token");
+
+        JWTClaimsSet claimsSet = processToken(idToken, port);
+        assertEquals("nonce", claimsSet.getClaim("nonce"));
+        assertNotNull(claimsSet.getClaim("auth_time"));
+    }
+
 }
