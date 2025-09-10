@@ -1,4 +1,5 @@
 # OpenConext-oidcng
+
 [![Build Status](https://travis-ci.org/OpenConext/OpenConext-oidcng.svg?branch=master)](https://travis-ci.org/OpenConext/OpenConext-oidcng)
 [![codecov.io](https://codecov.io/github/OpenConext/OpenConext-oidcng/coverage.svg)](https://codecov.io/github/OpenConext/OpenConext-oidcng)
 
@@ -10,7 +11,8 @@ OpenID Connect - SAML proxy
 
 - Java 21
 - Maven 3.x
-- MongoDB 4.0.x (ensure sessions are supported, see https://stackoverflow.com/questions/56734130/sessions-are-not-supported-by-the-mongodb-cluster-to-which-this-client-is-connec)
+- MongoDB 4.0.x (ensure sessions are supported,
+  see https://stackoverflow.com/questions/56734130/sessions-are-not-supported-by-the-mongodb-cluster-to-which-this-client-is-connec)
 
 ## [Building and running](#building-and-running)
 
@@ -22,29 +24,43 @@ This project uses Spring Boot and Maven. To run locally, type:
 
 `mvn spring-boot:run -Drun.jvmArguments="-Dspring.profiles.active=dev"`
 
-When developing, it's convenient to just execute the applications main-method. The `dev` profile uses a fake authorization
+When developing, it's convenient to just execute the applications main-method. The `dev` profile uses a fake
+authorization
 to bypass the redirect to EB.
 
 ### [Endpoints](#endpoint)
 
 Discovery Endpoint describing the OIDC supported options.
-The content is from [https://github.com/OpenConext/OpenConext-deploy/blob/master/roles/oidcng/templates/openid-configuration.json.j2](https://github.com/OpenConext/OpenConext-deploy/blob/master/roles/oidcng/templates/openid-configuration.json.j2)
+The content is
+from [https://github.com/OpenConext/OpenConext-deploy/blob/master/roles/oidcng/templates/openid-configuration.json.j2](https://github.com/OpenConext/OpenConext-deploy/blob/master/roles/oidcng/templates/openid-configuration.json.j2)
+
 ```
 https://oidcng.test2.surfconext.nl/oidc/.well-known/openid-configuration
 ```
-Generate a Master Secret Key Set. This master key encrypts both the JWT signing keys as the symmetric keys that are used to encrypt/decrypt the claims in the access_token
-The output is used in ansible to create the file [https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/secret_keyset.json](https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/secret_keyset.json)
+
+Generate a Master Secret Key Set. This master key encrypts both the JWT signing keys as the symmetric keys that are used
+to encrypt/decrypt the claims in the access_token
+The output is used in ansible to create the
+file [https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/secret_keyset.json](https://github.com/OpenConext/OpenConext-oidcng/blob/master/src/main/resources/secret_keyset.json)
+
 ```
 https://oidcng.test2.surfconext.nl/oidc/generate-secret-key-set
 ```
-If you have started the application before adding the new keyset, you have to remove the existing signing and symmetric keys from the mongo database. Run these two commands on the mongo prompt:
+
+If you have started the application before adding the new keyset, you have to remove the existing signing and symmetric
+keys from the mongo database. Run these two commands on the mongo prompt:
+
 ```
 db.symmetric_keys.deleteMany({})
 db.signing_keys.deleteMany({})
 ```
-You can also use this Java binary to generate a keyset to use before starting oidcng [https://build.openconext.org/repository/public/releases/org/openconext/crypto/1.0.0/crypto-1.0.0-shaded.jar](https://build.openconext.org/repository/public/releases/org/openconext/crypto/1.0.0/crypto-1.0.0-shaded.jar)
 
-The public certificate that RP's can use to validate the signed JWT. This endpoint is also configured in the `.well-known/openid-configuration` endpoint.
+You can also use this Java binary to generate a keyset to use before starting
+oidcng [https://build.openconext.org/repository/public/releases/org/openconext/crypto/1.0.0/crypto-1.0.0-shaded.jar](https://build.openconext.org/repository/public/releases/org/openconext/crypto/1.0.0/crypto-1.0.0-shaded.jar)
+
+The public certificate that RP's can use to validate the signed JWT. This endpoint is also configured in the
+`.well-known/openid-configuration` endpoint.
+
 ```
 https://oidcng.test2.surfconext.nl/oidc/certs
 ```
@@ -53,7 +69,8 @@ https://oidcng.test2.surfconext.nl/oidc/certs
 
 When you have the oidcng server running locally with the `dev` profile you can use cUrl to test the different endpoints.
 
-Note that this only works because of the `dev` profile where there is pre-authenticated user provided by the `FakeSamlAuthenticationFilter`. You will also need to have the original `secret_keyset.json` in place to make this work.
+Note that this only works because of the `dev` profile where there is pre-authenticated user provided by the
+`FakeSamlAuthenticationFilter`. You will also need to have the original `secret_keyset.json` in place to make this work.
 
 First obtain an authorization code:
 
@@ -78,7 +95,8 @@ Content-Length: 0
 Date: Wed, 15 May 2019 11:23:39 GMT
 ```
 
-Save the code in the query parameter of the location response header in a variable (use the code of your response and not this example code):
+Save the code in the query parameter of the location response header in a variable (use the code of your response and
+not this example code):
 
 `export code=x2F7TN56A9cB`
 
@@ -107,7 +125,8 @@ export access_token=eyJraWQiOiJvaWRjIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJhd
 export refresh_token=eyJraWQiOiJrZXlfMjAyMV8wM18xOF8xMl80OF8zOV85ODEiLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiJtb2NrLXNwIiwic3ViIjoibW9jay1zcCIsIm5iZiI6MTYxNjA2ODIyNSwiaXNzIjoiaHR0cHM6XC9cL29yZy5vcGVuY29uZXh0LmxvY2FsLm9pZGMubmciLCJjbGFpbXMiOiJBUzZqNW9UU2hXMTlJcXQ5RDRTQ0xDbVVIMDhDRFZ0ejdPZUZXS3VTcmFYOGgzMGd5bmp2bjVXXC90QU01VzAxbDBvcGI1ZUVVdVd0TFl0c21QbHUyM2l2dUNcLzhNMDRiOFVySjk3SzJYb1A3bjFMNG1jTklXcjVmaTRJODAzYm1ZZmxMSTdyOTFwZkZYb3FucEZueXpDNkdvUnA5alZNRUFzM2N1VDlKSHpFazhRN0dBSUU0TCthOEd6QkZ3MzdTVWIxS1UxXC9ROGF5T1VsUUJjeENUUFZIbERVTUdVdW5LMlF1XC9KTElvT3M0cEF0Vm10RjlJSmdrTzlnM0h6bjRVWXR1WGdFc3dLY1FPOWRlNU5UTVdXZEJiaEVzcHRrMWxLeVwvU25CUjlQa3NuNDY2aEs2QzlYeXRPZ3E3SUlNVmZLXC9wd0JUeFwvMU9udHd4UWRFTHBxZTRkSmlldlZkTU93UWNnRGIzTnVQSHcxRTJDMUVLZ3ZwZVM2Z2d1MkE5N1Z4YkxhZkJwTG00TVJaUHlGNTRNbnU0Z1BydFJKUldNWkJzakhCNkw2ZEh6YUloZElNUWJQSnA4VUV0TExCSkJNZ2tGWTlGTmNKYkZZRDlWQTJ4RDQ2WjA0azNubmV2aU1Kb1JKTVlsdHhhWHVhYzRuKzFaRFVaZXVYbnpXdnl0TFo3M1Jnek9DV21SRGtqdDQ4bHhuVnNHWm5UbDVSN3FCd2RYYWJ6MXF0OUI5eTNEVEZvbVRHdGRqNmVRQU9kYlNLVk5FYm5PVFNxc1B0emVlbWFxVEdvbzAxV3pKMGpJMmdVeHpKTFNQOXEycFp4VHh3XC9PNnFtcVRBVWdtQm5kbnBTd3lGcEx6NDVEZklSYWhUK0RJeThJUUNSRU1IYmhqZzdIY3B4M0xLdkF1anl4dzN6YlNmOWhhXC9WQ1hpUlY3S2xUZXVvcDBpYXpvZGRCUGMrY0hNdTczTUlZTGpTZ1hENkQwMWdJVDJzXC9BUlRzTFF6OGh6ZnpzTjZibGtib3cybmhFRk5xTlhUZVZWNU9RNEhJVmpMTTdYK3MyZ05KWXFqb1ZNQjhaSXdJRXJETkU4UktscUZYaWZvMHhWSUZWaStkWmJpMG45Y3lncFNmd1l1Z1lBb2ZcL1RTU08xdnBHNTFSQm9vRFErUkk0WjN6eTVXczQ1YlFzYVZVY05oNXRxZDV5K28xcXFmdDdldVwvbnAzSXFibmZ6c2JZQzczMzd5bjM0cjJITFB4cnZoN0xpd0JjNzJFYytibTF6WElzZndTTWpnMkt0U3pjNUJ1c3I4Wmc9PSIsImV4cCI6NDEwMjQ0ODQwMCwiY2xhaW1fa2V5X2lkIjoiNzgyNDkzMzE2IiwiaWF0Ijo0MTAyNDQ0ODAwLCJqdGkiOiIyNmRiNDZjNi1hNjMwLTQzMGUtOWUyYS0yNDJiNzg5YzViZTYifQ.LLliKefzqznnNjlCupeV2I4HlP-CxDUSPAYysTf7DfxK3gPv-kLT7jRMcGRabaABDw0Bc23_xKjDWFdMqgFerYFUi7Awy981cPz7lavBvzF045B7z-GlfDo4plSfsRpW7-a4tyTlS0coA4IO86vb8pV0Hihudb6wzL3DQ9DlWExWWkNmDxufXZ-wiqacWmvCnctBarvaHVbESxE68ZDTMLZwX7WxtU6xTfBkuF-jTf43xQ0NLa_nLwrksjMd5J0ubMM4pw_MHpeNOJm_VUFpQ6vWafsGMHbSalN862g9tmt9v4qdT-5ql99ipYHRowHb8j0YAD5iKqoQ8lbXO7ZQMQ
 ```
 
-Now you can ask the server to return the information stored with this access_token by calling the introspect endpoint (note that this endpoint is only for resource servers):
+Now you can ask the server to return the information stored with this access_token by calling the introspect endpoint (
+note that this endpoint is only for resource servers):
 
 ```
 curl -u mock-sp:secret -H "Content-Type: application/x-www-form-urlencoded" -X POST "http://localhost:8080/oidc/introspect?token=${access_token}" | jq .
@@ -157,11 +176,15 @@ This will return all the information about the user. This endpoint is for Relayi
   "updated_at": 1557919511
 }
 ```
+
 You can get a new refresh_token by using the stored refresh_token:
+
 ```
 curl -H 'Content-Type: application/x-www-form-urlencoded' -X POST -d "grant_type=refresh_token&client_id=mock-sp&client_secret=secret&refresh_token=${refresh_token}" 'http://localhost:8080/oidc/token' | jq .
 ```
+
 Which will return new tokens:
+
 ```json
 {
   "access_token": "eyJraWQiOiJrZXlfMjAyMV8wM18xOF8xMl80OF8zOV85ODEiLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOlsibW9jay1zcCIsInJlc291cmNlLXNlcnZlci1wbGF5Z3JvdW5kLWNsaWVudCJdLCJzdWIiOiJtb2NrLXNwIiwibmJmIjoxNjE2MDY4NDU3LCJzY29wZSI6Im9wZW5pZCIsImlzcyI6Imh0dHBzOlwvXC9vcmcub3BlbmNvbmV4dC5sb2NhbC5vaWRjLm5nIiwiY2xhaW1zIjoiQVM2ajVvU1VVOVV6OW9BckVPVmg1NGtTUk5rK3VNQU9lcHpVeXBiOTNWRnl5SnBRMFgxTk9qYVpvY29zWXpTUk1pQmx4SkJjZ1FXZjJzMWxIWUhoUW5Zb1ZKSTY1eXhhemxENjdUSVlZZG9YSU9MbXRLRlVUK1d6dFl2SlVDMnpWK0lUY2dJamFDZFZDZUxqTHdhcWkzZ1wvd1FhYnplbW5GRnpzZm55bnJ1TER0cXdnZGdcLzlTNEd4eHNhSFRaRkJxMVlZM1I2THlxQkFIanhhNXhRbWxOaXJXUjhQVStqM2FrNXI4SWdJSjRUYk94YWxvbnBqXC9wQVVveEpDdURkNVB0dHRiMlJqQm5UeUtVUU1hazBXTVI2MzRiT0h1XC9XZjRYUlQrVmI4bFY5c0R2endHVEc2czBuXC82Qk9vOGJ5ZFpcL1IzQVc4ZVl3TEpvMXJqWlk2WVJ2YUpSRHNZYU5rMU5RakpcL3g2dmZJRFR6Y0JyZnNxaDVBcFlWeTVNcnBOcktON0V2U1RWaFVlSEZIZzZ2T0xKRWpCaXdFSkh0cHNRc1RNZW9lQitvOWppREYrYkxkaVRoQ29VNWRuR1M4WElydVBvSUp2OTRBRkhNaEJQR0ZwV1FpV29BM0h6S0tsUkpmSW1WSVFRXC9LOFVVK0xtemF0dHZkYThpSE1kRjZnb2pOVHZ4YThCN2RQVnAwU1NmSE9CMStDNEIzSURya3JQdjhHYXB5NmRuaE5vTXZJQVpVWnVxXC80SnJwRTFUeGttYlwvR3E4RGlpVUV3cmU0b0RJSmtoZFI2R29PekJTd0lWSW1VQ2NXWlFDeTB3TGcwODZEQVVxTXZzZElWWmNyQjJ1eXBnUE9CaWNqbktlWlZyb1hxY0ppR0cxOUYybWtMaGtsR2tzT25YMEtFZXB2XC9IZEdtbHFLcXVUeE1MQ2tkUmRsNm52d1NFb3NZZUZJSG9Lck1McUZEa0ZqNGIxNENpOTdDaHBWME1CaUhCUDJqbVVtNmtXRW9OSEw2VDRkZnBPVk5MVWdiWWNaZXNUYzcwRlh5STllZDhQV3MyOHh2amdpV0FlNDlyanlQbSt2ZEs0eXp1amFaclJwYStWT3J3bFczVWlVaXR2dnl1XC9RYWswNFVOU3duaGNNYmJxYVRqWmtEOUtnVXRpREtLWnVnRENcL2VrampCTDIzWXJDQ0RmWHhaTVJGek45RUNtc25KUUpQaER3OWdPRFBiZVhMUWU2R29wY2V3SmU4d244QWc3RUd4V0g3blVON2xQTzJ2OFd1S2xKY0pmcFwvM2F1MjNXRlE9PSIsImV4cCI6NDEwMjQ0ODQwMCwiY2xhaW1fa2V5X2lkIjoiNzgyNDkzMzE2IiwiaWF0Ijo0MTAyNDQ0ODAwLCJqdGkiOiJiYjI0MTk0Ni00NWU0LTRlNWQtODI3Yy01YmI5YzE4OGNkNzgifQ.FkXLfl8frUd0c3e9-pu49_7OvapqXeFKxWcBBZjfgmXNXEnr-euJ69CTwEWd0Gf32BcAidUBjlT3Rkbxi6Txmo_FmBQEnoHzSP5yNfubX0CBgwRfAzmj8o7Qvj_pO-bZ_cjC_NOKbqTU5UIELvKPO_BX_aLXnaXkY_rGrrpGEILelFwed1SvPq5O98oT9XryN8ARfkJ-IDWWUP3Ycacvltg-bHeQjG9-htMl5Oh7l1jcT8Q9O08GV2Q7J02FcndGwjfi8F3HtMymc2gFSwJgzbUYGwKfyp77dCQqOZX2WuP_rfc3a5G0eDYcDThyWab7DJDvdqWq0WpwX85jK8g0rw",
@@ -171,12 +194,17 @@ Which will return new tokens:
   "id_token": "eyJraWQiOiJrZXlfMjAyMV8wM18xOF8xMl80OF8zOV85ODEiLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiJtb2NrLXNwIiwic3ViIjoiY2I2ZTQwYjctMWUwNy00OGQwLWEzMmMtNGM5OTRkZjhhZmQ4IiwiYWNyIjoibG9hMSBsb2EyIGxvYTMiLCJuYmYiOjE2MTYwNjg0NTcsInNjb3BlIjoib3BlbmlkIiwiYXV0aF90aW1lIjoxNjE2MDY4MjA3LCJpc3MiOiJodHRwczpcL1wvb3JnLm9wZW5jb25leHQubG9jYWwub2lkYy5uZyIsImV4cCI6NDEwMjQ0ODQwMCwiaWF0Ijo0MTAyNDQ0ODAwLCJqdGkiOiJiNWEwNDdmYy0yMGI5LTRlYWItOWU2Ny04MDhjN2JlNmNiMmQifQ.UjK1inkkkb7gjBGu3jWr3HnP2lP1p28ARmpbyFvKVUuBMDQcJDvUYCOYL0OFoac7UDNdjoex32P740nXoTnnOV0DRy-Scuc94EVkeGeAak3R7Jh2I7xtE7vV1YAuWwfQAAFRx1-Fw6kbl9OfuOlxXl4dxa9QzSecbW5SwdbLpO8ySFHMzzKnQcPoD84p4fLHxAot_QLErudxn7TTaXkdXF9JLwjUmzRJkxEr5HyBQN1uYwvoK27czRqN2eBcU03lurJorvyfrPngQiBxlDY0-2RRNtihfLyxKEw1Ej6n8O2EBTngmppJXJz8xcyx8EY5tjNJKw39zUALWb1WONhnug"
 }
 ```
+
 ### [cUrl OAuth2](#curl-oauth2-testing)
-The OIDC protocol also support the OAuth2 flows like client_credentials:
+
+The OIDC protocol also supports the OAuth2 flows like client_credentials:
+
 ```
 curl -u playground_client:secret -H 'Content-Type: application/x-www-form-urlencoded' -X POST -d 'grant_type=client_credentials' http://localhost:8080/oidc/token | jq .
 ```
+
 And the subsequent output:
+
 ```json
 {
   "access_token": "653c02ec-ad9e-4ae1-bb57-717ac907040c",
@@ -185,15 +213,22 @@ And the subsequent output:
   "expires_in": 3600
 }
 ```
+
 Save the access_token in a variable:
+
 ```
 export access_token=653c02ec-ad9e-4ae1-bb57-717ac907040c
 ```
-And the call to the introspect endpoint:
+
+And the call to the `introspect` endpoint:
+
 ```
 curl -u resource-server-playground-client:secret -H "Content-Type: application/x-www-form-urlencoded" -X POST "http://localhost:8080/oidc/introspect?token=${access_token}" | jq .
 ```
-And the output - note that there is no user-info, because no authentication has taken place because of the nature of client_credentials:
+
+And the output - note that there is no user-info, because no authentication has taken place because of the nature of
+client_credentials:
+
 ```json
 {
   "active": true,
@@ -205,55 +240,75 @@ And the output - note that there is no user-info, because no authentication has 
   "token_type": "Bearer"
 }
 ```
+
 ### [client JWT](#client-jwt)
-The authorization endpoint also accepts signed JWT's from the RP. To verify the signature the signing certificate is required. This can be configured in Manage.
+
+The authorization endpoint also accepts signed JWT's from the RP. To verify the signature the signing certificate is
+required. This can be configured in Manage.
 
 For testing purposes a keypair can be generated:
+
 ```
 openssl genrsa -out "oidc.key" 2048
 openssl req -new -key "oidc.key" -out "oidc.csr"
 openssl x509 -req -sha256 -days 1095 -in "oidc.csr" -signkey "oidc.key" -out "oidc.crt"
 cat oidc.crt |head -n -1 |tail -n +2 | tr -d '\n'
 ```
+
 On a Mac you can issue the same commands with `ghead` instead of `head` after you install `coreutils`:
+
 ```
 cat oidc.crt |ghead -n -1 |tail -n +2 | tr -d '\n'
 ```
+
 ### [Key rollover](#key-rollover)
-The OpenID Connect Provider has administrator endpoints to rollover both the signing keys as the symmetric keys. The signing keys are used to
+
+The OpenID Connect Provider has administrator endpoints to roll over both the signing keys as the symmetric keys. The
+signing keys are used to
 sign and verify the JWT tokens. The symmetric keys are used to encrypt and decrypt the user claims in the access_token.
 
 To rollover the signing key and clean up unreferenced signing keys:
+
 ```
 curl -u oidcng:secret "http://localhost:8080/manage/force-signing-key-rollover"
 ```
+
 To rollover the symmetric key and clean up unreferenced symmetric keys:
+
 ```
 curl -u oidcng:secret "http://localhost:8080/manage/force-symmetric-key-rollover"
 ```
+
 ## [SAML metadata](#saml-metadata)
 
 The metadata is generated on the fly and is displayed on http://localhost:8080/saml2/service-provider-metadata/oidcng
 
 ## [Trusted Proxy](#trusted-proxy)
 
-OpenConext-OIDC is a proxy for SP's that want to use OpenConnect ID instead of SAML to provide their Service to the federation members.
-Therefore the WAYF and ARP must be scoped for the requesting SP (and not this OIDC SP). This works if the OIDC-proxy is configured with the `coin:trusted_proxy` and `redirect.sign` settings in Manage.
+OpenConext-OIDC is a proxy for SP's that want to use OpenConnect ID instead of SAML to provide their Service to the
+federation members.
+Therefore the WAYF and ARP must be scoped for the requesting SP (and not this OIDC SP). This works if the OIDC-proxy is
+configured with the `coin:trusted_proxy` and `redirect.sign` settings in Manage.
 
 ## [Consent](#consent)
 
-Running OIDC-NG on localhost you can test the consent page by visiting
+Running OIDC-NG on localhost, you can test the consent page by visiting
 [the consent page](http://localhost:8080/oidc/authorize?scope=openid&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fredirect&state=example&prompt=consent&nonce=example&client_id=playground_client&response_mode=query)
 
 ## Device Code Flow(#device_code_flow)
 
-OpenConext-OIDC also supports the [Device Authorization Grant](https://datatracker.ietf.org/doc/html/rfc8628). Start the OIDC-NG server 
+OpenConext-OIDC also supports the [Device Authorization Grant](https://datatracker.ietf.org/doc/html/rfc8628). Start the
+OIDC-NG server
 on localhost and request for an `device_token` posting to the new endpoint:
+
 ```
 curl -H "Content-Type: application/x-www-form-urlencoded" -X POST -d "client_id=mock-sp&scope=openid,groups&prompt=login&acr_values=https%3A%2F%2Feduid.nl%2Ftrust%2Flinked-institution&login_hint=https%3A%2F%2Flogin.test2.eduid.nl" "http://localhost:8080/oidc/device_authorization" | jq .
 ```
-Note that the client must be configured with the `urn:ietf:params:oauth:grant-type:device_code` grant_type. Only the parameter client_id is required.
-The return value contains the URL intended  for the user to visit:
+
+Note that the client must be configured with the `urn:ietf:params:oauth:grant-type:device_code` grant_type. Only the
+parameter client_id is required.
+The return value contains the URL intended for the user to visit:
+
 ```
 {
     "interval": 1,
@@ -265,15 +320,21 @@ The return value contains the URL intended  for the user to visit:
     "device_code": "5ede5b0e-bf04-4a9f-b389-93b08a9e8faf"
 }
 ```
+
 Save the `device_code`:
+
 ```
 `export device_code=5ede5b0e-bf04-4a9f-b389-93b08a9e8faf`
 ```
+
 Before you log in, the device_authorization will have the status `pending-authorization`
+
 ```
 curl -H "Content-Type: application/x-www-form-urlencoded" -X POST -d "grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id=mock-sp&device_code=${device_code}" "http://localhost:8080/oidc/token" | jq .
 ```
+
 And the result
+
 ```
 {
   "timestamp": "2024-08-19T07:44:43.924+00:00",
@@ -284,21 +345,30 @@ And the result
   "message": "authorization_pending"
 }
 ```
-The status 400 might look strange as the request / response is perfectly valid, but  it is according the [spec](https://datatracker.ietf.org/doc/html/rfc8628#section-3.5).
 
-To obtain an `access_code` as  a device, you'll have to log in first. You can either use the `verification_uri` or the `verification_uri_complete`. 
-After confirming or submitting the correct user code, you'll be redirected to log in. After the login, you can mimic the device again
+The status 400 might look strange as the request / response is perfectly valid, but it is according
+the [spec](https://datatracker.ietf.org/doc/html/rfc8628#section-3.5).
+
+To obtain an `access_code` as a device, you'll have to log in first. You can either use the `verification_uri` or the
+`verification_uri_complete`.
+After confirming or submitting the correct user code, you'll be redirected to log in. After the login, you can mimic the
+device again
 and request for an `access_token` using the `device_coce`
+
 ```
 curl -H "Content-Type: application/x-www-form-urlencoded" -X POST -d "grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id=mock-sp&device_code=${device_code}" "http://localhost:8080/oidc/token" | jq .
 ```
 
 ## [Token-API](#topenapi)
+
 If you run the `TokenControllerTest` the test seed resides in the mongo test database. Fetch all tokens
+
 ```
 curl -u eduid:secret "http://localhost:8080/tokens?unspecifiedID=urn%3Acollab%3Aperson%3Aeduid.nl%3A7d4fca9b-2169-4d55-8347-73cf29b955a2"
 ```
+
 The result:
+
 ```
 [
   {
@@ -362,18 +432,24 @@ The result:
   }
 ]
 ```
+
 To delete tokens perform the following:
+
 ```
 curl -u eduid:secret -H "Content-type: application/json" -X PUT -d '[{"id":"5eec6a5df0efad206831a658","tokenType":"REFRESH"},{"id":"5eec6a5df0efad206831a659","tokenType":"ACCESS"}]' 'http://localhost:8080/tokens'
 ```
+
 ## [JMeter performance](#performance)
+
 In `src\jmeter` there is a JMeter project file to perform load / stress tests.
+
 ```
 cd src/jmeter
 jmeter -n -t OIDC-NG.jmx -l results.log
 ```
 
 ## [OWASP Dependency Check Maven](#owasp)
+
 The pom.xml has a profile which can be used to scan Java dependencies on known vulnerabilities. To start the scan, use
 the following command:
 
