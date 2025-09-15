@@ -13,6 +13,15 @@
 - Build improvements: ARM images, Docker deployment refactoring, multi-module Maven structure
 - CI and plugin upgrades
 
-## 8.0.1 (2025-03-07)
+## 8.0.1
 - Backward compatibility for comma-separated scope values ([#238](https://github.com/OpenConext/OpenConext-oidcng/issues/238))
 - Device code flow textual fixes (NL)
+
+## 8.0.0
+- Migrate to Spring Boot 3 (incl. Spring Security 6) and align codebase accordingly
+- Migrate SAML stack to OpenSAML 5; adapt request/response handling and validations
+- Update OAuth 2.0 / OIDC SDK to 11.22.1 (PR [#229](https://github.com/OpenConext/OpenConext-oidcng/pull/229))
+- Update GitHub Actions: setup-java to v4 (PR [#210](https://github.com/OpenConext/OpenConext-oidcng/pull/210)), codecov-action to 5.3.1 (PR [#227](https://github.com/OpenConext/OpenConext-oidcng/pull/227)), mongodb action to 1.12.0 (PR [#222](https://github.com/OpenConext/OpenConext-oidcng/pull/222))
+- Ensure the original SAML AuthnRequest ID is preserved in the authentication flow
+- Upgrade mail SMTP dependency and related test adjustments
+- update PKCE-related test vectors to compliant values
