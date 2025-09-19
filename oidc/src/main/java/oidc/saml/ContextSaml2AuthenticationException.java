@@ -14,7 +14,7 @@ public class ContextSaml2AuthenticationException extends Saml2AuthenticationExce
         this.authenticationRequest = authenticationRequest;
     }
 
-    public AuthenticationRequest getAuthenticationRequest() {
+    public AuthenticationRequest getAuthenticationRequestContext() {
         return authenticationRequest;
     }
 }

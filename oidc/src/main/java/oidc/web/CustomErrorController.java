@@ -113,7 +113,7 @@ public class CustomErrorController implements org.springframework.boot.web.servl
         boolean isDeviceFlow = error instanceof DeviceFlowException;
         if (error instanceof ContextSaml2AuthenticationException) {
             ContextSaml2AuthenticationException ctxE = (ContextSaml2AuthenticationException) error;
-            String originalRequestUrl = ctxE.getAuthenticationRequest().getOriginalRequestUrl();
+            String originalRequestUrl = ctxE.getAuthenticationRequestContext().getOriginalRequestUrl();
             UriComponents uriComponent = UriComponentsBuilder.fromUriString(originalRequestUrl).build();
             redirectUri = uriComponent.getQueryParams().getFirst("redirect_uri");
             redirect = true;
