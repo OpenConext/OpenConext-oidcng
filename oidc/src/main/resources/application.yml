@@ -5,6 +5,7 @@ logging:
     org.springframework: INFO
     org.springframework.security: INFO
     oidc: DEBUG
+    com.github.cloudyrock.mongock: TRACE
 
 cron:
   node-cron-job-responsible: true

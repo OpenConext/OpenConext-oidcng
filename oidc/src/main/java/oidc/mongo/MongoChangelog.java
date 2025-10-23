@@ -98,6 +98,11 @@ public class MongoChangelog {
         indexOperations.ensureIndex(new Index("userCode", Sort.Direction.DESC));
     }
 
+    @ChangeSet(order = "010", id = "dummy", author = "Okke Harsta")
+    public void dummy(MongockTemplate mongoTemplate) {
+        //pass
+    }
+
     private void ensureCollectionsAndIndexes(MongockTemplate mongoTemplate, Map<Class<?>, List<String>> indexInfo) {
         ensureCollectionsAndIndexes(mongoTemplate, indexInfo, true);
     }
