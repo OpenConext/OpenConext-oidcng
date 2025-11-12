@@ -84,6 +84,7 @@ public class UserInfoEndpoint {
         if (!CollectionUtils.isEmpty(acrClaims)) {
             attributes.put("acr", String.join(" ", acrClaims));
         }
+        attributes.put("authenticating_authority", user.getAuthenticatingAuthority());
         attributes.put("updated_at", user.getUpdatedAt());
         attributes.put("sub", user.getSub());
         return ResponseEntity.ok(new TreeMap(attributes));
