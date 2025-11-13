@@ -1,5 +1,8 @@
 # Changelog
 
+## 8.1.1
+- Bugfix for Spring Crypto not accepting BCrypt secrets longer than 72 bytes 
+
 ## 8.1.0
 - Allow POST requests to `/oidc/authorize` (enables form_post submissions) ([#263](https://github.com/OpenConext/OpenConext-oidcng/issues/263))
 - Ensure URIs passed in the `login_hint` are absolute (PR [#271](https://github.com/OpenConext/OpenConext-oidcng/pull/271))
