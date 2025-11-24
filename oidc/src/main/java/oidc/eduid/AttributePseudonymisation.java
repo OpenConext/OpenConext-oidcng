@@ -12,10 +12,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class AttributePseudonymisation {
@@ -54,13 +51,23 @@ public class AttributePseudonymisation {
      */
     public Optional<Map<String, String>> pseudonymise(OpenIDClient resourceServer, OpenIDClient openIDClient, String eduId) {
         boolean resourceServerEquals = resourceServer.getClientId().equals(openIDClient.getClientId());
+        String resourceServerInstitutionGuid = resourceServer.getInstitutionGuid();
+        String clientInstitutionGuid = openIDClient.getInstitutionGuid();
+        boolean institutionGuidEquals = StringUtils.hasText(resourceServerInstitutionGuid) &&
+            Objects.equals(resourceServerInstitutionGuid, clientInstitutionGuid);
 
         LOG.debug(String.format("Starting to pseudonymise for RS %s and openIDclient %s. " +
-                        "Enabled is %s, eduId is %s, resourceServerEquals is %s",
-                resourceServer.getClientId(), openIDClient.getClientId(), enabled, eduId, resourceServerEquals));
+                        "Enabled is %s, eduId is %s, resourceServerEquals is %s, institutionGuidEquals is %s",
+                resourceServer.getClientId(),
+            openIDClient.getClientId(),
+            enabled,
+            eduId,
+            resourceServerEquals,
+            institutionGuidEquals
+            ));
 
-        if (!enabled || !StringUtils.hasText(eduId) || resourceServerEquals) {
-            LOG.debug("Returning empty result for 'pseudonymise'");
+        if (!enabled || !StringUtils.hasText(eduId) || resourceServerEquals || institutionGuidEquals) {
+            LOG.debug("Skipping attribute manipulation and returning empty result for 'pseudonymise'");
             return Optional.empty();
         }
         Map<String, String> result = new HashMap<>();
@@ -69,7 +76,7 @@ public class AttributePseudonymisation {
         String uriString = UriComponentsBuilder.fromUri(eduIdUri)
                 .queryParam("eduid", eduId)
                 .queryParam("sp_entity_id", resourceServer.getClientId())
-                .queryParam("sp_institution_guid", resourceServer.getInstitutionGuid())
+                .queryParam("sp_institution_guid", resourceServerInstitutionGuid)
                 .toUriString();
         ResponseEntity<Map<String, String>> responseEntity =
                 restTemplate.exchange(uriString, HttpMethod.GET, requestEntity, new ParameterizedTypeReference<>() {

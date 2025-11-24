@@ -2,16 +2,14 @@ package oidc.eduid;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import oidc.AbstractIntegrationTest;
+import oidc.model.EntityType;
 import oidc.model.OpenIDClient;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.Assert.assertEquals;
@@ -47,7 +45,7 @@ public class AttributePseudonymisationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void pseudonymiseWithRSwithoutInstitutionIdentifier() throws IOException {
+    public void pseudonymiseWithRSWithoutInstitutionIdentifier() throws IOException {
         Map<String, String> res = new HashMap<>();
         String pseudoEduid = "rp-eduid";
         res.put("eduid", pseudoEduid);
@@ -70,6 +68,19 @@ public class AttributePseudonymisationTest extends AbstractIntegrationTest {
         assertFalse(pseudonymisedAttributes.isPresent());
     }
 
+    @Test
+    public void pseudonymiseRpIsRsForInstitutionGUID() {
+        String institutionGuid = UUID.randomUUID().toString();
+        OpenIDClient resourceServer = new OpenIDClient(Map.of(
+            "type", EntityType.OAUTH_RS.getType(),
+            "data", Map.of("entityid","rs", "metaDataFields", Map.of("coin:institution_guid", institutionGuid))));
+        OpenIDClient openIDClient = new OpenIDClient(Map.of(
+            "type", EntityType.OIDC_RP.getType(),
+            "data", Map.of("entityid","rp", "metaDataFields", Map.of("coin:institution_guid", institutionGuid))));
+        Optional<Map<String, String>> pseudonymisedAttributes = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, "rs-eduid");
+
+        assertFalse(pseudonymisedAttributes.isPresent());
+    }
 
     @Test
     public void pseudonymiseNoEduid() throws IOException {
