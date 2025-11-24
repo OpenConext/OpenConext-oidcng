@@ -1,5 +1,8 @@
 # Changelog
 
+## 8.3.0
+- Only call the `/attribute-manipulation` in the `/introspect` endpoint when entityID's and institutionGUID's are different ([#1041](https://github.com/OpenConext/OpenConext-myconext/issues/1041))
+
 ## 8.2.0
 - Added the authenticating authority to the user_info endpoint
 - Upped dependencies for nimbusds, bouncycastle and opensaml 
