@@ -57,16 +57,17 @@ public class AttributePseudonymisation {
             Objects.equals(resourceServerInstitutionGuid, clientInstitutionGuid);
 
         LOG.debug(String.format("Starting to pseudonymise for RS %s and openIDclient %s. " +
-                        "Enabled is %s, eduId is %s, resourceServerEquals is %s, institutionGuidEquals is %s",
-                resourceServer.getClientId(),
+                "Enabled is %s, eduId is %s, resourceServerEquals is %s, institutionGuidEquals is %s",
+            resourceServer.getClientId(),
             openIDClient.getClientId(),
             enabled,
             eduId,
             resourceServerEquals,
             institutionGuidEquals
-            ));
+        ));
 
-        if (!enabled || !StringUtils.hasText(eduId) || resourceServerEquals || institutionGuidEquals) {
+        if (!enabled || !StringUtils.hasText(eduId) || !StringUtils.hasText(resourceServerInstitutionGuid) ||
+            resourceServerEquals || institutionGuidEquals) {
             LOG.debug("Skipping attribute manipulation and returning empty result for 'pseudonymise'");
             return Optional.empty();
         }
@@ -74,20 +75,20 @@ public class AttributePseudonymisation {
         HttpEntity<?> requestEntity = new HttpEntity<>(headers);
 
         String uriString = UriComponentsBuilder.fromUri(eduIdUri)
-                .queryParam("eduid", eduId)
-                .queryParam("sp_entity_id", resourceServer.getClientId())
-                .queryParam("sp_institution_guid", resourceServerInstitutionGuid)
-                .toUriString();
+            .queryParam("eduid", eduId)
+            .queryParam("sp_entity_id", resourceServer.getClientId())
+            .queryParam("sp_institution_guid", resourceServerInstitutionGuid)
+            .toUriString();
         ResponseEntity<Map<String, String>> responseEntity =
-                restTemplate.exchange(uriString, HttpMethod.GET, requestEntity, new ParameterizedTypeReference<>() {
-                });
+            restTemplate.exchange(uriString, HttpMethod.GET, requestEntity, new ParameterizedTypeReference<>() {
+            });
         if (responseEntity.getStatusCode().is2xxSuccessful()) {
             Map<String, String> body = responseEntity.getBody();
             result.putAll(body);
             LOG.debug(String.format("Pseudonymise result %s for RS %s, RP %s", body, resourceServer.getClientId(), openIDClient.getClientId()));
         } else {
             LOG.error(String.format("Error %s occurred in pseudonymise for RS %s, RP %s, response %s",
-                    requestEntity.getBody(), resourceServer.getClientId(), openIDClient.getClientId(), responseEntity));
+                requestEntity.getBody(), resourceServer.getClientId(), openIDClient.getClientId(), responseEntity));
             return Optional.empty();
         }
         return Optional.of(result);

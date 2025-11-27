@@ -12,8 +12,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 public class AttributePseudonymisationTest extends AbstractIntegrationTest {
 
@@ -49,15 +48,12 @@ public class AttributePseudonymisationTest extends AbstractIntegrationTest {
         Map<String, String> res = new HashMap<>();
         String pseudoEduid = "rp-eduid";
         res.put("eduid", pseudoEduid);
-        stubFor(get(urlPathMatching("/attribute-manipulation")).willReturn(aResponse()
-                .withHeader("Content-Type", "application/json")
-                .withBody(objectMapper.writeValueAsString(res))));
 
         OpenIDClient resourceServer = openIDClient("mock-sp");
         OpenIDClient openIDClient = openIDClient("playground_client");
-        Map<String, String> pseudonymisedAttributes = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, "rs-eduid").get();
+        Optional<Map<String, String>> pseudonymisedAttributes = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, "rs-eduid");
 
-        assertEquals(pseudoEduid, pseudonymisedAttributes.get("eduid"));
+        assertTrue(pseudonymisedAttributes.isEmpty());
     }
 
     @Test
