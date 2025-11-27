@@ -51,7 +51,7 @@ public class AttributePseudonymisationTest extends AbstractIntegrationTest {
 
         OpenIDClient resourceServer = openIDClient("mock-sp");
         OpenIDClient openIDClient = openIDClient("playground_client");
-        Optional<Map<String, String>> pseudonymisedAttributes = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, "rs-eduid");
+        attributePseudonymisation.pseudonymise(resourceServer, openIDClient, "rs-eduid")
 
         assertTrue(pseudonymisedAttributes.isEmpty());
     }
