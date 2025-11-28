@@ -43,7 +43,7 @@
         <spring-session-data-mongodb.version>3.4.1</spring-session-data-mongodb.version>
         <spring-session-bom.version>2021.2.3</spring-session-bom.version>
         <threshold-logger.version>2.0.1</threshold-logger.version>
-        <tink.version>1.5.0</tink.version>
+        <tink.version>1.6.0</tink.version>
         <wagon-webdav-jackrabbit.version>3.5.3</wagon-webdav-jackrabbit.version>
         <wiremock-standalone.version>3.6.0</wiremock-standalone.version>
         <xmlsec.version>4.0.4</xmlsec.version>
