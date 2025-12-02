@@ -65,7 +65,11 @@ public class AttributePseudonymisation {
             resourceServerEquals,
             institutionGuidEquals
         ));
-
+        if (enabled && !StringUtils.hasText(resourceServerInstitutionGuid)) {
+            LOG.warn("Skipping attribute manipulation and returning empty result for 'pseudonymise' because there is" +
+                "no InstitutionGuid for RS: " + resourceServer.getClientId());
+            return Optional.empty();
+        }
         if (!enabled || !StringUtils.hasText(eduId) || !StringUtils.hasText(resourceServerInstitutionGuid) ||
             resourceServerEquals || institutionGuidEquals) {
             LOG.debug("Skipping attribute manipulation and returning empty result for 'pseudonymise'");
