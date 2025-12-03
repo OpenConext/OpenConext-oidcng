@@ -24,7 +24,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <bouncycastle.version>1.82</bouncycastle.version>
         <commons-io.version>2.19.0</commons-io.version>
-        <dependency-check-maven.version>12.1.8</dependency-check-maven.version>
+        <dependency-check-maven.version>12.1.9</dependency-check-maven.version>
         <git-commit-id-maven-plugin.version>9.0.2</git-commit-id-maven-plugin.version>
         <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
         <jackson-dataformat-xml.version>2.15.0</jackson-dataformat-xml.version>
