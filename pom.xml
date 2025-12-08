@@ -30,7 +30,7 @@
         <jackson-dataformat-xml.version>2.15.0</jackson-dataformat-xml.version>
         <jakarta.xml.bind-api.version>4.0.2</jakarta.xml.bind-api.version>
         <java.version>21</java.version>
-        <javase.version>3.5.3</javase.version>
+        <javase.version>3.5.4</javase.version>
         <junit-vintage-engine.version>5.12.2</junit-vintage-engine.version>
         <logstash-logback-encoder.version>8.1</logstash-logback-encoder.version>
         <mockito-core.version>4.2.0</mockito-core.version>
