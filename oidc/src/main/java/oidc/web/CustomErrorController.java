@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -54,7 +55,8 @@ public class CustomErrorController implements org.springframework.boot.web.servl
             UnsupportedPromptValueException.class,
             TokenAlreadyUsedException.class,
             UnknownClientException.class,
-            UnknownCodeException.class
+            UnknownCodeException.class,
+            NoResourceFoundException.class
     );
 
     public CustomErrorController() {
