@@ -25,9 +25,11 @@ public class ProvidedRedirectURI {
         if (StringUtils.hasText(that.getFragment())) {
             return false;
         }
-        boolean equals = that.getScheme().equals(me.getScheme()) &&
-                that.getHost().equals(me.getHost()) &&
-                that.getPath().equals(me.getPath());
+
+        boolean equals = Objects.equals(that.getScheme(), me.getScheme()) &&
+            Objects.equals(that.getHost(), me.getHost()) &&
+            Objects.equals(that.getPath(), me.getPath());
+
         if (strictRedirectUriCheck) {
             equals = equals && Objects.equals(that.getQuery(), me.getQuery());
         }

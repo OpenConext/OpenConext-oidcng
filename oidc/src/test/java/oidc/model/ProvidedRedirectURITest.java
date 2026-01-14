@@ -63,4 +63,12 @@ public class ProvidedRedirectURITest {
         assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("http://my.nope"));
     }
 
+    @Test
+    public void testMobileRedirect() {
+        ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("edubadges://oauth/callback");
+
+        assertTrue(providedRedirectURI.equalsWithLiteralCheckRequired("edubadges://oauth/callback"));
+        assertFalse(providedRedirectURI.equalsWithLiteralCheckRequired("edubadges:/oauth/callback"));
+    }
+
 }
