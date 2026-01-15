@@ -4,6 +4,8 @@
 - Only call the `/attribute-manipulation` in the `/introspect` endpoint when the Resource Server has an institutionGUID ([#1050](https://github.com/OpenConext/OpenConext-myconext/issues/1050))
 - Upgrade to Spring Boot 3.5.8
 - Avoid `NullPointerException` in comparing redirect URI's with defensive comparisons
+- Support for native applications with IPV6 [::1] as the hostname
+- Upped dependencies for logstash, zxing, commons-io, jakarta.xml, actions/cache and codecov-action
 
 ## 8.3.0
 - Only call the `/attribute-manipulation` in the `/introspect` endpoint when entityID's and institutionGUID's are different ([#1041](https://github.com/OpenConext/OpenConext-myconext/issues/1041))
