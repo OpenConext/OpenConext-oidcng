@@ -55,6 +55,13 @@ public class ProvidedRedirectURITest {
     }
 
     @Test
+    public void testCompareWithoutPortLocalHostIpv6() {
+        ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://[::1]:8080/nice");
+
+        assertTrue(providedRedirectURI.equalsWithLiteralCheckRequired("http://[::1]:9090/nice"));
+    }
+
+    @Test
     public void testCompareNotEquals() {
         ProvidedRedirectURI providedRedirectURI = new ProvidedRedirectURI("http://my.domain");
 

@@ -39,7 +39,7 @@ public class ProvidedRedirectURI {
 
     private boolean literalCheckRequired() {
         String host = me.getHost();
-        return !"127.0.0.1".equals(host) && !"localhost".equals(host);
+        return !"127.0.0.1".equals(host) && !"localhost".equals(host) && !"[::1]".equals(host);
     }
 
     @Override
