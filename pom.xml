@@ -35,7 +35,7 @@
         <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
         <mockito-core.version>4.2.0</mockito-core.version>
         <mongock-bom.version>4.3.8</mongock-bom.version>
-        <oauth2-oidc-sdk.version>11.30.1</oauth2-oidc-sdk.version>
+        <oauth2-oidc-sdk.version>11.31.1</oauth2-oidc-sdk.version>
         <opensaml-saml.version>5.1.6</opensaml-saml.version>
         <protobuf-java.version>4.33.1</protobuf-java.version>
         <rest-assured.version>5.2.0</rest-assured.version>
