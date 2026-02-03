@@ -250,12 +250,6 @@
             <artifactId>xmlsec</artifactId>
             <version>${xmlsec.version}</version>
         </dependency>
-        <!--    Fix for CVE-2021-22569    -->
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>${protobuf-java.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.jasypt</groupId>
             <artifactId>jasypt</artifactId>
