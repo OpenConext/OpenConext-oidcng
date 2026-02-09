@@ -83,6 +83,7 @@ public class AttributePseudonymisation {
             .queryParam("sp_entity_id", resourceServer.getClientId())
             .queryParam("sp_institution_guid", resourceServerInstitutionGuid)
             .toUriString();
+
         ResponseEntity<Map<String, String>> responseEntity =
             restTemplate.exchange(uriString, HttpMethod.GET, requestEntity, new ParameterizedTypeReference<>() {
             });

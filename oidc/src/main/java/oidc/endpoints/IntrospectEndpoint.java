@@ -152,13 +152,15 @@ public class IntrospectEndpoint extends SecureEndpoint {
     @SuppressWarnings("unchecked")
     private boolean validPseudonymisation(Map<String, Object> userAttributes, OpenIDClient resourceServer, OpenIDClient openIDClient) {
         String eduId = (String) userAttributes.get("eduid");
-        Optional<Map<String, String>> pseudonymiseResult = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, eduId);
-        if (pseudonymiseResult.isPresent() && !pseudonymiseResult.get().containsKey("eduperson_principal_name")) {
-            //The user is not linked to an IdP belonging to this RS
-            userAttributes.put("eduid", pseudonymiseResult.get().get("eduid"));
+        Map<String, String> pseudonymiseResult = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, eduId)
+            .orElseGet(Collections::emptyMap);
+        if (pseudonymiseResult.containsKey("eduid") &&
+            !pseudonymiseResult.containsKey("eduperson_principal_name")) {
+            //The user is not linked to an IdP belonging to this RS - only replace the pseudo eduid and not other attributes
+            userAttributes.put("eduid", pseudonymiseResult.get("eduid"));
             return false;
         }
-        userAttributes.putAll(pseudonymiseResult.orElseGet(Collections::emptyMap));
+        userAttributes.putAll(pseudonymiseResult);
         return true;
     }
 
