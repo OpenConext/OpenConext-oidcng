@@ -76,7 +76,12 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml5Authentica
 
         HttpSession session = request.getSession(false);
         if (session == null) {
-            LOG.warn(String.format("There is no session in the HttpServletRequest from IP: %s. CookiesNotSupportedException will be thrown", remoteIp));
+            String queryString = request.getQueryString();
+            LOG.warn(String.format("There is no session in the HttpServletRequest from IP: %s and path %s and query %s. " +
+                    "CookiesNotSupportedException will be thrown",
+                remoteIp,
+                request.getRequestURL(),
+                StringUtils.hasText(queryString) ? queryString : "null"));
         } else {
             Enumeration<String> attributeNames = session.getAttributeNames();
             List<String> list = Collections.list(attributeNames);

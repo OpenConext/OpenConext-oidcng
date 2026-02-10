@@ -45,7 +45,7 @@ environment: SURFconext TEST2
 features:
   # Do we enforce that the RS - if eduID pseudonymisation is required - belongs to the SURF IdP linked to the eduID user account?
   # We link RS's and SURF IdP's using the coin:institution-guid
-  enforce-eduid-resource-server-linked-account: true
+  enforce-eduid-resource-server-linked-account: false
   # Do we show consent if configured for a RP in manage
   consent-enabled: true
   # Do we allow for Device Authorization flow

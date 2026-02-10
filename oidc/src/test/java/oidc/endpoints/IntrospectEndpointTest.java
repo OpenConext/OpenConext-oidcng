@@ -10,6 +10,7 @@ import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import io.restassured.response.Response;
 import oidc.AbstractIntegrationTest;
 import oidc.model.AccessToken;
+import org.apache.http.HttpStatus;
 import org.bson.Document;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -23,6 +24,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.nimbusds.oauth2.sdk.http.HTTPRequest.Method.POST;
@@ -53,16 +55,6 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void introspectionEduIdInvalidPseudonymisation() throws IOException {
-        Map<String, String> res = new HashMap<>();
-        res.put("eduid", "pseudoEduid");
-
-        Map<String, Object> result = doIntrospectionWithEduidUser(res);
-        assertEquals(false, result.get("active"));
-
-    }
-
-    @Test
     public void introspectionEduIdValidPseudonymisation() throws IOException {
         String eduPersonPrincipalName = "eduPersonPrincipalName";
 
@@ -83,21 +75,168 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
         queryParams.put("redirect_uri", openIDClient("mock-sp").getRedirectUrls().get(0));
 
         Response response = given().redirects().follow(false)
-                .when()
-                .header("Content-type", "application/json")
-                .queryParams(queryParams)
-                .get("oidc/authorize?user=eduid");
+            .when()
+            .header("Content-type", "application/json")
+            .queryParams(queryParams)
+            .get("oidc/authorize?user=eduid");
 
         String code = getCode(response);
         Map<String, Object> body = doToken(code, "mock-sp", "secret", GrantType.AUTHORIZATION_CODE);
         String accessToken = (String) body.get("access_token");
 
         stubFor(get(urlPathMatching("/attribute-manipulation")).willReturn(aResponse()
-                .withHeader("Content-Type", "application/json")
-                .withBody(objectMapper.writeValueAsString(eduIdAttributePseudonymisationResult))));
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(eduIdAttributePseudonymisationResult))));
 
         return callIntrospection("resource-server-playground-client", accessToken, "secret");
     }
+
+    @Test
+    public void introspectionEduIdEmptyPseudonymisation() throws IOException {
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("scope", "openid");
+        queryParams.put("client_id", "mock-sp");
+        queryParams.put("response_type", "code");
+        queryParams.put("redirect_uri", openIDClient("mock-sp").getRedirectUrls().get(0));
+
+        Response response = given().redirects().follow(false)
+            .when()
+            .header("Content-type", "application/json")
+            .queryParams(queryParams)
+            .get("oidc/authorize?user=eduid");
+
+        String code = getCode(response);
+        Map<String, Object> body = doToken(code, "mock-sp", "secret", GrantType.AUTHORIZATION_CODE);
+        String accessToken = (String) body.get("access_token");
+
+        stubFor(get(urlPathMatching("/attribute-manipulation")).willReturn(aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(Map.of()))));
+        Map<String, Object> results = given()
+            .when()
+            .header("Content-type", "application/x-www-form-urlencoded")
+            .auth()
+            .preemptive()
+            .basic("resource-server-playground-client", "secret")
+            .formParam("token", accessToken)
+            .post("oidc/introspect")
+            .as(mapTypeRef);
+        //See src/main/resources/data/eduid.json
+        assertEquals("3415570f-be91-4ba8-b9ba-e479d18094d5", results.get("eduid"));
+    }
+
+    @Test
+    public void introspectionEduIdOnlyPseudonymisation() throws IOException {
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("scope", "openid");
+        queryParams.put("client_id", "mock-sp");
+        queryParams.put("response_type", "code");
+        queryParams.put("redirect_uri", openIDClient("mock-sp").getRedirectUrls().get(0));
+
+        Response response = given().redirects().follow(false)
+            .when()
+            .header("Content-type", "application/json")
+            .queryParams(queryParams)
+            .get("oidc/authorize?user=eduid");
+
+        String code = getCode(response);
+        Map<String, Object> body = doToken(code, "mock-sp", "secret", GrantType.AUTHORIZATION_CODE);
+        String accessToken = (String) body.get("access_token");
+
+        Map<Object, Object> pseudonymiseResults = Map.of("eduid", UUID.randomUUID().toString());
+        stubFor(get(urlPathMatching("/attribute-manipulation")).willReturn(aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(pseudonymiseResults))));
+
+        Map<String, Object> results = given()
+            .when()
+            .header("Content-type", "application/x-www-form-urlencoded")
+            .auth()
+            .preemptive()
+            .basic("resource-server-playground-client", "secret")
+            .formParam("token", accessToken)
+            .post("oidc/introspect")
+            .as(mapTypeRef);
+        //Replaced pseudo eduID
+        assertEquals(pseudonymiseResults.get("eduid"), results.get("eduid"));
+    }
+
+    @Test
+    public void introspectionEduIdErrorPseudonymisation() throws IOException {
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("scope", "openid");
+        queryParams.put("client_id", "mock-sp");
+        queryParams.put("response_type", "code");
+        queryParams.put("redirect_uri", openIDClient("mock-sp").getRedirectUrls().get(0));
+
+        Response response = given().redirects().follow(false)
+            .when()
+            .header("Content-type", "application/json")
+            .queryParams(queryParams)
+            .get("oidc/authorize?user=eduid");
+
+        String code = getCode(response);
+        Map<String, Object> body = doToken(code, "mock-sp", "secret", GrantType.AUTHORIZATION_CODE);
+        String accessToken = (String) body.get("access_token");
+
+        stubFor(get(urlPathMatching("/attribute-manipulation"))
+            .willReturn(aResponse()
+                .withHeader("Content-Type", "application/json")
+                .withStatus(HttpStatus.SC_BAD_REQUEST)));
+
+        Map<String, Object> results = given()
+            .when()
+            .header("Content-type", "application/x-www-form-urlencoded")
+            .auth()
+            .preemptive()
+            .basic("resource-server-playground-client", "secret")
+            .formParam("token", accessToken)
+            .post("oidc/introspect")
+            .as(mapTypeRef);
+        //See src/main/resources/data/eduid.json
+        assertEquals("3415570f-be91-4ba8-b9ba-e479d18094d5", results.get("eduid"));
+    }
+
+    @Test
+    public void introspectionEduIdRSNotLinkedPseudonymisation() throws IOException {
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("scope", "openid");
+        queryParams.put("client_id", "mock-sp");
+        queryParams.put("response_type", "code");
+        queryParams.put("redirect_uri", openIDClient("mock-sp").getRedirectUrls().get(0));
+
+        Response response = given().redirects().follow(false)
+            .when()
+            .header("Content-type", "application/json")
+            .queryParams(queryParams)
+            .get("oidc/authorize?user=eduid");
+
+        String code = getCode(response);
+        Map<String, Object> body = doToken(code, "mock-sp", "secret", GrantType.AUTHORIZATION_CODE);
+        String accessToken = (String) body.get("access_token");
+
+        Map<Object, Object> pseudonymiseResults = Map.of(
+            "eduid", UUID.randomUUID().toString(),
+            "eduperson_principal_name", "some-eppn"
+        );
+        stubFor(get(urlPathMatching("/attribute-manipulation")).willReturn(aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(pseudonymiseResults))));
+
+        Map<String, Object> results = given()
+            .when()
+            .header("Content-type", "application/x-www-form-urlencoded")
+            .auth()
+            .preemptive()
+            .basic("resource-server-playground-client", "secret")
+            .formParam("token", accessToken)
+            .post("oidc/introspect")
+            .as(mapTypeRef);
+        //See the pseudonymiseResults with an eduperson_principal_name
+        assertEquals(pseudonymiseResults.get("eduid"), results.get("eduid"));
+        assertEquals(pseudonymiseResults.get("eduperson_principal_name"), results.get("eduperson_principal_name"));
+    }
+
 
     @Test
     public void introspectionWithDefaultRP() throws IOException {
@@ -129,7 +268,7 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
 
         results = callIntrospection("resource-server-playground-client", (String) results.get("access_token"), "secret");
         assertEquals("RP mock-rp is not allowed to use the API of resource server resource-server-playground-client. Allowed resource servers are []",
-                results.get("error_description"));
+            results.get("error_description"));
     }
 
     @Test
@@ -177,11 +316,11 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
         String code = doAuthorize();
         Map<String, Object> body = doToken(code);
         Map<String, Object> result = given()
-                .when()
-                .header("Content-type", "application/x-www-form-urlencoded")
-                .formParam("token", body.get("access_token"))
-                .post("oidc/introspect")
-                .as(mapTypeRef);
+            .when()
+            .header("Content-type", "application/x-www-form-urlencoded")
+            .formParam("token", body.get("access_token"))
+            .post("oidc/introspect")
+            .as(mapTypeRef);
         assertEquals("Invalid user / secret", result.get("error_description"));
     }
 
@@ -210,13 +349,13 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
 
     private Map<String, Object> callIntrospection(String clientId, String accessToken, String secret) {
         return given()
-                .when()
-                .header("Content-type", "application/x-www-form-urlencoded")
-                .auth()
-                .preemptive()
-                .basic(clientId, secret)
-                .formParam("token", accessToken)
-                .post("oidc/introspect")
-                .as(mapTypeRef);
+            .when()
+            .header("Content-type", "application/x-www-form-urlencoded")
+            .auth()
+            .preemptive()
+            .basic(clientId, secret)
+            .formParam("token", accessToken)
+            .post("oidc/introspect")
+            .as(mapTypeRef);
     }
 }
