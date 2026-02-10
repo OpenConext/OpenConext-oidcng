@@ -1,17 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>oidcng</artifactId>
     <name>oidcng</name>
-
     <parent>
         <groupId>org.openconext</groupId>
         <artifactId>oidcng-parent</artifactId>
-        <version>8.5.0</version>
+        <version>8.4.1</version>
     </parent>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -30,7 +26,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -261,9 +256,7 @@
             <version>${junit-vintage-engine.version}</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
-
     <profiles>
         <profile>
             <id>security-updates</id>
@@ -291,7 +284,6 @@
             </build>
         </profile>
     </profiles>
-
     <build>
         <plugins>
             <plugin>
@@ -336,5 +328,4 @@
             </extension>
         </extensions>
     </build>
-
 </project>
