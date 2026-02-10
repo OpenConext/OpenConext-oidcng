@@ -52,7 +52,7 @@ public class CustomErrorControllerTest {
     @Test
     @SuppressWarnings("unchecked")
     public void noCookies() throws URISyntaxException {
-        ModelAndView modelAndView = (ModelAndView) doError(new CookiesNotSupportedException());
+        ModelAndView modelAndView = (ModelAndView) doError(new CookiesNotSupportedException("test"));
         assertEquals("no_session_found", modelAndView.getViewName());
     }
 

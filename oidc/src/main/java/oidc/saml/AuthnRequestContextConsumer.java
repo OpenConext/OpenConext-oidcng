@@ -70,13 +70,9 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml5Authentica
         AuthnRequest authnRequest = authnRequestContext.getAuthnRequest();
         HttpServletRequest request = authnRequestContext.getRequest();
 
-        String remoteIp = request.getHeader("X-Forwarded-For");
-
-        if (remoteIp == null || remoteIp.isEmpty() || "unknown".equalsIgnoreCase(remoteIp)) {
-            remoteIp = request.getRemoteAddr();
-        } else {
-            remoteIp = remoteIp.split(",")[0].trim();
-        }
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        String remoteIp = StringUtils.hasText(xForwardedFor) && !xForwardedFor.equalsIgnoreCase("unknown")
+            ? xForwardedFor.split(",")[0].trim() : request.getRemoteAddr();
 
         HttpSession session = request.getSession(false);
         if (session == null) {
