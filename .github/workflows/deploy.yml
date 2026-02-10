@@ -10,6 +10,7 @@ jobs:
   deployment:
     permissions:
       packages: write
+      contents: write
     environment: deploy
     runs-on: ubuntu-latest
 
