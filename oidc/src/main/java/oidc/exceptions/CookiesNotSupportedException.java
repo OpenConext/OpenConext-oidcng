@@ -2,6 +2,14 @@ package oidc.exceptions;
 
 public class CookiesNotSupportedException extends BaseException {
     public CookiesNotSupportedException() {
-        super("Cookies not supported");
+
+        super("There is no savedRequest or cookies are not supported");
     }
+
+    @Override
+    protected boolean suppressStackTrace() {
+        return true;
+    }
+
+
 }
