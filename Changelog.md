@@ -1,6 +1,6 @@
 # Changelog
 
-## 8.5.0
+## 8.4.1
 
 - Only replace the `eduId` in the `/introspect` during attribute pseudonymisation when the result from
   `/attribute-manipulation` contains an eduID ([#319](https://github.com/OpenConext/OpenConext-oidcng/issues/319))
