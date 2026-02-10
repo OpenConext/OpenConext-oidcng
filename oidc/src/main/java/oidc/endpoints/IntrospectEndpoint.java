@@ -29,7 +29,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.time.Clock;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 
 @RestController
 public class IntrospectEndpoint extends SecureEndpoint {
@@ -73,7 +77,7 @@ public class IntrospectEndpoint extends SecureEndpoint {
         }
         String clientId = clientAuthentication.getClientID().getValue();
         OpenIDClient resourceServer = openIDClientRepository.findOptionalByClientId(clientId)
-                .orElseThrow(() -> new UnknownClientException(clientId));
+            .orElseThrow(() -> new UnknownClientException(clientId));
         MDCContext.mdcContext("action", "Introspect", "rp", resourceServer.getClientId(), "accessTokenValue", accessTokenValue);
 
         if (!secretsMatch((PlainClientSecret) clientAuthentication, resourceServer)) {
@@ -109,12 +113,12 @@ public class IntrospectEndpoint extends SecureEndpoint {
 
         if (isUserAccessToken) {
             OpenIDClient openIDClient = openIDClientRepository.findOptionalByClientId(accessToken.getClientId())
-                    .orElseThrow(() -> new UnknownClientException(accessToken.getClientId()));
+                .orElseThrow(() -> new UnknownClientException(accessToken.getClientId()));
             if (!openIDClient.getClientId().equals(resourceServer.getClientId()) &&
-                    !openIDClient.getAllowedResourceServers().contains(resourceServer.getClientId())) {
+                !openIDClient.getAllowedResourceServers().contains(resourceServer.getClientId())) {
                 throw new UnauthorizedException(
-                        String.format("RP %s is not allowed to use the API of resource server %s. Allowed resource servers are %s",
-                                accessToken.getClientId(), resourceServer.getClientId(), openIDClient.getAllowedResourceServers()));
+                    String.format("RP %s is not allowed to use the API of resource server %s. Allowed resource servers are %s",
+                        accessToken.getClientId(), resourceServer.getClientId(), openIDClient.getAllowedResourceServers()));
             }
             User user = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(signedJWT);
             result.put("updated_at", user.getUpdatedAt());
@@ -154,14 +158,15 @@ public class IntrospectEndpoint extends SecureEndpoint {
         String eduId = (String) userAttributes.get("eduid");
         Map<String, String> pseudonymiseResult = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, eduId)
             .orElseGet(Collections::emptyMap);
-        if (pseudonymiseResult.containsKey("eduid") &&
-            !pseudonymiseResult.containsKey("eduperson_principal_name")) {
+        boolean hasEdupersonPrincipalName = pseudonymiseResult.containsKey("eduperson_principal_name");
+        if (hasEdupersonPrincipalName) {
+            userAttributes.putAll(pseudonymiseResult);
+            return true;
+        } else {
             //The user is not linked to an IdP belonging to this RS - only replace the pseudo eduid and not other attributes
-            userAttributes.put("eduid", pseudonymiseResult.get("eduid"));
+            userAttributes.put("eduid", pseudonymiseResult.getOrDefault("eduid", eduId));
             return false;
         }
-        userAttributes.putAll(pseudonymiseResult);
-        return true;
     }
 
 }
