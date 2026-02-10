@@ -70,9 +70,13 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml5Authentica
         AuthnRequest authnRequest = authnRequestContext.getAuthnRequest();
         HttpServletRequest request = authnRequestContext.getRequest();
 
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        String remoteIp = StringUtils.hasText(xForwardedFor) && !xForwardedFor.equalsIgnoreCase("unknown")
+            ? xForwardedFor.split(",")[0].trim() : request.getRemoteAddr();
+
         HttpSession session = request.getSession(false);
         if (session == null) {
-            LOG.warn("There is no session in the HttpServletRequest. CookiesNotSupportedException will be thrown");
+            LOG.warn(String.format("There is no session in the HttpServletRequest from IP: %s. CookiesNotSupportedException will be thrown", remoteIp));
         } else {
             Enumeration<String> attributeNames = session.getAttributeNames();
             List<String> list = Collections.list(attributeNames);
@@ -84,7 +88,7 @@ public class AuthnRequestContextConsumer implements Consumer<OpenSaml5Authentica
         SavedRequest savedRequest = requestCache.getRequest(request, null);
 
         if (savedRequest == null) {
-            throw new CookiesNotSupportedException();
+            throw new CookiesNotSupportedException(String.format("There is no savedRequest or cookies are not supported from IP: %s", remoteIp));
         }
 
         Map<String, String[]> parameterMap = savedRequest.getParameterMap();
