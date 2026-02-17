@@ -394,21 +394,30 @@ public class AuthorizationEndpoint implements OidcEndpoint {
      */
     void validateQueryParamSize(MultiValueMap<String, String> parameters) {
         if (parameters != null && !parameters.isEmpty()) {
-            // Calculate the URL-encoded size of all parameters
+            // Calculate the URL-encoded size of all parameters without building the full string
             // This matches the actual byte size when parameters are transmitted in URLs or response headers
-            int totalSize = parameters.entrySet().stream()
-                    .flatMap(e -> e.getValue().stream()
-                            .map(v -> URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8)
-                                    + "="
-                                    + URLEncoder.encode(v, StandardCharsets.UTF_8)))
-                    .collect(Collectors.joining("&"))
-                    .getBytes(StandardCharsets.UTF_8)
-                    .length;
+            int totalSize = 0;
+            boolean first = true;
             
-            if (totalSize > maxQueryParamSize) {
-                throw new UriTooLongException(
-                        String.format("Request parameter size (%d bytes) exceeds maximum allowed size (%d bytes)", 
-                                totalSize, maxQueryParamSize));
+            for (Map.Entry<String, List<String>> entry : parameters.entrySet()) {
+                String encodedKey = URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8);
+                for (String value : entry.getValue()) {
+                    if (!first) {
+                        totalSize += 1; // for '&' separator
+                    }
+                    first = false;
+                    
+                    totalSize += encodedKey.getBytes(StandardCharsets.UTF_8).length;
+                    totalSize += 1; // for '=' separator
+                    totalSize += URLEncoder.encode(value, StandardCharsets.UTF_8).getBytes(StandardCharsets.UTF_8).length;
+                    
+                    // Early exit if we've already exceeded the limit
+                    if (totalSize > maxQueryParamSize) {
+                        throw new UriTooLongException(
+                                String.format("Request parameter size (%d bytes) exceeds maximum allowed size (%d bytes)", 
+                                        totalSize, maxQueryParamSize));
+                    }
+                }
             }
         }
     }
