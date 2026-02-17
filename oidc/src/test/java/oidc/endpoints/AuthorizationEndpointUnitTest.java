@@ -227,4 +227,72 @@ public class AuthorizationEndpointUnitTest {
         request.setQueryString(queryString);
         return AuthorizationRequest.parse(JakartaServletUtils.createHTTPRequest(request));
     }
+
+    @Test
+    public void validateQueryParamSizeWithinLimit() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setQueryString("scope=openid&response_type=code&client_id=test");
+        
+        // Should not throw exception
+        AuthorizationEndpoint endpoint = createAuthorizationEndpoint(1024);
+        try {
+            java.lang.reflect.Method method = AuthorizationEndpoint.class.getDeclaredMethod("validateQueryParamSize", jakarta.servlet.http.HttpServletRequest.class);
+            method.setAccessible(true);
+            method.invoke(endpoint, request);
+        } catch (Exception e) {
+            fail("Should not throw exception for query params within limit");
+        }
+    }
+
+    @Test
+    public void validateQueryParamSizeExceedsLimit() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        // Create a query string that exceeds 100 bytes
+        StringBuilder longScope = new StringBuilder("scope=openid");
+        for (int i = 0; i < 50; i++) {
+            longScope.append("+openid");
+        }
+        request.setQueryString(longScope.toString());
+        
+        AuthorizationEndpoint endpoint = createAuthorizationEndpoint(100);
+        try {
+            java.lang.reflect.Method method = AuthorizationEndpoint.class.getDeclaredMethod("validateQueryParamSize", jakarta.servlet.http.HttpServletRequest.class);
+            method.setAccessible(true);
+            method.invoke(endpoint, request);
+            fail("Should throw UriTooLongException");
+        } catch (Exception e) {
+            assertTrue(e.getCause() instanceof oidc.exceptions.UriTooLongException);
+            assertTrue(e.getCause().getMessage().contains("exceeds maximum allowed size"));
+        }
+    }
+
+    @Test
+    public void validateQueryParamSizeNullQueryString() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setQueryString(null);
+        
+        // Should not throw exception
+        AuthorizationEndpoint endpoint = createAuthorizationEndpoint(1024);
+        try {
+            java.lang.reflect.Method method = AuthorizationEndpoint.class.getDeclaredMethod("validateQueryParamSize", jakarta.servlet.http.HttpServletRequest.class);
+            method.setAccessible(true);
+            method.invoke(endpoint, request);
+        } catch (Exception e) {
+            fail("Should not throw exception for null query string");
+        }
+    }
+
+    private AuthorizationEndpoint createAuthorizationEndpoint(int maxQueryParamSize) {
+        return new AuthorizationEndpoint(
+                null, // authorizationCodeRepository
+                null, // accessTokenRepository
+                null, // userRepository
+                null, // openIDClientRepository
+                null, // tokenGenerator
+                "salt",
+                "test",
+                false,
+                maxQueryParamSize
+        );
+    }
 }

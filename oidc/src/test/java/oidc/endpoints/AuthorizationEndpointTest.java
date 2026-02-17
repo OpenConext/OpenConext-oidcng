@@ -508,4 +508,29 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         assertNotNull(claimsSet.getClaim("auth_time"));
     }
 
+    @Test
+    public void authorizeUriTooLong() {
+        // Create a very long scope parameter to exceed the max-query-param-size limit (1024 bytes)
+        StringBuilder longScope = new StringBuilder("openid");
+        for (int i = 0; i < 200; i++) {
+            longScope.append("+openid");
+        }
+        
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("scope", longScope.toString());
+        queryParams.put("response_type", "code");
+        queryParams.put("client_id", "mock-sp");
+        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", StandardCharsets.UTF_8));
+        
+        given().redirects().follow(false)
+                .when()
+                .header("Content-type", "application/json")
+                .queryParams(queryParams)
+                .get("oidc/authorize")
+                .then()
+                .statusCode(414)
+                .body("message", containsString("Query parameter size"))
+                .body("message", containsString("exceeds maximum allowed size"));
+    }
+
 }
