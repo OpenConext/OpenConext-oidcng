@@ -383,7 +383,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         return adStateToQueryParameters(builder, state);
     }
 
-    private void validateQueryParamSize(HttpServletRequest request) {
+    void validateQueryParamSize(HttpServletRequest request) {
         String queryString = request.getQueryString();
         if (queryString != null) {
             int queryStringLength = queryString.getBytes(StandardCharsets.UTF_8).length;
