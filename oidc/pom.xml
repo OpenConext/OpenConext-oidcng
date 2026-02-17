@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.openconext</groupId>
         <artifactId>oidcng-parent</artifactId>
-        <version>8.5.0</version>
+        <version>8.5.1-SNAPSHOT</version>
     </parent>
     <dependencyManagement>
         <dependencies>
