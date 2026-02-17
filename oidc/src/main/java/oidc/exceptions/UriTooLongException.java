@@ -14,4 +14,9 @@ public class UriTooLongException extends BaseException {
     public String getErrorCode() {
         return "uri_too_long";
     }
+
+    @Override
+    protected boolean suppressStackTrace() {
+        return true;
+    }
 }

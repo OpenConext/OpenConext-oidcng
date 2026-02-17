@@ -18,8 +18,6 @@ import org.springframework.security.saml2.core.Saml2X509Credential;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml5AuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationToken;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
-import org.springframework.security.web.PortResolver;
-import org.springframework.security.web.PortResolverImpl;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -35,7 +33,6 @@ import java.security.cert.X509Certificate;
 public abstract class AbstractSamlUnitTest {
 
     protected static Saml2X509Credential saml2X509Credential;
-    protected static PortResolver portResolver = new PortResolverImpl();
     protected static RelyingPartyRegistration relyingParty;
 
     @BeforeAll
@@ -45,15 +42,15 @@ public abstract class AbstractSamlUnitTest {
         OpenSamlInitializationService.initialize();
 
         relyingParty = RelyingPartyRegistration
-                .withRegistrationId("oidcng")
+            .withRegistrationId("oidcng")
+            .entityId("entityID")
+            .signingX509Credentials(c -> c.add(saml2X509Credential))
+            .assertionConsumerServiceLocation("https://acs")
+            .assertingPartyMetadata(builder -> builder
                 .entityId("entityID")
-                .signingX509Credentials(c -> c.add(saml2X509Credential))
-                .assertionConsumerServiceLocation("https://acs")
-                .assertingPartyMetadata(builder -> builder
-                        .entityId("entityID")
-                        .wantAuthnRequestsSigned(false)
-                        .singleSignOnServiceLocation("https://sso").build())
-                .build();
+                .wantAuthnRequestsSigned(false)
+                .singleSignOnServiceLocation("https://sso").build())
+            .build();
     }
 
     @SneakyThrows
@@ -81,7 +78,7 @@ public abstract class AbstractSamlUnitTest {
     public Response unmarshall(String saml2Response) throws UnmarshallingException, XMLParserException {
         XMLObjectProviderRegistry registry = ConfigurationService.get(XMLObjectProviderRegistry.class);
         ResponseUnmarshaller responseUnmarshaller = (ResponseUnmarshaller) registry.getUnmarshallerFactory()
-                .getUnmarshaller(Response.DEFAULT_ELEMENT_NAME);
+            .getUnmarshaller(Response.DEFAULT_ELEMENT_NAME);
         ParserPool parserPool = registry.getParserPool();
         Document doc = parserPool.parse(new ByteArrayInputStream(saml2Response.getBytes()));
         Element samlElement = doc.getDocumentElement();
