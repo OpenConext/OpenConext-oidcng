@@ -383,6 +383,14 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         return adStateToQueryParameters(builder, state);
     }
 
+    /**
+     * Validates that the query parameter size does not exceed the configured maximum.
+     * This prevents heap problems and 500 errors caused by excessively long query strings
+     * that would result in response headers being too large.
+     *
+     * @param request the HTTP servlet request containing the query string to validate
+     * @throws UriTooLongException if the query string size exceeds maxQueryParamSize
+     */
     void validateQueryParamSize(HttpServletRequest request) {
         String queryString = request.getQueryString();
         if (queryString != null) {
