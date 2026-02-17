@@ -68,6 +68,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     private final String salt;
     private final String environment;
     private final boolean consentEnabled;
+    private final int maxQueryParamSize;
 
     public AuthorizationEndpoint(AuthorizationCodeRepository authorizationCodeRepository,
                                  AccessTokenRepository accessTokenRepository,
@@ -76,7 +77,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                                  TokenGenerator tokenGenerator,
                                  @Value("${access_token_one_way_hash_salt}") String salt,
                                  @Value("${environment}") String environment,
-                                 @Value("${features.consent-enabled}") boolean consentEnabled) {
+                                 @Value("${features.consent-enabled}") boolean consentEnabled,
+                                 @Value("${max-query-param-size}") int maxQueryParamSize) {
         this.authorizationCodeRepository = authorizationCodeRepository;
         this.accessTokenRepository = accessTokenRepository;
         this.userRepository = userRepository;
@@ -85,6 +87,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         this.salt = salt;
         this.environment = environment;
         this.consentEnabled = consentEnabled;
+        this.maxQueryParamSize = maxQueryParamSize;
     }
 
     @RequestMapping(value = "/oidc/authorize", method = {RequestMethod.GET, RequestMethod.POST})
@@ -92,6 +95,9 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                                   Authentication authentication,
                                   HttpServletRequest request) throws ParseException, JOSEException, IOException, CertificateException, BadJOSEException, java.text.ParseException, URISyntaxException {
         LOG.debug(String.format("/oidc/authorize %s %s", authentication.getDetails(), parameters));
+
+        // Validate query parameter size to prevent heap problems
+        validateQueryParamSize(request);
 
         //to enable consent, set consentRequired to true
         return doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, consentEnabled);
@@ -375,6 +381,18 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             builder.queryParam("code", code);
         }
         return adStateToQueryParameters(builder, state);
+    }
+
+    private void validateQueryParamSize(HttpServletRequest request) {
+        String queryString = request.getQueryString();
+        if (queryString != null) {
+            int queryStringLength = queryString.getBytes(StandardCharsets.UTF_8).length;
+            if (queryStringLength > maxQueryParamSize) {
+                throw new UriTooLongException(
+                        String.format("Query parameter size (%d bytes) exceeds maximum allowed size (%d bytes)", 
+                                queryStringLength, maxQueryParamSize));
+            }
+        }
     }
 
     private static final String unsupportedPromptMessage = "Unsupported prompt=%s is requested, redirecting the user back to the RP";
