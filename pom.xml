@@ -35,7 +35,7 @@
         <opensaml-saml.version>5.2.0</opensaml-saml.version>
         <rest-assured.version>5.2.0</rest-assured.version>
         <require-maven.version>3.8.4</require-maven.version>
-        <spring-session-data-mongodb.version>3.4.1</spring-session-data-mongodb.version>
+        <spring-session-data-mongodb.version>3.5.4</spring-session-data-mongodb.version>
         <spring-session-bom.version>2021.2.3</spring-session-bom.version>
         <threshold-logger.version>2.0.1</threshold-logger.version>
         <tink.version>1.20.0</tink.version>
