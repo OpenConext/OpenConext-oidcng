@@ -31,7 +31,11 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -115,7 +119,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void oauth2NonOidcImplicitFlow() throws IOException {
         String state = "https%3A%2F%2Fexample.com";
         Response response = doAuthorizeWithClaimsAndScopes("mock-sp", "token",
-                null, null, null, null, "groups", state);
+            null, null, null, null, "groups", state);
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = fragmentToMap(fragment);
@@ -127,7 +131,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void oauth2NonOidcImplicitFlowStateDecodeDisabled() throws IOException {
         String state = "https%3A%2F%2Fexample.com";
         Response response = doAuthorizeWithClaimsAndScopes("student.mobility.rp.localhost", "token",
-                null, null, null, null, "groups", state);
+            null, null, null, null, "groups", state);
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = fragmentToMap(fragment);
@@ -139,7 +143,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     @Test
     public void noScopeNoState() throws IOException {
         String code = getCode(doAuthorizeWithClaimsAndScopes("mock-sp", "code",
-                null, null, null, null, null, null));
+            null, null, null, null, null, null));
         Map<String, Object> tokenResponse = doToken(code);
         assertFalse(tokenResponse.containsKey("id_token"));
     }
@@ -148,7 +152,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void queryParamState() throws IOException {
         String state = "https://example.com";
         Response response = doAuthorizeWithClaimsAndScopes("mock-sp", "code",
-                null, null, null, null, null, state);
+            null, null, null, null, null, state);
         String location = response.getHeader("Location");
         Map<String, String> queryParams = super.queryParamsToMap(location);
         String stateReturned = queryParams.get("state");
@@ -159,7 +163,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void queryParamStateWithSemiColon() throws IOException {
         String state = "signon;eu;1725954357882971540;/";
         Response response = doAuthorizeWithClaimsAndScopes("mock-sp", "code",
-                null, null, null, null, null, state);
+            null, null, null, null, null, state);
         String location = response.getHeader("Location");
         Map<String, String> queryParams = super.queryParamsToMap(location);
         String stateReturned = queryParams.get("state");
@@ -170,7 +174,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void queryParamStateParameterDecodingDisabled() throws IOException {
         String state = "https://example.com";
         Response response = doAuthorizeWithClaimsAndScopes("mock-sp", "code",
-                null, null, null, null, null, state);
+            null, null, null, null, null, state);
         String location = response.getHeader("Location");
         Map<String, String> queryParams = super.queryParamsToMap(location);
         String stateReturned = queryParams.get("state");
@@ -181,7 +185,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void queryParamStateDecodingDefault() throws IOException {
         String state = "https%3A%2F%2Fexample.com";
         Response response = doAuthorizeWithClaimsAndScopes("student.mobility.rp.localhost", "code",
-                null, null, null, null, null, state);
+            null, null, null, null, null, state);
         String location = response.getHeader("Location");
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(location);
         String returnedState = builder.build().getQueryParams().getFirst("state");
@@ -192,7 +196,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void queryParamStateDecodingDisclaimer() throws IOException {
         String state = "https://example.com";
         Response response = doAuthorizeWithClaimsAndScopes("student.mobility.rp.localhost", "code",
-                null, null, null, null, null, state);
+            null, null, null, null, null, state);
         String location = response.getHeader("Location");
         Map<String, String> queryParamsToMap = super.queryParamsToMap(location);
         assertEquals("https%3A%2F%2Fexample.com", queryParamsToMap.get("state"));
@@ -204,13 +208,13 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         queryParams.put("redirect_uri", "http%3A%2F%2Flocalhost%3A8080");
 
         given().redirects().follow(false)
-                .when()
-                .header("Content-type", "application/json")
-                .queryParams(queryParams)
-                .get("oidc/authorize")
-                .then()
-                .statusCode(302)
-                .body(containsString("Missing client_id parameter"));
+            .when()
+            .header("Content-type", "application/json")
+            .queryParams(queryParams)
+            .get("oidc/authorize")
+            .then()
+            .statusCode(302)
+            .body(containsString("Missing client_id parameter"));
     }
 
     @Test
@@ -222,13 +226,13 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", StandardCharsets.UTF_8));
 
         given().redirects().follow(false)
-                .when()
-                .header("Content-type", "application/json")
-                .queryParams(queryParams)
-                .get("oidc/authorize")
-                .then()
-                .statusCode(302)
-                .body(containsString("not allowed"));
+            .when()
+            .header("Content-type", "application/json")
+            .queryParams(queryParams)
+            .get("oidc/authorize")
+            .then()
+            .statusCode(302)
+            .body(containsString("not allowed"));
     }
 
     @Test
@@ -239,10 +243,10 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", StandardCharsets.UTF_8));
 
         Response response = given().redirects().follow(false)
-                .when()
-                .header("Content-type", "application/json")
-                .queryParams(queryParams)
-                .get("oidc/authorize");
+            .when()
+            .header("Content-type", "application/json")
+            .queryParams(queryParams)
+            .get("oidc/authorize");
         assertEquals(302, response.getStatusCode());
         String location = response.getHeader("Location");
         MultiValueMap<String, String> params = UriComponentsBuilder.fromHttpUrl(location).build().getQueryParams();
@@ -260,14 +264,14 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", StandardCharsets.UTF_8));
 
         given().redirects().follow(false)
-                .when()
-                .header("Content-type", "application/json")
-                .queryParams(queryParams)
-                .get("oidc/authorize")
-                .then()
-                .statusCode(401)
-                .body(containsString("example"))
-                .body(containsString("not+allowed"));
+            .when()
+            .header("Content-type", "application/json")
+            .queryParams(queryParams)
+            .get("oidc/authorize")
+            .then()
+            .statusCode(401)
+            .body(containsString("example"))
+            .body(containsString("not+allowed"));
     }
 
     @Test
@@ -279,21 +283,21 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         queryParams.put("redirect_uri", "http://nope");
 
         Map<String, Object> body = given().redirects().follow(false)
-                .when()
-                .header("Content-type", "application/json")
-                .queryParams(queryParams)
-                .get("oidc/authorize")
-                .as(mapTypeRef);
+            .when()
+            .header("Content-type", "application/json")
+            .queryParams(queryParams)
+            .get("oidc/authorize")
+            .as(mapTypeRef);
         assertEquals("Client mock-sp with registered redirect URI's " +
-                        "[http://localhost:3006/redirect, http://localhost:3006/oidc/api/redirect] " +
-                        "requested authorization with redirectURI http://nope",
-                body.get("message"));
+                "[http://localhost:3006/redirect, http://localhost:3006/oidc/api/redirect] " +
+                "requested authorization with redirectURI http://nope",
+            body.get("message"));
     }
 
     @Test
     public void implicitFlowFragment() throws IOException, BadJOSEException, ParseException, JOSEException {
         Response response = doAuthorizeWithClaims("mock-sp", "id_token token",
-                null, "nonce", null, Arrays.asList("email", "nickname"));
+            null, "nonce", null, Arrays.asList("email", "nickname"));
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = fragmentToMap(fragment);
@@ -307,8 +311,8 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void hybridFlowFragment() throws IOException, BadJOSEException, ParseException, JOSEException {
         String state = "https%3A%2F%2Fexample.com";
         Response response = doAuthorizeWithClaimsAndScopes("mock-sp",
-                "code id_token token", null, "nonce", null,
-                Collections.emptyList(), "openid", state);
+            "code id_token token", null, "nonce", null,
+            Collections.emptyList(), "openid", state);
         String url = response.getHeader("Location");
         String fragment = url.substring(url.indexOf("#") + 1);
         Map<String, String> fragmentParameters = fragmentToMap(fragment);
@@ -349,8 +353,8 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void implicitFlowQuery() throws IOException, BadJOSEException, ParseException, JOSEException {
         String state = "https%3A%2F%2Fexample.com";
         Response response = doAuthorizeWithClaimsAndScopes("mock-sp",
-                "id_token token", ResponseMode.QUERY.getValue(), "nonce", null,
-                Collections.emptyList(), "openid", state);
+            "id_token token", ResponseMode.QUERY.getValue(), "nonce", null,
+            Collections.emptyList(), "openid", state);
         String url = response.getHeader("Location");
         Map<String, String> queryParameters = UriComponentsBuilder.fromUriString(url).build().getQueryParams().toSingleValueMap();
         assertEquals(state, queryParameters.get("state"));
@@ -361,7 +365,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void implicitFlowQueryStateDecodingDisabled() throws IOException, BadJOSEException, ParseException, JOSEException {
         String state = "https%3A%2F%2Fexample.com";
         Response response = doAuthorizeWithClaimsAndScopes("student.mobility.rp.localhost", "id_token token", ResponseMode.QUERY.getValue(), "nonce", null,
-                Collections.emptyList(), "openid", state);
+            Collections.emptyList(), "openid", state);
         String url = response.getHeader("Location");
         Map<String, String> queryParameters = UriComponentsBuilder.fromUriString(url).build().getQueryParams().toSingleValueMap();
         assertEquals(state, queryParameters.get("state"));
@@ -372,7 +376,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void implicitFlowQueryStateDecodingDisabledNoClientEncoding() throws IOException, BadJOSEException, ParseException, JOSEException {
         String state = "https://example.com";
         Response response = doAuthorizeWithClaimsAndScopes("student.mobility.rp.localhost", "id_token token", ResponseMode.QUERY.getValue(), "nonce", null,
-                Collections.emptyList(), "openid", state);
+            Collections.emptyList(), "openid", state);
         String url = response.getHeader("Location");
         Map<String, String> queryParams = super.queryParamsToMap(url);
         assertEquals(URLEncoder.encode(state, defaultCharset()), queryParams.get("state"));
@@ -442,7 +446,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     @Test
     public void consent() throws IOException {
         Response response = doAuthorizeWithClaimsAndScopes("playground_client", "code", ResponseMode.QUERY.getValue(), "nonce", null,
-                Collections.emptyList(), "https://voot.surfconext.nl/groups groups", "state");
+            Collections.emptyList(), "https://voot.surfconext.nl/groups groups", "state");
         String html = response.getBody().asString();
         assertTrue(html.contains("<form class=\"form-data\" method=\"post\" action=\"/oidc/consent\">"));
 
@@ -455,9 +459,9 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         assertEquals("state", formParams.get("state"));
 
         response = given().redirects().follow(false)
-                .when()
-                .formParams(formParams)
-                .post("oidc/consent");
+            .when()
+            .formParams(formParams)
+            .post("oidc/consent");
         assertEquals(302, response.getStatusCode());
         String location = response.getHeader("Location");
         assertTrue(location.contains("state=state"));
@@ -474,13 +478,13 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         queryParams.put("response_type", "code");
         queryParams.put("client_id", "nope");
         given().redirects().follow(false)
-                .when()
-                .header("Content-type", "application/json")
-                .queryParams(queryParams)
-                .get("oidc/authorize")
-                .then()
-                .statusCode(401)
-                .body("message", equalTo("ClientID nope or secret is not correct"));
+            .when()
+            .header("Content-type", "application/json")
+            .queryParams(queryParams)
+            .get("oidc/authorize")
+            .then()
+            .statusCode(401)
+            .body("message", equalTo("ClientID nope or secret is not correct"));
     }
 
     @SneakyThrows
@@ -494,11 +498,11 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         parametersMap.put("state", "state");
         parametersMap.put("nonce", "nonce");
         Response response = given()
-                .redirects().follow(false)
-                .when()
-                .header("Content-type", "application/x-www-form-urlencoded")
-                .formParams(parametersMap)
-                .post("oidc/authorize");
+            .redirects().follow(false)
+            .when()
+            .header("Content-type", "application/x-www-form-urlencoded")
+            .formParams(parametersMap)
+            .post("oidc/authorize");
         String code = getCode(response);
         Map<String, Object> tokenResponse = doToken(code);
         String idToken = (String) tokenResponse.get("id_token");
@@ -506,6 +510,48 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         JWTClaimsSet claimsSet = processToken(idToken, port);
         assertEquals("nonce", claimsSet.getClaim("nonce"));
         assertNotNull(claimsSet.getClaim("auth_time"));
+    }
+
+    @Test
+    public void authorizeUriTooLong() {
+        // Create a very long scope parameter to exceed the max-query-param-size limit (8184 bytes)
+        String longScope = "openid" + "+openid".repeat(1_170);
+
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("scope", longScope);
+        queryParams.put("response_type", "code");
+        queryParams.put("client_id", "mock-sp");
+        queryParams.put("redirect_uri", URLEncoder.encode("http://localhost:3006/redirect", StandardCharsets.UTF_8));
+
+        String location = given().redirects().follow(false)
+            .when()
+            .header("Content-type", "application/json")
+            .queryParams(queryParams)
+            .get("oidc/authorize")
+            .header("Location");
+        assertEquals("http://localhost:3006/redirect?error=uri_too_long&error_description=Request+parameter+size+%252810643+bytes%2529+exceeds+maximum+allowed+size+%25288184+bytes%2529",
+            location);
+    }
+
+    @Test
+    public void authorizeUriTooLongWithPost() {
+        // Create a very long scope parameter to exceed the max-query-param-size limit (8184 bytes)
+        String longScope = "openid" + "+openid".repeat(1_170);
+
+        Map<String, String> formParams = new HashMap<>();
+        formParams.put("scope", longScope);
+        formParams.put("response_type", "code");
+        formParams.put("client_id", "mock-sp");
+        formParams.put("redirect_uri", "http://localhost:3006/redirect");
+
+        String location = given().redirects().follow(false)
+            .when()
+            .header("Content-type", "application/x-www-form-urlencoded")
+            .formParams(formParams)
+            .post("oidc/authorize")
+            .header("Location");
+        assertEquals("http://localhost:3006/redirect?error=uri_too_long&error_description=Request+parameter+size+%252810633+bytes%2529+exceeds+maximum+allowed+size+%25288184+bytes%2529",
+            location);
     }
 
 }

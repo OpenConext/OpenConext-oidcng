@@ -16,6 +16,8 @@ import oidc.repository.OpenIDClientRepository;
 import org.junit.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -226,5 +228,63 @@ public class AuthorizationEndpointUnitTest {
         MockHttpServletRequest request = new MockHttpServletRequest(HttpMethod.GET.name(), "http://localhost");
         request.setQueryString(queryString);
         return AuthorizationRequest.parse(JakartaServletUtils.createHTTPRequest(request));
+    }
+
+    @Test
+    public void validateQueryParamSizeWithinLimit() {
+        MultiValueMap<String, String> parameters = new LinkedMultiValueMap<>();
+        parameters.add("scope", "openid");
+        parameters.add("response_type", "code");
+        parameters.add("client_id", "test");
+        
+        // Should not throw exception
+        AuthorizationEndpoint endpoint = createAuthorizationEndpoint(1024);
+        endpoint.validateQueryParamSize(parameters);
+    }
+
+    @Test(expected = oidc.exceptions.UriTooLongException.class)
+    public void validateQueryParamSizeExceedsLimit() {
+        MultiValueMap<String, String> parameters = new LinkedMultiValueMap<>();
+        // Create a scope parameter that exceeds 100 bytes
+        StringBuilder longScope = new StringBuilder("openid");
+        for (int i = 0; i < 50; i++) {
+            longScope.append(" openid");
+        }
+        parameters.add("scope", longScope.toString());
+        parameters.add("response_type", "code");
+        parameters.add("client_id", "test");
+        
+        AuthorizationEndpoint endpoint = createAuthorizationEndpoint(100);
+        endpoint.validateQueryParamSize(parameters);
+    }
+
+    @Test
+    public void validateQueryParamSizeNullParameters() {
+        // Should not throw exception
+        AuthorizationEndpoint endpoint = createAuthorizationEndpoint(1024);
+        endpoint.validateQueryParamSize(null);
+    }
+
+    @Test
+    public void validateQueryParamSizeEmptyParameters() {
+        MultiValueMap<String, String> parameters = new LinkedMultiValueMap<>();
+        
+        // Should not throw exception
+        AuthorizationEndpoint endpoint = createAuthorizationEndpoint(1024);
+        endpoint.validateQueryParamSize(parameters);
+    }
+
+    private AuthorizationEndpoint createAuthorizationEndpoint(int maxQueryParamSize) {
+        return new AuthorizationEndpoint(
+                null, // authorizationCodeRepository
+                null, // accessTokenRepository
+                null, // userRepository
+                null, // openIDClientRepository
+                null, // tokenGenerator
+                "salt",
+                "test",
+                false,
+                maxQueryParamSize
+        );
     }
 }

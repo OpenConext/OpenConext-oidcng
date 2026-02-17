@@ -65,7 +65,7 @@ public class AuthnRequestContextConsumerUnitTest extends AbstractSamlUnitTest im
         request.addParameter("request", signedJWT.serialize());
 
         when(requestCache.getRequest(any(HttpServletRequest.class), any()))
-                .thenReturn(new DefaultSavedRequest(request, portResolver));
+                .thenReturn(new DefaultSavedRequest(request));
 
         AuthnRequest authnRequest = getAuthnRequest();
 
@@ -107,7 +107,7 @@ public class AuthnRequestContextConsumerUnitTest extends AbstractSamlUnitTest im
         HttpServletRequest servletRequest = new MockHttpServletRequest();
 
         when(requestCache.getRequest(any(HttpServletRequest.class), any()))
-                .thenReturn(new DefaultSavedRequest(request, portResolver));
+                .thenReturn(new DefaultSavedRequest(request));
         AuthnRequest authnRequest = getAuthnRequest();
 
         OpenSaml5AuthenticationRequestResolver.AuthnRequestContext ctx =
@@ -128,7 +128,7 @@ public class AuthnRequestContextConsumerUnitTest extends AbstractSamlUnitTest im
         request.addParameter("client_id", "mock_sp");
 
         when(requestCache.getRequest(any(HttpServletRequest.class), any()))
-                .thenReturn(new DefaultSavedRequest(request, portResolver));
+                .thenReturn(new DefaultSavedRequest(request));
 
         AuthnRequest authnRequest = getAuthnRequest();
 
