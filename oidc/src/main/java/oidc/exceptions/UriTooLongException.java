@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(value = HttpStatus.URI_TOO_LONG)
 public class UriTooLongException extends BaseException {
+
     public UriTooLongException(String message) {
         super(message);
     }

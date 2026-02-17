@@ -29,7 +29,7 @@ server:
   max-http-request-header-size: 10000000
 
 # Maximum length of query parameters in bytes for authorization endpoint
-max-query-param-size: 1024
+max-query-param-size: 8184
 
 mongodb_db: oidc_test
 oidc_saml_mapping_path: classpath:/oidc/saml_mapping.json

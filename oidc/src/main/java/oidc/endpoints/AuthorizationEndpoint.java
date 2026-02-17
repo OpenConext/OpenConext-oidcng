@@ -2,8 +2,12 @@ package oidc.endpoints;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.proc.BadJOSEException;
+import com.nimbusds.oauth2.sdk.AuthorizationRequest;
+import com.nimbusds.oauth2.sdk.GrantType;
+import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.ResponseMode;
+import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
-import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
@@ -13,10 +17,20 @@ import com.nimbusds.openid.connect.sdk.OIDCResponseTypeValue;
 import com.nimbusds.openid.connect.sdk.Prompt;
 import jakarta.servlet.http.HttpServletRequest;
 import oidc.crypto.KeyGenerator;
-import oidc.exceptions.*;
+import oidc.exceptions.InvalidGrantException;
+import oidc.exceptions.InvalidScopeException;
+import oidc.exceptions.RedirectMismatchException;
+import oidc.exceptions.UnknownClientException;
+import oidc.exceptions.UnsupportedPromptValueException;
+import oidc.exceptions.UriTooLongException;
 import oidc.log.MDCContext;
+import oidc.model.AccessToken;
 import oidc.model.AuthorizationCode;
-import oidc.model.*;
+import oidc.model.EncryptedTokenValue;
+import oidc.model.OpenIDClient;
+import oidc.model.ProvidedRedirectURI;
+import oidc.model.TokenValue;
+import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
 import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.OpenIDClientRepository;
@@ -35,7 +49,10 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -47,7 +64,16 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.Charset.defaultCharset;
@@ -125,8 +151,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         String clientId = authenticationRequest.getClientID().getValue();
         OpenIDClient client = openIDClientRepository
-                .findOptionalByClientId(clientId)
-                .orElseThrow(() -> new UnknownClientException(clientId));
+            .findOptionalByClientId(clientId)
+            .orElseThrow(() -> new UnknownClientException(clientId));
         MDCContext.mdcContext("action", "Authorize", "rp", client.getClientId());
         if (isOpenIdClient) {
             AuthenticationRequest oidcAuthenticationRequest = AuthenticationRequest.parse(parameters);
@@ -156,9 +182,9 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             List<String> scopeList = scope.toStringList();
             boolean apiScopeRequested = !(scopeList.isEmpty() || (scopeList.size() == 1 && scopeList.contains("openid")));
             Set<String> filteredScopes = scopeList.stream()
-                    .filter(s -> !s.equalsIgnoreCase("openid"))
-                    .map(String::toLowerCase)
-                    .collect(toSet());
+                .filter(s -> !s.equalsIgnoreCase("openid"))
+                .map(String::toLowerCase)
+                .collect(toSet());
             List<OpenIDClient> resourceServers = openIDClientRepository.findByScopes_NameIn(filteredScopes);
             Prompt prompt = authenticationRequest.getPrompt();
             boolean consentFromPrompt = prompt != null && prompt.toStringList().contains("consent");
@@ -194,7 +220,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                 return new ModelAndView("form_post", body);
             }
             String uriString = authorizationRedirect(redirectURI, state,
-                    authorizationCode.getCode(), responseMode.equals(ResponseMode.FRAGMENT));
+                authorizationCode.getCode(), responseMode.equals(ResponseMode.FRAGMENT));
             return new ModelAndView(new RedirectView(uriString));
         } else if (responseType.impliesImplicitFlow() || responseType.impliesHybridFlow()) {
             if (responseType.impliesImplicitFlow()) {
@@ -212,16 +238,16 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             if (responseMode.equals(ResponseMode.QUERY)) {
                 UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectURI);
                 body.entrySet().stream()
-                        .filter(entry -> !entry.getKey().equalsIgnoreCase("state"))
-                        .forEach(entry -> builder.queryParam(entry.getKey(), entry.getValue()));
+                    .filter(entry -> !entry.getKey().equalsIgnoreCase("state"))
+                    .forEach(entry -> builder.queryParam(entry.getKey(), entry.getValue()));
                 return redirectViewWithState(builder, state);
             }
             if (responseMode.equals(ResponseMode.FRAGMENT)) {
                 UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectURI);
                 String fragment = body.entrySet().stream()
-                        .filter(entry -> !entry.getKey().equalsIgnoreCase("state"))
-                        .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()))
-                        .collect(Collectors.joining("&"));
+                    .filter(entry -> !entry.getKey().equalsIgnoreCase("state"))
+                    .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()))
+                    .collect(Collectors.joining("&"));
                 builder.fragment(fragment);
                 return redirectViewWithState(builder, state);
             }
@@ -231,8 +257,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     }
 
     private static ModelAndView redirectViewWithState(
-            UriComponentsBuilder builder,
-            State state) {
+        UriComponentsBuilder builder,
+        State state) {
         String uriString = adStateToQueryParameters(builder, state);
         return new ModelAndView(new RedirectView(uriString));
     }
@@ -255,8 +281,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                                    State state) {
         Map<String, Object> body = new HashMap<>();
         body.put("parameters", parameters.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> entry.getValue().get(0)
+            Map.Entry::getKey,
+            entry -> entry.getValue().get(0)
         )));
         body.put("client", client);
         if (state != null && StringUtils.hasText(state.getValue())) {
@@ -264,10 +290,10 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         }
         body.put("resourceServers", resourceServers.stream().filter(rs -> StringUtils.hasText(rs.getLogoUrl())).collect(toList()));
         body.put("scopes", resourceServers.stream()
-                .map(OpenIDClient::getScopes)
-                .flatMap(List::stream)
-                .filter(scope -> scopes.contains(scope.getName().toLowerCase()))
-                .collect(Collectors.toSet()));
+            .map(OpenIDClient::getScopes)
+            .flatMap(List::stream)
+            .filter(scope -> scopes.contains(scope.getName().toLowerCase()))
+            .collect(Collectors.toSet()));
         Locale locale = LocaleContextHolder.getLocale();
         body.put("lang", locale.getLanguage());
         body.put("environment", environment);
@@ -293,7 +319,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         if (responseType.contains(ResponseType.Value.TOKEN.getValue()) || !isOpenIDRequest(authorizationRequest)) {
             String unspecifiedUrnHash = KeyGenerator.oneWayHash(user.getUnspecifiedNameId(), this.salt);
             AccessToken accessToken = new AccessToken(encryptedAccessToken.getJwtId(), user.getSub(), client.getClientId(), scopes,
-                    encryptedAccessToken.getKeyId(), accessTokenValidity(client), false, null, unspecifiedUrnHash);
+                encryptedAccessToken.getKeyId(), accessTokenValidity(client), false, null, unspecifiedUrnHash);
             accessTokenRepository.insert(accessToken);
             result.put("access_token", encryptedAccessToken.getValue());
             result.put("token_type", "Bearer");
@@ -306,8 +332,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             AuthenticationRequest authenticationRequest = (AuthenticationRequest) authorizationRequest;
             List<String> claims = getClaims(authorizationRequest);
             TokenValue tokenValue = tokenGenerator.generateIDTokenForAuthorizationEndpoint(
-                    user, client, authenticationRequest.getNonce(), responseType, encryptedAccessToken.getValue(), claims,
-                    Optional.ofNullable((String) result.get("code")), state);
+                user, client, authenticationRequest.getNonce(), responseType, encryptedAccessToken.getValue(), claims,
+                Optional.ofNullable((String) result.get("code")), state);
             result.put("id_token", tokenValue.getValue());
         }
         result.put("expires_in", client.getAccessTokenValidity());
@@ -326,22 +352,22 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         String codeChallengeValue = codeChallenge != null ? codeChallenge.getValue() : null;
         CodeChallengeMethod codeChallengeMethod = authorizationRequest.getCodeChallengeMethod();
         String codeChallengeMethodValue = codeChallengeMethod != null ? codeChallengeMethod.getValue() :
-                (codeChallengeValue != null ? CodeChallengeMethod.getDefault().getValue() : null);
+            (codeChallengeValue != null ? CodeChallengeMethod.getDefault().getValue() : null);
         List<String> idTokenClaims = getClaims(authorizationRequest);
         String code = tokenGenerator.generateAuthorizationCode();
         Nonce nonce = authorizationRequest instanceof AuthenticationRequest ? AuthenticationRequest.class.cast(authorizationRequest).getNonce() : null;
         AuthorizationCode authorizationCode = new AuthorizationCode(
-                code,
-                user.getSub(),
-                client.getClientId(),
-                scopes,
-                redirectionURI,
-                codeChallengeValue,
-                codeChallengeMethodValue,
-                nonce != null ? nonce.getValue() : null,
-                idTokenClaims,
-                redirectionURI != null,
-                tokenValidity(10 * 60));
+            code,
+            user.getSub(),
+            client.getClientId(),
+            scopes,
+            redirectionURI,
+            codeChallengeValue,
+            codeChallengeMethodValue,
+            nonce != null ? nonce.getValue() : null,
+            idTokenClaims,
+            redirectionURI != null,
+            tokenValidity(10 * 60));
 
         authorizationCodeRepository.insert(authorizationCode);
         return authorizationCode;
@@ -351,7 +377,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         List<String> registeredRedirectUrls = client.getRedirectUrls();
         if (CollectionUtils.isEmpty(registeredRedirectUrls)) {
             throw new IllegalArgumentException(String.format("Client %s must have at least one redirectURI configured to use the Authorization flow",
-                    client.getClientId()));
+                client.getClientId()));
         }
         if (redirectionURI == null) {
             return new ProvidedRedirectURI(registeredRedirectUrls.get(0));
@@ -359,12 +385,12 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         String redirectURI = URLDecoder.decode(redirectionURI.toString(), StandardCharsets.UTF_8);
         boolean providedRedirectURIMatch = registeredRedirectUrls.stream()
-                .map(ProvidedRedirectURI::new)
-                .anyMatch(providedRedirectURI -> providedRedirectURI.equalsWithLiteralCheckRequired(redirectURI));
+            .map(ProvidedRedirectURI::new)
+            .anyMatch(providedRedirectURI -> providedRedirectURI.equalsWithLiteralCheckRequired(redirectURI));
         if (!providedRedirectURIMatch) {
             throw new RedirectMismatchException(
-                    String.format("Client %s with registered redirect URI's %s requested authorization with redirectURI %s",
-                            client.getClientId(), registeredRedirectUrls, redirectURI));
+                String.format("Client %s with registered redirect URI's %s requested authorization with redirectURI %s",
+                    client.getClientId(), registeredRedirectUrls, redirectURI));
         }
         //We return the redirectURI provided by the RP. Spec dictates:
         //The endpoint URI MAY include a query component, which MUST be retained when adding additional query parameters.
@@ -372,7 +398,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     }
 
     private String authorizationRedirect(
-            String redirectionURI, State state, String code, boolean isFragment) {
+        String redirectionURI, State state, String code, boolean isFragment) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectionURI);
         if (isFragment) {
             String fragment = "code=" + code;
@@ -393,31 +419,21 @@ public class AuthorizationEndpoint implements OidcEndpoint {
      * @throws UriTooLongException if the parameter size exceeds maxQueryParamSize
      */
     void validateQueryParamSize(MultiValueMap<String, String> parameters) {
-        if (parameters != null && !parameters.isEmpty()) {
-            // Calculate the URL-encoded size of all parameters without building the full string
-            // This matches the actual byte size when parameters are transmitted in URLs or response headers
-            int totalSize = 0;
-            boolean first = true;
-            
-            for (Map.Entry<String, List<String>> entry : parameters.entrySet()) {
-                String encodedKey = URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8);
-                for (String value : entry.getValue()) {
-                    if (!first) {
-                        totalSize += 1; // for '&' separator
-                    }
-                    first = false;
-                    
-                    totalSize += encodedKey.getBytes(StandardCharsets.UTF_8).length;
-                    totalSize += 1; // for '=' separator
-                    totalSize += URLEncoder.encode(value, StandardCharsets.UTF_8).getBytes(StandardCharsets.UTF_8).length;
-                    
-                    // Early exit if we've already exceeded the limit
-                    if (totalSize > maxQueryParamSize) {
-                        throw new UriTooLongException(
-                                String.format("Request parameter size (%d bytes) exceeds maximum allowed size (%d bytes)", 
-                                        totalSize, maxQueryParamSize));
-                    }
-                }
+        if (!CollectionUtils.isEmpty(parameters)) {
+            // Calculate the total byte size of all parameters
+            // Format: key1=value1&key2=value2&...
+            int totalSize = parameters.entrySet().stream()
+                .flatMap(e -> e.getValue().stream()
+                    .map(v -> URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8)
+                        + "=" +
+                        URLEncoder.encode(v, StandardCharsets.UTF_8)))
+                .collect(Collectors.joining("&"))
+                .getBytes(StandardCharsets.UTF_8)
+                .length;
+            if (totalSize > maxQueryParamSize) {
+                throw new UriTooLongException(
+                    String.format("Request parameter size (%d bytes) exceeds maximum allowed size (%d bytes)",
+                        totalSize, maxQueryParamSize));
             }
         }
     }
@@ -438,8 +454,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             prompt.toStringList().forEach(val -> {
                 if (!allowedValues.contains(val)) {
                     throw new UnsupportedPromptValueException(
-                            unsupportedPromptValue(val),
-                            String.format(unsupportedPromptMessage, val));
+                        unsupportedPromptValue(val),
+                        String.format(unsupportedPromptMessage, val));
                 }
             });
         }
@@ -462,8 +478,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         if (requestedScopes.stream().anyMatch(s -> s.contains(","))) {
             //backward compatibility with old scope comma separated scopes
             requestedScopes = requestedScopes.stream()
-                    .flatMap(s -> Arrays.stream(s.split(",")))
-                    .toList();
+                .flatMap(s -> Arrays.stream(s.split(",")))
+                .toList();
 
         }
         List<String> allowedResourceServers = client.getAllowedResourceServers();
@@ -471,8 +487,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         if (!CollectionUtils.isEmpty(allowedResourceServers)) {
             List<OpenIDClient> resourceServers = openIDClientRepository.findByClientIdIn(allowedResourceServers);
             grantedScopes.addAll(resourceServers.stream()
-                    .flatMap(rs -> rs.getScopes().stream().map(oidc.model.Scope::getName))
-                    .toList());
+                .flatMap(rs -> rs.getScopes().stream().map(oidc.model.Scope::getName))
+                .toList());
         }
         grantedScopes.addAll(forFreeOpenIDScopes);
         //backward compatibility
@@ -483,8 +499,8 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         if (!grantedScopes.containsAll(requestedScopes)) {
             List<String> missingScopes = requestedScopes.stream().filter(s -> !grantedScopes.contains(s)).toList();
             throw new InvalidScopeException(
-                    String.format("Scope(s) %s are not allowed for %s. Allowed scopes: %s",
-                            missingScopes, client.getClientId(), client.getScopes()));
+                String.format("Scope(s) %s are not allowed for %s. Allowed scopes: %s",
+                    missingScopes, client.getClientId(), client.getScopes()));
         }
         return requestedScopes;
     }
