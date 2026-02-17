@@ -394,24 +394,16 @@ public class AuthorizationEndpoint implements OidcEndpoint {
      */
     void validateQueryParamSize(MultiValueMap<String, String> parameters) {
         if (parameters != null && !parameters.isEmpty()) {
-            // Calculate the total byte size of all parameters
-            // Format: key1=value1&key2=value2&...
-            int totalSize = 0;
-            boolean first = true;
-            for (Map.Entry<String, List<String>> entry : parameters.entrySet()) {
-                String key = entry.getKey();
-                for (String value : entry.getValue()) {
-                    if (!first) {
-                        totalSize += 1; // for '&' separator
-                    }
-                    first = false;
-                    totalSize += key.getBytes(StandardCharsets.UTF_8).length;
-                    totalSize += 1; // for '=' separator
-                    if (value != null) {
-                        totalSize += value.getBytes(StandardCharsets.UTF_8).length;
-                    }
-                }
-            }
+            // Calculate the URL-encoded size of all parameters
+            // This matches the actual byte size when parameters are transmitted in URLs or response headers
+            int totalSize = parameters.entrySet().stream()
+                    .flatMap(e -> e.getValue().stream()
+                            .map(v -> URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8)
+                                    + "="
+                                    + URLEncoder.encode(v, StandardCharsets.UTF_8)))
+                    .collect(Collectors.joining("&"))
+                    .getBytes(StandardCharsets.UTF_8)
+                    .length;
             
             if (totalSize > maxQueryParamSize) {
                 throw new UriTooLongException(
