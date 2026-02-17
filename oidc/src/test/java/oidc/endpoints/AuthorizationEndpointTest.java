@@ -529,7 +529,32 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
                 .get("oidc/authorize")
                 .then()
                 .statusCode(414)
-                .body("message", containsString("Query parameter size"))
+                .body("message", containsString("Request parameter size"))
+                .body("message", containsString("exceeds maximum allowed size"));
+    }
+
+    @Test
+    public void authorizeUriTooLongWithPost() {
+        // Create a very long scope parameter to exceed the max-query-param-size limit (1024 bytes)
+        StringBuilder longScope = new StringBuilder("openid");
+        for (int i = 0; i < 200; i++) {
+            longScope.append("+openid");
+        }
+        
+        Map<String, String> formParams = new HashMap<>();
+        formParams.put("scope", longScope.toString());
+        formParams.put("response_type", "code");
+        formParams.put("client_id", "mock-sp");
+        formParams.put("redirect_uri", "http://localhost:3006/redirect");
+        
+        given().redirects().follow(false)
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .formParams(formParams)
+                .post("oidc/authorize")
+                .then()
+                .statusCode(414)
+                .body("message", containsString("Request parameter size"))
                 .body("message", containsString("exceeds maximum allowed size"));
     }
 

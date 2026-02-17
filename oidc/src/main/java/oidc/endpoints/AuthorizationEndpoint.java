@@ -97,7 +97,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         LOG.debug(String.format("/oidc/authorize %s %s", authentication.getDetails(), parameters));
 
         // Validate query parameter size to prevent heap problems
-        validateQueryParamSize(request);
+        validateQueryParamSize(parameters);
 
         //to enable consent, set consentRequired to true
         return doAuthorization(parameters, (OidcSamlAuthentication) authentication, request, consentEnabled);
@@ -384,21 +384,27 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     }
 
     /**
-     * Validates that the query parameter size does not exceed the configured maximum.
-     * This prevents heap problems and 500 errors caused by excessively long query strings
+     * Validates that the request parameter size does not exceed the configured maximum.
+     * This prevents heap problems and 500 errors caused by excessively long parameters
      * that would result in response headers being too large.
+     * Works for both GET and POST requests.
      *
-     * @param request the HTTP servlet request containing the query string to validate
-     * @throws UriTooLongException if the query string size exceeds maxQueryParamSize
+     * @param parameters the request parameters to validate
+     * @throws UriTooLongException if the parameter size exceeds maxQueryParamSize
      */
-    void validateQueryParamSize(HttpServletRequest request) {
-        String queryString = request.getQueryString();
-        if (queryString != null) {
-            int queryStringLength = queryString.getBytes(StandardCharsets.UTF_8).length;
-            if (queryStringLength > maxQueryParamSize) {
+    void validateQueryParamSize(MultiValueMap<String, String> parameters) {
+        if (parameters != null && !parameters.isEmpty()) {
+            // Calculate the serialized size of all parameters
+            String serializedParams = parameters.entrySet().stream()
+                    .flatMap(entry -> entry.getValue().stream()
+                            .map(value -> entry.getKey() + "=" + (value != null ? value : "")))
+                    .collect(Collectors.joining("&"));
+            
+            int parameterSize = serializedParams.getBytes(StandardCharsets.UTF_8).length;
+            if (parameterSize > maxQueryParamSize) {
                 throw new UriTooLongException(
-                        String.format("Query parameter size (%d bytes) exceeds maximum allowed size (%d bytes)", 
-                                queryStringLength, maxQueryParamSize));
+                        String.format("Request parameter size (%d bytes) exceeds maximum allowed size (%d bytes)", 
+                                parameterSize, maxQueryParamSize));
             }
         }
     }
