@@ -28,6 +28,7 @@ import io.restassured.specification.RequestSpecification;
 import oidc.endpoints.MapTypeReference;
 import oidc.model.*;
 import oidc.repository.SequenceRepository;
+import oidc.repository.SigningKeyRepository;
 import oidc.secure.TokenGenerator;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -98,6 +99,9 @@ public abstract class AbstractIntegrationTest implements TestUtils, MapTypeRefer
 
     @Autowired
     protected SequenceRepository sequenceRepository;
+
+    @Autowired
+    protected SigningKeyRepository signingKeyRepository;
 
     private List<OpenIDClient> openIDClients;
 

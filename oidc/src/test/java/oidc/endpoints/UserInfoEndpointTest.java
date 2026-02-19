@@ -10,6 +10,7 @@ import oidc.AbstractIntegrationTest;
 import oidc.web.CustomErrorController;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -30,6 +31,22 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
     @Test
     public void postUserInfo() throws IOException {
         userInfo("POST");
+    }
+
+    @Test
+    public void signingKeyNotFound() throws IOException {
+        String accessToken = getAccessToken();
+
+        signingKeyRepository.deleteAll();
+        sequenceRepository.updateSigningKeyId("test");
+
+        given()
+            .when()
+            .header("Content-type", "application/x-www-form-urlencoded")
+            .queryParams("access_token", accessToken)
+            .get("oidc/userinfo")
+            .then()
+            .statusCode(HttpStatus.UNAUTHORIZED.value());
     }
 
     @Test

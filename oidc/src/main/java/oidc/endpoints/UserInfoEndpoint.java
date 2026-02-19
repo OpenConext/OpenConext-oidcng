@@ -56,8 +56,14 @@ public class UserInfoEndpoint {
         String accessTokenValue = userInfoRequest.getAccessToken().getValue();
 
         MDCContext.mdcContext("action", "Userinfo", "accessTokenValue", accessTokenValue);
+        Optional<SignedJWT> optionalSignedJWT;
+        try  {
+            optionalSignedJWT = tokenGenerator.parseAndValidateSignedJWT(accessTokenValue);
+        } catch (IllegalArgumentException e) {
+            //Thrown when the signing key has been deleted, which only happens when all access_tokens with that key are gone
+            return errorResponse("Access Token not found");
+        }
 
-        Optional<SignedJWT> optionalSignedJWT = tokenGenerator.parseAndValidateSignedJWT(accessTokenValue);
         if (!optionalSignedJWT.isPresent()) {
             return errorResponse("Access Token not found");
         }
