@@ -91,14 +91,14 @@ public class ResponseAuthenticationConverter implements Converter<OpenSaml5Authe
 
     private User buildUser(Assertion assertion, String authenticationRequestID) {
         List<AuthnStatement> authnStatements = assertion.getAuthnStatements();
-        AtomicReference<String> authenticatingAuthority = new AtomicReference<>();
-        if (!CollectionUtils.isEmpty(authnStatements)) {
+        String authenticatingAuthority = CollectionUtils.isEmpty(authnStatements) ? null :
             authnStatements.stream()
-                    .map(as -> as.getAuthnContext().getAuthenticatingAuthorities())
-                    .flatMap(List::stream)
-                    .findAny()
-                    .ifPresent(aa -> authenticatingAuthority.set(aa.getURI()));
-        }
+                .map(as -> as.getAuthnContext().getAuthenticatingAuthorities())
+                .flatMap(List::stream)
+                .reduce((first, second) -> second)
+                .map(aa -> aa.getURI())
+                .orElse(null);
+
         //need to prevent NullPointer in HashMap merge
         Map<String, Object> attributes = userAttributes.stream()
                 .filter(ua -> !ua.customMapping)
@@ -133,7 +133,7 @@ public class ResponseAuthenticationConverter implements Converter<OpenSaml5Authe
                 .map(Optional::get)
                 .collect(toList());
 
-        return new User(sub, nameId, authenticatingAuthority.get(), clientId, attributes, acrClaims);
+        return new User(sub, nameId, authenticatingAuthority, clientId, attributes, acrClaims);
     }
 
     private void addDerivedAttributes(Map<String, Object> attributes) {

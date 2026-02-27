@@ -1,6 +1,7 @@
 package oidc.saml;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import net.shibboleth.shared.xml.XMLParserException;
 import oidc.SeedUtils;
 import oidc.model.AuthenticationRequest;
@@ -52,6 +53,18 @@ public class ResponseAuthenticationConverterTest extends AbstractSamlUnitTest im
         assertEquals("270E4CB4-1C2A-4A96-9AD3-F28C39AD1110", sub);
         assertEquals("urn:collab:person:example.com:admin", oidcSamlAuthentication.getName());
         assertEquals(3, ((List) user.getAttributes().get("eduperson_affiliation")).size());
+    }
+
+    @SneakyThrows
+    @Test
+    public void loginWithMultipleProxies()  {
+        when(authenticationRequestRepository.findById(anyString())).thenReturn(Optional.of(
+            new AuthenticationRequest("id", new Date(), "clientId", "http://some")));
+
+        OidcSamlAuthentication oidcSamlAuthentication = doLogin("saml/authn_response_mutiple_proxies.xml");
+        User user = oidcSamlAuthentication.getUser();
+        String authenticatingAuthority = user.getAuthenticatingAuthority();
+        assertEquals("http://first-idp", authenticatingAuthority);
     }
 
     @Test
