@@ -5,14 +5,21 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class AttributePseudonymisation {
@@ -53,25 +60,27 @@ public class AttributePseudonymisation {
         boolean resourceServerEquals = resourceServer.getClientId().equals(openIDClient.getClientId());
         String resourceServerInstitutionGuid = resourceServer.getInstitutionGuid();
         String clientInstitutionGuid = openIDClient.getInstitutionGuid();
-        boolean institutionGuidEquals = StringUtils.hasText(resourceServerInstitutionGuid) &&
-            Objects.equals(resourceServerInstitutionGuid, clientInstitutionGuid);
 
-        LOG.debug(String.format("Starting to pseudonymise for RS %s and openIDclient %s. " +
-                "Enabled is %s, eduId is %s, resourceServerEquals is %s, institutionGuidEquals is %s",
-            resourceServer.getClientId(),
-            openIDClient.getClientId(),
-            enabled,
-            eduId,
-            resourceServerEquals,
-            institutionGuidEquals
-        ));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(String.format("Starting to pseudonymise for RS %s and openIDclient %s. " +
+                    "Enabled is %s, eduId is %s, resourceServerEquals is %s, " +
+                    "resourceServerInstitutionGuid is %s, clientInstitutionGuid is %s",
+                resourceServer.getClientId(),
+                openIDClient.getClientId(),
+                enabled,
+                eduId,
+                resourceServerEquals,
+                resourceServerInstitutionGuid,
+                clientInstitutionGuid
+            ));
+        }
         if (enabled && !StringUtils.hasText(resourceServerInstitutionGuid)) {
             LOG.warn("Skipping attribute manipulation and returning empty result for 'pseudonymise' because there is" +
                 "no InstitutionGuid for RS: " + resourceServer.getClientId());
             return Optional.empty();
         }
         if (!enabled || !StringUtils.hasText(eduId) || !StringUtils.hasText(resourceServerInstitutionGuid) ||
-            resourceServerEquals || institutionGuidEquals) {
+            resourceServerEquals) {
             LOG.debug("Skipping attribute manipulation and returning empty result for 'pseudonymise'");
             return Optional.empty();
         }
