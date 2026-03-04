@@ -110,7 +110,7 @@ public class AttributePseudonymisationTest extends AbstractIntegrationTest {
 
         AttributePseudonymisation pseudonymisation = new AttributePseudonymisation(
             new URI("http://nope.com"),"user","password", false);
-        pseudonymisation.pseudonymise(resourceServer, resourceServer, "eduid")
+        Optional<Map<String, String>> pseudonymisedAttributes = pseudonymisation.pseudonymise(resourceServer, resourceServer, "eduid");
         assertFalse(pseudonymisedAttributes.isPresent());
     }
 
