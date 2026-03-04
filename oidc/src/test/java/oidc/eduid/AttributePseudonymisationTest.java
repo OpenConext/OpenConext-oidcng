@@ -9,6 +9,8 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -98,6 +100,17 @@ public class AttributePseudonymisationTest extends AbstractIntegrationTest {
         OpenIDClient openIDClient = openIDClient("mock-sp");
         Optional<Map<String, String>> pseudonymisedAttributes = attributePseudonymisation.pseudonymise(resourceServer, openIDClient, "rs-eduid");
 
+        assertFalse(pseudonymisedAttributes.isPresent());
+    }
+
+    @Test
+    public void pseudonymiseDisabled() throws IOException, URISyntaxException {
+        OpenIDClient resourceServer = openIDClient("resource-server-playground-client");
+        resourceServer.setInstitutionGuid(null);
+
+        AttributePseudonymisation pseudonymisation = new AttributePseudonymisation(
+            new URI("http://nope.com"),"user","password", false);
+        pseudonymisation.pseudonymise(resourceServer, resourceServer, "eduid")
         assertFalse(pseudonymisedAttributes.isPresent());
     }
 

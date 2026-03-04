@@ -2,6 +2,7 @@ package oidc.model;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -24,6 +25,7 @@ public class OpenIDClient {
     @Id
     private String id;
     private String clientId;
+    @Setter
     private String institutionGuid;
     private String organisationName;
     private String organisationNameNl;

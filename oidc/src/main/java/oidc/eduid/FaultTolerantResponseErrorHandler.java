@@ -10,7 +10,7 @@ import java.net.URI;
 public class FaultTolerantResponseErrorHandler implements ResponseErrorHandler {
 
     @Override
-    public boolean hasError(ClientHttpResponse response) throws IOException {
+    public boolean hasError(ClientHttpResponse response) {
         return false;
     }
 
