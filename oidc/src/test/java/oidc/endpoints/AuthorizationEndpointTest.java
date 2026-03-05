@@ -90,7 +90,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void authorizeWithNoImplicitGrant() throws IOException {
         Response response = doAuthorizeWithClaimsAndScopes("mock-rp", "token id_token", "fragment", "nonce", null, Collections.emptyList(), "openid", "state");
         Map<String, Object> result = response.as(mapTypeRef);
-        assertEquals("Grant types [authorization_code] does not allow for implicit / hybrid flow", result.get("message"));
+        assertEquals("Grant types [authorization_code] does not allow for implicit / hybrid flow for client mock-rp", result.get("message"));
         assertEquals(401, result.get("status"));
     }
 
@@ -98,7 +98,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     public void authorizeWithNoAuthorizationCodeGrant() throws IOException {
         Response response = doAuthorizeWithClaimsAndScopes("resource-server-playground-client", "code", "code", "nonce", null, Collections.emptyList(), "openid", "state");
         Map<String, Object> result = response.as(mapTypeRef);
-        assertEquals("Grant types [client_credentials] does not allow for authorization code flow", result.get("message"));
+        assertEquals("Grant types [client_credentials] does not allow for authorization code flow for client resource-server-playground-client", result.get("message"));
         assertEquals(401, result.get("status"));
     }
 

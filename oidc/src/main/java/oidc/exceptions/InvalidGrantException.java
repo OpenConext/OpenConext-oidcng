@@ -14,4 +14,9 @@ public class InvalidGrantException extends BaseException {
     public String getErrorCode() {
         return "unauthorized_client";
     }
+
+    @Override
+    protected boolean suppressStackTrace() {
+        return true;
+    }
 }

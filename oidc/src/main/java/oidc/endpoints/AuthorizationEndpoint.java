@@ -304,10 +304,12 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         ResponseType responseType = authorizationRequest.getResponseType();
         List<String> grants = client.getGrants();
         if ((responseType.impliesImplicitFlow() || responseType.impliesHybridFlow()) && !grants.contains(GrantType.IMPLICIT.getValue())) {
-            throw new InvalidGrantException(String.format("Grant types %s does not allow for implicit / hybrid flow", grants));
+            throw new InvalidGrantException(
+                String.format("Grant types %s does not allow for implicit / hybrid flow for client %s", grants, client.getClientId()));
         }
         if (responseType.impliesCodeFlow() && !grants.contains(GrantType.AUTHORIZATION_CODE.getValue())) {
-            throw new InvalidGrantException(String.format("Grant types %s does not allow for authorization code flow", grants));
+            throw new InvalidGrantException(
+                String.format("Grant types %s does not allow for authorization code flow for client %s", grants, client.getClientId()));
         }
         return responseType;
     }

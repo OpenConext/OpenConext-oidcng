@@ -121,7 +121,8 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         }
         MDCContext.mdcContext("action", "Token", "rp", clientId, "grant", authorizationGrant.getType().getValue());
         if (!client.getGrants().contains(authorizationGrant.getType().getValue())) {
-            throw new InvalidGrantException("Invalid grant: " + authorizationGrant.getType().getValue());
+            throw new InvalidGrantException(String.format("Invalid grant %s for client %s",
+                authorizationGrant.getType().getValue(), clientId));
         }
 
         if (authorizationGrant instanceof AuthorizationCodeGrant) {

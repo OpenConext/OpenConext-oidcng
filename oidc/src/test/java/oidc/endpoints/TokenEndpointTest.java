@@ -256,7 +256,7 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
     public void clientCredentialsInvalidGrant() throws ParseException, IOException {
         Map<String, Object> body = doToken(null, "mock-rp", "secret", GrantType.CLIENT_CREDENTIALS);
 
-        assertEquals("Invalid grant: client_credentials", body.get("message"));
+        assertEquals("Invalid grant client_credentials for client mock-rp", body.get("message"));
     }
 
     @Test
