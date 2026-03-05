@@ -1,5 +1,15 @@
 # Changelog
 
+## 8.6.0
+
+- Update java dependencies
+- Add URI too long validation to authorization endpoint
+- Validate parameters MultiValueMap instead of query string to support both GET and POST requests
+- Optimize parameter size calculation to avoid intermediate string allocation
+- Calculate URL-encoded size incrementally to avoid heap issues with large parameters
+- Do not throw 400 for missing signing keys #328
+- Do not skip attribute manipulation if IdP and RS are the same institution
+
 ## 8.5.0
 
 - Logging improvements
