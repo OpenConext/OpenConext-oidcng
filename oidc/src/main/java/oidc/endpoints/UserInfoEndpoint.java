@@ -25,7 +25,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.time.Clock;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 
 @RestController
 public class UserInfoEndpoint {
@@ -43,30 +47,23 @@ public class UserInfoEndpoint {
     @GetMapping("oidc/userinfo")
     public ResponseEntity<Map<String, Object>> getUserInfo(HttpServletRequest request)
         throws IOException, java.text.ParseException {
-        try {
-            return userInfo(request);
-        } catch (com.nimbusds.oauth2.sdk.ParseException e) {
-            return handleMissingToken(e, request);
-        }
+        return userInfo(request);
     }
 
     @PostMapping(value = {"oidc/userinfo"}, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
     public ResponseEntity<Map<String, Object>> postUserInfo(HttpServletRequest request)
         throws IOException, java.text.ParseException {
-        try {
-            return userInfo(request);
-        } catch (com.nimbusds.oauth2.sdk.ParseException e) {
-            return handleMissingToken(e, request);
-        }
+        return userInfo(request);
     }
 
     private ResponseEntity<Map<String, Object>> handleMissingToken(com.nimbusds.oauth2.sdk.ParseException e, HttpServletRequest request) {
         LOG.warn(String.format("UserInfo request failed: %s | Path: %s | IP: %s",
             e.getMessage(), request.getRequestURI(), request.getRemoteAddr()));
 
-        Map<String, Object> body = new HashMap<>();
-        body.put("error", "invalid_request");
-        body.put("error_description", e.getMessage());
+        Map<String, Object> body = Map.of(
+            "error", "invalid_request",
+            "error_description", e.getMessage()
+        );
 
         return ResponseEntity
             .status(HttpStatus.UNAUTHORIZED)
@@ -74,33 +71,38 @@ public class UserInfoEndpoint {
             .body(body);
     }
 
-    private ResponseEntity<Map<String, Object>> userInfo(HttpServletRequest request) throws ParseException, IOException, java.text.ParseException {
+    private ResponseEntity<Map<String, Object>> userInfo(HttpServletRequest request) throws IOException, java.text.ParseException {
         HTTPRequest httpRequest = JakartaServletUtils.createHTTPRequest(request);
         if (request.getMethod().equalsIgnoreCase("GET")) {
             //Otherwise the query parameters are not read by the nimbus parser
             httpRequest.setEntityContentType(null);
         }
-        UserInfoRequest userInfoRequest = UserInfoRequest.parse(httpRequest);
+        UserInfoRequest userInfoRequest;
+        try {
+            userInfoRequest = UserInfoRequest.parse(httpRequest);
+        } catch (ParseException e) {
+            return handleMissingToken(e, request);
+        }
 
         String accessTokenValue = userInfoRequest.getAccessToken().getValue();
 
         MDCContext.mdcContext("action", "Userinfo", "accessTokenValue", accessTokenValue);
         Optional<SignedJWT> optionalSignedJWT;
-        try  {
+        try {
             optionalSignedJWT = tokenGenerator.parseAndValidateSignedJWT(accessTokenValue);
         } catch (IllegalArgumentException e) {
             //Thrown when the signing key has been deleted, which only happens when all access_tokens with that key are gone
             return errorResponse("Access Token not found");
         }
 
-        if (!optionalSignedJWT.isPresent()) {
+        if (optionalSignedJWT.isEmpty()) {
             return errorResponse("Access Token not found");
         }
         SignedJWT signedJWT = optionalSignedJWT.get();
         String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
         Optional<AccessToken> optionalAccessToken = accessTokenRepository.findByJwtId(jwtId);
 
-        if (!optionalAccessToken.isPresent()) {
+        if (optionalAccessToken.isEmpty()) {
             return errorResponse("Access Token not found");
         }
         AccessToken accessToken = optionalAccessToken.get();
@@ -122,7 +124,7 @@ public class UserInfoEndpoint {
         attributes.put("authenticating_authority", user.getAuthenticatingAuthority());
         attributes.put("updated_at", user.getUpdatedAt());
         attributes.put("sub", user.getSub());
-        return ResponseEntity.ok(new TreeMap(attributes));
+        return ResponseEntity.ok(new TreeMap<>(attributes));
     }
 
     private ResponseEntity<Map<String, Object>> errorResponse(String errorDescription) {

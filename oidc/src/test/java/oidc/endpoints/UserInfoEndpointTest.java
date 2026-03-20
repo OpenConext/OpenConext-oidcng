@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.nimbusds.oauth2.sdk.GrantType;
+import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.util.Map;
 
@@ -31,6 +33,17 @@ public class UserInfoEndpointTest extends AbstractIntegrationTest {
     @Test
     public void postUserInfo() throws IOException {
         userInfo("POST");
+    }
+
+    @Test
+    public void getUserInfoParseException() {
+        Map<String, Object> response = given()
+            .when()
+            .header("Content-type", "application/x-www-form-urlencoded")
+            .get("oidc/userinfo")
+                .as(new TypeRef<>() {
+                });
+        assertEquals("Missing access token", response.get("error_description"));
     }
 
     @Test
