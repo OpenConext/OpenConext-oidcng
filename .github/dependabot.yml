@@ -15,7 +15,10 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "org.opensaml.*"
         update-types: ["version-update:semver-major"]
+    open-pull-requests-limit: 0
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+     
+
