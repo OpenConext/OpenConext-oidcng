@@ -41,6 +41,7 @@ import java.util.Map;
 
 import static oidc.saml.AuthnRequestContextConsumer.REDIRECT_URI_VALID;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RestController
 public class CustomErrorController implements org.springframework.boot.web.servlet.error.ErrorController {
@@ -76,6 +77,13 @@ public class CustomErrorController implements org.springframework.boot.web.servl
         }
         if (error != null && error.getCause() != null) {
             error = error.getCause();
+        }
+        // Short-circuit for non-existent resource requests (e.g. security scans)
+        if (error instanceof NoResourceFoundException) {
+            LOG.debug("No resource found: " + error.getMessage());
+            boolean hasStatus = result.containsKey("status") && !result.get("status").equals(999);
+            HttpStatus code = hasStatus ? HttpStatus.resolve((Integer) result.get("status")) : NOT_FOUND;
+            return ResponseEntity.status(code != null ? code : NOT_FOUND).build();
         }
         boolean status = result.containsKey("status") && !result.get("status").equals(999) && !result.get("status").equals(500);
         HttpStatus statusCode = status ? HttpStatus.resolve((Integer) result.get("status")) : BAD_REQUEST;
