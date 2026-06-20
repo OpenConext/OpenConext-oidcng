@@ -79,7 +79,7 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.BUILD_PASSWORD }}
 
       - name: Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             /home/runner/work/OpenConext-oidcng/OpenConext-oidcng/oidc/target/oidcng-${{ github.ref_name }}.jar
