@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.16</version>
+        <version>4.1.0</version>
         <relativePath/>
     </parent>
     <groupId>org.openconext</groupId>
@@ -23,20 +23,16 @@
         <dependency-check-maven.version>12.2.0</dependency-check-maven.version>
         <git-commit-id-maven-plugin.version>9.0.2</git-commit-id-maven-plugin.version>
         <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
-        <jackson-dataformat-xml.version>2.15.0</jackson-dataformat-xml.version>
         <jakarta.xml.bind-api.version>4.0.5</jakarta.xml.bind-api.version>
         <java.version>21</java.version>
         <javase.version>3.5.4</javase.version>
-        <junit-vintage-engine.version>5.12.2</junit-vintage-engine.version>
         <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
-        <mockito-core.version>4.2.0</mockito-core.version>
         <mongock-bom.version>4.3.8</mongock-bom.version>
+        <mongodb-spring-session.version>4.0.0</mongodb-spring-session.version>
         <oauth2-oidc-sdk.version>11.34</oauth2-oidc-sdk.version>
-        <opensaml-saml.version>5.2.1</opensaml-saml.version>
-        <rest-assured.version>5.2.0</rest-assured.version>
+        <opensaml-saml.version>5.2.2</opensaml-saml.version>
+        <rest-assured.version>6.0.1</rest-assured.version>
         <require-maven.version>3.8.4</require-maven.version>
-        <spring-session-data-mongodb.version>3.5.5</spring-session-data-mongodb.version>
-        <spring-session-bom.version>2021.2.3</spring-session-bom.version>
         <threshold-logger.version>2.0.1</threshold-logger.version>
         <tink.version>1.20.0</tink.version>
         <wagon-webdav-jackrabbit.version>3.5.3</wagon-webdav-jackrabbit.version>

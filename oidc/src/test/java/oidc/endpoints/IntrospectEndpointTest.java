@@ -14,6 +14,7 @@ import org.apache.http.HttpStatus;
 import org.bson.Document;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.mongodb.core.query.BasicQuery;
 
 import java.io.IOException;
@@ -31,10 +32,15 @@ import static com.nimbusds.oauth2.sdk.http.HTTPRequest.Method.POST;
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.*;
 
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = {
+        "cron.node-cron-job-responsible=false",
+        "eduid.uri=http://localhost:8097/attribute-manipulation"
+    })
 public class IntrospectEndpointTest extends AbstractIntegrationTest {
 
     @ClassRule
-    public static WireMockRule wireMockRule = new WireMockRule(8099);
+    public static WireMockRule wireMockRule = new WireMockRule(8097);
 
     @Test
     //https://bitbucket.org/connect2id/oauth-2.0-sdk-with-openid-connect-extensions/issues/265

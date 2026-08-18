@@ -7,6 +7,7 @@ import oidc.model.OpenIDClient;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.IOException;
 import java.net.URI;
@@ -16,13 +17,18 @@ import java.util.*;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.Assert.*;
 
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = {
+        "cron.node-cron-job-responsible=false",
+        "eduid.uri=http://localhost:8098/attribute-manipulation"
+    })
 public class AttributePseudonymisationTest extends AbstractIntegrationTest {
 
     @Autowired
     private AttributePseudonymisation attributePseudonymisation;
 
     @ClassRule
-    public static WireMockRule wireMockRule = new WireMockRule(8099);
+    public static WireMockRule wireMockRule = new WireMockRule(8098);
 
     @Test
     public void pseudonymise() throws IOException {

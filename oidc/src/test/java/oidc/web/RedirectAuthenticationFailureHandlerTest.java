@@ -10,8 +10,6 @@ import org.springframework.security.authentication.AccountStatusException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.saml2.core.Saml2Error;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationException;
-import org.springframework.security.web.PortResolver;
-import org.springframework.security.web.PortResolverImpl;
 import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
@@ -49,8 +47,7 @@ class RedirectAuthenticationFailureHandlerTest {
         request.addParameter("redirect_uri", "http://redirect");
 
         HttpSession session = request.getSession(true);
-        PortResolver portResolver = new PortResolverImpl();
-        SavedRequest savedRequest = new DefaultSavedRequest(request, portResolver);
+        SavedRequest savedRequest = new DefaultSavedRequest(request);
         session.setAttribute("SPRING_SECURITY_SAVED_REQUEST", savedRequest);
         OpenIDClient openIdClient = new OpenIDClient("client_id", singletonList("http://redirect"), emptyList(), emptyList());
 

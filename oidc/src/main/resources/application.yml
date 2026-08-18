@@ -63,13 +63,15 @@ idp:
   saml_assertion_signing_key: classpath:/engine.test2.surfconext.nl.pem
 
 spring:
-  data:
-    mongodb:
-      uri: mongodb://127.0.0.1:27017/${mongodb_db}
+  mongodb:
+    uri: mongodb://127.0.0.1:27017/${mongodb_db}
   thymeleaf:
     cache: false
   main:
     banner-mode: off
+  http:
+    converters:
+      preferred-json-mapper: jackson2
 
 manage:
   user: oidcng

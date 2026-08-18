@@ -33,9 +33,8 @@ idp:
   saml_assertion_signing_key: classpath:/engine.dev.openconext.local.default.pem
 
 spring:
-  data:
-    mongodb:
-      uri: mongodb://oidcngrw:secret@mongo:27017/oidcng?ssl=false
+  mongodb:
+    uri: mongodb://oidcngrw:secret@mongo:27017/oidcng?ssl=false
   thymeleaf:
     cache: false
   main:

@@ -249,7 +249,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
             .get("oidc/authorize");
         assertEquals(302, response.getStatusCode());
         String location = response.getHeader("Location");
-        MultiValueMap<String, String> params = UriComponentsBuilder.fromHttpUrl(location).build().getQueryParams();
+        MultiValueMap<String, String> params = UriComponentsBuilder.fromUriString(location).build().getQueryParams();
         assertEquals("invalid_request", params.getFirst("error"));
     }
 
@@ -438,7 +438,7 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
         OpenIDClient client = openIDClient("mock-sp");
         PlainJWT plainJWT = plainJWT(client.getClientId(), client.getRedirectUrls().get(0));
         String location = doAuthorizeWithJWTRequest("mock-sp", "code", null, plainJWT, null).getHeader("Location");
-        MultiValueMap<String, String> params = UriComponentsBuilder.fromHttpUrl(location).build().getQueryParams();
+        MultiValueMap<String, String> params = UriComponentsBuilder.fromUriString(location).build().getQueryParams();
         assertEquals("request_not_supported", params.getFirst("error"));
     }
 

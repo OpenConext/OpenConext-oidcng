@@ -3,8 +3,8 @@ package oidc.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.session.data.mongo.JacksonMongoSessionConverter;
-import org.springframework.session.data.mongo.config.annotation.web.http.EnableMongoHttpSession;
+import org.mongodb.spring.session.Jackson2MongoSessionConverter;
+import org.mongodb.spring.session.config.annotation.web.http.EnableMongoHttpSession;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 
 import java.util.List;
@@ -23,8 +23,8 @@ public class SessionConfig {
     }
 
     @Bean
-    JacksonMongoSessionConverter mongoSessionConverter() {
-        return new JacksonMongoSessionConverter(List.of(new AuthenticationMixinModule()));
+    Jackson2MongoSessionConverter mongoSessionConverter() {
+        return new Jackson2MongoSessionConverter(List.of(new AuthenticationMixinModule()));
     }
 
 }
