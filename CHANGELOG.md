@@ -1,5 +1,9 @@
 # Changelog
 
+## 8.6.1
+
+- Update java dependencies
+
 ## 8.6.0
 
 - Update java dependencies
