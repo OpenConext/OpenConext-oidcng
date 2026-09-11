@@ -502,7 +502,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             List<String> missingScopes = requestedScopes.stream().filter(s -> !grantedScopes.contains(s)).toList();
             throw new InvalidScopeException(
                 String.format("Scope(s) %s are not allowed for %s. Allowed scopes: %s",
-                    missingScopes, client.getClientId(), client.getScopes()));
+                    missingScopes, client.getClientId(), grantedScopes));
         }
         return requestedScopes;
     }
