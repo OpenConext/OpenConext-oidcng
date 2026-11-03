@@ -2,6 +2,9 @@ package oidc.endpoints;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -20,19 +23,23 @@ import com.nimbusds.oauth2.sdk.id.Subject;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import oidc.AbstractIntegrationTest;
 import oidc.model.AccessToken;
+import oidc.model.OpenIDClient;
 import oidc.model.RefreshToken;
 import oidc.model.User;
 import oidc.secure.SignedJWTTest;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -48,6 +55,7 @@ import java.text.ParseException;
 import java.util.*;
 
 import static com.nimbusds.oauth2.sdk.auth.JWTAuthentication.CLIENT_ASSERTION_TYPE;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static io.restassured.RestAssured.given;
 import static java.util.Collections.emptyList;
 import static org.junit.Assert.*;
@@ -58,6 +66,9 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
     @Autowired
     @Value("${sp.entity_id}")
     private String issuer;
+
+    @Rule
+    public WireMockRule wireMockRule = new WireMockRule(8089);
 
     @Test
     public void token() throws IOException, ParseException, JOSEException, BadJOSEException {
@@ -379,6 +390,50 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
         Map<String, Object> body = doJwtAuthenticationAuthorization(privateKeyJWT);
         assertTrue(body.containsKey("id_token"));
         assertTrue(body.containsKey("access_token"));
+    }
+
+    @Test
+    public void privateKeyJwtAuthenticationWithSigningCertificateUrl() throws Exception {
+        JWK unrelatedKey = new RSAKeyGenerator(2048).keyID("unrelated").generate().toPublicJWK();
+        JWK rpKey = JWKSet.parse(readFile("keys/rp_public_keys.json")).getKeys().get(0);
+        stubJwks(new JWKSet(List.of(unrelatedKey, rpKey)));
+        useSigningCertificateUrl("rp-jwt-authentication", "http://localhost:8089/certs");
+
+        Map<String, Object> body = doJwtAuthenticationAuthorization(privateKeyJWT("key_id"));
+        assertTrue(body.containsKey("id_token"));
+        assertTrue(body.containsKey("access_token"));
+    }
+
+    @Test
+    public void privateKeyJwtAuthenticationWithSigningCertificateUrlNoMatchingKey() throws Exception {
+        stubJwks(new JWKSet(new RSAKeyGenerator(2048).keyID("key_id").generate().toPublicJWK()));
+        useSigningCertificateUrl("rp-jwt-authentication", "http://localhost:8089/certs");
+
+        Map<String, Object> body = doJwtAuthenticationAuthorization(privateKeyJWT("key_id"));
+        assertFalse(body.containsKey("access_token"));
+        assertFalse(body.containsKey("id_token"));
+    }
+
+    private void stubJwks(JWKSet jwkSet) {
+        stubFor(get(urlPathMatching("/certs")).willReturn(aResponse()
+                .withHeader("Content-Type", "application/json")
+                .withBody(jwkSet.toString())));
+    }
+
+    private void useSigningCertificateUrl(String clientId, String url) {
+        mongoTemplate.updateFirst(
+                Query.query(Criteria.where("clientId").is(clientId)),
+                new Update().set("signingCertificateUrl", url).unset("signingCertificate"),
+                OpenIDClient.class);
+    }
+
+    private PrivateKeyJWT privateKeyJWT(String keyID) throws Exception {
+        return new PrivateKeyJWT(
+                new ClientID("rp-jwt-authentication"),
+                URI.create("http://localhost:8080/oidc/token"),
+                JWSAlgorithm.RS256,
+                privateKey(),
+                keyID, null);
     }
 
     @Test

@@ -99,8 +99,7 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         String clientId = clientAuthentication != null ? clientAuthentication.getClientID().getValue() : tokenRequest.getClientID().getValue();
         OpenIDClient client = openIDClientRepository.findOptionalByClientId(clientId).orElseThrow(() -> new UnknownClientException(clientId));
 
-        if (authorizationGrant instanceof DeviceCodeGrant) {
-            DeviceCodeGrant deviceCodeGrant = (DeviceCodeGrant) authorizationGrant;
+        if (authorizationGrant instanceof DeviceCodeGrant deviceCodeGrant) {
             String value = deviceCodeGrant.getDeviceCode().getValue();
             return deviceAuthorizationRepository.findByDeviceCode(value)
                     .map(deviceAuthorization -> this.handleDeviceCodeFlow(deviceAuthorization, client))
