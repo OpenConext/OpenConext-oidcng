@@ -194,7 +194,12 @@ public class DeviceAuthorizationEndpoint implements OidcEndpoint {
         Optional<DeviceAuthorization> optionalDeviceAuthorization = findByUserCode(userCode);
         AtomicBoolean stateMatches = new AtomicBoolean(false);
         optionalDeviceAuthorization.ifPresent(deviceAuthorization -> {
-            stateMatches.set(state.equals(deviceAuthorization.getState()));
+            stateMatches.set(state.equals(deviceAuthorization.getState())
+                    && DeviceAuthorizationStatus.authorization_pending.equals(deviceAuthorization.getStatus()));
+            if (!stateMatches.get()) {
+                //Never approve a device code when the state does not match or when it is not pending (avoid replays)
+                return;
+            }
             openIDClientRepository.findOptionalByClientId(deviceAuthorization.getClientId())
                     .ifPresent(openIDClient -> model.put("client", openIDClient));
             OidcSamlAuthentication oidcSamlAuthentication = (OidcSamlAuthentication) authentication;

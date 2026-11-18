@@ -27,6 +27,7 @@ import java.util.stream.IntStream;
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -145,6 +146,33 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
         DeviceAuthorization deviceAuthorizationFromDB = mongoTemplate
                 .findOne(Query.query(Criteria.where("userCode").is(strippedUserCode)), DeviceAuthorization.class);
         assertEquals(DeviceAuthorizationStatus.success, deviceAuthorizationFromDB.getStatus());
+    }
+
+    @SneakyThrows
+    @Test
+    public void deviceAuthorizeWrongStateDoesNotApprove() {
+        Map<String, Object> body = given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
+                .formParam("client_id", "mock-sp")
+                .formParam("scope", "openid groups")
+                .post("oidc/device_authorization")
+                .as(mapTypeRef);
+        String strippedUserCode = ((String) body.get("user_code")).replaceAll("-", "");
+
+        String view = IOUtils.toString(given()
+                .when()
+                .get(String.format("oidc/device_authorize?client_id=mock-sp&user_code=%s&state=%s",
+                        strippedUserCode, "wrong-state"))
+                .body()
+                .asInputStream(), Charset.defaultCharset());
+        assertFalse(view.contains("You have successfully authenticated"));
+
+        DeviceAuthorization fromDB = mongoTemplate
+                .findOne(Query.query(Criteria.where("userCode").is(strippedUserCode)), DeviceAuthorization.class);
+        assertEquals(DeviceAuthorizationStatus.authorization_pending, fromDB.getStatus());
+        assertNull(fromDB.getUserSub());
     }
 
     @SneakyThrows
