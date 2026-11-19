@@ -1,8 +1,17 @@
 # Changelog
 
-## 8.6.1
+## 8.7.0
 
-- Update java dependencies
+- Migrate to Spring Boot 4.1 (4.1.1) and add a test for Mongo session serialization ([#358](https://github.com/OpenConext/OpenConext-oidcng/issues/358))
+- Update java dependencies (Spring Security, OpenSAML 5.2.1, Nimbus oauth2-oidc-sdk 11.34, Spring Session MongoDB)
+- Docker image: use the OpenConext base containers with a JRE Alpine image instead of a JDK
+- Update GitHub Actions dependencies; Dependabot now only proposes security updates and other running GitHub Actions are cancelled
+- Include the client ID in `InvalidGrantException` messages and suppress their stack traces ([#329](https://github.com/OpenConext/OpenConext-oidcng/issues/329))
+- Catch OAuth2 parse exceptions in the `/userinfo` endpoint and return a 401 `invalid_request` with a `WWW-Authenticate` header when the access token is missing ([#338](https://github.com/OpenConext/OpenConext-oidcng/issues/338), [#339](https://github.com/OpenConext/OpenConext-oidcng/issues/339))
+- Return a 404 in the error controller for `NoResourceFoundException`
+- Fix the error message for missing scopes in the authorization endpoint to show the granted scopes
+- Add tests for `private_key_jwt` client authentication with a signing certificate URL, including the no-matching-key case ([#371](https://github.com/OpenConext/OpenConext-oidcng/issues/371))
+- Device authorization: only approve a device code when the state matches and the authorization is still pending, to avoid replays
 
 ## 8.6.0
 
