@@ -99,13 +99,6 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         String clientId = clientAuthentication != null ? clientAuthentication.getClientID().getValue() : tokenRequest.getClientID().getValue();
         OpenIDClient client = openIDClientRepository.findOptionalByClientId(clientId).orElseThrow(() -> new UnknownClientException(clientId));
 
-        if (authorizationGrant instanceof DeviceCodeGrant deviceCodeGrant) {
-            String value = deviceCodeGrant.getDeviceCode().getValue();
-            return deviceAuthorizationRepository.findByDeviceCode(value)
-                    .map(deviceAuthorization -> this.handleDeviceCodeFlow(deviceAuthorization, client))
-                    .orElseThrow(() -> new DeviceFlowException("expired_token"));
-        }
-
         if (clientAuthentication == null && !client.isPublicClient()) {
             throw new UnauthorizedException("Non-public client requires authentication");
         }
@@ -122,6 +115,14 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
         if (!client.getGrants().contains(authorizationGrant.getType().getValue())) {
             throw new InvalidGrantException(String.format("Invalid grant %s for client %s",
                 authorizationGrant.getType().getValue(), clientId));
+        }
+
+        //Only after the client is authenticated (confidential clients) and the grant is validated
+        if (authorizationGrant instanceof DeviceCodeGrant deviceCodeGrant) {
+            String value = deviceCodeGrant.getDeviceCode().getValue();
+            return deviceAuthorizationRepository.findByDeviceCode(value)
+                    .map(deviceAuthorization -> this.handleDeviceCodeFlow(deviceAuthorization, client))
+                    .orElseThrow(() -> new DeviceFlowException("expired_token"));
         }
 
         if (authorizationGrant instanceof AuthorizationCodeGrant) {
@@ -233,6 +234,10 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
         CodeVerifier codeVerifier = authorizationCodeGrant.getCodeVerifier();
         String codeChallenge = authorizationCode.getCodeChallenge();
+        if (codeVerifier == null && codeChallenge != null) {
+            //Prevent a PKCE downgrade: a code_challenge in the authorization request must be proven, also by confidential clients
+            throw new CodeVerifierMissingException("code_verifier required, as the authorization request contained a code_challenge");
+        }
         if (codeVerifier != null) {
             if (codeChallenge == null) {
                 throw new CodeVerifierMissingException("code_verifier present, but no code_challenge in the authorization_code");
@@ -242,8 +247,9 @@ public class TokenEndpoint extends SecureEndpoint implements OidcEndpoint {
 
             //Constant time comparison
             if (!MessageDigest.isEqual(codeChallenge.getBytes(), computed.getValue().getBytes())) {
-                LOG.error(String.format("CodeVerifier %s with method %s does not match codeChallenge %s. Expected codeChallenge is %s",
-                        codeVerifier.getValue(), codeChallengeMethod, codeChallenge, computed.getValue()));
+                //Never log the code_verifier, it is a secret
+                LOG.error(String.format("CodeVerifier with method %s does not match codeChallenge for RP %s",
+                        codeChallengeMethod, client.getClientId()));
                 throw new CodeVerifierMissingException("code_verifier does not match code_challenge");
             }
         }

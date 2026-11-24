@@ -26,6 +26,7 @@ public class User implements Serializable {
     private String sub;
     private String unspecifiedNameId;
     private String authenticatingAuthority;
+    @Setter
     private String clientId;
 
     @ToString.Exclude

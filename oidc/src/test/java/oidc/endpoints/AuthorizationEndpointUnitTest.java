@@ -280,6 +280,7 @@ public class AuthorizationEndpointUnitTest {
                 null, // accessTokenRepository
                 null, // userRepository
                 null, // openIDClientRepository
+                null, // authenticationRequestRepository
                 null, // tokenGenerator
                 "salt",
                 "test",

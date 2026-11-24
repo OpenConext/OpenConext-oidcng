@@ -269,7 +269,7 @@ public class SecurityConfiguration {
                     .addFilterBefore(new MDCContextFilter(), BasicAuthenticationFilter.class);
 
             if (environment.acceptsProfiles(Profiles.of("dev"))) {
-                http.addFilterBefore(new FakeSamlAuthenticationFilter(userRepository, objectMapper),
+                http.addFilterBefore(new FakeSamlAuthenticationFilter(userRepository, authenticationRequestRepository, objectMapper),
                         BasicAuthenticationFilter.class);
             }
 

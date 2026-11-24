@@ -118,6 +118,43 @@ public class JWTRequestTest implements MapTypeReference, SignedJWTTest {
         doParse(client, "key_id");
     }
 
+    @Test
+    public void signedMaxAgeIsApplied() throws Exception {
+        OpenIDClient client = getClient();
+        String keyID = getCertificateKeyID(client);
+        JWTClaimsSet claims = new JWTClaimsSet.Builder(getJwtClaimsSet(client.getClientId(), client.getRedirectUrls().get(0)))
+                .claim("max_age", 0).build();
+        SignedJWT signedJWT = new SignedJWT(
+                new com.nimbusds.jose.JWSHeader.Builder(oidc.secure.TokenGenerator.signingAlg)
+                        .type(com.nimbusds.jose.JOSEObjectType.JWT).keyID(keyID).build(), claims);
+        signedJWT.sign(new com.nimbusds.jose.crypto.RSASSASigner(privateKey()));
+        AuthenticationRequest authenticationRequest = new AuthenticationRequest.Builder(
+                ResponseType.getDefault(),
+                new Scope("openid"),
+                new ClientID(client.getClientId()),
+                new URI("http://localhost:8080"))
+                .maxAge(1200)
+                .requestObject(signedJWT).build();
+
+        assertEquals(0, JWTRequest.parse(authenticationRequest, client).getMaxAge());
+    }
+
+    @Test
+    public void onlySafeUrlsAreFetched() throws Exception {
+        for (String url : List.of("file:///etc/passwd", "ftp://example.com/keys", "jar:file:///tmp/x.jar!/y",
+                "http://example.com/keys", "http://169.254.169.254/latest/meta-data", "not a url")) {
+            try {
+                JWTRequest.validateUrl(url);
+                org.junit.Assert.fail("Expected UnsupportedJWTException for " + url);
+            } catch (UnsupportedJWTException expected) {
+                //expected
+            }
+        }
+        JWTRequest.validateUrl("https://example.com/keys");
+        JWTRequest.validateUrl("http://localhost:8089/certs");
+        JWTRequest.validateUrl("http://127.0.0.1:8089/certs");
+    }
+
     @Test(expected = UnsupportedJWTException.class)
     public void invalidRP() throws Exception {
         OpenIDClient client = getClient();

@@ -64,6 +64,66 @@ public class AuthorizationEndpointTest extends AbstractIntegrationTest implement
     }
 
     @Test
+    public void authorizeRejectsLoginStartedForOtherClient() throws IOException {
+        //The login (and the EB access rules) were for mock-rp, but the code is requested for mock-sp
+        Response response = given()
+                .redirects().follow(false)
+                .queryParam("login_client_id", "mock-rp")
+                .queryParam("client_id", "mock-sp")
+                .queryParam("response_type", "code")
+                .queryParam("scope", "openid")
+                .queryParam("state", "example")
+                .queryParam("redirect_uri", openIDClient("mock-sp").getRedirectUrls().get(0))
+                .get("oidc/authorize");
+        assertErrorRedirectWithoutCode(response);
+        assertEquals(0, mongoTemplate.findAll(AuthorizationCode.class).size());
+    }
+
+    @Test
+    public void consentRejectsLoginStartedForOtherClient() throws IOException {
+        Response response = given()
+                .redirects().follow(false)
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .formParam("login_client_id", "mock-rp")
+                .formParam("client_id", "mock-sp")
+                .formParam("response_type", "code")
+                .formParam("scope", "openid")
+                .formParam("state", "example")
+                .formParam("redirect_uri", openIDClient("mock-sp").getRedirectUrls().get(0))
+                .post("oidc/consent");
+        assertErrorRedirectWithoutCode(response);
+        assertEquals(0, mongoTemplate.findAll(AuthorizationCode.class).size());
+    }
+
+    private void assertErrorRedirectWithoutCode(Response response) {
+        //Errors are reported to the (validated) redirect_uri of the RP, but never with a code
+        String location = response.getHeader("Location");
+        assertEquals(302, response.getStatusCode());
+        assertNotNull(location);
+        assertTrue(location.contains("error=access_denied"));
+        assertFalse(location.contains("code="));
+    }
+
+    @Test
+    public void authorizeRejectsParametersChangedAfterLogin() throws IOException {
+        String redirectUri = openIDClient("mock-sp").getRedirectUrls().get(0);
+        //The login was started without acr_values / with another state, the replayed request asks for more
+        String original = "/oidc/authorize?client_id=mock-sp&response_type=code&scope=openid&state=example&redirect_uri=" +
+            URLEncoder.encode(redirectUri, StandardCharsets.UTF_8);
+        Response response = given()
+                .redirects().follow(false)
+                .queryParam("original_request_url", original)
+                .queryParam("client_id", "mock-sp")
+                .queryParam("response_type", "code")
+                .queryParam("scope", "openid groups")
+                .queryParam("state", "example")
+                .queryParam("redirect_uri", redirectUri)
+                .get("oidc/authorize");
+        assertErrorRedirectWithoutCode(response);
+        assertEquals(0, mongoTemplate.findAll(AuthorizationCode.class).size());
+    }
+
+    @Test
     public void authorizeFragment() throws IOException {
         Response response = doAuthorize("mock-sp", "code", ResponseMode.FRAGMENT.getValue(), null, null);
         String url = response.getHeader("Location");

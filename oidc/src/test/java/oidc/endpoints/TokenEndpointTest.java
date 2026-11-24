@@ -327,6 +327,17 @@ public class TokenEndpointTest extends AbstractIntegrationTest implements Signed
     }
 
     @Test
+    public void codeChallengeWithoutVerifierConfidentialClient() throws IOException {
+        Response response = doAuthorize("mock-sp", "code", null, null,
+                StringUtils.leftPad("token", 45, "-"));
+        String code = getCode(response);
+        //Authenticated (confidential) client, but the verifier is omitted: no PKCE downgrade allowed
+        Map<String, Object> body = doToken(code, "mock-sp", "secret", GrantType.AUTHORIZATION_CODE);
+        assertEquals("code_verifier required, as the authorization request contained a code_challenge", body.get("message"));
+        assertFalse(body.containsKey("access_token"));
+    }
+
+    @Test
     public void codeChallengeNotInAuthorisationCode() throws IOException {
         Response response = doAuthorize("mock-sp", "code", null, null, null);
         String code = getCode(response);

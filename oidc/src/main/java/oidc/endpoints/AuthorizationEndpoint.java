@@ -20,6 +20,7 @@ import oidc.crypto.KeyGenerator;
 import oidc.exceptions.InvalidGrantException;
 import oidc.exceptions.InvalidScopeException;
 import oidc.exceptions.RedirectMismatchException;
+import oidc.exceptions.UnauthorizedException;
 import oidc.exceptions.UnknownClientException;
 import oidc.exceptions.UnsupportedPromptValueException;
 import oidc.exceptions.UriTooLongException;
@@ -32,11 +33,13 @@ import oidc.model.ProvidedRedirectURI;
 import oidc.model.TokenValue;
 import oidc.model.User;
 import oidc.repository.AccessTokenRepository;
+import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.AuthorizationCodeRepository;
 import oidc.repository.OpenIDClientRepository;
 import oidc.repository.UserRepository;
 import oidc.secure.JWTRequest;
 import oidc.secure.TokenGenerator;
+import static oidc.secure.SavedRequestBinding.assertMatchesSavedRequest;
 import oidc.user.OidcSamlAuthentication;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -91,6 +94,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
     private final AccessTokenRepository accessTokenRepository;
     private final UserRepository userRepository;
     private final OpenIDClientRepository openIDClientRepository;
+    private final AuthenticationRequestRepository authenticationRequestRepository;
     private final String salt;
     private final String environment;
     private final boolean consentEnabled;
@@ -100,6 +104,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
                                  AccessTokenRepository accessTokenRepository,
                                  UserRepository userRepository,
                                  OpenIDClientRepository openIDClientRepository,
+                                 AuthenticationRequestRepository authenticationRequestRepository,
                                  TokenGenerator tokenGenerator,
                                  @Value("${access_token_one_way_hash_salt}") String salt,
                                  @Value("${environment}") String environment,
@@ -109,6 +114,7 @@ public class AuthorizationEndpoint implements OidcEndpoint {
         this.accessTokenRepository = accessTokenRepository;
         this.userRepository = userRepository;
         this.openIDClientRepository = openIDClientRepository;
+        this.authenticationRequestRepository = authenticationRequestRepository;
         this.tokenGenerator = tokenGenerator;
         this.salt = salt;
         this.environment = environment;
@@ -177,6 +183,9 @@ public class AuthorizationEndpoint implements OidcEndpoint {
 
         User user = samlAuthentication.getUser();
         MDCContext.mdcContext(user);
+        assertLoginBoundToClient(user, client.getClientId());
+        assertMatchesSavedRequest(authenticationRequestRepository, samlAuthentication.getAuthenticationRequestID(),
+            firstValues(parameters), CONSENT_FORM_PARAMETERS);
 
         if (scope != null) {
             List<String> scopeList = scope.toStringList();
@@ -254,6 +263,28 @@ public class AuthorizationEndpoint implements OidcEndpoint {
             throw new IllegalArgumentException("Response mode " + responseMode + " not supported");
         }
         throw new IllegalArgumentException("Not yet implemented response_type: " + responseType);
+    }
+
+    /**
+     * The SAML login (and thus the RequesterID and access rules enforced by EngineBlock) was done for exactly one
+     * client. Never issue a code / token for another client than the one the login was started for.
+     */
+    public static void assertLoginBoundToClient(User user, String requestedClientId) {
+        String loginClientId = user.getClientId();
+        if (loginClientId == null || !loginClientId.equals(requestedClientId)) {
+            throw new UnauthorizedException(String.format(
+                "Authentication was performed for client %s and can not be used for client %s",
+                loginClientId, requestedClientId));
+        }
+    }
+
+    //The consent form adds the submit button 'yes' to the original parameters
+    private static final Set<String> CONSENT_FORM_PARAMETERS = Set.of("yes");
+
+    private static Map<String, String> firstValues(MultiValueMap<String, String> parameters) {
+        Map<String, String> result = new HashMap<>();
+        parameters.forEach((key, values) -> result.put(key, values == null || values.isEmpty() || values.get(0) == null ? "" : values.get(0)));
+        return result;
     }
 
     private static ModelAndView redirectViewWithState(

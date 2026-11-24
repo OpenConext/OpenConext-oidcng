@@ -111,15 +111,17 @@ public class IntrospectEndpoint extends SecureEndpoint {
         Map<String, Object> result = new TreeMap<>();
         boolean isUserAccessToken = !accessToken.isClientCredentials();
 
+        //Applies to user access tokens and to client_credentials tokens
+        OpenIDClient openIDClient = openIDClientRepository.findOptionalByClientId(accessToken.getClientId())
+            .orElseThrow(() -> new UnknownClientException(accessToken.getClientId()));
+        if (!openIDClient.getClientId().equals(resourceServer.getClientId()) &&
+            !openIDClient.getAllowedResourceServers().contains(resourceServer.getClientId())) {
+            throw new UnauthorizedException(
+                String.format("RP %s is not allowed to use the API of resource server %s. Allowed resource servers are %s",
+                    accessToken.getClientId(), resourceServer.getClientId(), openIDClient.getAllowedResourceServers()));
+        }
+
         if (isUserAccessToken) {
-            OpenIDClient openIDClient = openIDClientRepository.findOptionalByClientId(accessToken.getClientId())
-                .orElseThrow(() -> new UnknownClientException(accessToken.getClientId()));
-            if (!openIDClient.getClientId().equals(resourceServer.getClientId()) &&
-                !openIDClient.getAllowedResourceServers().contains(resourceServer.getClientId())) {
-                throw new UnauthorizedException(
-                    String.format("RP %s is not allowed to use the API of resource server %s. Allowed resource servers are %s",
-                        accessToken.getClientId(), resourceServer.getClientId(), openIDClient.getAllowedResourceServers()));
-            }
             User user = tokenGenerator.decryptAccessTokenWithEmbeddedUserInfo(signedJWT);
             result.put("updated_at", user.getUpdatedAt());
             if (resourceServer.isIncludeUnspecifiedNameID()) {

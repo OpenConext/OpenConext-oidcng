@@ -9,8 +9,11 @@ import lombok.SneakyThrows;
 import oidc.AbstractIntegrationTest;
 import oidc.model.DeviceAuthorization;
 import oidc.model.DeviceAuthorizationStatus;
+import oidc.model.OpenIDClient;
 import org.apache.commons.io.IOUtils;
+import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
@@ -32,6 +35,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
+
+    @Autowired
+    private DeviceAuthorizationEndpoint deviceAuthorizationEndpoint;
+
+    @Before
+    public void resetRateLimit() {
+        deviceAuthorizationEndpoint.resetFailedAttempts();
+    }
 
     @Test
     public void deviceAuthorization() {
@@ -150,6 +161,131 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
 
     @SneakyThrows
     @Test
+    public void deviceAuthorizeLoginForOtherClientDoesNotApprove() {
+        Map<String, Object> body = given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
+                .formParam("client_id", "mock-sp")
+                .formParam("scope", "openid groups")
+                .post("oidc/device_authorization")
+                .as(mapTypeRef);
+        String strippedUserCode = ((String) body.get("user_code")).replaceAll("-", "");
+        DeviceAuthorization pending = mongoTemplate
+                .findOne(Query.query(Criteria.where("userCode").is(strippedUserCode)), DeviceAuthorization.class);
+
+        //The login was started for mock-rp, the device authorization belongs to mock-sp
+        given()
+                .when()
+                .get(String.format("oidc/device_authorize?login_client_id=mock-rp&client_id=mock-rp&user_code=%s&state=%s",
+                        strippedUserCode, pending.getState()))
+                .then()
+                .statusCode(401);
+
+        DeviceAuthorization fromDB = mongoTemplate
+                .findOne(Query.query(Criteria.where("userCode").is(strippedUserCode)), DeviceAuthorization.class);
+        assertEquals(DeviceAuthorizationStatus.authorization_pending, fromDB.getStatus());
+        assertNull(fromDB.getUserSub());
+    }
+
+    @SneakyThrows
+    @Test
+    public void deviceAuthorizeUserCodeChangedAfterLoginDoesNotApprove() {
+        Map<String, Object> body = given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
+                .formParam("client_id", "mock-sp")
+                .formParam("scope", "openid groups")
+                .post("oidc/device_authorization")
+                .as(mapTypeRef);
+        String strippedUserCode = ((String) body.get("user_code")).replaceAll("-", "");
+        DeviceAuthorization pending = mongoTemplate
+                .findOne(Query.query(Criteria.where("userCode").is(strippedUserCode)), DeviceAuthorization.class);
+
+        //The login was started for another user_code of the same client
+        given()
+                .when()
+                .queryParam("original_request_url", "/oidc/device_authorize?client_id=mock-sp&user_code=OTHERCODE&state=" + pending.getState())
+                .get(String.format("oidc/device_authorize?client_id=mock-sp&user_code=%s&state=%s",
+                        strippedUserCode, pending.getState()))
+                .then()
+                .statusCode(401);
+
+        DeviceAuthorization fromDB = mongoTemplate
+                .findOne(Query.query(Criteria.where("userCode").is(strippedUserCode)), DeviceAuthorization.class);
+        assertEquals(DeviceAuthorizationStatus.authorization_pending, fromDB.getStatus());
+    }
+
+    @Test
+    public void deviceTokenRequestRequiresAuthenticationForConfidentialClient() {
+        mongoTemplate.updateFirst(Query.query(Criteria.where("clientId").is("mock-sp")),
+                new org.springframework.data.mongodb.core.query.Update().set("publicClient", false), OpenIDClient.class);
+        Map<String, Object> device = given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
+                .formParam("client_id", "mock-sp")
+                .formParam("scope", "openid groups")
+                .post("oidc/device_authorization")
+                .as(mapTypeRef);
+        String deviceCode = (String) device.get("device_code");
+
+        //No client authentication
+        given().formParam("grant_type", GrantType.DEVICE_CODE.getValue())
+                .formParam("device_code", deviceCode)
+                .formParam("client_id", "mock-sp")
+                .post("oidc/token")
+                .then()
+                .statusCode(401);
+        //Wrong secret
+        given().auth().preemptive().basic("mock-sp", "nope")
+                .formParam("grant_type", GrantType.DEVICE_CODE.getValue())
+                .formParam("device_code", deviceCode)
+                .post("oidc/token")
+                .then()
+                .statusCode(401);
+        //Correct secret
+        Map<String, Object> pending = given().auth().preemptive().basic("mock-sp", "secret")
+                .formParam("grant_type", GrantType.DEVICE_CODE.getValue())
+                .formParam("device_code", deviceCode)
+                .post("oidc/token")
+                .as(mapTypeRef);
+        assertEquals("authorization_pending", pending.get("error"));
+    }
+
+    @Test
+    public void verifyIsRateLimitedAcrossSessions() {
+        //A fresh session (no cookies) for every request, so only the server side counter can block
+        for (int i = 0; i < DeviceAuthorizationEndpoint.MAX_FAILURES_PER_ADDRESS; i++) {
+            given().header("X-Forwarded-For", "10.0.0.1").formParam("userCode", "nope" + i).post("oidc/verify").then().statusCode(200);
+        }
+        Map<String, Object> device = given()
+                .when()
+                .header("Content-type", "application/x-www-form-urlencoded")
+                .formParam("grant_type", GrantType.AUTHORIZATION_CODE.getValue())
+                .formParam("client_id", "mock-sp")
+                .formParam("scope", "openid groups")
+                .post("oidc/device_authorization")
+                .as(mapTypeRef);
+        String userCode = (String) device.get("user_code");
+
+        //Even a valid code is not looked up anymore
+        Response response = given().header("X-Forwarded-For", "10.0.0.1").formParam("userCode", userCode).post("oidc/verify");
+        assertEquals(200, response.getStatusCode());
+        assertTrue(response.asString().contains("Number of attempts exceeded"));
+
+        //Another client address is not affected by the limit of the first one
+        response = given().header("X-Forwarded-For", "10.0.0.2, 10.9.9.9").formParam("userCode", userCode).post("oidc/verify");
+        assertEquals(302, response.getStatusCode());
+        String strippedUserCode = userCode.replaceAll("-", "");
+        DeviceAuthorization fromDB = mongoTemplate
+                .findOne(Query.query(Criteria.where("userCode").is(strippedUserCode)), DeviceAuthorization.class);
+        assertEquals(DeviceAuthorizationStatus.authorization_pending, fromDB.getStatus());
+    }
+
+    @SneakyThrows
+    @Test
     public void deviceAuthorizeWrongStateDoesNotApprove() {
         Map<String, Object> body = given()
                 .when()
@@ -257,7 +393,7 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
 
     @Test
     public void generateUserCode() {
-        String userCode = new DeviceAuthorizationEndpoint(null, null, null, null)
+        String userCode = new DeviceAuthorizationEndpoint(null, null, null, null, null)
                 .generateUserCode();
         assertTrue(Pattern.compile("[BCDFGHJKLMNPQRSTVWXZ]{4}-[BCDFGHJKLMNPQRSTVWXZ]{4}").matcher(userCode).matches());
     }
@@ -376,7 +512,8 @@ public class DeviceAuthorizationEndpointTest extends AbstractIntegrationTest {
                 .when()
                 .formParam("grant_type", GrantType.DEVICE_CODE.getValue())
                 .formParam("device_code", deviceCode)
-                .formParam("client_id", "mock-rp")
+                //Another public client that is allowed to use the device flow
+                .formParam("client_id", "playground_client")
                 .accept(ContentType.JSON)
                 .post("oidc/token")
                 .as(mapTypeRef);

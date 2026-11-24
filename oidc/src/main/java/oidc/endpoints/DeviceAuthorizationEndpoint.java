@@ -14,7 +14,9 @@ import oidc.model.DeviceAuthorizationStatus;
 import oidc.model.OpenIDClient;
 import oidc.model.User;
 import oidc.qr.QRGenerator;
+import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.DeviceAuthorizationRepository;
+import oidc.secure.SavedRequestBinding;
 import oidc.repository.OpenIDClientRepository;
 import oidc.user.OidcSamlAuthentication;
 import org.apache.commons.logging.Log;
@@ -38,9 +40,11 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -58,19 +62,31 @@ public class DeviceAuthorizationEndpoint implements OidcEndpoint {
 
     private static final int RATE_LIMIT = 3;
 
+    //Server side limit per remote address, as the session based counter is reset by dropping the session cookie
+    static final int MAX_FAILURES_PER_ADDRESS = 20;
+    private static final Duration FAILURE_WINDOW = Duration.ofMinutes(15);
+    private static final int MAX_TRACKED_ADDRESSES = 10_000;
+
     private static final Random random = new SecureRandom();
 
     private final DeviceAuthorizationRepository deviceAuthorizationRepository;
     private final OpenIDClientRepository openIDClientRepository;
+    private final AuthenticationRequestRepository authenticationRequestRepository;
     private final String verificationUrl;
     private final String environment;
+    private final Map<String, FailedAttempts> failedAttempts = new ConcurrentHashMap<>();
+
+    private record FailedAttempts(int count, Instant windowStart) {
+    }
 
     public DeviceAuthorizationEndpoint(DeviceAuthorizationRepository deviceAuthorizationRepository,
                                        OpenIDClientRepository openIDClientRepository,
+                                       AuthenticationRequestRepository authenticationRequestRepository,
                                        @Value("${device_verification_url}") String verificationUrl,
                                        @Value("${environment}") String environment) {
         this.deviceAuthorizationRepository = deviceAuthorizationRepository;
         this.openIDClientRepository = openIDClientRepository;
+        this.authenticationRequestRepository = authenticationRequestRepository;
         this.verificationUrl = verificationUrl;
         this.environment = environment;
     }
@@ -136,9 +152,15 @@ public class DeviceAuthorizationEndpoint implements OidcEndpoint {
         if (StringUtils.hasText(hint)) {
             userCodeRef.set(SimpleEncryptionHandler.decrypt(hint));
         }
-        if (StringUtils.hasText(userCodeRef.get())) {
+        String address = clientAddress(request);
+        if (StringUtils.hasText(userCodeRef.get()) && !rateLimited(address)) {
             //When the code checks out, then retrieve the client for displaying purposes
-            findByUserCode(userCodeRef.get())
+            Optional<DeviceAuthorization> byUserCode = findByUserCode(userCodeRef.get());
+            if (byUserCode.isEmpty() && StringUtils.hasText(userCode)) {
+                //This view is also an oracle for valid user codes
+                registerFailure(address);
+            }
+            byUserCode
                     .flatMap(deviceAuthorization -> openIDClientRepository.findOptionalByClientId(deviceAuthorization.getClientId()))
                     //Check the very strange use-case for the client not existing anymore
                     .ifPresent(openIDClient -> {
@@ -172,6 +194,11 @@ public class DeviceAuthorizationEndpoint implements OidcEndpoint {
     public ModelAndView postVerify(@RequestParam Map<String, String> body, HttpServletRequest request) {
         //Check if the code is ok, otherwise return error
         String userCode = body.getOrDefault("userCode", body.get("userCodeComplete"));
+        String address = clientAddress(request);
+        if (rateLimited(address)) {
+            LOG.warn("Device verification rate limit exceeded for " + address);
+            return rateLimitedView(request);
+        }
         ModelAndView modelAndView = findByUserCode(userCode)
                 //avoid replay's
                 .filter(deviceAuthorization -> deviceAuthorization.getStatus().equals(DeviceAuthorizationStatus.authorization_pending))
@@ -180,14 +207,54 @@ public class DeviceAuthorizationEndpoint implements OidcEndpoint {
                     logout(request);
                     return new ModelAndView(new RedirectView(deviceAuthorizeURL(deviceAuthorization), true));
                 })
-                .orElseGet(() -> this.verification(null, null, "true", request));
+                .orElseGet(() -> {
+                    registerFailure(address);
+                    return rateLimited(address) ? rateLimitedView(request) : this.verification(null, null, "true", request);
+                });
         return modelAndView;
+    }
+
+    //X-Forwarded-For is overwritten by the load balancer, so the first hop is the address of the client. Same logic as in
+    //AuthnRequestContextConsumer
+    private String clientAddress(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        return StringUtils.hasText(xForwardedFor) && !xForwardedFor.equalsIgnoreCase("unknown") ?
+                xForwardedFor.split(",")[0].trim() : request.getRemoteAddr();
+    }
+
+    private ModelAndView rateLimitedView(HttpServletRequest request) {
+        ModelAndView modelAndView = this.verification(null, null, "true", request);
+        modelAndView.getModel().remove("attemptsLeft");
+        modelAndView.addObject("rateLimitExceeded", true);
+        return modelAndView;
+    }
+
+    private boolean rateLimited(String address) {
+        FailedAttempts attempts = failedAttempts.get(address);
+        return attempts != null &&
+                attempts.windowStart().plus(FAILURE_WINDOW).isAfter(Instant.now()) &&
+                attempts.count() >= MAX_FAILURES_PER_ADDRESS;
+    }
+
+    private void registerFailure(String address) {
+        Instant now = Instant.now();
+        if (failedAttempts.size() > MAX_TRACKED_ADDRESSES) {
+            failedAttempts.values().removeIf(a -> a.windowStart().plus(FAILURE_WINDOW).isBefore(now));
+        }
+        failedAttempts.merge(address, new FailedAttempts(1, now), (existing, fresh) ->
+                existing.windowStart().plus(FAILURE_WINDOW).isBefore(now) ? fresh :
+                        new FailedAttempts(existing.count() + 1, existing.windowStart()));
+    }
+
+    void resetFailedAttempts() {
+        failedAttempts.clear();
     }
 
     @GetMapping("/oidc/device_authorize")
     public ModelAndView deviceAuthorize(@RequestParam(value = "state") String state,
                                         @RequestParam(value = "user_code") String userCode,
-                                        Authentication authentication) {
+                                        Authentication authentication,
+                                        HttpServletRequest request) {
         LOG.debug(String.format("/oidc/device_authorize %s %s", authentication.getDetails(), userCode));
         //If the state (e.g. userCode) corresponds with a DeviceAuthentication then mark this as succes and inform the user
         Map<String, Object> model = new HashMap<>();
@@ -204,6 +271,11 @@ public class DeviceAuthorizationEndpoint implements OidcEndpoint {
                     .ifPresent(openIDClient -> model.put("client", openIDClient));
             OidcSamlAuthentication oidcSamlAuthentication = (OidcSamlAuthentication) authentication;
             User user = oidcSamlAuthentication.getUser();
+            AuthorizationEndpoint.assertLoginBoundToClient(user, deviceAuthorization.getClientId());
+            Map<String, String> incoming = new HashMap<>();
+            request.getParameterMap().forEach((key, values) -> incoming.put(key, values.length > 0 ? values[0] : ""));
+            SavedRequestBinding.assertMatchesSavedRequest(authenticationRequestRepository,
+                    oidcSamlAuthentication.getAuthenticationRequestID(), incoming, Set.of());
             model.put("user", user);
             deviceAuthorization.setStatus(DeviceAuthorizationStatus.success);
             deviceAuthorization.setUserSub(user.getSub());

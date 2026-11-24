@@ -186,17 +186,11 @@ public class CustomErrorController implements org.springframework.boot.webmvc.er
                 uriComponentsBuilder
                         .queryParam("error", errorCode)
                         .queryParam("error_description", errorMessage);
-                if (StringUtils.hasText(state)) {
-                    uriComponentsBuilder.queryParam("state", state);
-                }
 
                 break;
             }
             case "fragment": {
                 String fragment = String.format("error=%s&error_description=%s", errorCode, errorMessage);
-                if (StringUtils.hasText(state)) {
-                    fragment = fragment.concat(String.format("&state=%s", state));
-                }
                 uriComponentsBuilder.fragment(fragment);
                 break;
             }
@@ -215,6 +209,10 @@ public class CustomErrorController implements org.springframework.boot.webmvc.er
             default://nope
         }
         URI uri = uriComponentsBuilder.build().toUri();
+        if (StringUtils.hasText(state)) {
+            //The state is user input, so it must be encoded to prevent it from adding parameters. It is always the last parameter
+            uri = URI.create(uri + "&state=" + URLEncoder.encode(state, "UTF-8"));
+        }
 
         LOG.debug("Redirect to " + uri);
 

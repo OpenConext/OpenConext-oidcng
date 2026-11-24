@@ -1,5 +1,19 @@
 # Changelog
 
+## 8.7.2
+
+- Security hardening of the authorization flow: the authenticated session is now bound to the client and request it was started for (authorization, consent and device flow)
+- Require the `code_verifier` in the token endpoint whenever a `code_challenge` was provided, and no longer log it
+- Apply the allowed resource servers check to `client_credentials` tokens in the `/introspect` endpoint. Make sure the allowed resource servers are configured for these clients in Manage
+- Device flow: authenticate confidential clients at the token endpoint and enforce a server-side rate limit on user code verification
+- Restrict the URLs (https only, timeouts, size limit) that are fetched for request objects and client assertions
+- Apply `max_age` from signed request objects
+- Encode the `state` in error redirects
+
+## 8.7.1
+
+- Add an explicit role check to the `manage/connections` endpoint
+
 ## 8.7.0
 
 - Migrate to Spring Boot 4.1 (4.1.1) and add a test for Mongo session serialization ([#358](https://github.com/OpenConext/OpenConext-oidcng/issues/358))

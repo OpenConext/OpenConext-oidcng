@@ -13,10 +13,13 @@ import org.springframework.web.servlet.ModelAndView;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import static oidc.saml.AuthnRequestContextConsumer.REDIRECT_URI_VALID;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class CustomErrorControllerTest {
 
@@ -47,6 +50,24 @@ public class CustomErrorControllerTest {
 
         String location = responseEntity.getHeaders().getLocation().toString();
         assertEquals("https://oidc-playground.test2.surfconext.nl/redirect?error=access_denied&error_description=Error+description", location);
+    }
+
+    @Test
+    public void stateCanNotInjectParameters() throws URISyntaxException {
+        for (String responseMode : List.of("query", "fragment")) {
+            MockHttpServletRequest request = MockMvcRequestBuilders
+                    .get(new URI("http://localhost:8080/oidc/authorize?response_type=code&client_id=mock-sp&scope=openid" +
+                            "&redirect_uri=http://localhost:8080/redirect&response_mode=" + responseMode +
+                            "&state=abc%26code%3Dinjected"))
+                    .requestAttr("jakarta.servlet.error.exception", new InvalidScopeException("invalid_scope"))
+                    .buildRequest(null);
+            request.setAttribute(REDIRECT_URI_VALID, true);
+            ResponseEntity responseEntity = (ResponseEntity) subject.error(request);
+
+            String location = responseEntity.getHeaders().getLocation().toString();
+            assertTrue(location, location.endsWith("&state=abc%26code%3Dinjected"));
+            assertFalse(location, location.contains("&code=injected"));
+        }
     }
 
     @Test

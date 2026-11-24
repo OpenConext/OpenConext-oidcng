@@ -288,6 +288,16 @@ public class IntrospectEndpointTest extends AbstractIntegrationTest {
         assertFalse(result.containsKey("email"));
     }
 
+    @Test
+    public void introspectionClientCredentialsNotAllowedResourceServer() throws IOException {
+        Map<String, Object> body = doToken(null, "resource-server-playground-client", "secret", GrantType.CLIENT_CREDENTIALS);
+        String accessToken = (String) body.get("access_token");
+        //resource-server-playground-client has not configured mock-sp as allowed resource server
+        Map<String, Object> result = callIntrospection("mock-sp", accessToken, "secret");
+        assertEquals("RP resource-server-playground-client is not allowed to use the API of resource server mock-sp. Allowed resource servers are []",
+            result.get("error_description"));
+    }
+
     private List<String> scopeToSortedList(String scope) {
         List<String> strings = Scope.parse(scope).toStringList();
         strings.sort(Comparator.comparing(String::toString));

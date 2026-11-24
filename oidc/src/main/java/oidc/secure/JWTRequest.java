@@ -24,14 +24,17 @@ import com.nimbusds.openid.connect.sdk.*;
 import com.nimbusds.openid.connect.sdk.claims.ACR;
 import oidc.exceptions.UnsupportedJWTException;
 import oidc.model.OpenIDClient;
-import org.apache.commons.io.IOUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
+import java.io.InputStream;
+import java.util.Set;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -107,8 +110,54 @@ public class JWTRequest {
         return signingCertificate;
     }
 
+    private static final int TIMEOUT_MILLIS = 5_000;
+    private static final int MAX_RESPONSE_BYTES = 1_048_576;
+    private static final int MAX_REDIRECTS = 3;
+    private static final Set<String> LOCAL_HOSTS = Set.of("localhost", "127.0.0.1", "[::1]");
+
     private static String read(String url) throws IOException {
-        return IOUtils.toString(new URL(url).openStream(), defaultCharset());
+        String current = url;
+        for (int redirects = 0; redirects <= MAX_REDIRECTS; redirects++) {
+            URL validated = validateUrl(current);
+            URLConnection connection = validated.openConnection();
+            connection.setConnectTimeout(TIMEOUT_MILLIS);
+            connection.setReadTimeout(TIMEOUT_MILLIS);
+            if (connection instanceof HttpURLConnection httpConnection) {
+                //Every redirect target is validated as well
+                httpConnection.setInstanceFollowRedirects(false);
+                int status = httpConnection.getResponseCode();
+                if (status >= 300 && status < 400 && httpConnection.getHeaderField("Location") != null) {
+                    current = new URL(validated, httpConnection.getHeaderField("Location")).toString();
+                    httpConnection.disconnect();
+                    continue;
+                }
+            }
+            try (InputStream inputStream = connection.getInputStream()) {
+                byte[] bytes = inputStream.readNBytes(MAX_RESPONSE_BYTES + 1);
+                if (bytes.length > MAX_RESPONSE_BYTES) {
+                    throw new UnsupportedJWTException("Response from " + validated.getHost() + " is too large");
+                }
+                return new String(bytes, defaultCharset());
+            }
+        }
+        throw new UnsupportedJWTException("Too many redirects");
+    }
+
+    //Only https is allowed, with http only for local development
+    static URL validateUrl(String url) throws IOException {
+        URL parsed;
+        try {
+            parsed = new URI(url).toURL();
+        } catch (URISyntaxException | IllegalArgumentException e) {
+            throw new UnsupportedJWTException("Invalid URL");
+        }
+        String protocol = parsed.getProtocol();
+        boolean allowed = "https".equalsIgnoreCase(protocol) ||
+                ("http".equalsIgnoreCase(protocol) && LOCAL_HOSTS.contains(parsed.getHost().toLowerCase()));
+        if (!allowed) {
+            throw new UnsupportedJWTException(String.format("Protocol %s is not allowed for host %s", protocol, parsed.getHost()));
+        }
+        return parsed;
     }
 
 
@@ -125,7 +174,7 @@ public class JWTRequest {
                 claims.containsKey("nonce") ? new Nonce((String) claims.get("nonce")) : authenticationRequest.getNonce(),
                 claims.containsKey("display") ? Display.parse((String) claims.get("display")) : authenticationRequest.getDisplay(),
                 claims.containsKey("prompt") ? Prompt.parse((String) claims.get("prompt")) : authenticationRequest.getPrompt(),
-                claims.containsKey("maxAge") ? (Integer) claims.get("max_age") : authenticationRequest.getMaxAge(),
+                claims.containsKey("max_age") ? ((Number) claims.get("max_age")).intValue() : authenticationRequest.getMaxAge(),
                 authenticationRequest.getUILocales(),
                 authenticationRequest.getClaimsLocales(),
                 authenticationRequest.getIDTokenHint(),

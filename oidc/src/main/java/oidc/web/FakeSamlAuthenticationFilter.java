@@ -6,7 +6,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import oidc.model.AuthenticationRequest;
 import oidc.model.User;
+import oidc.repository.AuthenticationRequestRepository;
 import oidc.repository.UserRepository;
 import oidc.user.OidcSamlAuthentication;
 import org.apache.commons.io.IOUtils;
@@ -22,9 +24,16 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.filter.GenericFilterBean;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import java.util.UUID;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
@@ -34,12 +43,16 @@ import static oidc.saml.AuthnRequestContextConsumer.REDIRECT_URI_VALID;
 public class FakeSamlAuthenticationFilter extends GenericFilterBean {
 
     private final UserRepository userRepository;
+    private final AuthenticationRequestRepository authenticationRequestRepository;
     private final ObjectMapper objectMapper;
     private final List<String> authorizeEndpoints = Arrays.asList("oidc/authorize", "oidc/consent", "oidc/device_authorize");
     private final XMLObjectProviderRegistry registry = ConfigurationService.get(XMLObjectProviderRegistry.class);
 
-    public FakeSamlAuthenticationFilter(UserRepository userRepository, ObjectMapper objectMapper) {
+    public FakeSamlAuthenticationFilter(UserRepository userRepository,
+                                        AuthenticationRequestRepository authenticationRequestRepository,
+                                        ObjectMapper objectMapper) {
         this.userRepository = userRepository;
+        this.authenticationRequestRepository = authenticationRequestRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -50,12 +63,29 @@ public class FakeSamlAuthenticationFilter extends GenericFilterBean {
         boolean authorizeFlow = authorizeEndpoints.stream().anyMatch(requestURI::contains);
         if (authorizeFlow && (authentication == null || !authentication.isAuthenticated()) && !(authentication instanceof OidcSamlAuthentication)) {
             User user = getUser(objectMapper, request);
+            //Mimic the real flow where the login is bound to the client the login was started for. The optional
+            //login_client_id enables tests to simulate a login that was started for another client
+            String loginClientId = request.getParameter("login_client_id");
+            user.setClientId(StringUtils.hasText(loginClientId) ? loginClientId : request.getParameter("client_id"));
             userRepository.deleteAll();
             userRepository.insert(user);
 
             request.setAttribute(REDIRECT_URI_VALID, true);
 
-            OidcSamlAuthentication samlAuthentication = new OidcSamlAuthentication(getAssertion(), user, "http://localhost");
+            //Mimic the saved request of the real flow. The optional original_request_url enables tests to simulate
+            //a login that was started with other request parameters
+            String originalRequestUrl = request.getParameter("original_request_url");
+            if (!StringUtils.hasText(originalRequestUrl)) {
+                UriComponentsBuilder builder = UriComponentsBuilder.fromPath(requestURI);
+                request.getParameterMap().forEach((key, values) -> Arrays.stream(values)
+                        .forEach(value -> builder.queryParam(key, URLEncoder.encode(value, StandardCharsets.UTF_8))));
+                originalRequestUrl = builder.build(true).toUriString();
+            }
+            String authenticationRequestId = UUID.randomUUID().toString();
+            authenticationRequestRepository.insert(new AuthenticationRequest(authenticationRequestId,
+                    Date.from(Instant.now().plus(1, ChronoUnit.HOURS)), user.getClientId(), originalRequestUrl));
+
+            OidcSamlAuthentication samlAuthentication = new OidcSamlAuthentication(getAssertion(), user, authenticationRequestId);
             SecurityContextHolder.getContext().setAuthentication(samlAuthentication);
         }
         chain.doFilter(request, response);
