@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,6 +40,7 @@ public class MetadataController {
 
 
     @PostMapping("manage/connections")
+    @PreAuthorize("hasRole('ROLE_manage')")
     @Transactional
     public ResponseEntity<Void> connections(Authentication authentication,
                                             @RequestBody List<Map<String, Object>> connections,
